@@ -1,0 +1,41 @@
+<div id="editor-pane">
+  <div id="editor-toolbar">
+    <div class="toolbar-title">
+      <span class="dot"></span> DBML
+    </div>
+    <app-button type="button" variant="none" customClass="editor-pane-action"
+      [tooltip]="svc.paneMode() === 'editor' ? 'Restore split view' : 'Expand editor'"
+      tooltipPosition="left"
+      (onClick)="svc.paneMode() === 'editor' ? svc.setPaneMode('split') : svc.setPaneMode('editor')">
+      <svg *ngIf="svc.paneMode() === 'split'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <polyline points="15 3 21 3 21 9" />
+        <polyline points="9 21 3 21 3 15" />
+        <line x1="21" y1="3" x2="14" y2="10" />
+        <line x1="3" y1="21" x2="10" y2="14" />
+      </svg>
+      <svg *ngIf="svc.paneMode() === 'editor'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <polyline points="4 14 10 14 10 20" />
+        <polyline points="20 10 14 10 14 4" />
+        <line x1="14" y1="10" x2="21" y2="3" />
+        <line x1="10" y1="14" x2="3" y2="21" />
+      </svg>
+    </app-button>
+  </div>
+  <div class="editor-alert-banner" *ngIf="!isLoggedIn">
+    <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+      <line x1="12" y1="9" x2="12" y2="13"></line>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+    <span class="alert-text">
+      Without <a class="alert-link" (click)="goToLogin()">signing in</a>, you cannot save the diagrams.
+    </span>
+  </div>
+  <div id="editor-scroll">
+    <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
+    <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
+    <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [ngModel]="svc.code$ | async"
+      (ngModelChange)="onCodeChange($event)" (scroll)="onEditorScroll($event)"></textarea>
+  </div>
+</div>

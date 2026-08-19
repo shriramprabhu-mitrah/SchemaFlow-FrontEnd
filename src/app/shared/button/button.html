@@ -1,0 +1,10 @@
+<button
+  [type]="type"
+  [class]="'btn ' + variant + (customClass ? ' ' + customClass : '') + (tooltip ? ' tt tt-' + tooltipPosition : '')"
+  [class.disabled]="disabled"
+  [disabled]="disabled"
+  [attr.data-tt]="tooltip"
+  [id]="id"
+  (click)="handleClick($event)">
+  <ng-content></ng-content>
+</button>

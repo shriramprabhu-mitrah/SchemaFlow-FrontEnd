@@ -1,0 +1,435 @@
+<div class="landing-container">
+  <!-- Neon Glow Overlays -->
+  <div class="glow-node glow-primary"></div>
+  <div class="glow-node glow-secondary"></div>
+  <div class="glow-node glow-accent"></div>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="landing-header">
+    <div class="header-inner">
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="36"></app-icons>
+        <span>MS Dbdiagram</span>
+      </div>
+      <nav class="header-nav" style="display: flex; gap: 24px; align-items: center;">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Features</a>
+        <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
+        <a routerLink="/dashboard" class="nav-link">Docs</a>
+      </nav>
+      <div class="header-actions">
+        <app-button variant="none" customClass="btn-goto" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-signin">Sign In</app-button>
+        </a>
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin" (onClick)="logout()">Sign
+          Out</app-button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero-section">
+    <div class="hero-text-wrap">
+      <div class="feature-tag">
+        <span class="pulse-dot"></span>
+        <span>Visual Table Groups & Workspace Sync</span>
+      </div>
+      <h1 class="hero-headline">
+        Collaborative Database <br>
+        <span class="gradient-text">Blueprints for Teams.</span>
+      </h1>
+      <p class="hero-subtext">
+        The modern database diagramming platform. Write DBML code, arrange visual table groups, manage team workspaces,
+        and import/export SQL schemas instantly.
+      </p>
+
+      <!-- HERO ACTION BUTTONS -->
+      <div class="hero-actions">
+        <app-button variant="none" customClass="btn-hero-primary" (onClick)="onCreateDiagram()">
+          <app-icons name="cta-create" size="18" color="#ffffff"></app-icons>
+          <span>Start Drawing Free</span>
+        </app-button>
+        <a routerLink="/login" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-hero-secondary">
+            <span>Explore Workspaces</span>
+          </app-button>
+        </a>
+      </div>
+
+      <!-- TRUSTED METRIC BADGES -->
+      <div class="hero-metrics">
+        <div class="metric-item">
+          <span class="metric-num">Workspaces</span>
+          <span class="metric-label">Personal & Teams</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-num">Table Groups</span>
+          <span class="metric-label">Color-coded partitions</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-num">Imports</span>
+          <span class="metric-label">SQL DDL to DBML</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOATING SCHEMA WORKSPACE SHOWCASE (Showing Table Groups & Workspaces) -->
+    <div class="showcase-container">
+      <div class="showcase-window">
+        <!-- Window Controls -->
+        <div class="window-chrome">
+          <div class="chrome-dots">
+            <span class="c-dot red"></span>
+            <span class="c-dot yellow"></span>
+            <span class="c-dot green"></span>
+          </div>
+          <!-- Workspace Indicator -->
+          <div class="chrome-search">workspace://mitrahsoft-team/schema.dbml</div>
+          <div class="chrome-status">
+            <span class="status-indicator"></span>
+            <span>Live Syncing</span>
+          </div>
+        </div>
+
+        <div class="window-workspace">
+          <!-- Live Code Panel -->
+          <div class="code-panel">
+            <div class="panel-header">
+              <span class="tab active">schema.dbml</span>
+              <span class="tab">Export SQL</span>
+            </div>
+            <div class="code-body">
+              <pre><code><span class="c-keyword">TableGroup</span> <span class="c-name">Billing</span> {{ '{' }}
+  invoices
+  payments
+{{ '}' }}
+
+<span class="c-keyword">Table</span> <span class="c-name">invoices</span> {{ '{' }}
+  <span class="c-field">id</span> <span class="c-type">uuid</span> <span class="c-meta">[pk]</span>
+  <span class="c-field">amount</span> <span class="c-type">numeric</span>
+{{ '}' }}
+
+<span class="c-keyword">Table</span> <span class="c-name">payments</span> {{ '{' }}
+  <span class="c-field">id</span> <span class="c-type">uuid</span> <span class="c-meta">[pk]</span>
+  <span class="c-field">invoice_id</span> <span class="c-type">uuid</span>
+{{ '}' }}
+
+<span class="c-keyword">Ref</span>: payments.invoice_id > invoices.id</code></pre>
+            </div>
+          </div>
+
+          <!-- Glassmorphic Visual Canvas Mockup showing Table Group -->
+          <div class="canvas-panel">
+            <div class="canvas-grid"></div>
+
+            <!-- Table Group Container Box -->
+            <div class="canvas-table-group" style="top: 15px; left: 15px; width: 220px; height: 320px;">
+              <div class="table-group-header">
+                <span class="group-tag">TableGroup</span>
+                <span class="group-name">Billing</span>
+              </div>
+
+              <!-- Invoices Card inside Group -->
+              <div class="schema-card card-invoices" style="top: 40px; left: 20px; width: 140px;">
+                <div class="card-title-bar invoices-header">
+                  <span class="card-icon"></span>
+                  <span>invoices</span>
+                </div>
+                <div class="card-rows">
+                  <div class="c-row pk">id <span class="type-badge">uuid</span></div>
+                  <div class="c-row">amount <span class="type-badge">numeric</span></div>
+                </div>
+              </div>
+
+              <!-- Payments Card inside Group -->
+              <div class="schema-card card-payments" style="bottom: 25px; left: 20px; width: 140px;">
+                <div class="card-title-bar payments-header">
+                  <span class="card-icon"></span>
+                  <span>payments</span>
+                </div>
+                <div class="card-rows">
+                  <div class="c-row pk">id <span class="type-badge">uuid</span></div>
+                  <div class="c-row fk">invoice_id <span class="type-badge">uuid</span></div>
+                </div>
+              </div>
+
+              <!-- SVG Relationship Link INSIDE Table Group -->
+              <svg class="canvas-svg-overlay">
+                <defs>
+                  <linearGradient id="grad-line" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3ec5c1" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="#818cf8" stop-opacity="0.8" />
+                  </linearGradient>
+                </defs>
+                <!-- Spline from payments.invoice_id to invoices.id -->
+                <path d="M 160 255 C 195 255, 195 95, 160 95" stroke="url(#grad-line)" stroke-width="2.5" fill="none" class="glowing-link" />
+                <circle cx="160" cy="255" r="4" fill="#818cf8" />
+                <circle cx="160" cy="95" r="4" fill="#3ec5c1" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="illustration-caption">Your DBML updates the canvas the moment you save.</p>
+    </div>
+  </section>
+
+  <!-- CAPABILITIES / DETAILED FEATURES SHOWCASE (Alternating Layout) -->
+  <section class="capabilities-section">
+    <div class="section-header">
+      <span class="accent-title">APPLICATION CAPABILITIES</span>
+      <h2>Engineered for High-Performance Workflows</h2>
+      <p>Organize tables logically, collaborate with workspaces, and import/export legacy code in a single platform.</p>
+    </div>
+
+    <div class="showcase-rows">
+      <!-- Row 1: Workspaces (Text Left, Mockup Right) -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <div class="row-icon-wrap blue">
+            <app-icons name="feature-sync" size="24" color="#3b82f6"></app-icons>
+          </div>
+          <h3>Isolate & Sync with Collaborative Workspaces</h3>
+          <p>Maintain separate environments for personal draft drawings and shared team blueprints. Accept email
+            workspace keys to join shared environments, coordinate updates in real-time, and securely store assets on a
+            synced developer cloud.</p>
+          <div class="showcase-features-list">
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#3b82f6"></app-icons> Switch between
+              personal & team workspaces</div>
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#3b82f6"></app-icons> Accept
+              invitations securely via routing keys</div>
+          </div>
+        </div>
+        <div class="showcase-visual">
+          <div class="workspace-list-mockup">
+            <div class="mockup-header-bar">
+              <span class="dot-win"></span>
+              <span>Workspace Directory</span>
+            </div>
+            <div class="mockup-list-body">
+              <div class="workspace-item active">
+                <span class="indicator"></span>
+                <span class="ws-name">👥 Mitrah Soft Team</span>
+                <span class="ws-badge">ACTIVE</span>
+              </div>
+              <div class="workspace-item">
+                <span class="indicator empty"></span>
+                <span class="ws-name">🚀 E-Commerce Architecture</span>
+              </div>
+              <div class="workspace-item">
+                <span class="indicator empty"></span>
+                <span class="ws-name">🧪 Personal Sandbox Drafts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Table Groups (Visual Left, Text Right) -->
+      <div class="showcase-row alternate">
+        <div class="showcase-visual">
+          <div class="group-canvas-mockup">
+            <!-- Orange Table Group container -->
+            <div class="group-container orange" style="top: 15px; left: 15px; width: 170px; height: 180px;">
+              <div class="group-title">TableGroup Auth</div>
+              <!-- Users table -->
+              <div class="mock-table-mini" style="top: 40px; left: 15px; width: 140px;">
+                <div class="table-name-mini orange">users</div>
+                <div class="table-row-mini">id</div>
+                <div class="table-row-mini">email</div>
+              </div>
+            </div>
+            <!-- Blue Table Group container -->
+            <div class="group-container blue" style="top: 15px; right: 15px; width: 170px; height: 180px;">
+              <div class="group-title">TableGroup Billing</div>
+              <!-- Payments table -->
+              <div class="mock-table-mini" style="top: 40px; left: 15px; width: 140px;">
+                <div class="table-name-mini blue">payments</div>
+                <div class="table-row-mini">id</div>
+                <div class="table-row-mini">amount</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="showcase-text">
+          <div class="row-icon-wrap indigo">
+            <app-icons name="feature-canvas" size="24" color="#818cf8"></app-icons>
+          </div>
+          <h3>Partition Structures with Visual Table Groups</h3>
+          <p>Organize large database diagrams by partitioning related entity tables into custom Table Groups. Color-code containers to mark schema sub-modules like authentication, payments, inventory, or log analytics, keeping complex schemas structured.</p>
+          <div class="showcase-features-list">
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Group tables visually with custom dashed outlines</div>
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Color-code groups for rapid domain recognition</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Import/Export (Text Left, Mockup Right) -->
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <div class="row-icon-wrap teal">
+            <app-icons name="feature-editor" size="24" color="#3ec5c1"></app-icons>
+          </div>
+          <h3>Compile & Deploy with Import & Export Engine</h3>
+          <p>Import legacy database dumps directly to generate visual designs in one click. Export finished designs into clean DDL scripts optimized for PostgreSQL, MySQL, SQL Server, and SQLite, or share diagram links with teammates.</p>
+          <div class="showcase-features-list">
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Import raw SQL DDL directly into visual blocks</div>
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Export clean schemas, vector SVGs, and high-res PDFs</div>
+          </div>
+        </div>
+        <div class="showcase-visual">
+          <div class="importer-exporter-mockup">
+            <div class="import-source-box">
+              <span class="file-label">dump.sql</span>
+              <pre><code>CREATE TABLE users...</code></pre>
+            </div>
+            <div class="arrow-indicator">
+              <span class="arrow-line"></span>
+              <span class="arrow-head">▶</span>
+            </div>
+            <div class="export-target-box">
+              <span class="file-label">schema.dbml</span>
+              <pre><code>Table users {{ '{' }} ... {{ '}' }}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE DDL EXPORT SANDBOX PREVIEW -->
+  <section class="sandbox-preview-section">
+    <div class="sandbox-layout">
+      <div class="sandbox-desc">
+        <span class="accent-title">SCHEMA INTEGRATION</span>
+        <h2>Compile DBML to Multi-dialect DDL</h2>
+        <p>Whether you deploy to cloud databases or local servers, MS Dbdiagram generates optimized schemas instantly. Switch target dialects and export clean DDL scripts with one click.</p>
+
+        <div class="dialect-pills">
+          <span class="pill active">PostgreSQL</span>
+          <span class="pill">MySQL</span>
+          <span class="pill">Microsoft SQL Server</span>
+          <span class="pill">SQLite</span>
+        </div>
+      </div>
+
+      <div class="sandbox-code-preview">
+        <div class="preview-header">
+          <span class="circle-dot"></span>
+          <span>PostgreSQL Export Output</span>
+        </div>
+        <div class="preview-body">
+          <pre><code><span class="sql-key">CREATE TABLE</span> "invoices" (
+  "id" uuid <span class="sql-key">PRIMARY KEY</span>,
+  "amount" numeric
+);
+
+<span class="sql-key">CREATE TABLE</span> "payments" (
+  "id" uuid <span class="sql-key">PRIMARY KEY</span>,
+  "invoice_id" uuid
+);
+
+<span class="sql-key">ALTER TABLE</span> "payments" 
+<span class="sql-key">ADD FOREIGN KEY</span> ("invoice_id") 
+<span class="sql-key">REFERENCES</span> "invoices" ("id");</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORKFLOW STEPS SHOWCASE -->
+  <section class="workflow-section">
+    <div class="section-header">
+      <span class="accent-title">DEVELOPMENT LIFECYCLE</span>
+      <h2>Build Relational Diagrams in Minutes</h2>
+      <p>A structured, developer-centric workflow to model, organize, sync, and export your database blueprints.</p>
+    </div>
+
+    <div class="workflow-steps">
+      <!-- Step 1 -->
+      <div class="step-card">
+        <div class="step-icon-wrap">
+          <app-icons name="import" size="24" color="#3ec5c1"></app-icons>
+        </div>
+        <div class="step-badge-number">01</div>
+        <h3>Import or Code</h3>
+        <p>Type declarative DBML code in our high-speed editor, or import existing SQL DDL dump scripts (Postgres, MySQL, Oracle) to instantly generate visual table boxes.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-card">
+        <div class="step-icon-wrap">
+          <app-icons name="feature-canvas" size="24" color="#818cf8"></app-icons>
+        </div>
+        <div class="step-badge-number">02</div>
+        <h3>Group Visually</h3>
+        <p>Arrange your entity tables inside color-coded, named <strong>Table Groups</strong>. Partition catalog items, logs, billing, or user auth domains to keep diagrams readable.</p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-card">
+        <div class="step-icon-wrap">
+          <app-icons name="feature-sync" size="24" color="#3b82f6"></app-icons>
+        </div>
+        <div class="step-badge-number">03</div>
+        <h3>Sync & Collaborate</h3>
+        <p>Save diagrams to secure cloud <strong>Workspaces</strong>. Switch dynamically between personal drafts and shared team folders. Invite colleagues and accept keys to edit together.</p>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-card">
+        <div class="step-icon-wrap">
+          <app-icons name="export" size="24" color="#10b981"></app-icons>
+        </div>
+        <div class="step-badge-number">04</div>
+        <h3>Export & Integrate</h3>
+        <p>Compile visual schemas back into optimized SQL scripts, or download vector SVG and PDF graphics directly to integrate into your documentation or github READMEs.</p>
+      </div>
+    </div>
+
+    <div class="workflow-cta">
+      <app-button variant="none" customClass="btn-hero-primary" (onClick)="onCreateDiagram()">
+        <span>Open Visual Canvas & Start Designing</span>
+      </app-button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="landing-footer">
+    <div class="footer-cols">
+      <div class="footer-brand-col">
+        <div class="footer-logo">
+          <app-icons name="db-diagram-logo" size="32"></app-icons>
+          <span>MS Dbdiagram</span>
+        </div>
+        <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers.</p>
+        <p class="footer-copyright">&copy; 2026 MS Dbdiagram. Built for collaborative database engineering.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Builder App</h4>
+        <a (click)="onCreateDiagram()">Visual Canvas</a>
+        <a routerLink="/pricing">Pricing Plans</a>
+        <a routerLink="/dashboard">Active Diagrams</a>
+        <a routerLink="/dashboard">Workspace Settings</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a routerLink="/dashboard">Documentation</a>
+        <a routerLink="/dashboard">DBML Language Guide</a>
+        <a routerLink="/dashboard">SQL Import/Export API</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>Legal & Policy</h4>
+        <a routerLink="/dashboard">Privacy Terms</a>
+        <a routerLink="/dashboard">Terms of Service</a>
+        <a routerLink="/dashboard">License Info</a>
+      </div>
+    </div>
+  </footer>
+</div>

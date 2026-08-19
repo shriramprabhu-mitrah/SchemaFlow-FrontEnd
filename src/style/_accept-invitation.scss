@@ -1,0 +1,220 @@
+/* ============ ACCEPT INVITATION PAGE ============ */
+.accept-invitation-container {
+  min-height: 100vh;
+  width: 100vw;
+  background: #08101f;
+  background-image: 
+    radial-gradient(at 50% 0%, rgba(62, 197, 193, 0.12) 0px, transparent 60%),
+    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.accept-invitation-card {
+  width: 100%;
+  max-width: 480px;
+  background: #141d31;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(62, 197, 193, 0.1);
+  padding: 32px;
+  box-sizing: border-box;
+  animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .card-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    text-align: center;
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .invite-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #3ec5c1;
+      background: rgba(62, 197, 193, 0.12);
+      border: 1px solid rgba(62, 197, 193, 0.25);
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: 0.08em;
+    }
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 8px;
+      line-height: 1.3;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: #98a7c4;
+      line-height: 1.5;
+      margin: 0 0 24px;
+    }
+
+    .workspace-details-box {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-sizing: border-box;
+
+      .detail-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 12.5px;
+
+        .detail-label {
+          color: #7082a0;
+          font-weight: 500;
+        }
+
+        .detail-value {
+          color: #e6eef9;
+          font-weight: 600;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+
+          &.highlight {
+            color: #3ec5c1;
+            font-size: 13.5px;
+          }
+
+          &.code-font {
+            font-family: monospace;
+            font-size: 11.5px;
+            color: #38bdf8;
+            max-width: 220px;
+          }
+        }
+      }
+    }
+
+    .alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      margin-bottom: 20px;
+      text-align: left;
+      box-sizing: border-box;
+
+      &.success-banner {
+        background: rgba(62, 197, 193, 0.12);
+        border: 1px solid rgba(62, 197, 193, 0.3);
+        color: #3ec5c1;
+      }
+
+      &.error-banner {
+        background: rgba(248, 113, 113, 0.12);
+        border: 1px solid rgba(248, 113, 113, 0.3);
+        color: #f87171;
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+
+      .btn-accept-invitation {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        height: 42px;
+        background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+        border: none;
+        border-radius: 10px;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(62, 197, 193, 0.3);
+        transition: all 0.18s ease;
+
+        &:hover:not(:disabled) {
+          filter: brightness(1.1);
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          box-shadow: none;
+          transform: none;
+        }
+
+        .spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+      }
+
+      .btn-decline-invitation {
+        width: 100%;
+        height: 38px;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: #98a7c4;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.18s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #ffffff;
+        }
+      }
+    }
+  }
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

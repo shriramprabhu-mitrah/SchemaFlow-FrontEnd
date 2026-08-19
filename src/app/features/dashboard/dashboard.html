@@ -1,0 +1,74 @@
+<div id="app">
+  <!-- TOP BAR -->
+  <app-header></app-header>
+
+
+  <div id="body" #bodyEl [class.editor-fullscreen]="paneMode === 'editor'"
+    [class.canvas-fullscreen]="paneMode === 'canvas'">
+
+    <!-- EDITOR -->
+    <app-editor [style.width.%]="paneMode === 'split' ? svc.editorWidthPct() : 100"
+      [style.display]="paneMode === 'canvas' ? 'none' : 'block'"></app-editor>
+
+    <div id="resizer" [class]="paneMode" (mousedown)="onResizerMouseDown($event)"></div>
+
+    <!-- CANVAS -->
+    <app-canvas
+      [style.display]="paneMode === 'editor' || (svc.showDocs && paneMode !== 'canvas') ? 'none' : 'block'"></app-canvas>
+
+    <!-- DOCS PANE -->
+    <app-docs *ngIf="svc.showDocs && paneMode !== 'editor' && paneMode !== 'canvas'"></app-docs>
+  </div>
+
+  <!-- Instructions modal -->
+  <div class="dbdocs-instructions" *ngIf="svc.showDbdocsInstructions">
+    <div class="modal-header">
+      <h3>Publish to dbdocs.io</h3>
+      <app-button variant="none" customClass="close-btn" (onClick)="closeDbdocsInstructions()">&times;</app-button>
+    </div>
+    <p>Your schema has been exported as <code>schema.dbml</code>.</p>
+    <p>To publish it, install the CLI and run publish:</p>
+    <pre><code>npm install -g dbdocs&#10;dbdocs login&#10;dbdocs build schema.dbml</code></pre>
+  </div>
+
+  <!-- Unsaved Changes Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="svc.unsavedModalVisible()">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Unsaved Changes</h3>
+        <app-button variant="none" customClass="close-btn" (onClick)="svc.confirmCancel()">&times;</app-button>
+      </div>
+      <div class="modal-body">
+        <p>You have unsaved changes in your diagram <strong>{{ svc.diagramName?.trim() || 'Untitled Diagram' }}</strong>. Would you like to save
+          them before leaving?</p>
+      </div>
+      <div class="modal-footer">
+        <app-button variant="default" customClass="signbtn" (onClick)="svc.confirmSave()">Save Changes</app-button>
+        <app-button *ngIf="svc.showDiscardButton()" variant="default" (onClick)="svc.confirmDiscard()">Discard</app-button>
+        <app-button variant="default" (onClick)="svc.confirmCancel()">Cancel</app-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign In Required Modal -->
+  <div class="modal-backdrop" *ngIf="svc.authModalVisible()">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Sign In Required</h3>
+        <app-button variant="none" customClass="close-btn"
+          (onClick)="svc.authModalVisible.set(false)">&times;</app-button>
+      </div>
+      <div class="modal-body">
+        <p>You need to sign in to save diagrams, create new diagrams,import,export or manage your database schemas.</p>
+      </div>
+      <div class="modal-footer">
+        <app-button variant="default" (onClick)="goToLogin()" customClass="signbtn">Sign In</app-button>
+        <app-button variant="default" (onClick)="svc.authModalVisible.set(false)">Cancel</app-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full-page Diagram Loader Component -->
+  <app-loader *ngIf="svc.isDiagramLoading() || svc.isSaving()" 
+              [text]="svc.isSaving() ? 'Saving Diagram...' : 'Loading Diagram...'"></app-loader>
+</div>

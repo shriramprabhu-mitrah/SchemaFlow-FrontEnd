@@ -1,0 +1,295 @@
+/* ==========================================
+   USER SUBSCRIPTION PAGE (Individual users)
+   ========================================== */
+
+.user-sub-container {
+  padding: 32px 28px;
+  max-width: 860px;
+
+  .user-sub-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .user-sub-header-text {
+      h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f3f4f6;
+        margin: 0 0 4px;
+      }
+      p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+      }
+    }
+
+    .btn-upgrade {
+      display: flex;
+      align-items: center;
+      padding: 9px 18px;
+      background: linear-gradient(135deg, rgba(62, 197, 193, 0.15), rgba(59, 130, 246, 0.12));
+      border: 1px solid rgba(62, 197, 193, 0.3);
+      border-radius: 10px;
+      color: #3ec5c1;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.22s ease;
+
+      &:hover {
+        background: linear-gradient(135deg, rgba(62, 197, 193, 0.25), rgba(59, 130, 246, 0.2));
+        box-shadow: 0 4px 14px rgba(62, 197, 193, 0.2);
+      }
+    }
+  }
+
+  .user-sub-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 0;
+    color: #6b7280;
+    font-size: 14px;
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid rgba(62, 197, 193, 0.2);
+      border-top-color: #3ec5c1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+  }
+
+  .user-sub-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Current Plan Card */
+  .current-plan-card {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: #0d1628;
+
+    .plan-card-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    &.free-plan .plan-card-glow {
+      background: radial-gradient(ellipse at top left, rgba(62, 197, 193, 0.06) 0%, transparent 60%);
+    }
+
+    &.paid-plan .plan-card-glow {
+      background: radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
+      border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    &.paid-plan {
+      border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    .plan-card-inner {
+      position: relative;
+      z-index: 1;
+      padding: 24px 28px;
+    }
+
+    .plan-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+
+      .plan-type-badge {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(62, 197, 193, 0.1);
+        color: #3ec5c1;
+        border: 1px solid rgba(62, 197, 193, 0.2);
+      }
+
+      .plan-status-badge {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
+
+        &.active-badge {
+          background: rgba(16, 185, 129, 0.1);
+          color: #34d399;
+          border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+
+        &.inactive-badge {
+          background: rgba(239, 68, 68, 0.1);
+          color: #f87171;
+          border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+      }
+    }
+
+    .plan-name-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+
+      .plan-icon-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3ec5c1;
+        flex-shrink: 0;
+      }
+
+      .plan-display-name {
+        font-size: 24px;
+        font-weight: 800;
+        color: #f9fafb;
+        margin: 0 0 4px;
+      }
+
+      .plan-renewal {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+      }
+    }
+
+    /* Free plan upgrade CTA */
+    .plan-upgrade-cta {
+      background: rgba(62, 197, 193, 0.05);
+      border: 1px solid rgba(62, 197, 193, 0.12);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+
+      p {
+        font-size: 13px;
+        color: #9ca3af;
+        margin: 0;
+
+        strong {
+          color: #f3f4f6;
+        }
+      }
+
+      .btn-upgrade-inline {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+        border: none;
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+
+        &:hover {
+          box-shadow: 0 4px 14px rgba(62, 197, 193, 0.35);
+        }
+      }
+    }
+
+    /* Paid plan details row */
+    .plan-manage-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+
+      .plan-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .detail-label {
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #4b5563;
+        }
+
+        .detail-value {
+          font-size: 14px;
+          font-weight: 600;
+          color: #d1d5db;
+        }
+      }
+    }
+  }
+
+  /* Explore Plans Banner */
+  .explore-plans-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: 14px;
+    flex-wrap: wrap;
+
+    .explore-text {
+      h4 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #f3f4f6;
+        margin: 0 0 4px;
+      }
+      p {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+      }
+    }
+
+    .btn-explore {
+      padding: 9px 20px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.85), rgba(99, 102, 241, 0.8));
+      border: none;
+      border-radius: 10px;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.22s ease;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

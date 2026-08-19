@@ -1,0 +1,69 @@
+<div class="public-viewer-layout">
+  
+  <!-- Dedicated Password Screen -->
+  <div class="dedicated-screen password-screen" *ngIf="needsPassword">
+    <div class="screen-content">
+      <div class="brand" style="text-align: center; color: var(--accent); font-size: 26px; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px;">
+        <img src="assets/icons/db-diagram-logo.svg" alt="Logo" height="40" />
+        <span>MS DB Diagram</span>
+      </div>
+      <div class="password-box">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lock-icon">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <h3>Protected Diagram</h3>
+        <p>This diagram is protected. Please enter the password to view it.</p>
+        
+        <div class="password-input-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
+          <input [type]="showPassword ? 'text' : 'password'" class="db-input password-input w-100" style="padding-right: 40px;" placeholder="Enter password" [(ngModel)]="password" (keyup.enter)="unlock()" />
+          <button type="button" class="btn-icon" style="position: absolute; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer;"
+            (click)="showPassword = !showPassword" [title]="showPassword ? 'Hide password' : 'Show password'">
+            <svg *ngIf="!showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg *ngIf="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="error-text mt-2" *ngIf="error" style="text-align: center;">{{ error }}</div>
+        
+        <button class="btn default signbtn mt-4" (click)="unlock()" [disabled]="unlocking || !password">
+          {{ unlocking ? 'Unlocking...' : 'Unlock Diagram' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Error Screen -->
+  <div class="dedicated-screen error-screen" *ngIf="error && !needsPassword">
+    <div class="screen-content text-center">
+      <div class="brand" style="color: var(--accent); font-size: 26px; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px;">
+        <img src="assets/icons/db-diagram-logo.svg" alt="Logo" height="40" />
+        <span>MS DB Diagram</span>
+      </div>
+      <div class="error-box">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="error-icon mb-3" style="color: #ef4444; margin: 0 auto;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <h3>Oops!</h3>
+        <p>{{ error }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actual Diagram Viewer (Only shown when unlocked and loaded) -->
+  <ng-container *ngIf="!needsPassword && !error">
+
+    <div class="viewer-body">
+      <app-canvas *ngIf="!loading" class="viewer-canvas"></app-canvas>
+      <app-loader *ngIf="loading" text="Loading Diagram..."></app-loader>
+    </div>
+  </ng-container>
+
+</div>

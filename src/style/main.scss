@@ -1,0 +1,106 @@
+// main.scss — the ONLY file Angular should build from this style folder.
+// Everything else here must be a partial (filename starts with an
+// main.scss — the ONLY file Angular should build from this style folder.
+// Everything else here must be a partial (filename starts with an
+// underscore) so Sass doesn't emit a separate .css for each on its own.
+//
+// Order matters: variables/mixins first, then shared/common styles, then
+// the feature-specific partials that may depend on any of the above.
+
+
+@use 'header';
+@use 'workspace-modal';
+@use 'diagram-views';
+@use 'button';
+@use 'canvas';
+@use 'dashboard';
+@use 'docs';
+@use 'editor';
+@use 'login';
+@use 'home';
+@use 'icons.scss';
+@use 'accept-invitation';
+@use 'tooltip';
+@use 'version-history';
+@use 'pricing';
+@use 'user-subscription';
+@use 'admin-shared';
+@use 'admin-dashboard';
+@use 'admin-layout';
+@use 'share-modal';
+@use 'org-layout';
+@use 'public-viewer';
+@use 'upgrade-modal';
+
+
+/* ==========================================
+   GLOBAL CUSTOM SCROLLBAR COLORS
+   ========================================== */
+html,
+body {
+  color-scheme: dark;
+}
+
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(62, 197, 193, 0.4) rgba(255, 255, 255, 0.02) !important;
+
+  &::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.01) !important;
+    border-radius: 3px !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(62, 197, 193, 0.4) !important;
+    border-radius: 3px !important;
+
+    &:hover {
+      background: rgba(62, 197, 193, 0.7) !important;
+    }
+  }
+}
+
+/* Light Theme Overrides */
+html.light-theme,
+body.light-theme {
+  color-scheme: light !important;
+  color: #0f172a;
+  background-color: #f8fafc !important;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #0f172a;
+  }
+}
+
+body.light-theme * {
+  scrollbar-color: rgba(37, 99, 235, 0.4) rgba(0, 0, 0, 0.03) !important;
+
+  &::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.03) !important;
+    border-radius: 3px !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.4) !important;
+    border-radius: 3px !important;
+
+    &:hover {
+      background: rgba(37, 99, 235, 0.7) !important;
+    }
+  }
+}

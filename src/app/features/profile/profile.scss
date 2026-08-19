@@ -1,0 +1,356 @@
+.profile-page {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+  background-color: #08101f;
+  color: #ffffff;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  font-family: inherit;
+}
+
+.profile-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 30px 0;
+}
+
+.section-header {
+  margin-bottom: 35px;
+  text-align: left;
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 26px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #7c8aa6;
+    line-height: 1.5;
+
+    a {
+      color: #3ec5c1;
+      text-decoration: none;
+      font-weight: 600;
+
+      &:hover {
+        text-decoration: underline;
+        color: #4fd8d4;
+      }
+    }
+  }
+}
+
+.btn-back {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #98a7c4;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+}
+
+.profile-section {
+  margin-bottom: 30px;
+
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #ffffff;
+  }
+}
+
+.avatar-block {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatar-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(10, 16, 28, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  svg {
+    width: 48px;
+    height: 48px;
+    color: #50617a;
+  }
+}
+
+.avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+
+  p {
+    font-size: 13px;
+    color: #7c8aa6;
+    margin: 0;
+  }
+}
+
+.form-group {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #98a7c4;
+    letter-spacing: 0.02em;
+  }
+
+  .form-control {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    background: rgba(10, 16, 28, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 14px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+
+    &:focus {
+      border-color: #3ec5c1;
+      background: rgba(10, 16, 28, 0.85);
+      box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.15);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: rgba(10, 16, 28, 0.3);
+    }
+  }
+}
+
+.text-muted {
+  font-size: 14px;
+  color: #7c8aa6;
+  margin: 0;
+}
+
+.danger-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.icon-sm {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+}
+
+/* Custom danger button based on the accent button theme */
+.btn-danger {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.25);
+
+  &:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(239, 68, 68, 0.35);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* Base button override to match form styling */
+.btn-form {
+  background: #3ec5c1;
+  color: #08101f;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(62, 197, 193, 0.25);
+
+  &:hover {
+    background: #4fd8d4;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(62, 197, 193, 0.35);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-save {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(62, 197, 193, 0.15);
+  border: 1px solid #3ec5c1;
+  border-radius: 12px;
+  color: #3ec5c1;
+  font-size: 14px;
+  font-weight: 600;
+  
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  border-radius: 12px;
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 600;
+  
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+/* ============ LIGHT THEME OVERRIDES ============ */
+:host-context(body.light-theme) {
+  .profile-page {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+  
+  .profile-container {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .section-header {
+    h2 {
+      color: #0f172a;
+    }
+    p {
+      color: #475569;
+      
+      a {
+        color: #337ab7;
+        &:hover { color: #286090; }
+      }
+    }
+  }
+  
+  .profile-section h3 {
+    color: #0f172a;
+  }
+
+  .avatar-circle {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.15);
+    svg { color: #64748b; }
+  }
+
+  .avatar-info p {
+    color: #475569;
+  }
+  
+  .form-group {
+    label {
+      color: #475569;
+    }
+    
+    .form-control {
+      background: #ffffff;
+      border-color: rgba(0, 0, 0, 0.15);
+      color: #0f172a;
+      
+      &:focus {
+        border-color: #337ab7;
+        box-shadow: 0 0 0 3px rgba(51, 122, 183, 0.15);
+      }
+      
+      &:disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+      }
+    }
+  }
+
+  .text-muted {
+    color: #475569;
+  }
+
+  .btn-form {
+    background: #337ab7;
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(51, 122, 183, 0.25);
+
+    &:hover {
+      background: #286090;
+      box-shadow: 0 6px 24px rgba(51, 122, 183, 0.35);
+    }
+  }
+
+  .btn-back {
+    color: #64748b;
+    
+    &:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: #0f172a;
+    }
+  }
+}

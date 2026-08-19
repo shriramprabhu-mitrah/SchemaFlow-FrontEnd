@@ -1,0 +1,237 @@
+#editor-pane {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#editor-scroll {
+  position: relative;
+  flex: 1;
+  overflow: hidden; /* Hide the outer scrollbar */
+  display: flex;
+}
+
+#gutter {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 52px !important;
+  padding: 16px 0 !important;
+  padding-right: 12px !important;
+  color: #5a6b8c !important;
+  font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
+  font-size: 15px !important;
+  line-height: 1.62 !important;
+  text-align: right !important;
+  white-space: pre !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  box-sizing: border-box !important;
+}
+
+#highlight {
+    pointer-events: none;
+    user-select: none;
+    z-index: 1;
+    color: #e6eef9;
+    background: transparent;
+    overflow: hidden;
+}
+ 
+#highlight,
+#codearea {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 16px 8px 16px 52px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 15px !important;
+  line-height: 1.62 !important;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+  tab-size: 2;
+  // overflow: auto;
+}
+ 
+#codearea {
+  z-index: 2;
+  background: transparent;
+  color: rgba(255, 255, 255, 0);
+  -webkit-text-fill-color: transparent;
+  caret-color: #3ec5c1;
+  resize: none;
+  border: none;
+  outline: none;
+  overflow: auto;
+
+  /* Custom Premium Scrollbar Design */
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+ 
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+  }
+ 
+  &::-webkit-scrollbar-thumb {
+    background: rgba(62, 197, 193, 0.2);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    transition: background 0.2s ease;
+  }
+ 
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(62, 197, 193, 0.4);
+  }
+}
+
+#codearea::selection {
+  background: rgba(112, 200, 195, 0.35);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.keyword {
+  color: #2979ff;
+  font-weight: bold;
+}
+
+.datatype {
+  color: #43a047;
+}
+
+.attribute {
+  color: #ef6c00;
+}
+
+.number {
+  color: #e4bd11;
+  /* distinct orange/coral for numbers */
+}
+
+.groupName {
+  color: #e4bd11;
+}
+
+.editor-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(217, 119, 6, 0.1) !important;
+  border-bottom: 1px solid rgba(217, 119, 6, 0.2) !important;
+  padding: 10px 16px !important;
+  color: #f59e0b !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+ 
+  .alert-icon {
+    flex-shrink: 0;
+    color: #f59e0b !important;
+  }
+ 
+  .alert-text {
+    flex: 1;
+    font-weight: 500 !important;
+  }
+
+  .alert-link {
+    color: #3ec5c1 !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    font-weight: 600 !important;
+    transition: color 0.15s ease !important;
+
+    &:hover {
+      color: #70c8c3 !important;
+    }
+  }
+}
+
+/* DBML Code Editor Theme Protection (Ensures dark navy editor with bright visible code tokens in all themes) */
+#editor-pane,
+#editor-scroll,
+body.light-theme #editor-pane,
+body.light-theme #editor-scroll {
+  background-color: #0b1426 !important;
+  background: #0b1426 !important;
+  color: #e6eef9 !important;
+}
+
+#gutter,
+body.light-theme #gutter {
+  background-color: #0b1426 !important;
+  background: #0b1426 !important;
+  color: #5a6b8c !important;
+  font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
+  font-size: 15px !important;
+  line-height: 1.62 !important;
+  text-align: right !important;
+  width: 52px !important;
+}
+
+#editor-toolbar,
+body.light-theme #editor-toolbar {
+  background-color: #121c2f !important;
+  background: #121c2f !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+  .toolbar-title {
+    color: #e6eef9 !important;
+  }
+}
+
+#highlight,
+body.light-theme #highlight {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #e6eef9 !important;
+  font-family: 'Fira Code', Consolas, monospace !important;
+  font-size: 15px !important;
+  line-height: 1.62 !important;
+  padding-left: 52px !important;
+}
+
+#codearea,
+body.light-theme #codearea,
+body.light-theme textarea#codearea {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: #3ec5c1 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-family: 'Fira Code', Consolas, monospace !important;
+  font-size: 15px !important;
+  line-height: 1.62 !important;
+  padding-left: 52px !important;
+}
+
+.keyword {
+  color: #2979ff !important;
+  font-weight: 700 !important;
+}
+
+.datatype {
+  color: #43a047 !important;
+}
+
+.attribute {
+  color: #ef6c00 !important;
+}
+
+.number {
+  color: #e4bd11 !important;
+}
+
+.groupName {
+  color: #e4bd11 !important;
+}

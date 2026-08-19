@@ -1,0 +1,137 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>User Management</h1>
+      <p class="text-muted" style="margin:4px 0 0">Manage registered user accounts, admin privileges, and status.</p>
+    </div>
+    <div class="header-actions">
+      <div class="search-box-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-input" placeholder="Search users..." [(ngModel)]="search" (input)="onSearch()">
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading"><div class="spinner"></div><span>Loading users...</span></div>
+
+  <div class="data-table-wrap" *ngIf="!loading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:5%">
+            <span class="sort-header-clickable" style="cursor: default;">
+              <span>S.No</span>
+            </span>
+          </th>
+          <th style="width:18%" (click)="sortBy('username')">
+            <span class="sort-header-clickable">
+              <span>USERNAME</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'username'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              </span>
+            </span>
+          </th>
+          <th style="width:27%" (click)="sortBy('email')">
+            <span class="sort-header-clickable">
+              <span>EMAIL</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'email'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              </span>
+            </span>
+          </th>
+          <th style="width:10%" (click)="sortBy('status')">
+            <span class="sort-header-clickable">
+              <span>STATUS</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'status'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              </span>
+            </span>
+          </th>
+
+          <th style="width:11%" (click)="sortBy('joined')">
+            <span class="sort-header-clickable">
+              <span>JOINED</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'joined'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              </span>
+            </span>
+          </th>
+          <th style="width:20%">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of displayUsers; let i = index">
+          <td>{{ paginationStartIndex + i }}</td>
+          <td><strong class="user-name-text">{{ u.username }}</strong></td>
+          <td><span class="user-email-text">{{ u.email }}</span></td>
+          <td>
+            <span class="badge" [class.badge-active]="u.isactive !== false" [class.badge-inactive]="u.isactive === false">
+              {{ u.isactive !== false ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+
+          <td><span class="text-muted">{{ u.createddate | date:'mediumDate' }}</span></td>
+          <td>
+            <div class="action-btns" style="display:flex;gap:6px;align-items:center">
+              <button [class]="u.isactive !== false ? 'btn-deactivate btn-sm' : 'btn-activate btn-sm'" (click)="toggleActive(u)">
+                {{ u.isactive !== false ? 'Deactivate' : 'Activate' }}
+              </button>
+              <button class="btn-secondary btn-sm" (click)="toggleSuperAdmin(u)">
+                {{ u.is_super_admin ? 'Remove Admin' : 'Make Admin' }}
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="displayUsers.length === 0">
+          <td colspan="6" class="empty-table-cell">No users found</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Workspace-Style Pagination Bar -->
+    <div class="pagination-container" *ngIf="totalFilteredCount > 0">
+      <div class="pagination-info">
+        {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ totalFilteredCount }} Items
+      </div>
+      <div class="pagination-controls" *ngIf="totalPagesCount > 1">
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">«</button>
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">‹</button>
+        <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p }}</button>
+        <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(page + 1)" title="Next Page">›</button>
+        <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)" title="Last Page">»</button>
+      </div>
+      <div class="page-size-selector">
+        <select class="page-size-select" [(ngModel)]="limit" (change)="onLimitChange()">
+          <option [ngValue]="5">5</option>
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+        </select>
+        <span class="limit-label">items per page</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Card Modal (Replaces browser confirm alert) -->
+  <div class="modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
+    <div class="modal-content confirmation-card-modal" style="width:420px;max-width:92vw;padding:28px;border-radius:14px;text-align:center" (click)="$event.stopPropagation()">
+      <div class="confirm-icon-wrap" style="width:52px;height:52px;border-radius:50%;background:rgba(239,68,68,0.12);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px" *ngIf="confirmActionType === 'deactivate'">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="confirm-icon-wrap" style="width:52px;height:52px;border-radius:50%;background:rgba(16,185,129,0.12);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px" *ngIf="confirmActionType === 'activate'">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h3 style="margin:0 0 8px 0;font-size:19px;font-weight:700">{{ confirmTitle }}</h3>
+      <p class="text-muted" style="margin:0 0 24px 0;font-size:14px;line-height:1.5">{{ confirmMessage }}</p>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn-secondary" (click)="closeConfirmModal()" style="min-width:110px">Cancel</button>
+        <button [class]="confirmActionType === 'deactivate' ? 'btn-danger' : 'btn-primary'" (click)="executeConfirmedAction()" style="min-width:110px">
+          {{ confirmButtonText }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

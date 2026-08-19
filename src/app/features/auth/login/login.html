@@ -1,0 +1,175 @@
+<div id="login-container">
+  <!-- Left Side: Decorative Branding -->
+  <div class="brand-panel">
+    <div class="brand-glow-1"></div>
+    <div class="brand-glow-2"></div>
+
+    <div class="brand-content">
+      <div class="logo" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="80"></app-icons>
+        <span>MS Dbdiagram</span>
+      </div>
+
+      <h1 class="slogan">Design. Visualize. Document.</h1>
+      <p class="description">
+        Create, edit, and explore relational database structures seamlessly using a modern DBML editor, interactive canvas, and powerful workspace collaboration.
+      </p>
+
+      <div class="features-list">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <app-icons name="interactive-canvas" size="22"></app-icons>
+          </div>
+          <div class="feature-text">
+            <h3>Interactive Canvas & DBML</h3>
+            <p>Visualize database schemas interactively with real-time renders as you write standard DBML code.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">
+            <app-icons name="feature-sync" size="22"></app-icons>
+          </div>
+          <div class="feature-text">
+            <h3>Collaborative Workspaces</h3>
+            <p>Organize diagrams into workspaces, invite team members, and manage granular access permissions.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">
+            <app-icons name="instant-docs" size="22"></app-icons>
+          </div>
+          <div class="feature-text">
+            <h3>Instant Documentation</h3>
+            <p>Automatically generate clean, human-readable data dictionary sheets from your schemas.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Form Card -->
+  <div class="form-panel">
+    <div class="form-card">
+      <!-- 1. SIGN IN MODE -->
+      <ng-container *ngIf="!isForgotPasswordMode">
+        <div class="form-header">
+          <h2>Sign In</h2>
+          <p>Enter your details below to access your database workspace</p>
+        </div>
+
+        <form (submit)="onSubmit(); $event.preventDefault()">
+          <!-- Error Alert -->
+          <div class="error-alert" *ngIf="errorMessage">
+            <app-icons name="error" size="20"></app-icons>
+            <span>{{ errorMessage }}</span>
+          </div>
+
+          <!-- Info/Success Alert -->
+          <div class="info-alert" *ngIf="infoMessage">
+            <app-icons name="info" size="20"></app-icons>
+            <span>{{ infoMessage }}</span>
+          </div>
+
+          <!-- Username Input -->
+          <div class="input-group">
+            <label for="username">Username or Email</label>
+            <div class="input-wrapper" [class.has-error]="usernameError">
+              <app-icons class="input-icon" name="user" size="20"></app-icons>
+              <input id="username" name="username" type="text" placeholder="Enter your username or email"
+                [(ngModel)]="username" (ngModelChange)="usernameError = ''" [disabled]="isLoading" required
+                autocomplete="username" />
+            </div>
+            <div class="field-error-text" *ngIf="usernameError">
+              <span>{{ usernameError }}</span>
+            </div>
+          </div>
+
+          <!-- Password Input -->
+          <div class="input-group">
+            <div class="label-row">
+              <label for="password">Password</label>
+              <button type="button" class="forgot-password-btn" (click)="toggleForgotPasswordMode($event)"
+                [disabled]="isLoading">
+                Forgot password?
+              </button>
+            </div>
+            <div class="input-wrapper" [class.has-error]="passwordError">
+              <app-icons class="input-icon" name="lock" size="20"></app-icons>
+              <input id="password" name="password" [type]="showPassword ? 'text' : 'password'"
+                placeholder="Enter your password" [(ngModel)]="password" (ngModelChange)="passwordError = ''"
+                [disabled]="isLoading" required autocomplete="current-password" />
+              <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [disabled]="isLoading"
+                aria-label="Toggle password visibility">
+                <app-icons *ngIf="!showPassword" name="eye" size="20"></app-icons>
+                <app-icons *ngIf="showPassword" name="eye-off" size="20"></app-icons>
+              </button>
+            </div>
+            <div class="field-error-text" *ngIf="passwordError">
+              <span>{{ passwordError }}</span>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <app-button type="submit" variant="none" customClass="submit-btn" [disabled]="isLoading">
+            <span *ngIf="!isLoading">Sign In</span>
+            <div class="spinner" *ngIf="isLoading"></div>
+          </app-button>
+        </form>
+
+        <!-- Form Footer -->
+        <div class="form-footer">
+          <p>Don't have an account? <a routerLink="/auth/register" class="signup-link">Sign Up</a></p>
+        </div>
+      </ng-container>
+
+      <!-- 2. FORGOT PASSWORD MODE -->
+      <ng-container *ngIf="isForgotPasswordMode">
+        <div class="form-header">
+          <h2>Reset Password</h2>
+          <p>Enter your email address to receive a secure password reset link</p>
+        </div>
+
+        <form (submit)="submitForgotPassword($event)">
+          <!-- Error Alert -->
+          <div class="error-alert" *ngIf="errorMessage">
+            <app-icons name="error" size="20"></app-icons>
+            <span>{{ errorMessage }}</span>
+          </div>
+
+          <!-- Info/Success Alert -->
+          <div class="info-alert" *ngIf="infoMessage">
+            <app-icons name="info" size="20"></app-icons>
+            <span>{{ infoMessage }}</span>
+          </div>
+
+          <!-- Email Input -->
+          <div class="input-group">
+            <label for="forgot-email">Email Address</label>
+            <div class="input-wrapper" [class.has-error]="forgotPasswordEmailError">
+              <app-icons class="input-icon" name="email" size="20"></app-icons>
+              <input id="forgot-email" name="forgot-email" type="email" placeholder="Enter your registered email"
+                [(ngModel)]="forgotPasswordEmail" (ngModelChange)="forgotPasswordEmailError = ''" [disabled]="isLoading"
+                required autocomplete="email" />
+            </div>
+            <div class="field-error-text" *ngIf="forgotPasswordEmailError">
+              <span>{{ forgotPasswordEmailError }}</span>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <app-button type="submit" variant="none" customClass="submit-btn" [disabled]="isLoading">
+            <span *ngIf="!isLoading">Send Reset Link</span>
+            <div class="spinner" *ngIf="isLoading"></div>
+          </app-button>
+        </form>
+
+        <!-- Form Footer -->
+        <div class="form-footer">
+          <p><a href="#" (click)="toggleForgotPasswordMode($event)" class="signup-link">Back to Sign In</a></p>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+<ng-container *ngIf="iconMarkup; else fallback">
+  <span class="icon-wrapper" [style.width.px]="sizeAsNumber" [style.height.px]="sizeAsNumber" [innerHTML]="iconMarkup"></span>
+</ng-container>
+
+<ng-template #fallback>
+  <span class="icon-wrapper" aria-hidden="true">⨯</span>
+</ng-template>

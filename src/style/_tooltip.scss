@@ -1,0 +1,220 @@
+/* ============ GLOBAL TOOLTIP SYSTEM ============ */
+.tt {
+  position: relative;
+
+  &:hover::after {
+    content: attr(data-tt);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #19191a;
+    color: #ffffff !important;
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
+    animation: tt-fade 0.15s ease-out;
+  }
+
+  &:hover::before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    margin-left: -4px;
+    width: 8px;
+    height: 8px;
+    background: #19191a;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+    z-index: 9998;
+    pointer-events: none;
+    animation: tt-fade 0.15s ease-out;
+  }
+}
+
+/* Tooltip Positions */
+.tt.tt-bottom {
+  &:hover::after {
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: tt-fade-bottom 0.15s ease-out;
+  }
+
+  &:hover::before {
+    top: calc(100% + 4px);
+    bottom: auto;
+    left: 50%;
+    margin-left: -4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+    border-bottom: none;
+    transform: rotate(45deg);
+    animation: tt-fade-bottom 0.15s ease-out;
+  }
+}
+
+.tt.tt-bottom-right {
+  &:hover::after {
+    top: calc(100% + 8px);
+    bottom: auto;
+    right: 0;
+    left: auto;
+    transform: none;
+    animation: tt-fade-bottom 0.15s ease-out;
+  }
+
+  &:hover::before {
+    top: calc(100% + 4px);
+    bottom: auto;
+    left: 50%;
+    margin-left: -4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+    border-bottom: none;
+    transform: rotate(45deg);
+    animation: tt-fade-bottom 0.15s ease-out;
+  }
+}
+
+.tt.tt-left {
+  &:hover::after {
+    right: calc(100% + 8px);
+    bottom: auto;
+    left: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ffffff !important;
+    animation: tt-fade-left 0.15s ease-out;
+  }
+
+  &:hover::before {
+    right: calc(100% + 4px);
+    bottom: auto;
+    left: auto;
+    top: 50%;
+    margin-top: -4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none;
+    border-bottom: none;
+    transform: rotate(45deg);
+    animation: tt-fade-left 0.15s ease-out;
+  }
+}
+
+.tt.tt-right {
+  &:hover::after {
+    left: calc(100% + 8px);
+    bottom: auto;
+    right: auto;
+    top: 50%;
+    transform: translateY(-50%);
+    animation: tt-fade-right 0.15s ease-out;
+  }
+
+  &:hover::before {
+    left: calc(100% + 4px);
+    bottom: auto;
+    right: auto;
+    top: 50%;
+    margin-top: -4px;
+    margin-left: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+    border-top: none;
+    transform: rotate(45deg);
+    animation: tt-fade-right 0.15s ease-out;
+  }
+}
+
+@keyframes tt-fade {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes tt-fade-bottom {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes tt-fade-left {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+@keyframes tt-fade-right {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+.tt.tt-top-left {
+  &:hover::after {
+    left: calc(50% - 12px);
+    right: auto;
+    transform: none;
+    animation: tt-fade-top-aligned 0.15s ease-out;
+  }
+  &:hover::before {
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+  }
+}
+
+.tt.tt-top-right {
+  &:hover::after {
+    right: calc(50% - 12px);
+    left: auto;
+    transform: none;
+    animation: tt-fade-top-aligned 0.15s ease-out;
+  }
+  &:hover::before {
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+  }
+}
+
+@keyframes tt-fade-top-aligned {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,258 @@
+<div class="diagram-views-panel" [class.light-mode]="svc.theme() === 'light'" (wheel)="$event.stopPropagation()">
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="title-wrap">
+      <h2>Diagram Views</h2>
+      <span class="info-icon"
+        title="Manage your diagram views, toggle table visibility, and organize by Schema or Table Group.">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      </span>
+    </div>
+    <button class="close-btn" (click)="closePanel()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+ 
+ 
+  <!-- Search and Group By -->
+  <div class="controls-section">
+    <div class="search-box" (click)="focusSearchInput()">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input #searchInput type="text" [(ngModel)]="searchQuery" placeholder="Search table, schema or group" />
+    </div>
+ 
+    <!-- Group By Selector with Global Eye Toggle -->
+    <div class="group-by-row">
+      <div class="group-by-selector">
+        <button class="group-by-trigger" (click)="groupByDropdownOpen = !groupByDropdownOpen">
+          <svg class="stack-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          <span>Select Views</span>
+          <svg class="chevron-icon" [class.open]="groupByDropdownOpen" width="14" height="14" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+ 
+        <!-- Dropdown Menu -->
+        <div class="group-by-menu" *ngIf="groupByDropdownOpen" (click)="$event.stopPropagation()">
+          <label class="menu-item checkbox-item" style="cursor: pointer; display: flex; align-items: center; padding: 6px 12px; gap: 8px;">
+            <input type="checkbox" [ngModel]="selectedViews.table" (ngModelChange)="toggleViewSelection('table')" />
+            <span class="menu-label">Table</span>
+          </label>
+          <label class="menu-item checkbox-item" [class.disabled]="!hasTableGroups" style="cursor: pointer; display: flex; align-items: center; padding: 6px 12px; gap: 8px;">
+            <input type="checkbox" [ngModel]="selectedViews.tableGroup" (ngModelChange)="toggleViewSelection('tableGroup')" [disabled]="!hasTableGroups" />
+            <span class="menu-label" [style.color]="!hasTableGroups ? '#94a3b8' : 'inherit'">Table Group</span>
+          </label>
+        </div>
+      </div>
+ 
+      <!-- Global Eye Toggle Button beside Group By -->
+      <button class="global-visibility-btn" (click)="toggleAllVisibility()" [title]="svc._hiddenTables.size > 0 ? 'Show all tables' : 'Hide all tables'">
+        <svg *ngIf="svc._hiddenTables.size === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <svg *ngIf="svc._hiddenTables.size > 0" class="hidden-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+ 
+  <div class="tree-container">
+    <div class="tree-list" *ngIf="getFilteredSections().length > 0; else noResults">
+     
+      <!-- Section (Table or Table Group) -->
+      <div class="group-node" *ngFor="let section of getFilteredSections(); trackBy: trackBySection">
+       
+      <!-- Section Header -->
+        <div class="node-row header-row" (click)="toggleGroupCollapse(section.type)" style="cursor: pointer;">
+          <!-- Toggle Collapse -->
+          <button class="collapse-toggle-btn" (click)="$event.stopPropagation(); toggleGroupCollapse(section.type)">
+            <svg class="arrow-icon" [class.collapsed]="isGroupCollapsed(section.type)" width="12" height="12"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+ 
+          <!-- Icon for Section -->
+          <span class="node-icon">
+            <svg *ngIf="section.type === 'table'" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+              <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+              <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+            </svg>
+            <svg *ngIf="section.type === 'tableGroup'" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </span>
+ 
+          <span class="node-name">{{ section.title }}</span>
+ 
+          <span class="node-badge">
+            {{ getSectionVisibleCount(section) }}/{{ getSectionTotalCount(section) }}
+          </span>
+ 
+          <span class="spacer"></span>
+ 
+          <!-- Section Eye Toggle -->
+          <button class="visibility-toggle-btn group-vis-btn" (click)="$event.stopPropagation(); toggleSectionVisibility(section)" [title]="isSectionFullyVisible(section) ? 'Hide all in section' : 'Show all in section'">
+            <svg *ngIf="isSectionFullyVisible(section)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg *ngIf="!isSectionFullyVisible(section)" class="hidden-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+ 
+        <div class="section-children-container" *ngIf="!isGroupCollapsed(section.type)">
+         
+          <!-- IF TABLE (Flat List) -->
+          <ng-container *ngIf="section.type === 'table'">                              
+          <div class="node-row table-row" *ngFor="let t of section.items; trackBy: trackByTable">
+            <span class="indent"></span>
+            <span class="node-icon table-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+              </svg>
+            </span>
+ 
+            <span class="node-name table-name" [class.dimmed]="isTableHidden(t)" (click)="toggleTableVisibility(t); $event.stopPropagation()" style="cursor: pointer;">{{ getTableDisplayName(t) }}</span>
+              <span class="spacer"></span>
+              <button class="visibility-toggle-btn" (click)="toggleTableVisibility(t); $event.stopPropagation()">
+                <svg *ngIf="!isTableHidden(t)" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg *ngIf="isTableHidden(t)" class="hidden-eye" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+          </ng-container>
+ 
+          <!-- IF TABLE GROUP (Nested Lists) -->
+          <ng-container *ngIf="section.type === 'tableGroup'">
+            <div class="group-subnode" *ngFor="let g of section.groups; trackBy: trackByGroup">
+              <div class="node-row header-row sub-header-row" (click)="toggleGroupCollapse('group_' + g.name)" style="cursor: pointer;">
+                <span class="indent"></span>
+                <button class="collapse-toggle-btn" (click)="$event.stopPropagation(); toggleGroupCollapse('group_' + g.name)">
+                  <svg class="arrow-icon" [class.collapsed]="isGroupCollapsed('group_' + g.name)" width="12" height="12"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <span class="node-name">{{ g.name }}</span>
+                <span class="node-badge">{{ getVisibleTableCount(g) }}/{{ g.tables.length }}</span>            <span class="spacer"></span>
+                <button class="visibility-toggle-btn group-vis-btn" (click)="$event.stopPropagation(); toggleGroupVisibility(g)" [title]="isGroupFullyVisible(g) ? 'Hide all in group' : 'Show all in group'">
+                  <svg *ngIf="isGroupFullyVisible(g)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg *ngIf="!isGroupFullyVisible(g)" class="hidden-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+ 
+              <div class="child-tables-container" *ngIf="!isGroupCollapsed('group_' + g.name)">
+                <div class="node-row table-row" *ngFor="let t of g.tables; trackBy: trackByTable">
+                  <span class="indent double-indent"></span>
+                  <span class="node-icon table-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="3" y1="9" x2="21" y2="9"></line>
+                      <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                  </span>
+                  <span class="node-name table-name" [class.dimmed]="isTableHidden(t)" (click)="toggleTableVisibility(t); $event.stopPropagation()" style="cursor: pointer;">{{ getTableDisplayName(t) }}</span>
+                  <span class="spacer"></span>
+            <button class="visibility-toggle-btn" (click)="toggleTableVisibility(t); $event.stopPropagation()">
+              <svg *ngIf="!isTableHidden(t)" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg *ngIf="isTableHidden(t)" class="hidden-eye" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+              </div>
+            </div>
+          </ng-container>
+ 
+        </div>
+      </div>
+ 
+    </div>
+ 
+    <!-- Empty State -->
+    <ng-template #noResults>
+      <div class="empty-state">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <p>No tables, schemas, or groups match your search.</p>
+      </div>
+    </ng-template>
+  </div>
+ 
+  <!-- Hidden Tables Footer Section -->
+  <div class="panel-footer" *ngIf="getHiddenTablesList().length > 0">
+    <div class="hidden-pills-container">
+      <button *ngFor="let tableName of getHiddenTablesList(); trackBy: trackByTable" class="hidden-table-pill" (click)="toggleTableVisibility(tableName)">
+        <span class="pill-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+        </span>
+        <span class="pill-name">{{ tableName }}</span>
+      </button>
+    </div>
+  </div>
+</div>

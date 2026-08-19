@@ -1,0 +1,89 @@
+{
+  "appConfig": {
+    "sessionTimeoutMinutes": 120,
+    "frontendUrl": "http://192.168.3.84:4200"
+  },
+  "apiConfig": {
+    "baseUrl": "http://192.168.3.84:4000"
+  },
+  "authApiUrls": {
+    "login": "http://192.168.3.84:4000/api/auth/login",
+    "register": "http://192.168.3.84:4000/api/auth/register",
+    "forgetPassword": "http://192.168.3.84:4000/api/auth/forget-password",
+    "resetPassword": "http://192.168.3.84:4000/api/auth/reset-password",
+    "refreshToken": "http://192.168.3.84:4000/api/auth/refreshToken",
+    "logout": "http://192.168.3.84:4000/api/auth/logout"
+  },
+  "userApiUrls": {
+    "userDetails": "http://192.168.3.84:4000/api/user-details",
+    "updateProfile": "http://192.168.3.84:4000/api/update-profile",
+    "userFeatures": "http://192.168.3.84:4000/api/user-features"
+  },
+  "diagramApiUrls": {
+    "diagrams": "http://192.168.3.84:4000/api/diagrams",
+    "diagramById": "http://192.168.3.84:4000/api/diagrams/{id}",
+    "draft": "http://192.168.3.84:4000/api/diagrams/draft",
+    "validateDbml": "http://192.168.3.84:4000/api/validate/dbml",
+    "diagramsListAll": "http://192.168.3.84:4000/api/diagrams/list-all",
+    "history": "http://192.168.3.84:4000/api/diagrams/{id}/history",
+    "revert": "http://192.168.3.84:4000/api/diagrams/{id}/revert/{versionId}",
+    "diagramPublic": "http://192.168.3.84:4000/api/diagrams/{id}/public",
+    "diagramShareEmail": "http://192.168.3.84:4000/api/diagrams/{id}/share-email",
+    "publicDiagram": "http://192.168.3.84:4000/api/diagrams/public/{token}"
+  },
+  "workspaceApiUrls": {
+    "workspaces": "http://192.168.3.84:4000/api/workspaces",
+    "workspaceById": "http://192.168.3.84:4000/api/workspaces/{id}",
+    "workspaceMembers": "http://192.168.3.84:4000/api/workspaces/{workspaceId}/members",
+    "workspaceDiagrams": "http://192.168.3.84:4000/api/workspaces/{workspaceId}/diagrams",
+    "inviteAccept": "http://192.168.3.84:4000/api/workspaces/invite-accept/{id}",
+    "accept": "http://192.168.3.84:4000/api/workspaces/accept/{id}"
+  },
+  "importExportApiUrls": {
+    "validateSql": "http://192.168.3.84:4000/api/validate/sql",
+    "import": "http://192.168.3.84:4000/api/import",
+    "export": "http://192.168.3.84:4000/api/export/{id}"
+  },
+  "pricingApiUrls": {
+    "plans": "http://192.168.3.84:4000/api/pricing/plans",
+    "profileUpgrade": "http://192.168.3.84:4000/api/profile/subscription/upgrade"
+  },
+  "organizationApiUrls": {
+    "organizations": "http://192.168.3.84:4000/api/organizations",
+    "organizationById": "http://192.168.3.84:4000/api/organizations/{id}",
+    "orgMembers": "http://192.168.3.84:4000/api/organizations/{id}/members",
+    "orgMemberRole": "http://192.168.3.84:4000/api/organizations/{id}/members/{userId}/role",
+    "orgSubscription": "http://192.168.3.84:4000/api/organizations/{id}/subscription",
+    "orgUpgrade": "http://192.168.3.84:4000/api/organizations/{id}/subscription/upgrade",
+    "orgDowngrade": "http://192.168.3.84:4000/api/organizations/{id}/subscription/downgrade",
+    "orgAddSeats": "http://192.168.3.84:4000/api/organizations/{id}/subscription/add-seats",
+    "orgRemoveSeats": "http://192.168.3.84:4000/api/organizations/{id}/subscription/remove-seats",
+    "orgEntitlements": "http://192.168.3.84:4000/api/organizations/{id}/entitlements",
+    "orgUsage": "http://192.168.3.84:4000/api/organizations/{id}/usage",
+    "orgGroups": "http://192.168.3.84:4000/api/organizations/{id}/groups"
+  },
+  "roleApiUrls": {
+    "roles": "http://192.168.3.84:4000/api/roles",
+    "roleById": "http://192.168.3.84:4000/api/roles/{id}",
+    "rolePermissions": "http://192.168.3.84:4000/api/roles/{id}/permissions",
+    "permissions": "http://192.168.3.84:4000/api/permissions",
+    "roleAssignments": "http://192.168.3.84:4000/api/role-assignments",
+    "groups": "http://192.168.3.84:4000/api/groups/{id}",
+    "groupMembers": "http://192.168.3.84:4000/api/groups/{id}/members"
+  },
+  "adminApiUrls": {
+    "dashboard": "http://192.168.3.84:4000/api/admin/dashboard",
+    "plans": "http://192.168.3.84:4000/api/admin/plans",
+    "planById": "http://192.168.3.84:4000/api/admin/plans/{id}",
+    "planEntitlements": "http://192.168.3.84:4000/api/admin/plans/{id}/entitlements",
+    "features": "http://192.168.3.84:4000/api/admin/features",
+    "featureById": "http://192.168.3.84:4000/api/admin/features/{id}",
+    "organizations": "http://192.168.3.84:4000/api/admin/organizations",
+    "organizationById": "http://192.168.3.84:4000/api/admin/organizations/{id}",
+    "orgSubscriptionOverride": "http://192.168.3.84:4000/api/admin/organizations/{id}/subscription/override",
+    "users": "http://192.168.3.84:4000/api/admin/users",
+    "userById": "http://192.168.3.84:4000/api/admin/users/{id}",
+    "subscriptions": "http://192.168.3.84:4000/api/admin/subscriptions",
+    "auditLogs": "http://192.168.3.84:4000/api/admin/audit-logs"
+  }
+}

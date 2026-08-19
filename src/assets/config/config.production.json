@@ -1,0 +1,89 @@
+{
+  "appConfig": {
+    "sessionTimeoutMinutes": 120,
+    "frontendUrl": "https://yourdomain.com"
+  },
+  "apiConfig": {
+    "baseUrl": "API_URL"
+  },
+  "authApiUrls": {
+    "login": "API_URL/api/auth/login",
+    "register": "API_URL/api/auth/register",
+    "forgetPassword": "API_URL/api/auth/forget-password",
+    "resetPassword": "API_URL/api/auth/reset-password",
+    "refreshToken": "API_URL/api/auth/refreshToken",
+    "logout": "API_URL/api/auth/logout"
+  },
+  "userApiUrls": {
+    "userDetails": "API_URL/api/user-details",
+    "updateProfile": "API_URL/api/update-profile",
+    "userFeatures": "API_URL/api/user-features"
+  },
+  "diagramApiUrls": {
+    "diagrams": "API_URL/api/diagrams",
+    "diagramsListAll": "API_URL/api/diagrams/list-all",
+    "diagramById": "API_URL/api/diagrams/{id}",
+    "draft": "API_URL/api/diagrams/draft",
+    "validateDbml": "API_URL/api/validate/dbml",
+    "history": "API_URL/api/diagrams/{id}/history",
+    "revert": "API_URL/api/diagrams/{id}/revert/{versionId}",
+    "diagramPublic": "API_URL/api/diagrams/{id}/public",
+    "diagramShareEmail": "API_URL/api/diagrams/{id}/share-email",
+    "publicDiagram": "API_URL/api/diagrams/public/{token}"
+  },
+  "workspaceApiUrls": {
+    "workspaces": "API_URL/api/workspaces",
+    "workspaceById": "API_URL/api/workspaces/{id}",
+    "workspaceMembers": "API_URL/api/workspaces/{workspaceId}/members",
+    "workspaceDiagrams": "API_URL/api/workspaces/{workspaceId}/diagrams",
+    "inviteAccept": "API_URL/api/workspaces/invite-accept/{id}",
+    "accept": "API_URL/api/workspaces/accept/{id}"
+  },
+  "importExportApiUrls": {
+    "validateSql": "API_URL/api/validate/sql",
+    "import": "API_URL/api/import",
+    "export": "API_URL/api/export/{id}"
+  },
+  "pricingApiUrls": {
+    "plans": "API_URL/api/pricing/plans",
+    "profileUpgrade": "API_URL/api/profile/subscription/upgrade"
+  },
+  "organizationApiUrls": {
+    "organizations": "API_URL/api/organizations",
+    "organizationById": "API_URL/api/organizations/{id}",
+    "orgMembers": "API_URL/api/organizations/{id}/members",
+    "orgMemberRole": "API_URL/api/organizations/{id}/members/{userId}/role",
+    "orgSubscription": "API_URL/api/organizations/{id}/subscription",
+    "orgUpgrade": "API_URL/api/organizations/{id}/subscription/upgrade",
+    "orgDowngrade": "API_URL/api/organizations/{id}/subscription/downgrade",
+    "orgAddSeats": "API_URL/api/organizations/{id}/subscription/add-seats",
+    "orgRemoveSeats": "API_URL/api/organizations/{id}/subscription/remove-seats",
+    "orgEntitlements": "API_URL/api/organizations/{id}/entitlements",
+    "orgUsage": "API_URL/api/organizations/{id}/usage",
+    "orgGroups": "API_URL/api/organizations/{id}/groups"
+  },
+  "roleApiUrls": {
+    "roles": "API_URL/api/roles",
+    "roleById": "API_URL/api/roles/{id}",
+    "rolePermissions": "API_URL/api/roles/{id}/permissions",
+    "permissions": "API_URL/api/permissions",
+    "roleAssignments": "API_URL/api/role-assignments",
+    "groups": "API_URL/api/groups/{id}",
+    "groupMembers": "API_URL/api/groups/{id}/members"
+  },
+  "adminApiUrls": {
+    "dashboard": "API_URL/api/admin/dashboard",
+    "plans": "API_URL/api/admin/plans",
+    "planById": "API_URL/api/admin/plans/{id}",
+    "planEntitlements": "API_URL/api/admin/plans/{id}/entitlements",
+    "features": "API_URL/api/admin/features",
+    "featureById": "API_URL/api/admin/features/{id}",
+    "organizations": "API_URL/api/admin/organizations",
+    "organizationById": "API_URL/api/admin/organizations/{id}",
+    "orgSubscriptionOverride": "API_URL/api/admin/organizations/{id}/subscription/override",
+    "users": "API_URL/api/admin/users",
+    "userById": "API_URL/api/admin/users/{id}",
+    "subscriptions": "API_URL/api/admin/subscriptions",
+    "auditLogs": "API_URL/api/admin/audit-logs"
+  }
+}

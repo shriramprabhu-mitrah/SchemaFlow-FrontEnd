@@ -1,0 +1,263 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>Subscription & Plan</h1>
+      <p class="text-muted" style="margin:4px 0 0">Manage your organization's subscription plan, seats allocation, and
+        feature entitlements.</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification Card Popup -->
+  <div class="toast-card" [class.toast-error]="toastType==='error'" *ngIf="showToast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path *ngIf="toastType==='success'" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline *ngIf="toastType==='success'" points="22 4 12 14.01 9 11.01"/>
+      <circle *ngIf="toastType==='error'" cx="12" cy="12" r="10"/><line *ngIf="toastType==='error'" x1="15" y1="9" x2="9" y2="15"/><line *ngIf="toastType==='error'" x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+    <span>{{ toastMessage }}</span>
+  </div>
+
+  <div class="loading-state" *ngIf="loading"><div class="spinner"></div><span>Loading subscription...</span></div>
+  
+  <div *ngIf="!loading && subscription">
+    <!-- Current Plan Summary Hero Card -->
+    <div class="data-table-wrap" style="padding:24px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#3ec5c1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Current Active Plan</div>
+          <h3 class="card-heading" style="margin:0;font-size:22px">{{ subscription.plan_name || 'No Plan' }}</h3>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+            <span class="badge"
+              [class.badge-active]="subscription.status==='active'"
+              [class.badge-trial]="subscription.status==='trial'">{{ subscription.status | uppercase }}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-secondary" (click)="openAddSeatsModal()">+ Add Seats</button>
+          <button class="btn-primary" (click)="openUpgradeModal()">Change Plan</button>
+        </div>
+      </div>
+
+      <!-- Seats Metrics Grid -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px">
+        <div class="stat-widget-card">
+          <div class="stat-icon-wrap primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-card-number">{{ subscription.seats?.included === -1 ? '∞' : subscription.seats?.included || 0 }}</div>
+            <div class="stat-card-label">Included Seats</div>
+          </div>
+        </div>
+        <div class="stat-widget-card">
+          <div class="stat-icon-wrap warning">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-card-number warning">{{ subscription.seats?.addon || 0 }}</div>
+            <div class="stat-card-label">Add-on Seats</div>
+          </div>
+        </div>
+        <div class="stat-widget-card">
+          <div class="stat-icon-wrap success">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-card-number success">{{ subscription.seats?.used || 0 }}</div>
+            <div class="stat-card-label">Used Seats</div>
+          </div>
+        </div>
+        <div class="stat-widget-card">
+          <div class="stat-icon-wrap info">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-card-number info">{{ subscription.seats?.remaining === -1 ? '∞' : subscription.seats?.remaining || 0 }}</div>
+            <div class="stat-card-label">Remaining Seats</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Entitlements Section Header with Search & Filter -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 14px;flex-wrap:wrap;gap:12px">
+      <h3 class="section-subtitle" style="margin:0">Feature Entitlements</h3>
+      <div style="display:flex;gap:10px;align-items:center" *ngIf="entitlements.length > 0">
+        <input class="search-input" [(ngModel)]="searchTerm" (ngModelChange)="currentPage = 1"placeholder="Search features..." style="width:190px">
+        <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1" style="width:120px;padding:6px 10px;font-size:14px;height:32px">
+          <option value="all">All Status</option>
+          <option value="enabled">Enabled</option>
+          <option value="disabled">Disabled</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Feature Entitlements Data Table -->
+    <div class="data-table-wrap" *ngIf="entitlements.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:7%">
+              <span class="sort-header-clickable" style="cursor: default;">
+                <span>S.No</span>
+              </span>
+            </th>
+            <th (click)="sortBy('feature_name')">
+              <span class="sort-header-clickable">
+                <span>FEATURE</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'feature_name'">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
+                  </svg>
+                </span>
+              </span>
+            </th>
+            <th (click)="sortBy('enabled')">
+              <span class="sort-header-clickable">
+                <span>STATUS</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'enabled'">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                </span>
+              </span>
+            </th>
+            <th (click)="sortBy('effective_limit')">
+              <span class="sort-header-clickable">
+                <span>LIMIT</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'effective_limit'">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                </span>
+              </span>
+            </th>
+            <th (click)="sortBy('used')">
+              <span class="sort-header-clickable">
+                <span>USED</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'used'">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                </span>
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of paginatedEntitlements; let i = index">
+            <td>{{ paginationStartIndex + i }}</td>
+            <td><strong>{{ e.feature_name }}</strong></td>
+            <td><span class="badge" [class.badge-active]="e.enabled" [class.badge-inactive]="!e.enabled">{{ e.enabled ? 'Enabled' : 'Disabled' }}</span></td>
+            <td>{{ e.effective_limit === -1 ? '∞' : (e.effective_limit || '—') }}</td>
+            <td><span class="info-value">{{ e.used ?? '—' }}</span></td>
+          </tr>
+          <tr *ngIf="paginatedEntitlements.length === 0">
+            <td colspan="5" class="empty-table-cell">No matching feature entitlements found.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Workspace-Style Pagination Bar -->
+      <div class="pagination-container" *ngIf="filteredEntitlements.length > 0">
+        <div class="pagination-info">
+          {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ filteredEntitlements.length }} Items
+        </div>
+        <div class="pagination-controls" *ngIf="totalPages > 1">
+          <button class="page-btn" [disabled]="currentPage === 1" (click)="setPage(1)" title="First Page">«</button>
+<button class="page-btn" [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)"title="Previous Page">‹</button>
+<button class="page-btn" *ngFor="let p of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1" (click)="setPage(i + 1)">{{ i + 1 }}</button>
+<button class="page-btn" [disabled]="currentPage === totalPages" (click)="setPage(currentPage + 1)" title="Next Page">›</button>
+<button class="page-btn" [disabled]="currentPage === totalPages" (click)="setPage(totalPages)" title="Last Page">»</button>
+        </div>
+        <div class="page-size-selector">
+          <select class="page-size-select" [(ngModel)]="pageSize" (change)="setPage(1)">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="25">25</option>
+          </select>
+          <span class="limit-label">items per page</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upgrade / Change Plan Modal -->
+  <div class="modal-overlay" *ngIf="showUpgradeModal" (click)="closeUpgradeModal()">
+    <div class="modal-content" style="width:700px" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h3 class="modal-title">Change Plan</h3><button class="modal-close" (click)="closeUpgradeModal()">✕</button></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+        <div *ngFor="let plan of plans" class="plan-card-item"
+          style="border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;cursor:pointer;transition:all 0.2s"
+          [style.borderColor]="plan.slug === subscription?.plan_slug ? '#3b82f6' : 'rgba(255,255,255,0.08)'"
+          (click)="selectPlan(plan)">
+          <h4 class="card-heading" style="margin:0 0 4px;font-size:16px">{{ plan.name }}</h4>
+          <div style="color:#60a5fa;font-size:20px;font-weight:700;margin:8px 0">
+            {{ plan.price_monthly > 0 ? '₹' + plan.price_monthly + '/mo' : 'Free' }}
+          </div>
+          <div style="font-size:13.5px;color:#64748b">{{ plan.included_seats === -1 ? 'Unlimited' : plan.included_seats }} seats</div>
+          <span *ngIf="plan.slug === subscription?.plan_slug" class="badge badge-active" style="margin-top:8px">Current</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plan Confirmation Popup Card Modal -->
+  <div class="modal-overlay" *ngIf="showPlanConfirmModal" (click)="cancelPlanConfirm()">
+    <div class="modal-content popup-card-modal" style="width:440px" (click)="$event.stopPropagation()">
+      <div class="popup-card-header primary">
+        <div class="popup-icon-wrap primary">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="popup-title">{{ pendingAction === 'upgrade' ? 'Upgrade Plan' : 'Downgrade Plan' }}</h3>
+          <p class="popup-subtitle">Are you sure you want to {{ pendingAction }} to {{ pendingPlan?.name }}?</p>
+        </div>
+      </div>
+      <div class="popup-card-body" *ngIf="pendingPlan">
+        <div class="target-info-card">
+          <div class="target-name">{{ pendingPlan.name }}</div>
+          <div class="target-email" style="color:#60a5fa;font-weight:600">
+            {{ pendingPlan.price_monthly > 0 ? '₹' + pendingPlan.price_monthly + '/month' : 'Free' }}
+          </div>
+          <span class="badge badge-free">{{ pendingPlan.included_seats === -1 ? 'Unlimited Seats' : pendingPlan.included_seats + ' Seats Included' }}</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="cancelPlanConfirm()">Cancel</button>
+        <button class="btn-primary" (click)="executePlanChange()">Confirm {{ pendingAction === 'upgrade' ? 'Upgrade' : 'Downgrade' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Seats Popup Card Modal -->
+  <div class="modal-overlay" *ngIf="showAddSeatsModal" (click)="closeAddSeatsModal()">
+    <div class="modal-content popup-card-modal" style="width:400px" (click)="$event.stopPropagation()">
+      <div class="popup-card-header primary">
+        <div class="popup-icon-wrap primary">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="popup-title">Add Extra Seats</h3>
+          <p class="popup-subtitle">Specify how many additional seats you'd like to add.</p>
+        </div>
+      </div>
+      <div class="popup-card-body">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Number of Seats</label>
+          <input type="number" class="form-input" min="1" [(ngModel)]="addSeatCount">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAddSeatsModal()">Cancel</button>
+        <button class="btn-primary" (click)="confirmAddSeats()">Add Seats</button>
+      </div>
+    </div>
+  </div>
+
+</div>
