@@ -1,0 +1,143 @@
+<div id="docs-pane" [class.show-table-dropdown]="showTableDropdown" *ngIf="svc.showDocs">
+  <!-- View Table Dropdown Menu -->
+  <app-docs-table-dropdown *ngIf="showTableDropdown"
+    [selectedTables]="selectedTables"
+    (closeDropdown)="toggleTableDropdown($event)"
+    (toggleTable)="toggleTableCheckbox($event.tableName, $event.event)"
+    (toggleAll)="toggleSelectAll()">
+  </app-docs-table-dropdown>
+
+  <div class="docs-header">
+    <div class="header-left">
+      <h2>Data Dictionary</h2>
+      <div class="accordion-actions" *ngIf="svc.tables.length > 0">
+        <button class="accordion-action-btn" (click)="isAllExpanded() ? collapseAll() : expandAll()">
+          <svg *ngIf="isAllExpanded()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><polyline points="18 15 12 9 6 15"></polyline></svg>
+          <svg *ngIf="!isAllExpanded()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          <span style="vertical-align: middle;">{{ isAllExpanded() ? 'Collapse All' : 'Expand All' }}</span>
+        </button>
+        <ng-container *ngIf="selectedTables.size > 0 && selectedTables.size < svc.tables.length">
+          <span class="action-separator">•</span>
+          <button class="accordion-action-btn clear-filter-btn" (click)="selectAll()">Show All Tables ({{ selectedTables.size }}/{{ svc.tables.length }})</button>
+        </ng-container>
+      </div>
+    </div>
+    <div class="header-right-actions" style="display: flex; align-items: center; gap: 10px; position: relative;">
+
+      <app-button id="docs-download" variant="default" (onClick)="downloadDocs()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="download-icon">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download Markdown
+      </app-button>
+
+      <div id="docs-layout-control">
+        <app-button [variant]="showTableDropdown ? 'toolbar-active' : 'toolbar'" (onClick)="toggleTableDropdown($event)"
+          [tooltip]="'Select Tables to View'" tooltipPosition="left">
+          <svg viewBox="0 0 24 24" style="width: 17px; height: 17px;" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </app-button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="docs-scroll">
+    <div class="docs-empty" *ngIf="svc.tables.length === 0">
+      No schema defined. Add tables in the editor to generate documentation.
+    </div>
+
+    <div class="docs-empty" *ngIf="svc.tables.length > 0 && selectedTables.size === 0">
+      No tables selected. Click <strong>Select All</strong> or check a table in the <strong>View Table</strong> menu to
+      display documentation.
+    </div>
+
+    <div [id]="'docs-card-' + t.name" class="docs-table-card" *ngFor="let t of getVisibleTables()"
+      [class.is-collapsed]="isTableCollapsed(t.name)" [class.is-selected]="isTableSelected(t.name)">
+      <!-- Accordion Header -->
+      <div class="docs-card-header" (click)="toggleTable(t.name)">
+        <div class="header-title-group">
+          <svg class="chevron-icon" [class.collapsed]="isTableCollapsed(t.name)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          <h3>{{ t.name }}</h3>
+          <span class="card-badge column-badge">{{ t.columns.length }} column{{ t.columns.length !== 1 ? 's' : ''}}</span>
+          <span class="card-badge rel-badge" *ngIf="getTableRelationships(t.name).length > 0">
+            {{ getTableRelationships(t.name).length }} connection{{ getTableRelationships(t.name).length !== 1 ? 's' :
+            '' }}
+          </span>
+          <span class="card-badge connected-badge" *ngIf="isTableSelected(t.name)">
+            Connected View Active
+          </span>
+        </div>
+      </div>
+
+      <!-- Accordion Body (Columns + Connections) -->
+      <div class="docs-card-body" *ngIf="!isTableCollapsed(t.name)">
+      <table class="docs-columns">
+        <thead>
+          <tr>
+            <th>Column</th>
+            <th>Type</th>
+            <th>Key</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of t.columns">
+            <td><code>{{ c.name }}</code></td>
+            <td>{{ c.type }}</td>
+            <td>
+              <span class="pk-badge" *ngIf="c.pk">PK</span>
+              <span class="attr-badge attr-fk" *ngIf="c.fk">FK<span *ngIf="c.fkTable && c.fkCol"> ({{ c.fkTable }}.{{
+                  c.fkCol }})</span></span>
+              <span class="attr-badge attr-increment" *ngIf="c.increment">AUTO</span>
+              <span class="attr-badge attr-unique" *ngIf="c.unique">UNIQUE</span>
+              <span class="attr-badge attr-notnull" *ngIf="c.notNull">NOT NULL</span>
+              <span class="attr-badge attr-default" *ngIf="c.default">DEFAULT: {{ c.defaultVal }}</span>
+              <span class="attr-badge attr-check" *ngIf="c.check">CHECK: {{ c.checkVal }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+        <!-- Relationships / Connections Section -->
+      <div class="docs-relationships" *ngIf="getTableRelationships(t.name).length > 0">
+        <h4 class="rel-section-title">RELATIONSHIPS / CONNECTIONS</h4>
+        <ul class="rel-list">
+          <li *ngFor="let rel of getTableRelationships(t.name)" class="rel-item"
+              [class.highlighted-rel]="isTableSelected(rel.fromTable) || isTableSelected(rel.toTable)">
+              <span class="rel-arrow-icon"
+                [class.highlight]="isTableSelected(rel.fromTable) || isTableSelected(rel.toTable)">↗</span>
+              <span class="rel-source"><code>{{ rel.fromTable }}.{{ rel.fromCol }}</code></span>
+              <span class="rel-separator">→</span>
+              <span class="rel-target"><code>{{ rel.toTable }}.{{ rel.toCol }}</code></span>
+              <button *ngIf="rel.fromTable !== t.name" class="rel-jump-btn"
+                (click)="viewTableDetails(rel.fromTable, t.name, $event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                View {{ rel.fromTable }}
+              </button>
+              <button *ngIf="rel.toTable !== t.name" class="rel-jump-btn"
+                (click)="viewTableDetails(rel.toTable, t.name, $event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                View {{ rel.toTable }}
+              </button>
+          </li>
+        </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

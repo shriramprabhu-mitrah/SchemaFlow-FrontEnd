@@ -1,0 +1,963 @@
+/* ==========================================
+   PRICING PAGE CREATIVE CANVAS-THEME DARK CARDS
+   ========================================== */
+
+.pricing-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #030712; /* Deep slate-955 backdrop */
+  color: #f3f4f6; /* Gray-100 */
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-x: clip;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* ==========================================
+   NEON GLOW OVERLAYS
+   ========================================== */
+.pricing-container .glow-node {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.45;
+}
+
+.pricing-container .glow-primary {
+  top: -100px;
+  left: 20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(62, 197, 193, 0.18) 0%, transparent 70%);
+}
+
+.pricing-container .glow-secondary {
+  top: 400px;
+  right: 15%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(129, 140, 248, 0.12) 0%, transparent 70%);
+}
+
+.pricing-container .glow-accent {
+  bottom: 20%;
+  left: 10%;
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+}
+
+/* ==========================================
+   HERO SECTION
+   ========================================== */
+.pricing-hero {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1200px;
+  text-align: center;
+  padding: 90px 24px 30px;
+  box-sizing: border-box;
+
+  .accent-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #3ec5c1;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+
+  .hero-headline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(32px, 5vw, 44px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: #ffffff;
+    max-width: 820px;
+    margin: 0 auto 16px;
+  }
+
+  .hero-subtext {
+    font-size: clamp(15px, 2vw, 17px);
+    font-weight: 450;
+    color: #9ca3af;
+    max-width: 620px;
+    margin: 0 auto 30px;
+    line-height: 1.6;
+  }
+}
+
+/* ==========================================
+   AUDIENCE TABS: Individual vs Organization
+   ========================================== */
+.audience-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 100px;
+  padding: 6px;
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+
+  .audience-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 100px;
+    background: transparent;
+    color: #6b7280;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+
+    svg {
+      flex-shrink: 0;
+      transition: stroke 0.28s ease;
+    }
+
+    .audience-tab-hint {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(139, 92, 246, 0.1);
+      color: rgba(167, 139, 250, 0.7);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      transition: all 0.28s ease;
+    }
+
+    &:hover:not(.active) {
+      color: #d1d5db;
+
+      svg {
+        stroke: #d1d5db;
+      }
+    }
+
+    &.active {
+      color: #ffffff;
+
+      svg {
+        stroke: #ffffff;
+      }
+
+      .audience-tab-hint {
+        background: rgba(255, 255, 255, 0.18);
+        color: rgba(255, 255, 255, 0.9);
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+
+      // Individual active: teal gradient
+      &:first-child {
+        background: linear-gradient(135deg, rgba(62, 197, 193, 0.9), rgba(59, 130, 246, 0.85));
+        box-shadow: 0 4px 16px rgba(62, 197, 193, 0.3);
+      }
+
+      // Organization active: purple gradient
+      &:last-child {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(99, 102, 241, 0.85));
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+      }
+    }
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    border-radius: 16px;
+    width: calc(100% - 48px);
+
+    .audience-tab-btn {
+      width: 100%;
+      justify-content: center;
+      border-radius: 10px;
+    }
+  }
+}
+
+/* ==========================================
+   BILLING CYCLE TOGGLE
+   ========================================== */
+.billing-toggle-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+
+.billing-toggle-container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 100px;
+  padding: 6px;
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.toggle-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #9ca3af;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 100px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.active {
+    background: linear-gradient(135deg, rgba(62, 197, 193, 0.9), rgba(59, 130, 246, 0.9));
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(62, 197, 193, 0.25);
+
+    .discount-badge {
+      color: #ffffff !important;
+      background: rgba(255, 255, 255, 0.18) !important;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+  }
+
+  &:hover:not(.active) {
+    color: #ffffff;
+  }
+}
+
+.discount-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================
+   STATIC PLANS GRID CARDS (CREATIVE CANVAS DESIGN)
+   ========================================== */
+.plans-grid-section {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1200px;
+  padding: 50px 24px;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.plans-grid {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: stretch;
+  position: relative;
+}
+
+.plan-card {
+  width: 282px;
+  position: relative;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.45)) !important; /* Slate backdrop */
+  color: #e5e7eb !important; /* Silver gray text */
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 16px !important;
+  padding: 36px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.38s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  z-index: 2;
+
+  /* Creative Blueprint Drawing Canvas Grid Background Texture */
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px) !important;
+  background-size: 16px 16px !important;
+
+  /* Spotlight hover brings to front and lights up custom backdrop glow */
+  &:hover {
+    transform: translateY(-16px) scale(1.05) !important;
+    z-index: 10 !important;
+    border-color: var(--card-border-hover) !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.55), 0 0 35px rgba(var(--card-glow-rgb), 0.35) !important;
+  }
+}
+
+/* Card custom outline nodes indicator wrapper */
+.plan-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 20px;
+}
+
+.plan-icon-svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--card-border-hover);
+}
+
+/* Plan Typography titles */
+.plan-title {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  margin: 0 0 6px !important;
+}
+
+.plan-desc {
+  font-size: 13px !important;
+  color: #9ca3af !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+}
+
+/* PRICE TAG LAYOUT */
+.card-price {
+  margin: 28px 0 20px !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 55px !important;
+
+  .price-title {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 32px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    line-height: 1.1 !important;
+  }
+
+  .price-val-row {
+    display: flex;
+    align-items: baseline;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .currency {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #cbd5e0 !important;
+    margin-right: 2px;
+  }
+
+  .price-amount {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 38px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+  }
+
+  .price-period {
+    font-size: 13px !important;
+    color: #9ca3af !important;
+    font-weight: 500 !important;
+  }
+
+  .annual-billed-label {
+    font-size: 11px !important;
+    color: #10b981 !important;
+    font-weight: 600 !important;
+    margin-top: 4px !important;
+  }
+}
+
+/* CARD BULLET FEATURES */
+.card-features {
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 20px 0 24px !important;
+  flex-grow: 1 !important;
+
+  ul {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+
+    li {
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 10px !important;
+      font-size: 13px !important;
+      color: #9ca3af !important;
+      line-height: 1.4 !important;
+
+      app-icons {
+        margin-top: 1.5px !important;
+        flex-shrink: 0 !important;
+      }
+
+      strong {
+        color: #ffffff !important;
+      }
+    }
+  }
+}
+
+/* CARD ACTIONS (CREATIVE GRADIENTS PILLS) */
+.card-action {
+  width: 100% !important;
+
+  app-button {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  app-button button.btn-card-cta {
+    width: 100% !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    padding: 11px 16px !important;
+    border-radius: 100px !important; /* Rounded pill buttons */
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  /* Free outline pill */
+  button.btn-free-gradient {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #e5e7eb !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(255, 255, 255, 0.25) !important;
+      color: #ffffff !important;
+    }
+  }
+
+  /* Premium blue gradient pill */
+  button.btn-premium-gradient {
+    background: linear-gradient(135deg, #3b82f6, #6366f1) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2) !important;
+
+    &:hover {
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.35) !important;
+      transform: scale(1.02);
+    }
+  }
+
+  /* Team green gradient pill */
+  button.btn-team-gradient {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2) !important;
+
+    &:hover {
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35) !important;
+      transform: scale(1.02);
+    }
+  }
+
+  /* Enterprise gold gradient pill */
+  button.btn-enterprise-gradient {
+    background: linear-gradient(135deg, #f59e0b, #ec4899) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2) !important;
+
+    &:hover {
+      box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35) !important;
+      transform: scale(1.02);
+    }
+  }
+}
+
+/* CARD SPECIFIC ACCENTS & CORRESPONDING HOVER LIGHTS */
+.free-card {
+  border-top: 3px solid #6b7280 !important;
+  --card-glow-rgb: 62, 197, 193; /* Teal glow shadow */
+  --card-border-hover: #3ec5c1;
+}
+
+.premium-card {
+  border-top: 3px solid #3b82f6 !important;
+  --card-glow-rgb: 59, 130, 246; /* Royal Blue */
+  --card-border-hover: #3b82f6;
+}
+
+.team-card.recommended {
+  border: 2px solid #10b981 !important; /* Emerald border */
+  --card-glow-rgb: 16, 185, 129; /* Emerald Green */
+  --card-border-hover: #10b981;
+
+  .recommended-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, #10b981, #3ec5c1) !important; /* Emerald-teal badge */
+    color: #ffffff !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 10px !important;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 3px 14px !important;
+    border-radius: 100px !important;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3) !important;
+    z-index: 10;
+  }
+}
+
+.enterprise-card {
+  border-top: 3px solid #f59e0b !important;
+  --card-glow-rgb: 245, 158, 11; /* Gold glow */
+  --card-border-hover: #f59e0b;
+}
+
+/* ==========================================
+   FEATURE COMPARISON TABLE SECTION
+   ========================================== */
+.comparison-section {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1000px;
+  padding: 60px 24px 80px;
+  box-sizing: border-box;
+}
+
+.comparison-header {
+  text-align: center;
+  margin-bottom: 48px;
+
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 12px;
+    letter-spacing: -0.025em;
+  }
+
+  p {
+    font-size: 15px;
+    color: #9ca3af;
+    margin: 0;
+  }
+}
+
+.comparison-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 14px;
+
+  th, td {
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #9ca3af;
+    vertical-align: middle;
+  }
+
+  .feature-col {
+    text-align: left;
+    font-weight: 600;
+    color: #e5e7eb;
+    font-size: 14px;
+    min-width: 240px;
+  }
+
+  thead th {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+
+    &:first-child {
+      text-align: left;
+    }
+  }
+
+  .category-row td {
+    background: rgba(62, 197, 193, 0.05);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #3ec5c1;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 20px;
+    border-bottom: 1px solid rgba(62, 197, 193, 0.15);
+  }
+
+  td:nth-child(3) { color: #f3f4f6; }
+  td:nth-child(4) { color: #34d399; font-weight: 550; }
+
+  tbody tr:hover {
+    background: rgba(255, 255, 255, 0.01);
+  }
+
+  app-icons {
+    display: inline-block;
+  }
+}
+
+/* ==========================================
+   FAQ SECTION
+   ========================================== */
+.faq-section {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1000px;
+  padding: 20px 24px 80px;
+  box-sizing: border-box;
+}
+
+.faq-header {
+  text-align: center;
+  margin-bottom: 48px;
+
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+  }
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+.faq-item {
+  h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 12px;
+    line-height: 1.4;
+  }
+
+  p {
+    font-size: 14px;
+    color: #9ca3af;
+    margin: 0;
+    line-height: 1.6;
+  }
+}
+
+
+
+/* ==========================================
+   RESPONSIVE DESIGN ADAPTATIONS
+   ========================================== */
+@media (max-width: 1100px) {
+  .plans-grid {
+    gap: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pricing-hero {
+    padding: 60px 20px 20px;
+  }
+
+  .plans-grid {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .plan-card {
+    width: 100% !important;
+  }
+
+  .faq-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .comparison-section {
+    padding-bottom: 50px;
+  }
+  
+
+}
+
+body.light-theme .pricing-container {
+  background-color: #f8fafc !important; /* Slate-50 light background */
+  color: #1e293b !important; /* Slate-800 dark text */
+
+  .glow-node {
+    opacity: 0.12; /* Softer neon glow overlays */
+  }
+
+  .landing-header {
+    background: rgba(248, 250, 252, 0.85) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    backdrop-filter: blur(12px) !important;
+
+    .header-brand span {
+      color: #0f172a !important;
+    }
+
+    .nav-link {
+      color: #475569 !important;
+      &:hover { color: #0f172a !important; }
+      &.active { color: #0f172a !important; }
+    }
+  }
+
+  .pricing-hero {
+    .hero-headline { color: #0f172a !important; }
+    .hero-subtext { color: #475569 !important; }
+  }
+
+  .billing-toggle-container {
+    background: rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+
+  .toggle-btn {
+    color: #475569 !important;
+    &:hover:not(.active) { color: #0f172a !important; }
+    &.active { color: #ffffff !important; }
+  }
+
+  /* Plan Cards Light Theme Style */
+  .plan-card {
+    background: #ffffff !important; /* Pure white cards in light mode */
+    color: #334155 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04) !important;
+
+    /* Light drawing grid inside cards */
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px) !important;
+    background-size: 16px 16px !important;
+
+    .plan-title { color: #0f172a !important; }
+    .plan-desc { color: #64748b !important; }
+    
+    .price-title { color: #0f172a !important; }
+    .currency { color: #334155 !important; }
+    .price-amount { color: #0f172a !important; }
+    .price-period { color: #64748b !important; }
+
+    .plan-icon {
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    .card-features {
+      border-top: 1px solid #edf2f7 !important;
+      li {
+        color: #475569 !important;
+        strong { color: #0f172a !important; }
+      }
+    }
+
+    /* Free button cleanly styled for light mode */
+    button.btn-free-gradient {
+      background: #f1f5f9 !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #475569 !important;
+
+      &:hover {
+        background: #e2e8f0 !important;
+        color: #0f172a !important;
+      }
+    }
+
+    &:hover {
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 25px rgba(var(--card-glow-rgb), 0.15) !important;
+    }
+  }
+
+  .team-card.recommended {
+    border: 2px solid #10b981 !important;
+  }
+
+  /* Comparison Grid Light Theme Style */
+  .comparison-header {
+    h2 { color: #0f172a !important; }
+    p { color: #475569 !important; }
+  }
+
+  .comparison-table-wrapper {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02) !important;
+  }
+
+  .comparison-table {
+    th, td {
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #475569 !important;
+    }
+
+    .feature-col {
+      color: #0f172a !important;
+    }
+
+    thead th {
+      color: #0f172a !important;
+      background: #f1f5f9 !important;
+      border-bottom: 2px solid #e2e8f0 !important;
+    }
+
+    .category-row td {
+      background: #f0fdfa !important;
+      color: #0d9488 !important;
+      border-bottom: 1px solid #ccfbf1 !important;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc !important;
+    }
+  }
+
+  /* FAQ Light Theme Style */
+  .faq-header h2 { color: #0f172a !important; }
+  .faq-item {
+    h4 { color: #0f172a !important; }
+    p { color: #475569 !important; }
+  }
+
+  /* Footer Light Theme Style */
+  .landing-footer {
+    border-top: 1px solid #e2e8f0 !important;
+    background: #f1f5f9 !important;
+
+    .footer-logo span { color: #0f172a !important; }
+    .footer-slogan { color: #475569 !important; }
+    .footer-copyright { color: #64748b !important; }
+    .footer-col {
+      h4 { color: #0f172a !important; }
+      a {
+        color: #475569 !important;
+        &:hover { color: #0f172a !important; }
+      }
+    }
+  }
+}
+
+/* ==========================================
+   PLAN AUDIENCE BADGE (on plan cards)
+   ========================================== */
+.plan-audience-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+
+  &.badge-individual {
+    background: rgba(62, 197, 193, 0.1);
+    color: #3ec5c1;
+    border: 1px solid rgba(62, 197, 193, 0.22);
+
+    svg { stroke: #3ec5c1; }
+  }
+
+  &.badge-org {
+    background: rgba(139, 92, 246, 0.1);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.22);
+
+    svg { stroke: #a78bfa; }
+  }
+}
+
+/* ==========================================
+   DYNAMIC PLAN LOADING STATE (adaptable light/dark theme)
+   ========================================== */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 24px;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 500;
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid rgba(62, 197, 193, 0.2);
+    border-top-color: #3ec5c1;
+    border-radius: 50%;
+    animation: pricing-spin 0.7s linear infinite;
+  }
+}
+
+body.light-theme {
+  .loading-state {
+    color: #475569 !important;
+
+    .spinner {
+      border-color: rgba(59, 130, 246, 0.2) !important;
+      border-top-color: #3b82f6 !important;
+    }
+  }
+}
+
+@keyframes pricing-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

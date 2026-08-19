@@ -1,0 +1,439 @@
+app-upgrade-modal {
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(14, 21, 37, 0.7);
+    backdrop-filter: blur(6px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal-container {
+    width: 100%;
+    max-width: 692px; /* Fits two 282px cards + 24px gap + padding */
+    max-height: 90vh;
+    background: #0b1425;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(62, 197, 193, 0.08);
+    display: flex;
+    flex-direction: column;
+    color: #ffffff;
+    overflow: hidden;
+    box-sizing: border-box;
+    animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+
+    &.limit-warning-mode {
+      background: #0b1425 !important;
+      color: #ffffff !important;
+      max-width: 540px;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+
+      .limit-warning-view {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .warning-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.4) !important;
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background 0.15s, color 0.15s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06) !important;
+          color: #ffffff !important;
+        }
+      }
+
+      .limit-warning-content {
+        padding: 48px 36px 36px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .lock-icon-container {
+        color: #ffffff !important;
+        margin-bottom: 24px;
+        
+        svg {
+          width: 84px;
+          height: 84px;
+        }
+      }
+
+      .limit-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
+        color: #ffffff !important;
+      }
+
+      .limit-warning-footer {
+        background: rgba(255, 255, 255, 0.02) !important;
+        width: 100%;
+        padding: 28px 36px 36px;
+        border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+      }
+
+      .limit-desc {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.7) !important;
+        margin: 0 0 24px 0;
+        line-height: 1.5;
+
+        strong {
+          color: #ffffff !important;
+          font-weight: 600;
+        }
+      }
+
+      .btn-view-plans {
+        background: #3ec5c1;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 24px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 12px rgba(62, 197, 193, 0.25);
+        transition: all 0.2s ease;
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(62, 197, 193, 0.4);
+          background: #4debe7;
+        }
+        
+        &:active {
+          transform: translateY(1px);
+        }
+      }
+    }
+  }
+
+  .modal-header-wrap {
+    padding: 36px 36px 16px;
+    position: relative;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .modal-body-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px 36px 36px;
+
+    /* Custom scrollbar style for premium dark theme */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+    }
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.45);
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    z-index: 10;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+  }
+
+  .modal-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 21px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 20px;
+    margin-top: 8px;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    padding: 0 32px;
+  }
+
+  /* Billing Toggle in Modal */
+  .billing-toggle-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .billing-toggle-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 100px;
+    padding: 5px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+
+    .toggle-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 100px;
+      background: transparent;
+      color: #9ca3af;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &.active {
+        background: #3ec5c1;
+        color: #0c1222;
+      }
+
+      &:hover:not(.active) {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.03);
+      }
+    }
+
+    .discount-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      padding: 1px 7px;
+      border-radius: 20px;
+      margin-left: 4px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+  }
+
+  .upgrade-plans-grid {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    align-items: stretch;
+    position: relative;
+    width: 100%;
+    padding: 12px 4px 16px; /* Padding to prevent scale/translate clipping */
+
+    /* Keep hover transition same, override grid translation slightly for modal context */
+    .plan-card:hover {
+      transform: translateY(-8px) scale(1.02) !important;
+    }
+  }
+}
+
+/* ==========================================
+   LIGHT THEME OVERRIDES FOR UPGRADE MODAL
+   ========================================== */
+body.light-theme app-upgrade-modal .modal-backdrop {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+body.light-theme {
+  app-upgrade-modal {
+    .modal-container {
+      background: #f8fafc !important; /* Slate-50 off-white background to contrast with pure white cards */
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 24px 64px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04) !important;
+      color: #0f172a !important;
+
+      &.limit-warning-mode {
+        background: #ffffff !important;
+        border: 1px solid rgba(0, 0, 0, 0.12) !important;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(37, 99, 235, 0.1) !important;
+        color: #1e293b !important;
+
+        .close-btn {
+          color: rgba(15, 23, 42, 0.5) !important;
+          &:hover {
+            background: rgba(15, 23, 42, 0.06) !important;
+            color: #0f172a !important;
+          }
+        }
+
+        .limit-warning-content {
+          .lock-icon-container {
+            color: #1e293b !important;
+          }
+
+          .limit-title {
+            color: #0f172a !important;
+          }
+        }
+
+        .limit-warning-footer {
+          background: #f8fafc !important;
+          border-top: 1px solid #e2e8f0 !important;
+
+          .limit-desc {
+            color: #475569 !important;
+            strong {
+              color: #0f172a !important;
+            }
+          }
+          
+          .btn-view-plans {
+            background: #3b82f6 !important;
+            color: white !important;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
+
+            &:hover {
+              background: #2563eb !important;
+              box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+            }
+          }
+        }
+      }
+    }
+
+    .modal-header-wrap {
+      border-bottom-color: #edf2f7 !important;
+    }
+
+    .modal-title {
+      color: #0f172a !important;
+    }
+
+    .close-btn {
+      color: rgba(15, 23, 42, 0.5) !important;
+
+      &:hover {
+        background: rgba(15, 23, 42, 0.06) !important;
+        color: #0f172a !important;
+      }
+    }
+
+    .billing-toggle-container {
+      background: rgba(15, 23, 42, 0.04) !important;
+      border: 1px solid rgba(15, 23, 42, 0.08) !important;
+
+      .toggle-btn {
+        color: #475569 !important;
+
+        &.active {
+          background: #3ec5c1 !important;
+          color: #ffffff !important;
+        }
+
+        &:hover:not(.active) {
+          color: #0f172a !important;
+          background: rgba(15, 23, 42, 0.03) !important;
+        }
+      }
+    }
+
+    /* Plan Cards styling in light mode modal context */
+    .plan-card {
+      background: #ffffff !important;
+      color: #334155 !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04) !important;
+      background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px) !important;
+      background-size: 16px 16px !important;
+
+      .plan-title { color: #0f172a !important; }
+      .plan-desc { color: #64748b !important; }
+      
+      .price-title { color: #0f172a !important; }
+      .currency { color: #334155 !important; }
+      .price-amount { color: #0f172a !important; }
+      .price-period { color: #64748b !important; }
+      .annual-billed-label { color: #64748b !important; }
+
+      .plan-icon {
+        background: #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+
+      .card-features {
+        border-top: 1px solid #edf2f7 !important;
+        li {
+          color: #475569 !important;
+          span { color: #475569 !important; }
+        }
+      }
+
+      /* Free button cleanly styled for light mode */
+      .btn-card-cta.btn-free-gradient {
+        background: #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+
+        &:hover {
+          background: #e2e8f0 !important;
+          color: #0f172a !important;
+        }
+      }
+
+      &:hover {
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 25px rgba(var(--card-glow-rgb), 0.15) !important;
+      }
+    }
+
+    .modal-body-scroll::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.15) !important;
+      &:hover {
+        background: rgba(15, 23, 42, 0.25) !important;
+      }
+    }
+  }
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

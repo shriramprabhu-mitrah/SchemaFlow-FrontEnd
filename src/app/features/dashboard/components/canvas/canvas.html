@@ -1,0 +1,693 @@
+<div id="canvas-pane" #canvasPane (mouseenter)="isMouseOverCanvas = true" (mouseleave)="isMouseOverCanvas = false"
+  [class.tool-pan]="svc.tool === 'pan'" [class.tool-select]="svc.tool === 'select'" [class.panning]="isPanning"
+  [class.dragging]="draggingTable !== null" [style.display]="svc.showDocs ? 'none' : ''">
+
+  <div id="canvas-wrap" #canvasWrap>
+    <canvas #canvas (mousedown)="onCanvasMouseDown($event)" (contextmenu)="onCanvasContextMenu($event)"
+      (mouseleave)="onCanvasMouseLeave()"></canvas>
+  </div>
+
+  <!-- ===== STICKY NOTES OVERLAY ===== -->
+  <!-- overflow:visible on the layer itself so dropdowns can escape the clip -->
+  <div id="sticky-notes-layer" style="position:absolute;inset:0;pointer-events:none;">
+    <div *ngFor="let note of svc.notes; trackBy: trackByNoteId" class="sticky-note"
+      [class.active-note]="selectedNoteId === note.id" (mousedown)="selectNote($event, note.id)"
+      [style.left.px]="note.posx * svc.view.scale + svc.view.x" [style.top.px]="note.posy * svc.view.scale + svc.view.y"
+      [style.width.px]="note.width * svc.view.scale" [style.height.px]="note.height * svc.view.scale"
+      [style.pointer-events]="'all'">
+
+      <!-- Double-click to edit hint, shown on hover -->
+      <div class="sticky-note-hover-hint" *ngIf="!svc.isReadOnly">Double-click to edit</div>
+
+      <!-- Inner card: clips content (header + textarea) properly -->
+      <div class="sticky-note-inner" [style.background-color]="note.color || '#FFE28B'">
+
+        <!-- Header: drag + name + three-dots -->
+        <div class="sticky-note-header" (mousedown)="startNoteDrag($event, note)"
+          (touchstart)="startNoteDrag($event, note)">
+          <span class="sticky-note-drag-icon" title="Drag to move">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="8" cy="5" r="2"></circle>
+              <circle cx="8" cy="12" r="2"></circle>
+              <circle cx="8" cy="19" r="2"></circle>
+              <circle cx="16" cy="5" r="2"></circle>
+              <circle cx="16" cy="12" r="2"></circle>
+              <circle cx="16" cy="19" r="2"></circle>
+            </svg>
+          </span>
+
+          <!-- Note name or inline rename input -->
+          <span class="sticky-note-name" *ngIf="editingNoteId !== note.id"
+            [style.color]="note.textColor || '#000000'">{{ note.name }}</span>
+          <input *ngIf="editingNoteId === note.id" class="sticky-note-name-input" [(ngModel)]="editNoteNameValue"
+            [style.color]="note.textColor || '#000000'" (mousedown)="$event.stopPropagation()"
+            (keydown.enter)="commitEditNoteName()" (keydown.escape)="cancelEditNoteName()" (blur)="commitEditNoteName()"
+            autofocus />
+
+          <!-- Three-dots menu button -->
+          <button class="sticky-note-menu-btn tt tt-bottom" *ngIf="!svc.isReadOnly" [attr.data-tt]="'Note options'"
+            (mousedown)="$event.stopPropagation()" (click)="toggleNoteMenu($event, note.id)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round">
+              <circle cx="12" cy="5" r="1.5"></circle>
+              <circle cx="12" cy="12" r="1.5"></circle>
+              <circle cx="12" cy="19" r="1.5"></circle>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Editable text body -->
+        <textarea class="sticky-note-body" [placeholder]="svc.isReadOnly ? '' : 'Write something...'"
+          [(ngModel)]="note.text" (mousedown)="onNoteBodyMouseDown($event, note)"
+          (dblclick)="!svc.isReadOnly && editNoteBody($event, note.id)" (input)="onNoteTextChange(note)"
+          [readonly]="svc.isReadOnly || editingNoteBodyId !== note.id"
+          [style.cursor]="svc.isReadOnly ? 'default' : (editingNoteBodyId === note.id ? 'text' : 'move')"
+          [style.color]="note.textColor || '#000000'" [style.font-size.px]="12 * svc.view.scale"></textarea>
+
+      </div><!-- /sticky-note-inner -->
+
+      <!-- Resize handles (8 of them) -->
+      <ng-container *ngIf="selectedNoteId === note.id">
+        <div class="resize-handle nw" (mousedown)="startNoteResize($event, note, 'nw')"
+          (touchstart)="startNoteResize($event, note, 'nw')"></div>
+        <div class="resize-handle n" (mousedown)="startNoteResize($event, note, 'n')"
+          (touchstart)="startNoteResize($event, note, 'n')"></div>
+        <div class="resize-handle ne" (mousedown)="startNoteResize($event, note, 'ne')"
+          (touchstart)="startNoteResize($event, note, 'ne')"></div>
+        <div class="resize-handle e" (mousedown)="startNoteResize($event, note, 'e')"
+          (touchstart)="startNoteResize($event, note, 'e')"></div>
+        <div class="resize-handle se" (mousedown)="startNoteResize($event, note, 'se')"
+          (touchstart)="startNoteResize($event, note, 'se')"></div>
+        <div class="resize-handle s" (mousedown)="startNoteResize($event, note, 's')"
+          (touchstart)="startNoteResize($event, note, 's')"></div>
+        <div class="resize-handle sw" (mousedown)="startNoteResize($event, note, 'sw')"
+          (touchstart)="startNoteResize($event, note, 'sw')"></div>
+        <div class="resize-handle w" (mousedown)="startNoteResize($event, note, 'w')"
+          (touchstart)="startNoteResize($event, note, 'w')"></div>
+      </ng-container>
+    </div>
+
+    <!-- Global Floating Sticky Note Dropdown menu -->
+    <div class="sticky-note-dropdown" [class.dark]="svc.theme() === 'dark'"
+      *ngIf="activeNoteMenuId !== null && activeNote" [style.left.px]="noteMenuX" [style.top.px]="noteMenuY"
+      style="pointer-events: all;" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+      <button class="snd-item" (click)="startEditNoteName(activeNote)">
+        Edit name
+      </button>
+      <button class="snd-item danger-item" (click)="openDeleteNoteConfirm(activeNote)">
+        Delete
+      </button>
+      <button class="snd-item" (click)="openNoteColorPicker($event, activeNote)">
+        Change notes color
+      </button>
+      <button class="snd-item" (click)="openNoteTextColorPicker($event, activeNote)">
+        Change text color
+      </button>
+    </div>
+  </div>
+  <!-- ===== END STICKY NOTES ===== -->
+
+
+
+
+
+  <!-- Empty State Placeholder -->
+  <div id="empty-state" *ngIf="svc.tables.length === 0 && !svc.code.trim()" style="z-index: 2;">
+    <div class="icon-circle">
+      <app-icons name="schema" size="28"></app-icons>
+    </div>
+    <h2>This page is empty</h2>
+    <p>No dbdiagram. Start typing in the editor or create a table to begin.</p>
+  </div>
+
+  <div class="color-picker-popup" *ngIf="colorPicker.visible" [style.left.px]="colorPicker.x"
+    [style.top.px]="colorPicker.y" (click)="$event.stopPropagation()" (wheel)="$event.stopPropagation()">
+
+    <div class="color-picker-header">
+      <span class="color-picker-title">Color</span>
+    </div>
+
+    <div class="swatch-grid">
+      <button *ngFor="let c of colorSwatches" class="swatch" [style.background]="c" (click)="setColor(c)"></button>
+    </div>
+
+    <div class="custom-color-title">Custom</div>
+
+    <div class="hex-row">
+      <div class="hex-input-wrap">
+        <span class="hex-label">HEX:</span>
+        <input type="text" class="hex-text" [value]="colorPicker.hex" (input)="onHexInputChange($event)" />
+      </div>
+
+      <label class="custom-picker-btn tt" data-tt="Choose custom color">
+        <span class="selected-color-preview" [style.background-color]="colorPicker.hex"></span>
+        <input type="color" class="hex-color" [value]="colorPicker.hex" (input)="onHexInputChange($event)" />
+      </label>
+    </div>
+  </div>
+
+  <!-- edit column input -->
+  <input *ngIf="inlineEdit.visible" class="inline-edit-input" [style.left.px]="inlineEdit.x"
+    [style.top.px]="inlineEdit.y" [style.width.px]="inlineEdit.width" [style.height.px]="inlineEdit.height"
+    [(ngModel)]="inlineEdit.value" (keydown.enter)="commitInlineEdit()" (keydown.escape)="cancelInlineEdit()"
+    (blur)="commitInlineEdit()" (mousedown)="$event.stopPropagation()" />
+
+  <div id="create-table-control" *ngIf="!svc.isPublicViewer">
+    <app-button variant="toolbar" customClass="create-table-button" (onClick)="createTable()" [disabled]="!auth.isLoggedIn()">
+      <span class="create-table-icon"><app-icons name="plus" size="17"></app-icons></span>
+      <span>Create table</span>
+    </app-button>
+  </div>
+
+  <div id="layout-control" *ngIf="!svc.isPublicViewer">
+    <app-button [variant]="svc.showDiagramViews ? 'toolbar-active' : 'toolbar'"
+      (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(false) : svc.showUpgradeModal()"
+      [tooltip]="'Diagram Views'" tooltipPosition="left"
+      style="position: relative;" [disabled]="!auth.isLoggedIn()">
+      <svg viewBox="0 0 24 24" style="width: 17px; height: 17px;" stroke="currentColor" stroke-width="2.2"
+        stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <polygon points="12 2 2 7 12 12 22 7 12 2" />
+        <polyline points="2 17 12 22 22 17" />
+        <polyline points="2 12 12 17 22 12" />
+      </svg>
+      <app-icons *ngIf="!entitlementService.canUseFeature('digram_view')" name="premium-crown" size="10" color="#f59e0b"
+        style="position: absolute; top: 3px; right: 3px;"></app-icons>
+    </app-button>
+
+    <app-button [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'" (onClick)="toggleLayoutMenu()"
+      [tooltip]="'Layout and links'" tooltipPosition="left" [disabled]="!auth.isLoggedIn()">
+      <app-icons name="schema" size="17"></app-icons>
+    </app-button>
+
+    <app-button variant="toolbar" [tooltip]="svc.paneMode() === 'canvas' ? 'Restore split view' : 'Expand canvas'"
+      tooltipPosition="left"
+      (onClick)="svc.paneMode() === 'canvas' ? svc.setPaneMode('split') : svc.setPaneMode('canvas')">
+      <svg *ngIf="svc.paneMode() === 'split'" viewBox="0 0 24 24" style="width: 17px; height: 17px;"
+        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <polyline points="15 3 21 3 21 9" />
+        <polyline points="9 21 3 21 3 15" />
+        <line x1="21" y1="3" x2="14" y2="10" />
+        <line x1="3" y1="21" x2="10" y2="14" />
+      </svg>
+      <svg *ngIf="svc.paneMode() === 'canvas'" viewBox="0 0 24 24" style="width: 17px; height: 17px;"
+        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <polyline points="4 14 10 14 10 20" />
+        <polyline points="20 10 14 10 14 4" />
+        <line x1="14" y1="10" x2="21" y2="3" />
+        <line x1="10" y1="14" x2="3" y2="21" />
+      </svg>
+    </app-button>
+
+    <div class="layout-menu" *ngIf="showLayoutMenu" (wheel)="$event.stopPropagation()">
+      <button type="button" class="layout-menu-item" (click)="triggerLayoutConfirm('vertical')">
+        <span class="menu-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="12" cy="19" r="2" />
+            <path d="M12 7v3M12 14v3" />
+          </svg>
+        </span>
+        Vertical Layout
+      </button>
+
+      <button type="button" class="layout-menu-item" (click)="triggerLayoutConfirm('horizontal')">
+        <span class="menu-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="19" cy="12" r="2" />
+            <path d="M7 12h3M14 12h3" />
+          </svg>
+        </span>
+        Horizontal Layout
+      </button>
+
+      <button type="button" class="layout-menu-item" (click)="revertAutoLayout(); showLayoutMenu = false;">
+        <span class="menu-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+        </span>
+        Revert to Normal Grid
+      </button>
+
+      <div class="layout-menu-divider"></div>
+      <div class="layout-menu-title">Link Style</div>
+
+      <button type="button" class="layout-menu-item" [class.active]="linkStyle === 'smooth'"
+        (click)="setLinkStyle('smooth')">
+        <span class="menu-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M4 6c6 0 6 12 16 12" />
+          </svg>
+        </span>
+        Smoothstep
+      </button>
+
+      <button type="button" class="layout-menu-item" [class.active]="linkStyle === 'straight'"
+        (click)="setLinkStyle('straight')">
+        <span class="menu-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <line x1="4" y1="18" x2="20" y2="6" />
+          </svg>
+        </span>
+        Straight
+      </button>
+    </div>
+  </div>
+
+  <div class="table-modal-backdrop" *ngIf="tableModal.visible" (click)="closeTableModal()"
+    (wheel)="$event.stopPropagation()">
+    <section class="table-modal" role="dialog" aria-modal="true" aria-labelledby="table-modal-title"
+      (click)="closeAllDropdowns($event)">
+      <div class="table-modal-header">
+        <div>
+          <h2 id="table-modal-title">{{ tableModal.isNew ? 'Create table' : 'Edit table' }}</h2>
+          <p>Update its name, columns, and constraints.</p>
+        </div>
+        <app-button variant="none" customClass="table-modal-close" aria-label="Close"
+          (onClick)="closeTableModal()">×</app-button>
+      </div>
+
+      <!-- Table vs Group Toggle -->
+      <div class="table-modal-toggle-group">
+        <span class="toggle-title">Mode</span>
+        <div class="toggle-switch">
+          <button type="button" class="toggle-option" [class.active]="!tableModal.isGroup"
+            (click)="toggleGroupOption(false)">
+            Table
+          </button>
+          <button type="button" class="toggle-option" [class.active]="tableModal.isGroup"
+            (click)="toggleGroupOption(true)" style="display: flex; align-items: center; gap: 4px;">
+            Group
+            <app-icons *ngIf="!entitlementService.canUseFeature('table_group')" name="premium-crown" size="12" color="#f59e0b"></app-icons>
+          </button>
+        </div>
+      </div>
+
+      <!-- Group fields (Name & Integrated Dropdown) -->
+      <div class="group-fields-wrap" *ngIf="tableModal.isGroup">
+        <label class="table-name-field">Group name
+          <div class="group-dropdown-wrap">
+            <input placeholder="Enter group name" [(ngModel)]="tableModal.groupName" (input)="tableModal.error = ''"
+              autocomplete="off" (focus)="openGroupDropdown($event)" (click)="$event.stopPropagation()"
+              [style.border-bottom-left-radius]="groupDropdownVisible ? '0px' : '8px'"
+              [style.border-bottom-right-radius]="groupDropdownVisible ? '0px' : '8px'" />
+            <app-button variant="none" customClass="group-trigger-arrow" *ngIf="svc.groups && svc.groups.length > 0"
+              (onClick)="toggleGroupDropdown($event)">
+              <app-icons name="chevron-down" size="14"></app-icons>
+            </app-button>
+            <div class="group-menu" *ngIf="groupDropdownVisible && svc.groups && svc.groups.length > 0"
+              (click)="$event.stopPropagation()">
+              <app-button variant="none" class="group-menu-item" *ngFor="let g of svc.groups"
+                (onClick)="selectGroup(g.name)">
+                {{ g.name }}
+              </app-button>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <label class="table-name-field">Table name
+        <input [(ngModel)]="tableModal.name" (input)="tableModal.error = ''" />
+      </label>
+      <div class="table-columns-heading"><span>Columns</span><app-button variant="none" (onClick)="addModalColumn()">+
+          Add
+          column</app-button></div>
+      <div class="table-columns">
+        <div class="table-column-labels" aria-hidden="true">
+          <span>#</span><span>Column name</span><span>Type</span><span>Constraints</span><span></span>
+        </div>
+        <div class="table-columns-list" (scroll)="closeAllDropdowns()">
+          <div class="table-column" *ngFor="let column of tableModal.columns; let i = index">
+            <span class="column-number">{{ i + 1 }}</span>
+            <input aria-label="Column name" placeholder="column_name" [(ngModel)]="column.name"
+              (input)="tableModal.error = ''" />
+            <div class="type-dropdown">
+              <input aria-label="Column data type" placeholder="varchar" [(ngModel)]="column.type" autocomplete="off"
+                (focus)="openTypeDropdown(i, $event)" (click)="$event.stopPropagation()" />
+              <app-button variant="none" customClass="type-trigger-arrow" (onClick)="toggleTypeDropdown(i, $event)">
+                <app-icons name="chevron-down" size="14"></app-icons>
+              </app-button>
+              <div class="type-menu" *ngIf="typeDropdownIndex === i" (click)="$event.stopPropagation()">
+                <app-button variant="none" class="type-menu-item" [class.selected]="opt === column.type"
+                  *ngFor="let opt of datatypeOptions" (onClick)="selectDataType(column, opt)">
+                  <span class="type-menu-label">{{ opt }}</span>
+                  <span class="type-menu-check" *ngIf="opt === column.type">✓</span>
+                </app-button>
+              </div>
+            </div>
+            <div class="constraint-dropdown">
+              <app-button variant="none" customClass="constraint-trigger"
+                (onClick)="toggleConstraintDropdown(i, $event)" [attr.aria-expanded]="constraintDropdownIndex === i"
+                [tooltip]="constraintSummary(column)" tooltipPosition="left">
+                <span class="constraint-text">{{ constraintSummary(column) }}</span>
+                <span class="constraint-arrow"><app-icons name="chevron-down" size="14"></app-icons></span>
+              </app-button>
+              <div class="constraint-menu" *ngIf="constraintDropdownIndex === i" (click)="$event.stopPropagation()">
+                <div class="constraint-item">
+                  <label><input type="checkbox" [(ngModel)]="column.fk" /> Foreign key</label>
+                  <div *ngIf="column.fk" class="fk-selector-wrap">
+                    <div class="custom-fk-dropdown">
+                      <button type="button" class="custom-fk-trigger" (click)="toggleFkTableDropdown($event)">
+                        <span class="custom-fk-label" [class.placeholder]="!column.fkTable">{{ column.fkTable || 'Select
+                          Table' }}</span>
+                        <app-icons name="chevron-down" size="14"></app-icons>
+                      </button>
+                      <div class="custom-fk-menu" *ngIf="fkTableDropdownOpen">
+                        <button type="button" class="custom-fk-item" *ngFor="let t of getFkTableOptions()"
+                          (click)="selectFkTable(column, t.name, $event)">
+                          {{ t.name }}
+                        </button>
+                      </div>
+                    </div>
+                    <div class="custom-fk-dropdown">
+                      <button type="button" class="custom-fk-trigger" (click)="toggleFkColDropdown($event)">
+                        <span class="custom-fk-label" [class.placeholder]="!column.fkCol">{{ column.fkCol || 'Select
+                          Column' }}</span>
+                        <app-icons name="chevron-down" size="14"></app-icons>
+                      </button>
+                      <div class="custom-fk-menu" *ngIf="fkColDropdownOpen">
+                        <button type="button" class="custom-fk-item"
+                          *ngFor="let colName of getFkColOptions(column.fkTable)"
+                          (click)="selectFkCol(column, colName, $event)">
+                          {{ colName }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="constraint-item">
+                  <label><input type="checkbox" [(ngModel)]="column.pk" /> Primary key</label>
+                </div>
+                <div class="constraint-item">
+                  <label><input type="checkbox" [(ngModel)]="column.notNull" /> Not null</label>
+                </div>
+                <div class="constraint-item">
+                  <label><input type="checkbox" [(ngModel)]="column.default" /> Default</label>
+                  <input *ngIf="column.default" type="text" [(ngModel)]="column.defaultVal" placeholder="value"
+                    class="constraint-input-box" />
+                </div>
+                <div class="constraint-item">
+                  <label><input type="checkbox" [(ngModel)]="column.unique" /> Unique</label>
+                </div>
+                <div class="constraint-item">
+                  <label><input type="checkbox" [(ngModel)]="column.check" /> Check</label>
+                  <input *ngIf="column.check" type="text" [(ngModel)]="column.checkVal" placeholder="condition"
+                    class="constraint-input-box" />
+                </div>
+              </div>
+            </div>
+            <app-button variant="none" customClass="column-delete" [disabled]="tableModal.columns.length === 1"
+              (onClick)="removeModalColumn(i)" aria-label="Delete column">×</app-button>
+          </div>
+        </div>
+      </div>
+      <p class="table-modal-error" *ngIf="tableModal.error">{{ tableModal.error }}</p>
+      <div class="table-modal-actions">
+        <app-button variant="none" customClass="secondary" (onClick)="closeTableModal()">Cancel</app-button>
+        <app-button variant="none" customClass="primary" (onClick)="saveTableModal()">Save changes</app-button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Edit Table Group Modal -->
+  <div class="table-modal-backdrop" *ngIf="groupModal.visible" (click)="closeGroupModal()"
+    (wheel)="$event.stopPropagation()">
+    <section class="table-modal table-group-modal" role="dialog" aria-modal="true" aria-labelledby="group-modal-title"
+      (click)="$event.stopPropagation()">
+      <div class="table-modal-header">
+        <div>
+          <h2 id="group-modal-title">Edit Table Group</h2>
+          <p>Update group name and manage tables in this group.</p>
+        </div>
+        <app-button variant="none" customClass="table-modal-close" aria-label="Close"
+          (onClick)="closeGroupModal()">×</app-button>
+      </div>
+
+      <!-- Group Name Field -->
+      <label class="table-name-field">
+        Group name
+        <input [(ngModel)]="groupModal.name" (input)="groupModal.error = ''" placeholder="Enter group name" />
+      </label>
+
+      <!-- Add Tables Heading -->
+      <div class="table-columns-heading" *ngIf="getAvailableTablesForGroup().length > 0">
+        <span>Add Tables</span>
+      </div>
+
+      <!-- Always-visible search input to add tables -->
+      <div class="group-add-table-wrap" *ngIf="getAvailableTablesForGroup().length > 0">
+        <div class="group-dropdown-wrap" style="position: relative; flex: 1;">
+          <input placeholder="Search table..." [(ngModel)]="groupModal.tableSearchQuery" autocomplete="off"
+            (click)="toggleAddTableDropdown(true, $event)" (input)="toggleAddTableDropdown(true, $event)"
+            [style.border-bottom-left-radius]="groupModal.isAddDropdownOpen ? '0px' : '8px'"
+            [style.border-bottom-right-radius]="groupModal.isAddDropdownOpen ? '0px' : '8px'"
+            style="height: 36px; font-size: 13px; padding-right: 36px !important; width: 100%; box-sizing: border-box;" />
+          <app-button variant="none" customClass="group-trigger-arrow"
+            (onClick)="toggleAddTableDropdown(undefined, $event)"
+            style="top: 50%; transform: translateY(-50%); height: 36px;">
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </app-button>
+          <div class="group-menu" *ngIf="groupModal.isAddDropdownOpen" (click)="$event.stopPropagation()"
+            style="width: 100%; box-sizing: border-box; font-size: 13px; max-height: 160px; left: 0; right: 0; z-index: 9999; top: 100%;">
+            <app-button variant="none" class="group-menu-item" *ngFor="let t of getFilteredAvailableTablesForGroup()"
+              (onClick)="addTableToGroup(t)">
+              {{ t }}
+            </app-button>
+            <div class="group-menu-item disabled-item" *ngIf="getFilteredAvailableTablesForGroup().length === 0"
+              style="padding: 8px 12px; color: #98a7c4; font-size: 13px;">
+              No matching tables
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables in Group Heading -->
+      <div class="table-columns-heading" style="margin-top: 16px;">
+        <span>Tables in Group</span>
+      </div>
+
+      <!-- Tables List -->
+      <div class="table-columns">
+        <div class="table-columns-list">
+          <div class="group-table-row" *ngFor="let tableName of groupModal.tables; let i = index">
+            <span class="column-number">{{ i + 1 }}</span>
+            <span class="group-table-name">{{ tableName }}</span>
+            <app-button variant="none" customClass="group-remove-btn" (onClick)="removeTableFromGroupList(i)"
+              aria-label="Remove table from group">Remove table</app-button>
+          </div>
+
+          <div class="empty-group-message" *ngIf="groupModal.tables.length === 0">
+            No tables in this group.
+          </div>
+        </div>
+      </div>
+
+      <p class="table-modal-error" *ngIf="groupModal.error">{{ groupModal.error }}</p>
+      <div class="table-modal-actions">
+        <app-button variant="none" customClass="secondary" (onClick)="closeGroupModal()">Cancel</app-button>
+        <app-button variant="none" customClass="primary" (onClick)="saveGroupModal()">Save changes</app-button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Delete Table Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="deleteConfirm.visible" (click)="closeDeleteConfirm()"
+    (wheel)="$event.stopPropagation()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Delete Table</h3>
+        <button type="button" class="close-btn" (click)="closeDeleteConfirm()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the table <strong>"{{ deleteConfirm.tableName }}"</strong>? This will remove
+          all of its columns and relationships.</p>
+      </div>
+      <div class="modal-footer">
+        <app-button variant="default" customClass="btn-delete" (onClick)="confirmDeleteTable()">Delete</app-button>
+        <app-button variant="default" (onClick)="closeDeleteConfirm()">Cancel</app-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Connection Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="deleteConnectionConfirm.visible" (click)="closeDeleteConnectionConfirm()"
+    (wheel)="$event.stopPropagation()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Delete Connection</h3>
+        <button type="button" class="close-btn" (click)="closeDeleteConnectionConfirm()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the connection line between
+          <strong>"{{ deleteConnectionConfirm.fromTable }}.{{ deleteConnectionConfirm.fromCol }}"</strong> and
+          <strong>"{{ deleteConnectionConfirm.toTable }}.{{ deleteConnectionConfirm.toCol }}"</strong>?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <app-button variant="default" customClass="btn-delete" (onClick)="confirmDeleteConnection()">Delete</app-button>
+        <app-button variant="default" (onClick)="closeDeleteConnectionConfirm()">Cancel</app-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Group Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="deleteGroupConfirm.visible" (click)="closeDeleteGroupConfirm()"
+    (wheel)="$event.stopPropagation()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Delete Group</h3>
+        <button type="button" class="close-btn" (click)="closeDeleteGroupConfirm()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the group <strong>"{{ deleteGroupConfirm.groupName }}"</strong>? The tables
+          inside will remain intact.</p>
+      </div>
+      <div class="modal-footer">
+        <app-button variant="default" customClass="btn-delete" (onClick)="confirmDeleteGroup()">Delete</app-button>
+        <app-button variant="default" (onClick)="closeDeleteGroupConfirm()">Cancel</app-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Note Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="deleteNoteConfirm.visible" (click)="closeDeleteNoteConfirm()"
+    (wheel)="$event.stopPropagation()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Delete Note</h3>
+        <button type="button" class="close-btn" (click)="closeDeleteNoteConfirm()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the note <strong>"{{ deleteNoteConfirm.noteName }}"</strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <app-button variant="default" customClass="btn-delete" (onClick)="confirmDeleteNote()">Delete</app-button>
+        <app-button variant="default" (onClick)="closeDeleteNoteConfirm()">Cancel</app-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas controls -->
+  <div id="canvas-controls">
+    <div id="zoom-controls">
+      <app-button variant="toolbar" (onClick)="zoomOut()" [tooltip]="'Zoom out(ctrl -)'" tooltipPosition="top-left">
+        <app-icons name="minus" size="15"></app-icons>
+      </app-button>
+      <div id="zoom-pct" *ngIf="!isEditingZoom" (click)="editZoom()">{{ svc.zoomPercent }}%</div>
+      <input id="zoom-pct-input" *ngIf="isEditingZoom" type="number" [value]="zoomInputValue"
+        (blur)="setZoomFromEvent($event)" (keyup.enter)="setZoomFromEvent($event)" autofocus />
+      <app-button variant="toolbar" (onClick)="zoomIn()" [tooltip]="'Zoom in(ctrl +)'">
+        <app-icons name="plus" size="15"></app-icons>
+      </app-button>
+      <app-button variant="toolbar" (onClick)="zoomFit()" [tooltip]="'Fit to screen'">
+        <app-icons name="fit-screen" size="15"></app-icons>
+      </app-button>
+    </div>
+
+    <!-- select / pan controls -->
+    <div id="tool-controls">
+      <app-button variant="toolbar" [variant]="svc.tool === 'select' ? 'toolbar-active' : 'toolbar'"
+        (onClick)="setTool('select')" [tooltip]="'Select tool(V)'">
+        <app-icons name="select-tool" size="16"></app-icons>
+      </app-button>
+      <app-button variant="toolbar" [variant]="svc.tool === 'pan' ? 'toolbar-active' : 'toolbar'"
+        (onClick)="setTool('pan')" [tooltip]="'Hand tool — pan the canvas (H)'" tooltipPosition="top-right">
+        <app-icons name="pan-tool" size="16"></app-icons>
+      </app-button>
+    </div>
+
+    <!-- separate small controls box for grid and connection highlight -->
+    <div id="extra-controls" (click)="$event.stopPropagation()">
+
+      <!-- Grid toggle button -->
+      <app-button variant="extra" [variant]="svc.gridOn ? 'extra-active' : 'extra'" (onClick)="toggleGrid()"
+        [tooltip]="'Toggle grid'">
+        <app-icons name="grid" size="16"></app-icons>
+      </app-button>
+
+      <app-button variant="extra" [variant]="svc.showAllConnections ? 'extra-active' : 'extra'"
+        (onClick)="toggleHighlightConnections()" [tooltip]="'Highlight all connections'">
+        <app-icons name="connections" size="16"></app-icons>
+      </app-button>
+
+
+
+      <!-- Add sticky note button -->
+      <ng-container *ngIf="!svc.isReadOnly">
+        <app-button variant="extra" (onClick)="addNoteAtCenter()" [tooltip]="'Add sticky note — ' + svc.notes.length" style="position: relative;" [disabled]="!auth.isLoggedIn()">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16v10l-6 6H4z"></path>
+            <path d="M14 20v-6h6"></path>
+          </svg>
+          <app-icons *ngIf="!entitlementService.canUseFeature('diagram_notes')" name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+        </app-button>
+
+        <!-- Vertical Divider line -->
+        <div class="controls-divider"></div>
+
+        <!-- Detail Level Trigger Button -->
+        <app-button [variant]="showDetailLevelMenu ? 'extra-active' : 'extra'" customClass="detail-level-btn"
+          (onClick)="toggleDetailLevelMenu($event)" [tooltip]="'Change diagram detail level'" style="position: relative;" [disabled]="!auth.isLoggedIn()">
+          <div style="display: flex; align-items: center; padding: 0 4px;">
+            <app-icons [name]="getCurrentDetailLevelIcon()" size="15" style="display: flex;"></app-icons>
+            <span style="margin: 0 6px 0 6px; font-size: 12px; font-weight: 500; white-space: nowrap;">{{
+              getCurrentDetailLevelText() }}</span>
+            <app-icons name="chevron-down" size="10"
+              [style]="{ display: 'flex', 'transition': 'transform 0.15s ease', 'transform': showDetailLevelMenu ? 'rotate(180deg)' : 'rotate(0deg)' }"></app-icons>
+          </div>
+          <app-icons *ngIf="!entitlementService.canUseFeature('diagram_detailing')" name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+        </app-button>
+        <app-button variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
+          (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(true) : svc.showUpgradeModal()"
+          [tooltip]="'Search / Diagram Views'" style="position: relative;" [disabled]="!auth.isLoggedIn()">
+          <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <app-icons *ngIf="!entitlementService.canUseFeature('digram_view')" name="premium-crown" size="10" color="#f59e0b"
+            style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+        </app-button>
+      </ng-container>
+
+      <!-- Dropdown Popup -->
+      <div class="detail-level-dropdown" *ngIf="showDetailLevelMenu" (click)="$event.stopPropagation()">
+        <div class="dropdown-title">Detail level</div>
+
+        <button class="dropdown-item" [class.active]="svc.isColumnNameOnly" (click)="setDetailLevel('table')">
+          <app-icons name="detail-table" size="14" class="item-icon"></app-icons>
+          <span class="item-text">Table names</span>
+          <app-icons name="check-valid" size="12" class="check-icon" *ngIf="svc.isColumnNameOnly"></app-icons>
+        </button>
+
+        <button class="dropdown-item" [class.active]="svc.isKeyOnly" (click)="setDetailLevel('key')">
+          <app-icons name="detail-key" size="14" class="item-icon"></app-icons>
+          <span class="item-text">Keys only</span>
+          <app-icons name="check-valid" size="12" class="check-icon" *ngIf="svc.isKeyOnly"></app-icons>
+        </button>
+
+        <button class="dropdown-item" [class.active]="svc.isAllFields" (click)="setDetailLevel('all')">
+          <app-icons name="detail-fields" size="14" class="item-icon"></app-icons>
+          <span class="item-text">All fields</span>
+          <app-icons name="check-valid" size="12" class="check-icon" *ngIf="svc.isAllFields"></app-icons>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIAGRAM VIEWS PANE -->
+  <app-diagram-views *ngIf="svc.showDiagramViews"></app-diagram-views>
+
+  <!-- VERSION HISTORY SIDEBAR -->
+  <app-version-history *ngIf="svc.showVersionHistory()"></app-version-history>
+</div>

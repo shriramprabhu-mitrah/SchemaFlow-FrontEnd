@@ -1,0 +1,365 @@
+app-admin-layout {
+  display: block;
+  width: 100%;
+  height: 100vh;
+}
+
+.admin-shell {
+  display: flex;
+  width: 100%;
+  min-width: 100%;
+  height: 100vh;
+  background: #080c16;
+  color: #e0e6f0;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  overflow: hidden;
+}
+
+/* ── Sidebar ── */
+.admin-sidebar {
+  width: 240px;
+  background: #0a0e19;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s cubic-bezier(.4, 0, .2, 1);
+  z-index: 10;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+}
+
+.collapsed .admin-sidebar {
+  width: 64px;
+
+  .sidebar-header {
+    justify-content: center;
+    padding: 12px 0;
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  min-height: 58px;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #38bdf8;
+}
+
+.brand-text {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  color: #ffffff;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.collapse-btn:hover {
+  background: rgba(96, 165, 250, 0.1);
+  color: #60a5fa;
+}
+
+/* ── Navigation ── */
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-x: hidden !important;
+  overflow-y: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  box-sizing: border-box;
+
+  svg {
+    stroke: #94a3b8;
+    transition: stroke 0.2s ease;
+  }
+}
+
+.nav-item:hover {
+  background: rgba(62, 197, 193, 0.12) !important;
+  color: #3ec5c1 !important;
+
+  svg {
+    stroke: #3ec5c1 !important;
+  }
+}
+
+.nav-item.active {
+  background: rgba(62, 197, 193, 0.18) !important;
+  color: #3ec5c1 !important;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(62, 197, 193, 0.3) !important;
+
+  svg {
+    stroke: #3ec5c1 !important;
+  }
+}
+
+.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px;
+}
+
+.nav-label {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ── Sidebar Footer ── */
+.sidebar-footer {
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footer-action.logout:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.footer-action.logout:hover svg {
+  stroke: #f87171;
+}
+
+/* ── Main Content Area ── */
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 58px;
+  background: #080c16;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.page-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-badge {
+  padding: 3px 7px;
+  background: #f59e0b;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+}
+
+.user-email {
+  font-size: 14px;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(62, 197, 193, 0.15);
+    color: #3ec5c1;
+    border-color: rgba(62, 197, 193, 0.3);
+  }
+}
+
+.admin-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+}
+
+/* ── Scrollbar ── */
+.admin-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-content::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 3px;
+}
+
+.admin-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+/* ── Light Theme Overrides ── */
+body.light-theme {
+
+  app-admin-layout,
+  .admin-shell,
+  .admin-main,
+  .admin-content {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+  }
+
+  .admin-sidebar {
+    background-color: #ffffff !important;
+    border-right: 1px solid #e2e8f0 !important;
+  }
+
+  .sidebar-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .brand-text {
+    color: #0f172a !important;
+  }
+
+  .collapse-btn {
+    color: #64748b !important;
+
+    &:hover {
+      background: #eff6ff !important;
+      color: #2563eb !important;
+    }
+  }
+
+  .admin-sidebar .nav-item {
+    color: #334155 !important;
+    font-weight: 500 !important;
+
+    svg {
+      stroke: #64748b !important;
+    }
+
+    &:hover {
+      background: #eff6ff !important;
+      color: #2563eb !important;
+
+      svg {
+        stroke: #2563eb !important;
+      }
+    }
+
+    &.active {
+      background: #dbeafe !important;
+      color: #1d4ed8 !important;
+      font-weight: 700 !important;
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.25) !important;
+
+      svg {
+        stroke: #1d4ed8 !important;
+      }
+    }
+  }
+
+  .admin-sidebar .sidebar-footer {
+    border-top: 1px solid #e2e8f0 !important;
+  }
+
+  .admin-header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .admin-header .page-title {
+    color: #0f172a !important;
+  }
+
+  .admin-header .user-email {
+    color: #334155 !important;
+    font-weight: 600 !important;
+  }
+
+  .admin-header .theme-toggle-btn {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+
+    &:hover {
+      background: #e2e8f0 !important;
+      color: #2563eb !important;
+      border-color: #93c5fd !important;
+    }
+  }
+
+  .admin-content::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4) !important;
+
+    &:hover {
+      background: rgba(148, 163, 184, 0.6) !important;
+    }
+  }
+}

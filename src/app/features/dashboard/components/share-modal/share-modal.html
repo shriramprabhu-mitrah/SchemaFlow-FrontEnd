@@ -1,0 +1,177 @@
+<div class="modal-backdrop" *ngIf="visible">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+
+    <div class="modal-tabs-header">
+      <div class="tabs-list">
+        <div class="tab-item" [class.active]="activeTab === 'sharing'" (click)="activeTab = 'sharing'">Sharing</div>
+        <div class="tab-item" [class.active]="activeTab === 'embedding'" [class.disabled]="!isPublic"
+          (click)="isPublic && (activeTab = 'embedding')"
+          [title]="!isPublic ? 'Embedding is disabled for protected diagrams' : ''">
+          Embedding
+        </div>
+      </div>
+      <button class="close-btn" (click)="closeModal()" title="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- SHARING TAB -->
+      <div *ngIf="activeTab === 'sharing'" class="tab-content sharing-tab">
+
+        <!-- Save Settings and Toggle -->
+        <div class="embed-header-row mb-2" style="border-bottom: none; padding-bottom: 0;">
+          <div class="embed-toggle-group">
+            <span class="embed-label">Public Diagram</span>
+            <label class="switch-toggle blue-toggle">
+              <input type="checkbox" [(ngModel)]="isPublic" />
+              <span class="slider-round"></span>
+            </label>
+          </div>
+          <button *ngIf="isPublic" class="btn btn-primary" (click)="saveSharingSettings()" [disabled]="savingStatus">
+            {{ savingStatus ? 'Saving...' : 'Save Settings' }}
+          </button>
+        </div>
+
+        <!-- Password Field (shows if NOT public) -->
+        <div class="password-input-row mb-2" *ngIf="!isPublic">
+          <label class="section-desc mb-2">Password</label>
+          <div class="password-input-wrapper" style="position: relative; display: flex; align-items: center;">
+            <input [type]="showPassword ? 'text' : 'password'" class="db-input w-100" style="padding-right: 40px;"
+              placeholder="Enter password to protect this diagram" [(ngModel)]="password" />
+            <button type="button" class="password-toggle-btn"
+              (click)="showPassword = !showPassword" [title]="showPassword ? 'Hide password' : 'Show password'">
+              <svg *ngIf="!showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg *ngIf="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="save-settings-row mb-3" style="justify-content: flex-start;" *ngIf="!isPublic">
+          <button class="btn btn-primary" (click)="saveSharingSettings()" [disabled]="savingStatus">
+            {{ savingStatus ? 'Saving...' : 'Save Settings' }}
+          </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Share Link with Copy -->
+        <p class="section-desc mb-2">Share this link with others</p>
+        <div class="embed-code-box mb-3">
+          <input type="text" class="db-input code-input" [value]="getShareLink()" readonly />
+          <button class="btn btn-primary copy-btn" (click)="copyToClipboard(getShareLink(), 'link')">
+            <svg *ngIf="!linkCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <svg *ngIf="linkCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Email Sharing -->
+        <p class="section-desc mb-2">Send link via email</p>
+        <div class="invite-form-row" style="margin-top: 0; background: none; border: none; padding: 0;">
+          <input type="text" class="db-input flex-grow" placeholder="Email, comma or space separated"
+            [(ngModel)]="emailsInput" />
+          <button class="btn btn-primary invite-btn" (click)="sendEmails()"
+            [disabled]="sendingEmails || emailsInput.trim().length === 0" style="margin-left: 8px;">
+            Share
+          </button>
+        </div>
+      </div>
+
+      <!-- EMBEDDING TAB -->
+      <div *ngIf="activeTab === 'embedding'" class="tab-content embedding-tab">
+        <!-- <p class="section-desc mb-3">Customize your embedded link with options</p> -->
+
+        <div class="options-grid">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="embedDarkMode" />
+            <span>Dark mode</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="embedHighlight" />
+            <span>Highlight relationships</span>
+          </label>
+          
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label class="checkbox-label" style="margin-bottom: 0;">
+              <input type="checkbox" [(ngModel)]="embedUseDetailLevel" />
+              <span>Detail level:</span>
+            </label>
+            <div class="custom-select-container" [class.disabled]="!embedUseDetailLevel">
+              <button type="button" class="custom-select-btn" [disabled]="!embedUseDetailLevel"
+                (click)="showDetailLevelDropdown = !showDetailLevelDropdown; showLinkTypeDropdown = false; $event.stopPropagation()">
+                <span>{{ embedDetailLevel === 'all' ? 'All fields' : embedDetailLevel === 'key' ? 'Keys only' : 'Table names' }}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showDetailLevelDropdown">
+                <div class="custom-select-option" [class.active]="embedDetailLevel === 'all'" (click)="embedDetailLevel = 'all'; showDetailLevelDropdown = false">All fields</div>
+                <div class="custom-select-option" [class.active]="embedDetailLevel === 'key'" (click)="embedDetailLevel = 'key'; showDetailLevelDropdown = false">Keys only</div>
+                <div class="custom-select-option" [class.active]="embedDetailLevel === 'table'" (click)="embedDetailLevel = 'table'; showDetailLevelDropdown = false">Table names</div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label class="checkbox-label" style="margin-bottom: 0;">
+              <input type="checkbox" [(ngModel)]="embedUseLinkType" />
+              <span>Link type:</span>
+            </label>
+            <div class="custom-select-container" [class.disabled]="!embedUseLinkType">
+              <button type="button" class="custom-select-btn" [disabled]="!embedUseLinkType"
+                (click)="showLinkTypeDropdown = !showLinkTypeDropdown; showDetailLevelDropdown = false; $event.stopPropagation()">
+                <span>{{ embedLinkType === 'straight' ? 'Straight' : 'Smooth' }}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showLinkTypeDropdown">
+                <div class="custom-select-option" [class.active]="embedLinkType === 'straight'" (click)="embedLinkType = 'straight'; showLinkTypeDropdown = false">Straight</div>
+                <div class="custom-select-option" [class.active]="embedLinkType === 'smooth'" (click)="embedLinkType = 'smooth'; showLinkTypeDropdown = false">Smooth</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <p class="section-desc mb-2">Embed Code</p>
+        <div class="embed-code-box">
+          <input type="text" class="db-input code-input" [value]="getEmbedCode()" readonly />
+          <button class="btn btn-primary copy-btn" (click)="copyToClipboard(getEmbedCode(), 'embed')">
+            <svg *ngIf="!embedCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <svg *ngIf="embedCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

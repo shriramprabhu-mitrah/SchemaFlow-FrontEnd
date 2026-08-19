@@ -1,0 +1,95 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>Audit Logs</h1>
+      <p class="text-muted" style="margin:4px 0 0">System activity trail, security events, and admin operations history.</p>
+    </div>
+    <div class="header-actions">
+      <div class="search-box-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-input" placeholder="Search logs..." [(ngModel)]="searchQuery" (input)="onFilter()">
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading"><div class="spinner"></div><span>Loading audit logs...</span></div>
+
+  <div class="data-table-wrap" *ngIf="!loading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:7%">
+            <span class="sort-header-clickable" style="cursor: default;">
+              <span>S.No</span>
+            </span>
+          </th>
+          <th style="width:17%" (click)="sortBy('time')">
+            <span class="sort-header-clickable">
+              <span>TIME</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'time'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              </span>
+            </span>
+          </th>
+          <th style="width:10%" (click)="sortBy('actor')">
+            <span class="sort-header-clickable">
+              <span>ACTOR</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'actor'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              </span>
+            </span>
+          </th>
+          <th style="width:18%" (click)="sortBy('action')">
+            <span class="sort-header-clickable">
+              <span>ACTION</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'action'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              </span>
+            </span>
+          </th>
+          <th style="width:40%">DETAILS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of logs; let i = index">
+          <td>{{ paginationStartIndex + i }}</td>
+          <td style="white-space:nowrap"><span class="user-email-text" style="font-size:13.5px">{{ log.created_at | date:'medium' }}</span></td>
+          <td><strong class="user-name-text" style="font-size:14px">{{ log.actor_name || log.actor_email || '—' }}</strong></td>
+          <td><code style="font-size:13px;font-weight:600">{{ log.action }}</code></td>
+          <td style="font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" [title]="formatDetails(log.details)">
+            {{ formatDetails(log.details) || '—' }}
+          </td>
+        </tr>
+        <tr *ngIf="logs.length === 0">
+          <td colspan="5" class="empty-table-cell">No audit logs found</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Workspace-Style Pagination Bar -->
+    <div class="pagination-container" *ngIf="(meta.total || logs.length) > 0">
+      <div class="pagination-info">
+        {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ meta.total || logs.length }} Items
+      </div>
+      <div class="pagination-controls" *ngIf="meta.totalPages > 1">
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">«</button>
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">‹</button>
+        <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p }}</button>
+        <button class="page-btn" [disabled]="page === meta.totalPages" (click)="goToPage(page + 1)" title="Next Page">›</button>
+        <button class="page-btn" [disabled]="page === meta.totalPages" (click)="goToPage(meta.totalPages)" title="Last Page">»</button>
+      </div>
+      <div class="page-size-selector">
+        <select class="page-size-select" [(ngModel)]="limit" (change)="onLimitChange()">
+          <option [ngValue]="5">5</option>
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+        </select>
+        <span class="limit-label">items per page</span>
+      </div>
+    </div>
+  </div>
+</div>

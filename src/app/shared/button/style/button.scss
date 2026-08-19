@@ -1,0 +1,99 @@
+.btn {
+  font-family: inherit;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease-in-out;
+  border: none;
+  background: transparent;
+  color: #e6eef9;
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// 1) default: Topbar and dialog secondary buttons (#docs-toggle, #export-dbml, etc.)
+.default {
+  background: #1f2b3a;
+  color: #e6eef9;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  cursor: pointer;
+  
+  &:hover:not(.disabled) {
+    background: #2a3a4e;
+  }
+}
+
+// 2) accent: Large action button (#empty-state button / start adding)
+.accent {
+  pointer-events: all;
+  margin-top: 10px;
+  background: linear-gradient(135deg, #3ec5c1, #4ba7e2);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  &:hover:not(.disabled) {
+    background: linear-gradient(135deg, #2a9c99, #3d8cd6);
+  }
+}
+
+// 3) toolbar: Zoom/Tool panel buttons
+.toolbar {
+  border: none;
+  background: transparent;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #98a7c4;
+  transition: background 0.18s ease, color 0.18s ease;
+
+  &:hover:not(.disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &.toolbar-active {
+    color: #3ec5c1;
+    background: rgba(62, 197, 193, 0.14);
+  }
+}
+
+// 4) toolbar-active: Active state of toolbar button
+.toolbar-active {
+  @extend .toolbar;
+  color: #3ec5c1;
+  background: rgba(62, 197, 193, 0.14);
+}
+
+// 5) extra: Extra controls button (like grid On)
+.extra {
+  @extend .toolbar;
+  color: #e6eef9;
+}
+
+// 6) extra-active: Active state of extra controls button
+.extra-active {
+  @extend .extra;
+  color: #3ec5c1;
+  background: rgba(62, 197, 193, 0.14);
+}

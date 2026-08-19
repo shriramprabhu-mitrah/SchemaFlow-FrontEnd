@@ -1,0 +1,84 @@
+<div id="version-history-pane">
+  <div class="history-header">
+    <div class="header-top">
+      <h3>History</h3>
+      <button class="close-btn" (click)="close()">&times;</button>
+    </div>
+    <p class="header-desc">Select a saved version of this diagram to preview or restore details.</p>
+  </div>
+
+  <div class="history-list">
+    <!-- Loading State -->
+    <div class="loading-history" *ngIf="isLoading">
+      <span class="spinner"></span>
+      <span>Loading history...</span>
+    </div>
+
+    <!-- Error State -->
+    <div class="empty-history" *ngIf="error && !isLoading">
+      {{ error }}
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-history" *ngIf="!isLoading && !error && versions.length === 0">
+      No Recent history for this diagram.
+    </div>
+
+    <!-- Versions List -->
+    <div *ngIf="!isLoading && !error && versions.length > 0">
+      <div class="history-item" 
+           *ngFor="let v of versions" 
+           [class.selected]="selectedVersion === v" 
+           (click)="selectVersion(v)">
+        <div class="history-item-content">
+          <div class="user-avatar-col tt tt-right" [attr.data-tt]="v.updatedby_email || 'Unknown User'">
+            <!-- If profile picture exists and is valid, render image -->
+            <img *ngIf="v.updatedby_profilepicture && v.updatedby_profilepicture !== 'null' && v.updatedby_profilepicture.trim() !== ''" 
+                 [src]="v.updatedby_profilepicture" 
+                 class="user-avatar" 
+                 alt="User Profile" />
+            <!-- If no profile picture, render initials avatar -->
+            <div *ngIf="!v.updatedby_profilepicture || v.updatedby_profilepicture === 'null' || v.updatedby_profilepicture.trim() === ''" 
+                 class="initials-avatar">
+              {{ getInitials(v.updatedby_email) }}
+            </div>
+          </div>
+          
+          <div class="version-info-col">
+            <span class="version-time">{{ formatDate(v.created_at || v.timestamp) }}</span>
+          </div>
+        </div>
+        
+        <div class="history-item-actions">
+          <button class="row-restore-btn" (click)="restoreFromRow($event, v)">
+            Restore
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Actions -->
+  <div class="history-actions" *ngIf="selectedVersion">
+    <app-button variant="primary" (onClick)="confirmRestore()">
+      Restore selected version
+    </app-button>
+  </div>
+</div>
+
+<!-- Revert Confirmation Modal -->
+<div class="modal-backdrop" *ngIf="showConfirmModal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Restore this version?</h3>
+      <app-button variant="none" customClass="close-btn" (onClick)="showConfirmModal = false">&times;</app-button>
+    </div>
+    <div class="modal-body">
+      <p>Your current diagram will be restored to this version.</p>
+    </div>
+    <div class="modal-footer">
+      <app-button variant="default" (onClick)="showConfirmModal = false">Cancel</app-button>
+      <app-button variant="default" customClass="signbtn" (onClick)="restoreVersion()">Restore</app-button>
+    </div>
+  </div>
+</div>

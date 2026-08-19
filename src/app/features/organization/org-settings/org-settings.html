@@ -1,0 +1,45 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>General Settings</h1>
+      <p class="text-muted page-subtitle">Manage your organization's display name, description, and unique slug identifier.</p>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <span>Loading settings...</span>
+  </div>
+
+  <div *ngIf="!loading && org">
+    <div class="data-table-wrap data-table-padded">
+      <div class="form-group">
+        <label class="form-label">Organization Name</label>
+        <input class="form-input" [class.is-invalid]="nameError" [(ngModel)]="org.name" (input)="nameError=''" placeholder="Enter organization name">
+        <span class="invalid-feedback" *ngIf="nameError">{{ nameError }}</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" [(ngModel)]="org.description" placeholder="Provide a brief description for your team organization..." rows="3"></textarea>
+      </div>
+      <div class="form-group form-group-spaced">
+        <label class="form-label">Organization Slug (System Identifier)</label>
+        <div class="flex-row-gap">
+          <input class="form-input form-slug-input" [value]="org.slug" disabled>
+          <span class="badge badge-free badge-slug">SLUG</span>
+        </div>
+        <span class="text-muted form-note">The organization slug is system generated and cannot be modified.</span>
+      </div>
+      <div class="form-actions-bar">
+        <button class="btn-primary" (click)="save()" [disabled]="saving">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          {{ saving ? 'Saving Changes...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

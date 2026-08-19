@@ -1,0 +1,1604 @@
+<div class="workspace-modal-backdrop" *ngIf="visible">
+  <div class="workspace-modal-container" (click)="onContainerClick($event)">
+    <app-loader *ngIf="isCreatingWorkspace || isUpdatingWorkspace"
+      [text]="isCreatingWorkspace ? 'Creating workspace...' : 'Updating workspace...'"></app-loader>
+
+    <!-- LEFT SIDEBAR -->
+    <div class="workspace-sidebar">
+      <!-- Top user section -->
+      <div class="workspace-user-profile" (click)="selectPersonalWorkspace(false)"
+        [class.active-personal]="!selectedWorkspace && activeTab === 'my-diagrams'">
+        <div class="user-email-wrap">
+          <span class="user-email tt" [attr.data-tt]="userEmail">{{ userEmail }}</span>
+        </div>
+        <div class="workspace-subtitle">{{ (activeTab === 'edit-workspace' && editingWorkspace) ? (workspaceName ||
+          editingWorkspace.name) + ' - Team Workspace' : (selectedWorkspace ? selectedWorkspace.name + ' - Team
+          Workspace' : (activeTab === 'my-workspaces' || activeTab === 'create-workspace' ? 'Team Workspace'
+          : 'Personal Workspace')) }}</div>
+      </div>
+
+      <!-- Action button (Create New Workspace) -->
+      <div class="workspace-action-buttons">
+        <button class="btn-workspace-action primary-action tt" style="position: relative;"
+          (click)="entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces')"
+          data-tt="Create New Workspace">
+          <span class="plus-icon">+</span>
+          <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Create New
+            Workspace</span>
+          <app-icons *ngIf="!entitlementService.canUseFeature('create_workspaces')" name="premium-crown" size="14"
+            color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
+        </button>
+      </div>
+
+      <!-- Navigation tabs -->
+      <div class="workspace-nav">
+        <button class="nav-item tt" [class.active]="activeTab === 'my-diagrams' && !selectedWorkspace"
+          (click)="selectPersonalWorkspace()" data-tt="My Diagrams">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          <span>My Diagrams</span>
+        </button>
+
+        <button class="nav-item tt" [class.active]="activeTab === 'shared'" style="position: relative;"
+          (click)="entitlementService.canUseFeature('share_diagram') ? openSharedTab() : svc.showUpgradeModal('share_diagram')"
+          data-tt="Shared with Me">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+          <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
+            with Me</span>
+          <app-icons *ngIf="!entitlementService.canUseFeature('share_diagram')" name="premium-crown" size="14"
+            color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
+        </button>
+
+        <button class="nav-item tt" [class.active]="activeTab === 'my-workspaces' || activeTab === 'edit-workspace'"
+          style="position: relative;"
+          (click)="entitlementService.canUseFeature('create_workspaces') ? openMyWorkspaces() : svc.showUpgradeModal('create_workspaces')"
+          data-tt="My Workspaces">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+          </svg>
+          <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">My
+            Workspaces</span>
+          <app-icons *ngIf="!entitlementService.canUseFeature('create_workspaces')" name="premium-crown" size="14"
+            color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT MAIN CONTENT -->
+    <div class="workspace-content">
+      <!-- Search & Header Bar (My Diagrams tab) -->
+      <div class="workspace-header" *ngIf="activeTab === 'my-diagrams'">
+        <div class="search-box">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="text" placeholder="Search diagrams" [ngModel]="diagramsSearch"
+            (ngModelChange)="onDiagramsSearchChange($event)" spellcheck="false" />
+          <button class="clear-search" *ngIf="diagramsSearch" (click)="onDiagramsSearchChange('')">&times;</button>
+        </div>
+
+        <div class="header-badges">
+          <span class="count-badge">Diagrams: {{ diagramsTotal }}</span>
+          <button class="close-modal-btn" (click)="onCloseModal()">&times;</button>
+        </div>
+      </div>
+
+      <!-- Header for Create Workspace / Shared / Edit workspace tab -->
+      <div class="workspace-header"
+        *ngIf="activeTab === 'create-workspace' || activeTab === 'shared' || activeTab === 'edit-workspace'">
+        <div class="modal-tab-title" *ngIf="activeTab !== 'edit-workspace' && activeTab !== 'shared'">
+          Create Team Workspace
+        </div>
+        <div class="search-box" *ngIf="activeTab === 'shared'">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="text" class="workspace-input-field search-input" placeholder="Search diagrams..."
+            [ngModel]="sharedDiagramsSearch" (ngModelChange)="onSharedDiagramsSearchChange($event)" spellcheck="false"
+            autocomplete="off" autocorrect="off" autocapitalize="off" />
+        </div>
+        <div class="modal-tab-title breadcrumb-title editable-header-title" *ngIf="activeTab === 'edit-workspace'">
+          <span class="breadcrumb-label" (click)="openMyWorkspaces()">Workspaces</span>
+          <span class="sep">/</span>
+          <input type="text" class="workspace-title-input" placeholder="Workspace Name" [(ngModel)]="workspaceName"
+            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" autofocus />
+        </div>
+        <div class="header-badges">
+          <button class="close-modal-btn" (click)="onCloseModal()">&times;</button>
+        </div>
+      </div>
+
+      <!-- Header for My Workspaces Tab -->
+      <div class="workspace-header" *ngIf="activeTab === 'my-workspaces'">
+        <div class="search-box" *ngIf="!selectedWorkspace">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="text" placeholder="Search workspaces" [ngModel]="workspacesSearch"
+            (ngModelChange)="onWorkspacesSearchChange($event)" spellcheck="false" />
+          <button class="clear-search" *ngIf="workspacesSearch" (click)="onWorkspacesSearchChange('')">&times;</button>
+        </div>
+        <div class="modal-tab-title breadcrumb-title" *ngIf="selectedWorkspace">
+          <button class="back-link-btn" (click)="backToWorkspacesList()">
+            Workspaces
+          </button>
+          <span class="sep">/</span>
+          <span class="ws-current-name">{{ selectedWorkspace.name }}</span>
+        </div>
+
+        <div class="header-badges">
+          <button class="close-modal-btn" (click)="onCloseModal()">&times;</button>
+        </div>
+      </div>
+
+      <!-- Header for View Members Tab -->
+      <div class="workspace-header" *ngIf="activeTab === 'view-members'">
+        <div class="modal-tab-title breadcrumb-title">
+          <button class="back-link-btn" (click)="openMyWorkspaces()">
+            Workspaces
+          </button>
+          <span class="sep">/</span>
+          <span class="ws-current-name">{{ selectedWorkspaceForMembers?.name }} Members</span>
+        </div>
+        <div class="header-badges">
+          <button class="close-modal-btn" (click)="onCloseModal()">&times;</button>
+        </div>
+      </div>
+
+      <!-- TAB 1: My Diagrams List -->
+      <div class="workspace-body" *ngIf="activeTab === 'my-diagrams'">
+
+        <!-- Loading State -->
+        <div class="loading-state" *ngIf="isDiagramsLoading || svc.isLoadingDiagrams()">
+          <span class="spinner"></span> Loading diagrams...
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!(isDiagramsLoading || svc.isLoadingDiagrams()) && diagrams.length === 0">
+          <div class="empty-icon">📁</div>
+          <div class="empty-title">{{ diagramsSearch ? 'No diagrams match your search' : 'No diagrams yet' }}</div>
+          <p class="empty-desc">{{ diagramsSearch ? 'Try searching for something else.' : 'Create your workspace or
+            diagrams to get started!' }}</p>
+        </div>
+
+        <!-- Diagrams Table -->
+        <div class="diagrams-table-container"
+          *ngIf="!(isDiagramsLoading || svc.isLoadingDiagrams()) && diagrams.length > 0">
+          <table class="diagrams-table">
+            <thead>
+              <tr>
+                <th class="col-name sortable-head">
+                  <span class="sort-header-clickable" (click)="onDiagramsSortToggle('name')">
+                    <span>Name</span>
+                    <span class="sort-icon" [class.active]="diagramsSortBy === 'name'">
+                      <app-icons name="sort" size="14"></app-icons>
+                    </span>
+                  </span>
+                </th>
+                <th class="col-modified sortable-head">
+                  <span class="sort-header-clickable" (click)="onDiagramsSortToggle('updatedat')">
+                    <span>Date Modified</span>
+                    <span class="sort-icon" [class.active]="diagramsSortBy === 'updatedat'">
+                      <app-icons name="sort" size="14"></app-icons>
+                    </span>
+                  </span>
+                </th>
+                <th class="col-created sortable-head">
+                  <span class="sort-header-clickable" (click)="onDiagramsSortToggle('createdat')">
+                    <span>Date Created</span>
+                    <span class="sort-icon" [class.active]="diagramsSortBy === 'createdat'">
+                      <app-icons name="sort" size="14"></app-icons>
+                    </span>
+                  </span>
+                </th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of diagrams" [class.active]="d.id === svc.diagramId()">
+                <td class="col-name">
+                  <div class="diagram-name-cell">
+                    <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="2" y1="12" x2="22" y2="12" />
+                      <path
+                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                    <span class="diagram-title-text">{{ d.name || 'Untitled Diagram' }}</span>
+                  </div>
+                </td>
+                <td class="col-modified">
+                  {{ formatDate(d.updated_at || d.created_at) }}
+                </td>
+                <td class="col-created">
+                  {{ formatDate(d.created_at) }}
+                </td>
+                <td class="col-actions" (click)="$event.stopPropagation()">
+                  <div class="action-menu-wrap">
+                    <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
+                      (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <circle cx="12" cy="5" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="12" cy="19" r="1.5" />
+                      </svg>
+                    </button>
+
+                    <div class="action-menu-dropdown" *ngIf="openMenuId === d.id">
+                      <button class="menu-action-item" (click)="onSelectDiagram(d.id)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Open Diagram
+                      </button>
+                      <button class="menu-action-item danger" (click)="showDeleteDiagramConfirm(d, $event)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Diagrams Pagination Footer -->
+        <div class="table-pagination-footer" *ngIf="!svc.isLoadingDiagrams() && diagramsTotal > 0">
+          <span class="pagination-info">{{ (diagramsPage - 1) * diagramsLimit + 1 }}-{{ getMin(diagramsPage *
+            diagramsLimit, diagramsTotal) }} of {{ diagramsTotal }} items</span>
+          <div class="pagination-controls-center">
+            <button class="btn-page-nav-icon" [disabled]="diagramsPage <= 1" (click)="loadDiagrams(1)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
+              </svg>
+            </button>
+            <button class="btn-page-nav-icon" [disabled]="diagramsPage <= 1" (click)="loadDiagrams(diagramsPage - 1)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <div class="page-numbers-container">
+              <ng-container *ngFor="let p of getPageRange(diagramsPage, diagramsTotalPages)">
+                <button *ngIf="p !== '...'" class="btn-page-number" [class.active]="p === diagramsPage"
+                  (click)="loadDiagrams(p)">
+                  {{ p }}
+                </button>
+                <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+              </ng-container>
+            </div>
+            <button class="btn-page-nav-icon" [disabled]="diagramsPage >= diagramsTotalPages"
+              (click)="loadDiagrams(diagramsPage + 1)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+            <button class="btn-page-nav-icon" [disabled]="diagramsPage >= diagramsTotalPages"
+              (click)="loadDiagrams(diagramsTotalPages)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
+              </svg>
+            </button>
+          </div>
+          <div class="page-size-selector">
+            <div class="custom-select-container">
+              <button class="custom-select-btn"
+                (click)="showDiagramsLimitDropdown = !showDiagramsLimitDropdown; $event.stopPropagation()">
+                <span>{{ diagramsLimit }}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showDiagramsLimitDropdown">
+                <div class="custom-select-option" *ngFor="let limit of [10, 25, 50, 100]"
+                  [class.active]="diagramsLimit === limit"
+                  (click)="onDiagramsLimitChange(limit); showDiagramsLimitDropdown = false">
+                  {{ limit }}
+                </div>
+              </div>
+            </div>
+            <span class="limit-label">items per page</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Shared With Me Tab Content -->
+      <div class="workspace-body" *ngIf="activeTab === 'shared'">
+
+        <!-- Loading State -->
+        <div class="loading-state" *ngIf="isLoadingSharedDiagrams">
+          <span class="spinner"></span> Loading shared diagrams...
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!isLoadingSharedDiagrams && sharedDiagrams.length === 0">
+          <div class="empty-icon">🤝</div>
+          <div class="empty-title">{{ sharedDiagramsSearch ? 'No diagrams match your search' : 'Shared with Me' }}</div>
+          <p class="empty-desc">{{ sharedDiagramsSearch ? 'Try searching for a different diagram name or email.' :
+            'Diagrams shared with your account will appear here.' }}</p>
+        </div>
+
+        <!-- Shared Diagrams Table -->
+        <div class="diagrams-table-container" *ngIf="!isLoadingSharedDiagrams && sharedDiagrams.length > 0">
+          <table class="diagrams-table">
+            <thead>
+              <tr>
+                <th class="col-name sortable-head">
+                  <span class="sort-header-clickable" (click)="onSharedSortToggle('name')">
+                    <span>Name</span>
+                    <span class="sort-icon" [class.active]="sharedDiagramsSortBy === 'name'">
+                      <app-icons name="sort" size="14"></app-icons>
+                    </span>
+                  </span>
+                </th>
+                <th class="col-modified sortable-head">
+                  <span class="sort-header-clickable" (click)="onSharedSortToggle('sharedbyemail')">
+                    <span>Shared By</span>
+                    <span class="sort-icon" [class.active]="sharedDiagramsSortBy === 'sharedbyemail'">
+                      <app-icons name="sort" size="14"></app-icons>
+                    </span>
+                  </span>
+                </th>
+                <th class="col-created sortable-head">
+                  <span class="sort-header-clickable" (click)="onSharedSortToggle('shared_date')">
+                    <span>Shared Date</span>
+                    <span class="sort-icon" [class.active]="sharedDiagramsSortBy === 'shared_date'">
+                      <app-icons name="sort" size="14"></app-icons>
+                    </span>
+                  </span>
+                </th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of sharedDiagrams">
+                <td class="col-name">
+                  <div class="diagram-name-cell">
+                    <svg *ngIf="d.ispublic" class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="2" y1="12" x2="22" y2="12" />
+                      <path
+                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                    <svg *ngIf="!d.ispublic" class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span class="diagram-title-text">{{ d.name || 'Untitled Diagram' }}</span>
+                  </div>
+                </td>
+                <td class="col-modified">
+                  <div class="member-user-info">
+                    <div class="tt tt-left owner-avatar-wrap" [attr.data-tt]="d.sharedbyemail">
+                      <img *ngIf="d.sharedby_profilepicture" [src]="d.sharedby_profilepicture"
+                        class="owner-profile-img" />
+                      <div *ngIf="!d.sharedby_profilepicture" class="default-owner-avatar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="col-created">
+                  {{ formatDate(d.shared_date) }}
+                </td>
+                <td class="col-actions" (click)="$event.stopPropagation()">
+                  <div class="action-menu-wrap" (click)="$event.stopPropagation()">
+                    <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.diagramid"
+                      (click)="toggleRowMenu(d.diagramid, $event)"
+                      [attr.data-tt]="openMenuId !== d.diagramid ? 'Options' : null">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <circle cx="12" cy="5" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="12" cy="19" r="1.5" />
+                      </svg>
+                    </button>
+                    <div class="action-menu-dropdown" *ngIf="openMenuId === d.diagramid">
+                      <button class="menu-action-item"
+                        (click)="openSharedDiagram(d.publictoken); toggleRowMenu(d.diagramid, $event)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        View Diagram
+                      </button>
+                      <button class="menu-action-item danger"
+                        (click)="deleteSharedDiagram(d.diagramid); toggleRowMenu(d.diagramid, $event)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                          </path>
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Shared Diagrams Pagination Footer -->
+        <div class="table-pagination-footer" *ngIf="!isLoadingSharedDiagrams && sharedDiagramsTotal > 0">
+          <span class="pagination-info">{{ (sharedDiagramsPage - 1) * sharedDiagramsLimit + 1 }}-{{
+            getMin(sharedDiagramsPage *
+            sharedDiagramsLimit, sharedDiagramsTotal) }} of {{ sharedDiagramsTotal }} items</span>
+          <div class="pagination-controls-center">
+            <button class="btn-page-nav-icon" [disabled]="sharedDiagramsPage <= 1" (click)="loadSharedDiagrams(1)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
+              </svg>
+            </button>
+            <button class="btn-page-nav-icon" [disabled]="sharedDiagramsPage <= 1"
+              (click)="loadSharedDiagrams(sharedDiagramsPage - 1)">
+              <app-icons name="chevron-left" size="12"></app-icons>
+            </button>
+
+            <div class="page-numbers-container">
+              <ng-container *ngFor="let p of getSharedPages()">
+                <button *ngIf="p !== '...'" class="btn-page-number" [class.active]="p === sharedDiagramsPage"
+                  (click)="loadSharedDiagrams(p)">
+                  {{ p }}
+                </button>
+                <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+              </ng-container>
+            </div>
+
+            <button class="btn-page-nav-icon"
+              [disabled]="sharedDiagramsPage >= (sharedDiagramsTotal / sharedDiagramsLimit)"
+              (click)="loadSharedDiagrams(sharedDiagramsPage + 1)">
+              <app-icons name="chevron-right" size="12"></app-icons>
+            </button>
+            <button class="btn-page-nav-icon"
+              [disabled]="sharedDiagramsPage >= Math.ceil(sharedDiagramsTotal / sharedDiagramsLimit)"
+              (click)="loadSharedDiagrams(Math.ceil(sharedDiagramsTotal / sharedDiagramsLimit))">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
+              </svg>
+            </button>
+          </div>
+          <div class="page-size-selector">
+            <div class="custom-select-container">
+              <button type="button" class="custom-select-btn"
+                (click)="showSharedLimitDropdown = !showSharedLimitDropdown; $event.stopPropagation()">
+                <span>{{ sharedDiagramsLimit }}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showSharedLimitDropdown">
+                <div class="custom-select-option" *ngFor="let limit of [10, 25, 50, 100]"
+                  [class.active]="sharedDiagramsLimit === limit"
+                  (click)="onSharedLimitChange(limit); showSharedLimitDropdown = false">
+                  {{ limit }}
+                </div>
+              </div>
+            </div>
+            <span class="limit-label">items per page</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: My Workspaces Tab Content -->
+      <div class="workspace-body my-workspaces-pane" *ngIf="activeTab === 'my-workspaces'">
+        <!-- VIEW A: Workspaces List -->
+        <ng-container *ngIf="!selectedWorkspace">
+
+          <div class="loading-state" *ngIf="isWorkspacesLoading || svc.isLoadingWorkspaces()">
+            <span class="spinner"></span> Loading workspaces...
+          </div>
+
+          <div class="empty-state"
+            *ngIf="!(isWorkspacesLoading || svc.isLoadingWorkspaces()) && svc.workspaces().length === 0">
+            <div class="empty-icon">🏢</div>
+            <div class="empty-title">{{ workspacesSearch ? 'No workspaces match your search' : 'No Workspaces Found' }}
+            </div>
+            <p class="empty-desc">{{ workspacesSearch ? 'Try searching for something else.' : 'Create your first
+              workspace to collaborate on diagrams with your team.' }}</p>
+            <button class="btn-create-first" (click)="openCreateWorkspace()">+ Create
+              Workspace</button>
+          </div>
+
+          <div class="diagrams-table-container"
+            *ngIf="!(isWorkspacesLoading || svc.isLoadingWorkspaces()) && svc.workspaces().length > 0">
+            <table class="diagrams-table">
+              <thead>
+                <tr>
+                  <th class="col-name sortable-head">
+                    <span class="sort-header-clickable" (click)="onWorkspacesSortToggle('workspacename')">
+                      <span>Name</span>
+                      <span class="sort-icon" [class.active]="workspacesSortBy === 'workspacename'">
+                        <app-icons name="sort" size="14"></app-icons>
+                      </span>
+                    </span>
+                  </th>
+                  <th class="col-modified sortable-head">
+                    <span class="sort-header-clickable" (click)="onWorkspacesSortToggle('owneremail')">
+                      <span>Owner</span>
+                      <span class="sort-icon" [class.active]="workspacesSortBy === 'owneremail'">
+                        <app-icons name="sort" size="14"></app-icons>
+                      </span>
+                    </span>
+                  </th>
+                  <th class="col-created sortable-head">
+                    <span class="sort-header-clickable" (click)="onWorkspacesSortToggle('permission')">
+                      <span>Access</span>
+                      <span class="sort-icon" [class.active]="workspacesSortBy === 'permission'">
+                        <app-icons name="sort" size="14"></app-icons>
+                      </span>
+                    </span>
+                  </th>
+                  <th class="col-actions"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ws of svc.workspaces()">
+                  <td class="col-name">
+                    <div class="diagram-name-cell">
+                      <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                      </svg>
+                      <span class="diagram-title-text">{{ ws.name || ws.workspacename }}</span>
+                    </div>
+                  </td>
+                  <td class="col-modified">
+                    <div class="member-user-info">
+                      <div class="tt tt-left owner-avatar-wrap" [attr.data-tt]="ws.user_email">
+                        <img *ngIf="ws.profile_pic" [src]="ws.profile_pic"
+                          class="owner-profile-img" />
+                        <div *ngIf="!ws.profile_pic" class="default-owner-avatar">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="col-created">
+                    <span class="ws-permission-tag">{{ getWorkspacePermission(ws) }}</span>
+                  </td>
+                  <td class="col-actions" (click)="$event.stopPropagation()">
+                    <div class="action-menu-wrap">
+                      <button class="three-dots-btn tt-left" [class.tt]="openWorkspaceMenuId !== ws.id"
+                        (click)="toggleWorkspaceMenu(ws.id, $event)"
+                        [attr.data-tt]="openWorkspaceMenuId !== ws.id ? 'Options' : null">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2.5">
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                      </button>
+
+                      <div class="action-menu-dropdown" *ngIf="openWorkspaceMenuId === ws.id"
+                        (click)="$event.stopPropagation()">
+                        <button class="menu-action-item" style="white-space: nowrap !important;"
+                          (click)="onSelectWorkspaceFromMenu(ws, $event)">
+                          <div class="action-item-left" style="white-space: nowrap !important;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <span style="white-space: nowrap !important;">View Diagram</span>
+                          </div>
+                        </button>
+                        <button class="menu-action-item" style="white-space: nowrap !important;"
+                          [class.is-disabled]="!canCreateDiagram(getWorkspacePermission(ws))"
+                          [disabled]="!canCreateDiagram(getWorkspacePermission(ws))"
+                          [class.tt]="!canCreateDiagram(getWorkspacePermission(ws))"
+                          [attr.data-tt]="canCreateDiagram(getWorkspacePermission(ws)) ? null : 'Requires Owner, Editor & Inviter, or Editor permission'"
+                          (click)="onCreateWorkspaceDiagram(ws, $event)">
+                          <div class="action-item-left" style="white-space: nowrap !important;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="8" x2="12" y2="16" />
+                              <line x1="8" y1="12" x2="16" y2="12" />
+                            </svg>
+                            <span style="white-space: nowrap !important;">Create Diagram</span>
+                          </div>
+                          <svg *ngIf="!canCreateDiagram(getWorkspacePermission(ws))" class="lock-icon" width="13"
+                            height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        </button>
+                        <button class="menu-action-item" style="white-space: nowrap !important;"
+                          (click)="openWorkspaceMembers(ws, $event)">
+                          <div class="action-item-left" style="white-space: nowrap !important;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <span style="white-space: nowrap !important;">View Members</span>
+                          </div>
+                        </button>
+                        <button class="menu-action-item" style="white-space: nowrap !important;"
+                          [class.is-disabled]="!canEditWorkspace(getWorkspacePermission(ws))"
+                          [disabled]="!canEditWorkspace(getWorkspacePermission(ws))"
+                          [class.tt]="!canEditWorkspace(getWorkspacePermission(ws))"
+                          [attr.data-tt]="canEditWorkspace(getWorkspacePermission(ws)) ? null : 'Requires Owner or Editor & Inviter permission'"
+                          (click)="openEditWorkspace(ws, $event)">
+                          <div class="action-item-left" style="white-space: nowrap !important;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            <span style="white-space: nowrap !important;">Edit Workspace</span>
+                          </div>
+                          <svg *ngIf="!canEditWorkspace(getWorkspacePermission(ws))" class="lock-icon" width="13"
+                            height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        </button>
+                        <button class="menu-action-item danger" style="white-space: nowrap !important;"
+                          [class.is-disabled]="!canDeleteWorkspace(getWorkspacePermission(ws))"
+                          [disabled]="!canDeleteWorkspace(getWorkspacePermission(ws))"
+                          [class.tt]="!canDeleteWorkspace(getWorkspacePermission(ws))"
+                          [attr.data-tt]="canDeleteWorkspace(getWorkspacePermission(ws)) ? null : 'Requires Owner or Editor & Inviter permission'"
+                          (click)="showDeleteConfirm(ws, $event)">
+                          <div class="action-item-left" style="white-space: nowrap !important;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path
+                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            <span style="white-space: nowrap !important;">Delete Workspace</span>
+                          </div>
+                          <svg *ngIf="!canDeleteWorkspace(getWorkspacePermission(ws))" class="lock-icon" width="13"
+                            height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Workspaces Pagination Footer -->
+          <div class="table-pagination-footer" *ngIf="!svc.isLoadingWorkspaces() && workspacesTotal > 0">
+            <span class="pagination-info">{{ (workspacesPage - 1) * workspacesLimit + 1 }}-{{
+              getMin(workspacesPage * workspacesLimit, workspacesTotal) }} of {{ workspacesTotal }} items</span>
+            <div class="pagination-controls-center">
+              <button class="btn-page-nav-icon" [disabled]="workspacesPage <= 1" (click)="loadWorkspaces(1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="11 17 6 12 11 7"></polyline>
+                  <polyline points="18 17 13 12 18 7"></polyline>
+                </svg>
+              </button>
+              <button class="btn-page-nav-icon" [disabled]="workspacesPage <= 1"
+                (click)="loadWorkspaces(workspacesPage - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <div class="page-numbers-container">
+                <ng-container *ngFor="let p of getPageRange(workspacesPage, workspacesTotalPages)">
+                  <button *ngIf="p !== '...'" class="btn-page-number" [class.active]="p === workspacesPage"
+                    (click)="loadWorkspaces(p)">
+                    {{ p }}
+                  </button>
+                  <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+                </ng-container>
+              </div>
+              <button class="btn-page-nav-icon" [disabled]="workspacesPage >= workspacesTotalPages"
+                (click)="loadWorkspaces(workspacesPage + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+              <button class="btn-page-nav-icon" [disabled]="workspacesPage >= workspacesTotalPages"
+                (click)="loadWorkspaces(workspacesTotalPages)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="13 17 18 12 13 7"></polyline>
+                  <polyline points="6 17 11 12 6 7"></polyline>
+                </svg>
+              </button>
+            </div>
+            <div class="page-size-selector">
+              <div class="custom-select-container">
+                <button class="custom-select-btn"
+                  (click)="showWorkspacesLimitDropdown = !showWorkspacesLimitDropdown; $event.stopPropagation()">
+                  <span>{{ workspacesLimit }}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <div class="custom-select-menu" *ngIf="showWorkspacesLimitDropdown">
+                  <div class="custom-select-option" *ngFor="let limit of [10, 25, 50, 100]"
+                    [class.active]="workspacesLimit === limit"
+                    (click)="onWorkspacesLimitChange(limit); showWorkspacesLimitDropdown = false">
+                    {{ limit }}
+                  </div>
+                </div>
+              </div>
+              <span class="limit-label">items per page</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- VIEW B: Diagrams inside Selected Workspace -->
+        <ng-container *ngIf="selectedWorkspace">
+          <div class="loading-state" *ngIf="svc.isLoadingDiagrams()">
+            <span class="spinner"></span> Loading workspace diagrams...
+          </div>
+
+          <div class="empty-state" *ngIf="!svc.isLoadingDiagrams() && diagrams.length === 0">
+            <div class="empty-icon">📁</div>
+            <div class="empty-title">No diagrams in this workspace yet</div>
+            <p class="empty-desc">Create your first diagram in "{{ selectedWorkspace.name }}" to get started.</p>
+          </div>
+
+          <div class="diagrams-table-container" *ngIf="!svc.isLoadingDiagrams() && diagrams.length > 0">
+            <table class="diagrams-table">
+              <thead>
+                <tr>
+                  <th class="col-name sortable-head">
+                    <span class="sort-header-clickable" (click)="onDiagramsSortToggle('name')">
+                      <span>Name</span>
+                      <span class="sort-icon" [class.active]="diagramsSortBy === 'name'">
+                        <app-icons name="sort" size="14"></app-icons>
+                      </span>
+                    </span>
+                  </th>
+                  <th class="col-modified sortable-head">
+                    <span class="sort-header-clickable" (click)="onDiagramsSortToggle('updatedat')">
+                      <span>Date Modified</span>
+                      <span class="sort-icon" [class.active]="diagramsSortBy === 'updatedat'">
+                        <app-icons name="sort" size="14"></app-icons>
+                      </span>
+                    </span>
+                  </th>
+                  <th class="col-created sortable-head">
+                    <span class="sort-header-clickable" (click)="onDiagramsSortToggle('createdat')">
+                      <span>Date Created</span>
+                      <span class="sort-icon" [class.active]="diagramsSortBy === 'createdat'">
+                        <app-icons name="sort" size="14"></app-icons>
+                      </span>
+                    </span>
+                  </th>
+                  <th class="col-actions"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of diagrams" [class.active]="d.id === svc.diagramId()">
+                  <td class="col-name">
+                    <div class="diagram-name-cell">
+                      <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path
+                          d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                      </svg>
+                      <span class="diagram-title-text">{{ d.name || 'Untitled Diagram' }}</span>
+                    </div>
+                  </td>
+                  <td class="col-modified">
+                    {{ formatDate(d.updated_at || d.created_at) }}
+                  </td>
+                  <td class="col-created">
+                    {{ formatDate(d.created_at) }}
+                  </td>
+                  <td class="col-actions" (click)="$event.stopPropagation()">
+                    <div class="action-menu-wrap">
+                      <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
+                        (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2.5">
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                      </button>
+
+                      <div class="action-menu-dropdown" *ngIf="openMenuId === d.id" (click)="$event.stopPropagation()">
+                        <button class="menu-action-item" (click)="onSelectDiagram(d.id)">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                          Open Diagram
+                        </button>
+                        <button class="menu-action-item danger"
+                          [disabled]="selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))"
+                          [class.disabled]="selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))"
+                          [class.tt]="selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))"
+                          [attr.data-tt]="(selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))) ? 'Requires Owner, EditorInvite, or Editor permission' : null"
+                          (click)="showDeleteDiagramConfirm(d, $event)">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Diagrams Pagination Footer (Selected Workspace) -->
+          <div class="table-pagination-footer" *ngIf="!svc.isLoadingDiagrams() && diagramsTotal > 0">
+            <span class="pagination-info">{{ (diagramsPage - 1) * diagramsLimit + 1 }}-{{ getMin(diagramsPage
+              * diagramsLimit, diagramsTotal) }} of {{ diagramsTotal }} items</span>
+            <div class="pagination-controls-center">
+              <button class="btn-page-nav-icon" [disabled]="diagramsPage <= 1" (click)="loadDiagrams(1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="11 17 6 12 11 7"></polyline>
+                  <polyline points="18 17 13 12 18 7"></polyline>
+                </svg>
+              </button>
+              <button class="btn-page-nav-icon" [disabled]="diagramsPage <= 1" (click)="loadDiagrams(diagramsPage - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <div class="page-numbers-container">
+                <ng-container *ngFor="let p of getPageRange(diagramsPage, diagramsTotalPages)">
+                  <button *ngIf="p !== '...'" class="btn-page-number" [class.active]="p === diagramsPage"
+                    (click)="loadDiagrams(p)">
+                    {{ p }}
+                  </button>
+                  <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+                </ng-container>
+              </div>
+              <button class="btn-page-nav-icon" [disabled]="diagramsPage >= diagramsTotalPages"
+                (click)="loadDiagrams(diagramsPage + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+              <button class="btn-page-nav-icon" [disabled]="diagramsPage >= diagramsTotalPages"
+                (click)="loadDiagrams(diagramsTotalPages)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="13 17 18 12 13 7"></polyline>
+                  <polyline points="6 17 11 12 6 7"></polyline>
+                </svg>
+              </button>
+            </div>
+            <div class="page-size-selector">
+              <div class="custom-select-container">
+                <button class="custom-select-btn"
+                  (click)="showDiagramsLimitDropdown = !showDiagramsLimitDropdown; $event.stopPropagation()">
+                  <span>{{ diagramsLimit }}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <div class="custom-select-menu" *ngIf="showDiagramsLimitDropdown">
+                  <div class="custom-select-option" *ngFor="let limit of [10, 25, 50, 100]"
+                    [class.active]="diagramsLimit === limit"
+                    (click)="onDiagramsLimitChange(limit); showDiagramsLimitDropdown = false">
+                    {{ limit }}
+                  </div>
+                </div>
+              </div>
+              <span class="limit-label">items per page</span>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- TAB 4: Create Workspace & Invite Members -->
+      <div class="workspace-body create-workspace-pane" *ngIf="activeTab === 'create-workspace'">
+        <div class="create-workspace-intro">
+          <p class="intro-desc">Invite and manage your teammates in one workspace, and allow them to collaborate on
+            diagrams.</p>
+        </div>
+
+        <!-- Workspace Name Form Group -->
+        <div class="form-group">
+          <label class="form-label">Workspace Name <span class="required-star">*</span></label>
+          <input type="text" class="workspace-input-field" placeholder="e.g. Demo Project or Team Workspace"
+            [(ngModel)]="workspaceName" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" />
+        </div>
+
+        <!-- Invite Section -->
+        <div class="members-section-box">
+          <div class="section-heading">Invite Members</div>
+
+          <div class="invite-input-row">
+            <div class="email-chips-input-wrap" (click)="emailInput1.focus()">
+              <div class="email-chip" *ngFor="let chip of invitedEmailsChips">
+                <span>{{ chip }}</span>
+                <span class="remove-chip" (click)="removeEmailChip(chip)">&times;</span>
+              </div>
+              <input #emailInput1 type="text" class="inline-input invite-placeholder"
+                style="border: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;"
+                [placeholder]="invitedEmailsChips.length > 0 ? '' : 'Enter email address to add member'"
+                [(ngModel)]="inviteEmail" (input)="clearErrors()" (keydown)="onEmailInputKeyDown($event)"
+                (blur)="addEmailChip()" spellcheck="false" />
+            </div>
+
+            <button class="btn-invite-action" (click)="addMember()">Invite</button>
+          </div>
+
+          <!-- Added Members List -->
+          <div class="members-section-box">
+            <div class="members-section-title">Members</div>
+
+            <div class="members-list-wrapper">
+              <!-- Owner Row -->
+              <div class="member-item-row">
+                <div class="member-user-info">
+                  <div class="member-avatar owner-avatar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                  <span class="member-email-text">{{ userEmail }} <span class="you-tag">(You)</span></span>
+                </div>
+                <div class="owner-badge-text">Owner</div>
+              </div>
+
+              <!-- Invited Members Rows -->
+              <div class="member-item-row" *ngFor="let m of membersList; let i = index"
+                [class.active-dropdown-row]="activeMemberDropdownIndex === i"
+                [style.z-index]="activeMemberDropdownIndex === i ? 99999 : 1">
+                <div class="member-user-info">
+                  <div class="member-avatar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                  <span class="member-email-text">{{ m.email }}</span>
+                </div>
+
+                <div class="member-actions-wrap" style="display: flex; align-items: center; gap: 8px;">
+                  <div class="member-permission-dropdown-wrap" (click)="$event.stopPropagation()">
+                    <button class="btn-member-perm-select"
+                      (click)="activeMemberDropdownIndex = activeMemberDropdownIndex === i ? null : i; $event.stopPropagation()">
+                      <span>{{ getPermissionLabel(m.permission) }}</span>
+                      <svg class="chevron" [class.open]="activeMemberDropdownIndex === i" width="12" height="12"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+
+                    <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === i"
+                      (click)="$event.stopPropagation()">
+                      <button class="perm-option-item" [class.selected]="m.permission === 'Editor & Inviter'"
+                        (click)="changeMemberPermission(i, 'Editor & Inviter', $event)">
+                        <div class="perm-option-header">
+                          <span class="perm-option-title">Can edit & invite</span>
+                          <svg *ngIf="m.permission === 'Editor & Inviter'" width="14" height="14" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                        <div class="perm-option-desc">Can edit & invite people.</div>
+                      </button>
+
+                      <button class="perm-option-item" [class.selected]="m.permission === 'Editor'"
+                        (click)="changeMemberPermission(i, 'Editor', $event)">
+                        <div class="perm-option-header">
+                          <span class="perm-option-title">Can edit</span>
+                          <svg *ngIf="m.permission === 'Editor'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="3" class="check-icon">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                        <div class="perm-option-desc">Can edit, but not invite people.</div>
+                      </button>
+
+                      <button class="perm-option-item" [class.selected]="m.permission === 'Viewer'"
+                        (click)="changeMemberPermission(i, 'Viewer', $event)">
+                        <div class="perm-option-header">
+                          <span class="perm-option-title">Can view</span>
+                          <svg *ngIf="m.permission === 'Viewer'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="3" class="check-icon">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                        <div class="perm-option-desc">Can view, but not edit.</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-remove-member-icon" *ngIf="m.permission !== 'Owner'"
+                    (click)="removeMember(i, $event)" title="Remove Member">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="create-workspace-footer">
+          <button type="button" class="btn-cancel-workspace" (click)="openMyWorkspaces()">
+            Cancel
+          </button>
+          <button type="button" class="btn-submit-create-workspace" (click)="submitCreateWorkspace()"
+            [disabled]="isCreatingWorkspace || !workspaceName.trim()">
+            <span *ngIf="isCreatingWorkspace" class="spinner spinner-sm"></span>
+            {{ isCreatingWorkspace ? 'Creating Workspace...' : 'Create Workspace' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 5: Edit Workspace Pane -->
+      <div class="workspace-body create-workspace-pane" *ngIf="activeTab === 'edit-workspace'">
+
+        <!-- Invite Section -->
+        <div class="members-section-box" style="margin-top: 0;">
+          <div class="section-heading">Invite / Manage Members</div>
+
+          <div class="invite-input-row">
+            <div class="email-chips-input-wrap" (click)="emailInput2.focus()">
+              <div class="email-chip" *ngFor="let chip of invitedEmailsChips">
+                <span>{{ chip }}</span>
+                <span class="remove-chip" (click)="removeEmailChip(chip)">&times;</span>
+              </div>
+              <input #emailInput2 type="text" class="inline-input"
+                style="border: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;"
+                [placeholder]="invitedEmailsChips.length > 0 ? '' : 'Enter email address to add member'"
+                [(ngModel)]="inviteEmail" (keydown)="onEmailInputKeyDown($event)" (blur)="addEmailChip()"
+                spellcheck="false" />
+            </div>
+
+            <button class="btn-invite-action" (click)="addMember()">Add Member</button>
+          </div>
+
+          <!-- Added Members List -->
+          <div class="members-section-box">
+            <div class="members-section-header">
+              <div class="members-section-title">Members</div>
+
+              <!-- Members Search Field -->
+              <div class="search-field-wrap members-search-wrap">
+                <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" class="workspace-input-field search-input" placeholder="Filter members..."
+                  [ngModel]="membersSearch" (ngModelChange)="onMembersSearchChange($event)" spellcheck="false" />
+              </div>
+            </div>
+
+            <div class="members-list-wrapper">
+              <!-- Loader for Members -->
+              <div class="loading-state" *ngIf="isLoadingMembers" style="height: 150px;">
+                <span class="spinner"></span> Loading members...
+              </div>
+
+              <ng-container *ngIf="!isLoadingMembers">
+                <!-- Invited & Owner Members List Rows -->
+                <div class="member-item-row" *ngFor="let m of membersList; let i = index"
+                  [class.active-dropdown-row]="activeMemberDropdownIndex === i"
+                  [style.z-index]="activeMemberDropdownIndex === i ? 99999 : 1">
+                  <div class="member-user-info">
+                    <div class="member-avatar" [class.owner-avatar]="m.permission === 'Owner'">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <span class="member-email-text">{{ m.email }} <span class="you-tag"
+                        *ngIf="m.email.toLowerCase() === userEmail.toLowerCase()">(You)</span></span>
+                  </div>
+
+                  <!-- Display static text badge for owner -->
+                  <div class="owner-badge-text" *ngIf="m.permission === 'Owner'">Owner</div>
+
+                  <div class="member-actions-wrap" *ngIf="m.permission !== 'Owner'"
+                    style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Display dropdown for normal members -->
+                    <div class="member-permission-dropdown-wrap" (click)="$event.stopPropagation()">
+                      <button type="button" class="btn-member-perm-select" (click)="toggleMemberDropdown(i, $event)">
+                        <span>{{ getPermissionLabel(m.permission) }}</span>
+                        <svg class="chevron" [class.open]="activeMemberDropdownIndex === i" width="10" height="10"
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
+
+                      <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === i"
+                        (click)="$event.stopPropagation()">
+                        <button class="perm-option-item" [class.selected]="m.permission === 'Editor & Inviter'"
+                          (click)="changeMemberPermission(i, 'Editor & Inviter', $event)">
+                          <div class="perm-option-header">
+                            <span class="perm-option-title">Can edit & invite</span>
+                            <svg *ngIf="m.permission === 'Editor & Inviter'" width="14" height="14" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                          <div class="perm-option-desc">Can edit & invite people.</div>
+                        </button>
+
+                        <button class="perm-option-item" [class.selected]="m.permission === 'Editor'"
+                          (click)="changeMemberPermission(i, 'Editor', $event)">
+                          <div class="perm-option-header">
+                            <span class="perm-option-title">Can edit</span>
+                            <svg *ngIf="m.permission === 'Editor'" width="14" height="14" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                          <div class="perm-option-desc">Can edit, but not invite people.</div>
+                        </button>
+
+                        <button class="perm-option-item" [class.selected]="m.permission === 'Viewer'"
+                          (click)="changeMemberPermission(i, 'Viewer', $event)">
+                          <div class="perm-option-header">
+                            <span class="perm-option-title">Can view</span>
+                            <svg *ngIf="m.permission === 'Viewer'" width="14" height="14" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                          <div class="perm-option-desc">Can view, but not edit.</div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button type="button" class="btn-remove-member-icon" [disabled]="!m.isNew"
+                      [class.disabled-icon]="!m.isNew" (click)="m.isNew ? removeMember(i, $event) : null"
+                      title="Remove Member">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+
+            <!-- Members Pagination Footer -->
+            <div class="table-pagination-footer members-pagination-footer" *ngIf="membersTotal > 0">
+              <span class="pagination-info">{{ (membersPage - 1) * membersLimit + 1 }}-{{ getMin(membersPage *
+                membersLimit, membersTotal) }} of {{ membersTotal }} items</span>
+              <div class="pagination-controls-center">
+                <button type="button" class="btn-page-nav-icon" [disabled]="membersPage <= 1"
+                  (click)="loadMembers(editingWorkspace?.id, 1)">«</button>
+                <button type="button" class="btn-page-nav-icon" [disabled]="membersPage <= 1"
+                  (click)="loadMembers(editingWorkspace?.id, membersPage - 1)">‹</button>
+                <div class="page-numbers-container">
+                  <ng-container *ngFor="let p of getPageRange(membersPage, membersTotalPages)">
+                    <button type="button" *ngIf="p !== '...'" class="btn-page-number" [class.active]="p === membersPage"
+                      (click)="loadMembers(editingWorkspace?.id, p)">
+                      {{ p }}
+                    </button>
+                    <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+                  </ng-container>
+                </div>
+                <button type="button" class="btn-page-nav-icon" [disabled]="membersPage >= membersTotalPages"
+                  (click)="loadMembers(editingWorkspace?.id, membersPage + 1)">›</button>
+                <button type="button" class="btn-page-nav-icon" [disabled]="membersPage >= membersTotalPages"
+                  (click)="loadMembers(editingWorkspace?.id, membersTotalPages)">»</button>
+              </div>
+              <div class="page-size-selector">
+                <div class="custom-select-container">
+                  <button type="button" class="custom-select-btn"
+                    (click)="showMembersLimitDropdown = !showMembersLimitDropdown; $event.stopPropagation()">
+                    <span>{{ membersLimit }}</span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+                  <div class="custom-select-menu" *ngIf="showMembersLimitDropdown">
+                    <div class="custom-select-option" *ngFor="let limit of [10, 25, 50, 100]"
+                      [class.active]="membersLimit === limit"
+                      (click)="onMembersLimitChange(limit); showMembersLimitDropdown = false">
+                      {{ limit }}
+                    </div>
+                  </div>
+                </div>
+                <span class="limit-label">items per page</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-error-banner" *ngIf="updateWorkspaceError">
+          {{ updateWorkspaceError }}
+        </div>
+
+        <div class="create-workspace-footer">
+          <button type="button" class="btn-cancel-workspace" (click)="openMyWorkspaces()">
+            Cancel
+          </button>
+          <button type="button" class="btn-submit-create-workspace" (click)="submitEditWorkspace()"
+            [disabled]="isUpdatingWorkspace || !workspaceName.trim()">
+            <span *ngIf="isUpdatingWorkspace" class="spinner spinner-sm"></span>
+            {{ isUpdatingWorkspace ? 'updating Workspace...' : 'Update Workspace' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 6: View Workspace Members Pane -->
+      <div class="workspace-body create-workspace-pane" *ngIf="activeTab === 'view-members'"
+        style="display: flex !important; flex-direction: column !important; height: 100% !important;">
+        <div class="members-section-box"
+          style="margin-top: 0; display: flex !important; flex-direction: column !important; flex: 1 !important; min-height: 0 !important;">
+          <div class="members-section-header"
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0 !important;">
+            <div class="members-section-title" style="font-size: 13px; font-weight: 600; color: #ffffff;">Members</div>
+
+            <!-- Members Search Field -->
+            <div class="search-field-wrap members-search-wrap"
+              style="position: relative; display: flex; align-items: center;">
+              <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" style="position: absolute; left: 10px; color: #64748b;">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" class="workspace-input-field search-input" placeholder="Filter members..."
+                [ngModel]="membersSearch" (ngModelChange)="onMembersSearchChange($event)" spellcheck="false"
+                style="padding-left: 28px; height: 32px; border-radius: 6px; width: 180px;" />
+            </div>
+          </div>
+
+          <div class="members-list-wrapper diagrams-table-container"
+            style="flex: 1 1 auto; overflow-y: auto; border: none; background: transparent;">
+            <!-- Loader for Members -->
+            <div class="loading-state" *ngIf="isLoadingMembers">
+              <span class="spinner"></span> Loading members...
+            </div>
+
+            <ng-container *ngIf="!isLoadingMembers">
+              <!-- Empty State -->
+              <div class="empty-state" *ngIf="filteredMembersList.length === 0 && membersSearch">
+                <div class="empty-icon">👥</div>
+                <div class="empty-title">No members match your search</div>
+                <p class="empty-desc">Try searching for a different name or email.</p>
+              </div>
+
+              <table class="diagrams-table" *ngIf="filteredMembersList.length > 0 || !membersSearch">
+                <thead>
+                  <tr>
+                    <th class="col-name sortable-head">
+                      <span class="sort-header-clickable" (click)="onMembersSortToggle('email')">
+                        <span>Name</span>
+                        <span class="sort-icon" [class.active]="membersSortBy === 'email'">
+                          <app-icons name="sort" size="14"></app-icons>
+                        </span>
+                      </span>
+                    </th>
+                    <th class="col-role sortable-head">
+                      <span class="sort-header-clickable" (click)="onMembersSortToggle('permission')">
+                        <span>Role</span>
+                        <span class="sort-icon" [class.active]="membersSortBy === 'permission'">
+                          <app-icons name="sort" size="14"></app-icons>
+                        </span>
+                      </span>
+                    </th>
+                    <th class="col-actions"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of filteredMembersList; let i = index" [class.owner-row]="m.permission === 'Owner'">
+
+                    <td class="col-name">
+                      <div class="member-user-cell" style="display: flex; align-items: center; gap: 10px;">
+                        <div class="member-avatar" [class.owner-avatar]="m.permission === 'Owner'">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        </div>
+                        <span class="member-email-text">
+                          {{ m.email }}
+                          <span class="you-tag" *ngIf="m.email.toLowerCase() === userEmail.toLowerCase()">(You)</span>
+                        </span>
+                      </div>
+                    </td>
+
+                    <td class="col-role">
+                      <div class="owner-badge" *ngIf="m.permission === 'Owner'" style="font-weight: 500;">
+                        Owner
+                      </div>
+                      <div class="member-role-badge" *ngIf="m.permission !== 'Owner'" style="font-weight: 500;">
+                        {{ getPermissionLabel(m.permission) }}
+                      </div>
+                    </td>
+
+                    <td class="col-actions">
+                      <button type="button" class="btn-delete-member"
+                        *ngIf="m.permission !== 'Owner' && canDeleteMember()"
+                        (click)="showDeleteMemberConfirm(m, $event)" title="Remove Member">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </td>
+
+                  </tr>
+                </tbody>
+              </table>
+            </ng-container>
+          </div>
+
+          <!-- Members Pagination Footer -->
+          <div class="table-pagination-footer members-pagination-footer" *ngIf="membersTotal > 0 && !isLoadingMembers"
+            style="margin-top: auto !important; padding-top: 12px !important; border-top: 1px solid rgba(255, 255, 255, 0.08) !important; flex-shrink: 0 !important;">
+            <span class="pagination-info" style="font-size: 11.5px; color: #7082a0;">{{ (membersPage - 1) * membersLimit
+              + 1 }}-{{ getMin(membersPage *
+              membersLimit, membersTotal) }} of {{ membersTotal }} items</span>
+            <div class="pagination-controls-center">
+              <button type="button" class="btn-page-nav-icon" [disabled]="membersPage <= 1"
+                (click)="loadMembersForView(1)">«</button>
+              <button type="button" class="btn-page-nav-icon" [disabled]="membersPage <= 1"
+                (click)="loadMembersForView(membersPage - 1)">‹</button>
+              <div class="page-numbers-container">
+                <ng-container *ngFor="let p of getPageRange(membersPage, membersTotalPages)">
+                  <button type="button" *ngIf="p !== '...'" class="btn-page-number" [class.active]="p === membersPage"
+                    (click)="loadMembersForView(p)">
+                    {{ p }}
+                  </button>
+                  <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+                </ng-container>
+              </div>
+              <button type="button" class="btn-page-nav-icon" [disabled]="membersPage >= membersTotalPages"
+                (click)="loadMembersForView(membersPage + 1)">›</button>
+              <button type="button" class="btn-page-nav-icon" [disabled]="membersPage >= membersTotalPages"
+                (click)="loadMembersForView(membersTotalPages)">»</button>
+            </div>
+            <div class="page-size-selector">
+              <div class="custom-select-container">
+                <button type="button" class="custom-select-btn"
+                  (click)="showMembersLimitDropdown = !showMembersLimitDropdown; $event.stopPropagation()">
+                  <span>{{ membersLimit }}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <div class="custom-select-menu" *ngIf="showMembersLimitDropdown">
+                  <div class="custom-select-option" *ngFor="let limit of [10, 25, 50, 100]"
+                    [class.active]="membersLimit === limit"
+                    (click)="onMembersLimitChangeForView(limit); showMembersLimitDropdown = false">
+                    {{ limit }}
+                  </div>
+                </div>
+              </div>
+              <span class="limit-label">items per page</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Custom Delete Confirmation Modal Overlay -->
+  <div class="confirm-modal-backdrop" *ngIf="deleteConfirm.visible" (click)="closeDeleteConfirm()">
+    <div class="confirm-modal-container" (click)="$event.stopPropagation()">
+      <div class="confirm-modal-header" *ngIf="!deleteConfirm.deleteSuccess">
+        <h3>Delete Workspace</h3>
+        <button type="button" class="btn-close-confirm" (click)="closeDeleteConfirm()">&times;</button>
+      </div>
+
+      <ng-container *ngIf="!deleteConfirm.deleteSuccess; else successMsg">
+        <div class="confirm-modal-body">
+          <p>Are you sure you want to delete workspace <strong>"{{ deleteConfirm.workspace?.name }}"</strong>?</p>
+        </div>
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn-confirm-action btn-confirm-delete" [disabled]="deleteConfirm.isDeleting"
+            (click)="confirmDeleteWorkspace()">
+            <span *ngIf="deleteConfirm.isDeleting" class="spinner spinner-sm"></span>
+            {{ deleteConfirm.isDeleting ? 'Deleting...' : 'Delete' }}
+          </button>
+          <button type="button" class="btn-confirm-action btn-confirm-cancel" [disabled]="deleteConfirm.isDeleting"
+            (click)="closeDeleteConfirm()">Cancel</button>
+        </div>
+      </ng-container>
+
+      <ng-template #successMsg>
+        <div class="confirm-modal-body success-state-body">
+          <div class="success-icon-wrapper">
+            <svg class="success-checkmark" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline class="checkmark-check" points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h4 class="success-title">Deleted Successfully</h4>
+          <p class="success-desc">The workspace has been permanently removed.</p>
+          <button type="button" class="btn-success-ok" (click)="closeDeleteConfirm()">OK</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Custom Delete Member Confirmation Modal Overlay -->
+  <div class="confirm-modal-backdrop" *ngIf="deleteMemberConfirm.visible" (click)="closeDeleteMemberConfirm()">
+    <div class="confirm-modal-container" (click)="$event.stopPropagation()">
+      <div class="confirm-modal-header" *ngIf="!deleteMemberConfirm.deleteSuccess">
+        <h3>Remove Member</h3>
+        <button type="button" class="btn-close-confirm" (click)="closeDeleteMemberConfirm()">&times;</button>
+      </div>
+
+      <ng-container *ngIf="!deleteMemberConfirm.deleteSuccess; else successMsgMember">
+        <div class="confirm-modal-body">
+          <p>Are you sure you want to remove <strong>"{{ deleteMemberConfirm.member?.email }}"</strong> from workspace
+            <strong>"{{ selectedWorkspaceForMembers?.name }}"</strong>?
+          </p>
+        </div>
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn-confirm-action btn-confirm-delete"
+            [disabled]="deleteMemberConfirm.isDeleting" (click)="confirmDeleteMember()">
+            <span *ngIf="deleteMemberConfirm.isDeleting" class="spinner spinner-sm"></span>
+            {{ deleteMemberConfirm.isDeleting ? 'Removing...' : 'Remove' }}
+          </button>
+          <button type="button" class="btn-confirm-action btn-confirm-cancel"
+            [disabled]="deleteMemberConfirm.isDeleting" (click)="closeDeleteMemberConfirm()">Cancel</button>
+        </div>
+      </ng-container>
+
+      <ng-template #successMsgMember>
+        <div class="confirm-modal-body success-state-body">
+          <div class="success-icon-wrapper">
+            <svg class="success-checkmark" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline class="checkmark-check" points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h4 class="success-title">Removed Successfully</h4>
+          <p class="success-desc">The member has been removed from the workspace.</p>
+          <button type="button" class="btn-success-ok" (click)="closeDeleteMemberConfirm()">OK</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Custom Delete Shared Diagram Confirmation Modal Overlay -->
+  <div class="confirm-modal-backdrop" *ngIf="deleteSharedConfirm.visible" (click)="closeDeleteSharedConfirm()">
+    <div class="confirm-modal-container" (click)="$event.stopPropagation()">
+      <div class="confirm-modal-header" *ngIf="!deleteSharedConfirm.deleteSuccess">
+        <h3>Remove Shared Diagram</h3>
+        <button type="button" class="btn-close-confirm" (click)="closeDeleteSharedConfirm()">&times;</button>
+      </div>
+
+      <ng-container *ngIf="!deleteSharedConfirm.deleteSuccess; else successMsgShared">
+        <div class="confirm-modal-body">
+          <p>Are you sure you want to remove this diagram from your shared list?</p>
+        </div>
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn-confirm-action btn-confirm-delete"
+            [disabled]="deleteSharedConfirm.isDeleting" (click)="confirmDeleteSharedDiagram()">
+            <span *ngIf="deleteSharedConfirm.isDeleting" class="spinner spinner-sm"></span>
+            {{ deleteSharedConfirm.isDeleting ? 'Removing...' : 'Remove' }}
+          </button>
+          <button type="button" class="btn-confirm-action btn-confirm-cancel"
+            [disabled]="deleteSharedConfirm.isDeleting" (click)="closeDeleteSharedConfirm()">Cancel</button>
+        </div>
+      </ng-container>
+
+      <ng-template #successMsgShared>
+        <div class="confirm-modal-body success-state-body">
+          <div class="success-icon-wrap">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <h4 class="success-title">Removed Successfully</h4>
+          <p class="success-desc">The diagram has been removed from your shared list.</p>
+          <button type="button" class="btn-success-ok" (click)="closeDeleteSharedConfirm()">OK</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Delete Diagram Confirmation Modal -->
+  <div class="confirm-modal-backdrop" *ngIf="deleteDiagramConfirm.visible" (click)="closeDeleteDiagramConfirm()">
+    <div class="confirm-modal-container" (click)="$event.stopPropagation()">
+      <div class="confirm-modal-header" *ngIf="!deleteDiagramConfirm.deleteSuccess">
+        <h3>Delete Diagram</h3>
+        <button type="button" class="btn-close-confirm" (click)="closeDeleteDiagramConfirm()">&times;</button>
+      </div>
+
+      <ng-container *ngIf="!deleteDiagramConfirm.deleteSuccess; else successMsgDiagram">
+        <div class="confirm-modal-body">
+          <p>Are you sure you want to delete diagram <strong>"{{ deleteDiagramConfirm.diagramName }}"</strong>?</p>
+        </div>
+        <div class="confirm-modal-footer">
+          <button type="button" class="btn-confirm-action btn-confirm-delete"
+            [disabled]="deleteDiagramConfirm.isDeleting" (click)="confirmDeleteDiagram()">
+            <span *ngIf="deleteDiagramConfirm.isDeleting"></span>
+            {{ deleteDiagramConfirm.isDeleting ? 'Deleting...' : 'Delete' }}
+          </button>
+          <button type="button" class="btn-confirm-action btn-confirm-cancel"
+            [disabled]="deleteDiagramConfirm.isDeleting" (click)="closeDeleteDiagramConfirm()">Cancel</button>
+        </div>
+      </ng-container>
+
+      <ng-template #successMsgDiagram>
+        <div class="confirm-modal-body success-state-body">
+          <div class="success-icon-wrapper">
+            <svg class="success-checkmark" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline class="checkmark-check" points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h4 class="success-title">Deleted Successfully</h4>
+          <p class="success-desc">The diagram has been permanently deleted.</p>
+          <button type="button" class="btn-success-ok" (click)="closeDeleteDiagramConfirm()">OK</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+</div>
