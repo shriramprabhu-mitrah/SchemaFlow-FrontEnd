@@ -1,81 +1,50 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
+import { Icons } from '../../../core/component/icons/icons';
+
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-subscription-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Icons],
   templateUrl: './subscription-management.html'
 })
 export class SubscriptionManagementComponent implements OnInit {
   private admin = inject(AdminService);
   private cdr = inject(ChangeDetectorRef);
+  public dashService = inject(DashboardService);
 
   allSubscriptions: any[] = [];
   search = '';
   statusFilter = '';
   page = 1;
   limit = 10;
+  showLimitDropdown = false;
+  showStatusFilterDropdown = false;
+
+  getStatusFilterLabel(): string {
+    if (this.statusFilter === 'active') return 'Active';
+    if (this.statusFilter === 'trial') return 'Trial';
+    if (this.statusFilter === 'cancelled') return 'Cancelled';
+    if (this.statusFilter === 'expired') return 'Expired';
+    return 'All Statuses';
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.showLimitDropdown = false;
+    this.showStatusFilterDropdown = false;
+  }
   sortColumn = 'subscription_id';
   sortAsc = true;
   loading = true;
 
-  get filteredSubscriptionsList(): any[] {
-    if (!this.allSubscriptions) return [];
-    let list = [...this.allSubscriptions];
-
-    // Status Filter
-    if (this.statusFilter) {
-      list = list.filter(s => (s.status || '').toLowerCase() === this.statusFilter.toLowerCase());
-    }
-
-    // Search Query (Organization name, Plan name, Status, ID)
-    if (this.search.trim()) {
-      const q = this.search.trim().toLowerCase();
-      list = list.filter(s =>
-        (s.org_name || '').toLowerCase().includes(q) ||
-        (s.email || '').toLowerCase().includes(q) ||
-        (s.username || '').toLowerCase().includes(q) ||
-        (s.organization_name || '').toLowerCase().includes(q) ||
-        (s.plan_name || '').toLowerCase().includes(q) ||
-        (s.status || '').toLowerCase().includes(q) ||
-        String(s.subscription_id || '').includes(q) ||
-        String(s.organization_id || '').includes(q)
-      );
-    }
-
-    // Sort
-    list.sort((a, b) => {
-      let valA: any = a[this.sortColumn] ?? '';
-      let valB: any = b[this.sortColumn] ?? '';
-
-      if (this.sortColumn === 'user') {
-        valA = a.email ? a.email : a.org_name || '';
-        valB = b.email ? b.email : b.org_name || '';
-      } else if (this.sortColumn === 'plan') {
-        valA = a.plan_name || '';
-        valB = b.plan_name || '';
-      } else if (this.sortColumn === 'started') {
-        valA = new Date(a.current_period_start || 0).getTime();
-        valB = new Date(b.current_period_start || 0).getTime();
-      }
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return this.sortAsc ? -1 : 1;
-      if (valA > valB) return this.sortAsc ? 1 : -1;
-      return 0;
-    });
-
-    return list;
-  }
-
-  get totalFilteredCount(): number {
-    return this.filteredSubscriptionsList.length;
-  }
+  totalFilteredCount = 0;
 
   get totalPagesCount(): number {
     return Math.ceil(this.totalFilteredCount / this.limit) || 1;
@@ -114,17 +83,24 @@ export class SubscriptionManagementComponent implements OnInit {
   }
 
   get displaySubscriptions(): any[] {
-    const start = (this.page - 1) * this.limit;
-    return this.filteredSubscriptionsList.slice(start, start + this.limit);
+    return this.allSubscriptions;
   }
 
-  ngOnInit(): void { this.load(); }
+  private searchSubject = new Subject<string>();
+
+  ngOnInit(): void { this.load(); 
+    this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
+      this.page = 1;
+      this.load();
+    });
+  }
 
   load(): void {
     this.loading = true;
-    this.admin.getSubscriptions(1, 1000, this.statusFilter || undefined).subscribe({
+    this.admin.getSubscriptions(this.page, this.limit, this.statusFilter || undefined, this.search, this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
         this.allSubscriptions = res?.data || res || [];
+        this.totalFilteredCount = res?.meta?.total || this.allSubscriptions.length;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -135,10 +111,27 @@ export class SubscriptionManagementComponent implements OnInit {
     });
   }
 
-  onSearch(): void { this.page = 1; }
-  onFilter(): void { this.page = 1; this.load(); }
-  goToPage(p: number): void { this.page = p; }
-  onLimitChange(): void { this.page = 1; }
+  onSearch(): void {
+    this.page = 1;
+    this.load();
+  }
+
+  onFilter(): void {
+    this.page = 1;
+    this.load();
+  }
+
+  goToPage(p: number): void {
+    if (this.page !== p) {
+      this.page = p;
+      this.load();
+    }
+  }
+
+  onLimitChange(): void {
+    this.page = 1;
+    this.load();
+  }
 
   sortBy(col: string): void {
     if (this.sortColumn === col) {
@@ -147,5 +140,7 @@ export class SubscriptionManagementComponent implements OnInit {
       this.sortColumn = col;
       this.sortAsc = true;
     }
+    this.page = 1;
+    this.load();
   }
 }

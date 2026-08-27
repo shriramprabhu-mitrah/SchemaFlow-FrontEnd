@@ -126,6 +126,12 @@ export class LoginComponent {
     this.isLoading = false;
     this.svc.showToast('Logged in successfully.', 3000, 'success');
 
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
+
     const pendingInviteUrl = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_url') : null;
     const pendingInviteId = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_id') : null;
 
@@ -147,7 +153,7 @@ export class LoginComponent {
     }
 
     // Organization redirect
-    if (this.auth.isOrganizationOwner() || this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+    if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
       this.router.navigate(['/organization']);
       return;
     }

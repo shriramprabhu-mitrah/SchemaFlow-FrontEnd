@@ -1,31 +1,30 @@
 <div class="org-shell" [class.collapsed]="sidebarCollapsed">
   <!-- Sidebar -->
   <aside class="org-sidebar">
-    <div class="sidebar-header">
-      <!-- When collapsed: click logo to expand sidebar -->
-      <div *ngIf="sidebarCollapsed" class="brand-mark" (click)="toggleSidebar()" title="Expand Sidebar"
-        style="cursor:pointer">
-        <app-icons name="db-diagram-logo" size="32"></app-icons>
-      </div>
-
-      <!-- When expanded: click logo/text to navigate to landing page -->
-      <a *ngIf="!sidebarCollapsed" routerLink="/" class="brand-mark" title="Go to Home"
-        style="text-decoration:none;cursor:pointer">
-        <app-icons name="db-diagram-logo" size="32"></app-icons>
-        <span class="brand-text">MS Dbdiagram</span>
+    <div class="sidebar-header sidebar-header-flex">
+      <!-- Logo and brand text always centered inside header -->
+      <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
+        <app-icons name="db-diagram-logo" size="32" class="brand-icon-wrap"></app-icons>
+        <span class="brand-text brand-text-flex" *ngIf="!sidebarCollapsed">DB Nexus</span>
       </a>
-      <button class="collapse-btn" *ngIf="!sidebarCollapsed" (click)="toggleSidebar()" title="Collapse Sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round">
-          <line x1="17" y1="12" x2="7" y2="12" />
-          <polyline points="11 8 7 12 11 16" />
-        </svg>
-      </button>
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/organization/settings" routerLinkActive="active" class="nav-item"
-        [title]="sidebarCollapsed ? 'General Settings' : ''">
+      <a routerLink="/organization/dashboard" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Dashboard' : null">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="9"></rect>
+          <rect x="14" y="3" width="7" height="5"></rect>
+          <rect x="14" y="12" width="7" height="9"></rect>
+          <rect x="3" y="16" width="7" height="5"></rect>
+        </svg>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard</span>
+      </a>
+
+      <a routerLink="/organization/settings" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'General Settings' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
           <circle cx="12" cy="12" r="3" />
@@ -36,7 +35,8 @@
       </a>
 
       <a *ngIf="isOwner" routerLink="/organization/subscription" routerLinkActive="active" class="nav-item"
-        [title]="sidebarCollapsed ? 'Subscription' : ''">
+        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
+        [attr.data-tt]="sidebarCollapsed ? 'Subscription' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
           <rect x="1" y="4" width="22" height="16" rx="2" />
@@ -45,8 +45,8 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Subscription</span>
       </a>
 
-      <a routerLink="/organization/members" routerLinkActive="active" class="nav-item"
-        [title]="sidebarCollapsed ? 'Members' : ''">
+      <a routerLink="/organization/members" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Members' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -57,25 +57,33 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Members</span>
       </a>
 
-      <a routerLink="/organization/roles" routerLinkActive="active" class="nav-item"
-        [title]="sidebarCollapsed ? 'Roles' : ''">
+      <a routerLink="/organization/audit-logs" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Audit Logs' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-          stroke-linecap="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
         </svg>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Roles</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Audit Logs</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
-      <button class="nav-item footer-action" (click)="goBack()" [title]="sidebarCollapsed ? 'Back to application' : ''">
+      <button class="nav-item footer-action" (click)="goBack()" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Back to application' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-          stroke-linecap="round">
-          <polyline points="15 18 9 12 15 6" />
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+          <polyline points="10 17 15 12 10 7" />
+          <line x1="15" y1="12" x2="3" y2="12" />
         </svg>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Go to application</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Go to Application</span>
       </button>
-      <button class="nav-item footer-action logout" (click)="logout()" [title]="sidebarCollapsed ? 'Logout' : ''">
+      <button class="nav-item footer-action logout" (click)="logout()" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Logout' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -90,12 +98,20 @@
   <!-- Main Content -->
   <main class="org-main">
     <header class="org-top-header">
-      <div class="header-left">
-        <h2 class="page-title">Organization Dashboard</h2>
+      <div class="header-left header-left-flex">
+        <button class="theme-toggle-btn tt tt-bottom toggle-sidebar-btn" data-tt="Toggle Sidebar"
+          (click)="toggleSidebar()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
       </div>
       <div class="header-right">
-        <button class="theme-toggle-btn" (click)="dashService.toggleTheme()"
-          [title]="dashService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+        <button class="theme-toggle-btn tt tt-bottom" (click)="dashService.toggleTheme()"
+          [attr.data-tt]="dashService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
           <svg *ngIf="dashService.theme() === 'light'" width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />

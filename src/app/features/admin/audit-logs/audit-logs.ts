@@ -1,29 +1,62 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
+
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
   selector: 'app-audit-logs',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Icons],
   templateUrl: './audit-logs.html'
 })
 export class AuditLogsComponent implements OnInit {
   private admin = inject(AdminService);
   private cdr = inject(ChangeDetectorRef);
-  logs: any[] = [];
+  public dashService = inject(DashboardService);
+
+  allLogs: any[] = [];
   meta: any = {};
   page = 1;
   limit = 10;
+  showLimitDropdown = false;
+  showDetailsModal = false;
+  selectedLogDetails: any = null;
+  selectedLogAction: string = '';
+
+  openDetailsModal(log: any) {
+    if (!log.details) return;
+    this.selectedLogDetails = log.details;
+    this.selectedLogAction = log.action;
+    this.showDetailsModal = true;
+  }
+
+  closeDetailsModal() {
+    this.showDetailsModal = false;
+    this.selectedLogDetails = null;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.showLimitDropdown = false;
+  }
+
   actionFilter = '';
   searchQuery = '';
   sortColumn = 'time';
   sortAsc = false;
   loading = true;
 
+  totalFilteredCount = 0;
+  get filteredLogsList(): any[] { return this.allLogs; }
+
+
   get totalPagesCount(): number {
-    return this.meta.totalPages || Math.ceil((this.meta.total || this.logs.length) / this.limit) || 1;
+    return Math.ceil(this.totalFilteredCount / this.limit) || 1;
   }
 
   get totalPages(): number[] {
@@ -50,15 +83,25 @@ export class AuditLogsComponent implements OnInit {
   }
 
   get paginationStartIndex(): number {
-    if (!this.meta.total && this.logs.length === 0) return 0;
+    if (this.totalFilteredCount === 0) return 0;
     return (this.page - 1) * this.limit + 1;
   }
 
   get paginationEndIndex(): number {
-    return Math.min(this.page * this.limit, this.meta.total || this.logs.length || 0);
+    return Math.min(this.page * this.limit, this.totalFilteredCount);
   }
 
-  ngOnInit(): void { this.load(); }
+  get logs(): any[] { return this.filteredLogsList; }
+
+  private searchSubject = new Subject<string>();
+
+  ngOnInit(): void {
+    this.load(); 
+    this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
+      this.page = 1;
+      this.load();
+    });
+  }
 
   load(): void {
     this.loading = true;
@@ -66,23 +109,29 @@ export class AuditLogsComponent implements OnInit {
     if (this.actionFilter) filters.action = this.actionFilter;
     if (this.searchQuery) filters.search = this.searchQuery;
 
-    this.admin.getAuditLogs(this.page, this.limit, filters).subscribe({
+    this.admin.getAuditLogs(this.page, this.limit, filters, this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
-        this.logs = res?.data || [];
+        this.allLogs = (Array.isArray(res) ? res : (res?.data || [])).map((log: any) => {
+          if (log.action) {
+            log.action = log.action.replace(/seats/g, 'members').replace(/seat/g, 'member').replace(/Seats/g, 'Members').replace(/Seat/g, 'Member');
+          }
+          return log;
+        });
+        this.totalFilteredCount = res?.meta?.total || this.allLogs.length;
         this.meta = res?.meta || {};
-        this.sortLogs();
         this.loading = false;
         this.cdr.detectChanges();
       },
       error: () => {
+        this.allLogs = [];
         this.loading = false;
         this.cdr.detectChanges();
       }
     });
   }
 
-  onFilter(): void { this.page = 1; this.load(); }
-  goToPage(p: number): void { this.page = p; this.load(); }
+  onFilter(): void { this.searchSubject.next(this.searchQuery); }
+  goToPage(p: number): void { if (this.page !== p) { this.page = p; this.load(); } }
   onLimitChange(): void { this.page = 1; this.load(); }
 
   sortBy(col: string): void {
@@ -92,40 +141,42 @@ export class AuditLogsComponent implements OnInit {
       this.sortColumn = col;
       this.sortAsc = true;
     }
-    this.sortLogs();
+    this.page = 1;
+    this.load();
   }
-
-  sortLogs(): void {
-    if (!this.logs) return;
-    this.logs.sort((a, b) => {
-      let valA: any = a[this.sortColumn] ?? '';
-      let valB: any = b[this.sortColumn] ?? '';
-
-      if (this.sortColumn === 'time') {
-        valA = new Date(a.created_at || 0).getTime();
-        valB = new Date(b.created_at || 0).getTime();
-      } else if (this.sortColumn === 'actor') {
-        valA = a.actor_name || a.actor_email || '';
-        valB = b.actor_name || b.actor_email || '';
-      } else if (this.sortColumn === 'action') {
-        valA = a.action || '';
-        valB = b.action || '';
-      } else if (this.sortColumn === 'resource') {
-        valA = a.resource_type || '';
-        valB = b.resource_type || '';
-      }
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return this.sortAsc ? -1 : 1;
-      if (valA > valB) return this.sortAsc ? 1 : -1;
-      return 0;
-    });
-  }
-
   formatDetails(details: any): string {
-    if (!details) return '';
-    try { return JSON.stringify(details, null, 2); } catch { return String(details); }
+    if (!details) return '—';
+    let obj = details;
+    if (typeof details === 'string') {
+      try { obj = JSON.parse(details); } catch { return details; }
+    }
+    if (typeof obj !== 'object' || !obj) return String(obj);
+
+    // Humanize common patterns
+    if (obj.new_role && obj.old_role) {
+      const target = obj.target_user_id ? ` (User #${obj.target_user_id})` : '';
+      return `Role: ${obj.old_role} → ${obj.new_role}${target}`;
+    }
+    if (obj.new_plan && obj.old_plan) {
+      return `Plan: ${obj.old_plan} → ${obj.new_plan}`;
+    }
+    if (obj.name && obj.description) {
+      return `${obj.name} — ${obj.description}`;
+    }
+    if (obj.name) {
+      return `Name: ${obj.name}`;
+    }
+
+    try {
+      const parts = Object.entries(obj)
+        .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => {
+          const valStr = typeof v === 'object' ? JSON.stringify(v) : String(v);
+          return `${k}: ${valStr}`;
+        });
+      return parts.join(' | ');
+    } catch {
+      return String(details);
+    }
   }
 }

@@ -47,9 +47,7 @@ export class AuthService {
         if (data?.isSuperAdmin !== undefined) {
           this.setSuperAdmin(data.isSuperAdmin);
         }
-        if (data?.isOrganizationOwner !== undefined) {
-          this.setOrganizationOwner(data.isOrganizationOwner);
-        }
+
         // Store account type returned from login
         const accountType = payload?.accountType || data?.accountType;
         if (accountType) {
@@ -71,9 +69,6 @@ export class AuthService {
         if (data?.entitlements) {
           this.setEntitlements(data.entitlements);
         }
-        
-        // Ensure user-features API is called to sync all accessible features for all account types
-        this.getUserFeatures().subscribe();
       })
     );
   }
@@ -278,18 +273,7 @@ export class AuthService {
     return this.getAccountType() === 'organization';
   }
 
-  setOrganizationOwner(isOwner: boolean): void {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('is_organization_owner', String(isOwner));
-    }
-  }
-
-  isOrganizationOwner(): boolean {
-    if (isPlatformBrowser(this.platformId)) {
-      return this.getOrgRole() === 'owner' || localStorage.getItem('is_organization_owner') === 'true';
-    }
-    return false;
-  }
+  // Organization Owner role has been removed. Admins now have top-level access.
 
   setOrgRole(role: string): void {
     if (isPlatformBrowser(this.platformId) && role) {
@@ -299,7 +283,9 @@ export class AuthService {
 
   getOrgRole(): string | null {
     if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('org_role');
+      let role = localStorage.getItem('org_role');
+      if (role === 'owner') role = 'admin';
+      return role;
     }
     return null;
   }
@@ -314,12 +300,12 @@ export class AuthService {
 
   hasDiagramEditPermission(): boolean {
     const role = this.getOrgRole();
-    return !role || role === 'owner' || role === 'admin' || role === 'member';
+    return !role || role === 'admin' || role === 'member';
   }
 
   hasWorkspaceCreatePermission(): boolean {
     const role = this.getOrgRole();
-    return !role || role === 'owner' || role === 'admin';
+    return !role || role === 'admin';
   }
 
 
@@ -365,7 +351,7 @@ export class AuthService {
       localStorage.removeItem('user_profile_picture');
       localStorage.removeItem('organization_id');
       localStorage.removeItem('is_super_admin');
-      localStorage.removeItem('is_organization_owner');
+
       localStorage.removeItem('org_role');
       localStorage.removeItem('account_type');
       localStorage.removeItem('dbml_code');
@@ -407,18 +393,12 @@ export class AuthService {
     return this.http.put<any>(url, payload, { withCredentials: true });
   }
 
-  getUserFeatures(): Observable<any> {
-    const url = (this.appConfig.environment?.userApiUrls as any)?.userFeatures ?? 'http://localhost:4000/api/user-features';
-    return this.http.get<any>(url, { withCredentials: true }).pipe(
-      tap((res) => {
-        const data = res?.data || res;
-        if (data?.purchasedPlan?.slug) {
-          this.setCurrentPlanSlug(data.purchasedPlan.slug);
-        }
-        if (data?.entitlements) {
-          this.setEntitlements(data.entitlements);
-        }
-      })
-    );
+  getUserFeatures(orgId?: number): Observable<any> {
+    let url = (this.appConfig.environment?.userApiUrls as any)?.userFeatures ?? 'http://localhost:4000/api/user-features';
+    if (orgId) {
+      url += `?orgId=${orgId}`;
+    }
+    return this.http.get<any>(url, { withCredentials: true });
   }
+
 }

@@ -1,39 +1,65 @@
 <div class="admin-page">
   <div class="page-header">
-    <div>
-      <h1 *ngIf="!showEntitlementsView">Plan Management</h1>
-      <div *ngIf="showEntitlementsView" style="display:flex;align-items:center;gap:12px">
-        <button class="btn-secondary btn-sm" (click)="closeEntitlementsView()"
-          style="display:inline-flex;align-items:center;gap:6px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Back to Plans
-        </button>
-        <h1 style="margin:0;font-size:22px">Entitlements: {{ selectedPlan?.name }}</h1>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button class="btn-secondary tt tt-right" (click)="closeEntitlementsView()" *ngIf="showEntitlementsView"
+        data-tt="Back to Plans"
+        style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:8px;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <div>
+        <h1 *ngIf="!showEntitlementsView">Plan Management</h1>
+        <h1 *ngIf="showEntitlementsView">Features: {{ selectedPlan?.name }}</h1>
+        <p class="text-muted" style="margin:4px 0 0" *ngIf="!showEntitlementsView">Configure subscription plans, pricing,
+          and feature entitlements.</p>
+        <p class="text-muted" style="margin:4px 0 0" *ngIf="showEntitlementsView">Configure feature values, limits, and
+          display text for this plan.</p>
       </div>
-      <p class="text-muted" style="margin:4px 0 0" *ngIf="!showEntitlementsView">Configure subscription plans, pricing,
-        and feature entitlements.</p>
-      <p class="text-muted" style="margin:4px 0 0" *ngIf="showEntitlementsView">Configure feature values, limits, and
-        display text for this plan.</p>
     </div>
-    <button class="btn-primary" (click)="openCreate()" *ngIf="!showEntitlementsView">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      New Plan
-    </button>
+    <div class="header-actions">
+      <!-- Search Box for Plans -->
+      <div class="search-box-wrap" *ngIf="!showEntitlementsView">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-input" placeholder="Search plans..." [(ngModel)]="search" (input)="onSearch()">
+      </div>
+
+      <!-- Search Box for Plan Features -->
+      <div class="search-box-wrap" *ngIf="showEntitlementsView">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-input" placeholder="Search features..." [(ngModel)]="featureSearch" (ngModelChange)="onFeatureSearch()">
+      </div>
+
+      <button class="btn-primary" (click)="openCreate()" *ngIf="!showEntitlementsView">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        New Plan
+      </button>
+
+      <button class="btn-primary" (click)="saveEntitlements()" *ngIf="showEntitlementsView">
+        Save Features
+      </button>
+    </div>
   </div>
 
   <!-- Plan Type Filter Tabs (Matching Workspace Pills) -->
   <div class="plan-tabs-bar" *ngIf="!showEntitlementsView">
-    <button class="plan-type-tab" [class.active]="planTypeFilter === 'all'" (click)="planTypeFilter = 'all'">
+    <button class="plan-type-tab" [class.active]="planTypeFilter === 'all'" (click)="planTypeFilter = 'all'; page = 1">
       All Plans
       <span class="tab-count">{{ plans.length }}</span>
     </button>
     <button class="plan-type-tab indiv-tab" [class.active]="planTypeFilter === 'individual'"
-      (click)="planTypeFilter = 'individual'">
+      (click)="planTypeFilter = 'individual'; page = 1">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -43,7 +69,7 @@
       <span class="tab-count">{{ individualPlanCount }}</span>
     </button>
     <button class="plan-type-tab org-tab" [class.active]="planTypeFilter === 'organization'"
-      (click)="planTypeFilter = 'organization'">
+      (click)="planTypeFilter = 'organization'; page = 1">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
@@ -63,18 +89,65 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th style="width:14%">PLAN</th>
-          <th style="width:11%">TYPE</th>
-          <th style="width:9%">SLUG</th>
-          <th style="width:9%">MONTHLY</th>
-          <th style="width:9%">ANNUAL</th>
-
-          <th style="width:8%">STATUS</th>
-          <th style="width:23%">ACTIONS</th>
+          <th style="width:5%">
+            <span class="sort-header-clickable" style="cursor: default;">
+              <span>S.NO</span>
+            </span>
+          </th>
+          <th style="width:20%">
+            <span class="sort-header-clickable" (click)="sortBy('name')">
+              <span>PLAN</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'name'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:12%">
+            <span class="sort-header-clickable" (click)="sortBy('plan_type')">
+              <span>TYPE</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'plan_type'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('slug')">
+              <span>SLUG</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'slug'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('price_monthly')">
+              <span>MONTHLY</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'price_monthly'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('price_annual')">
+              <span>ANNUAL</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'price_annual'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:8%">
+            <span class="sort-header-clickable" (click)="sortBy('status')">
+              <span>STATUS</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'status'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:20%">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let plan of filteredPlans">
+        <tr *ngFor="let plan of displayPlans; let i = index">
+          <td>{{ paginationStartIndex + i }}</td>
           <td>
             <strong class="user-name-text">{{ plan.name }}</strong>
             <span *ngIf="plan.is_custom" class="badge"
@@ -106,16 +179,50 @@
               plan.is_active ? 'Active' : 'Inactive' }}</span></td>
           <td>
             <div class="action-btns" style="display:flex;gap:6px;align-items:center">
-              <button class="btn-secondary btn-sm" (click)="openEntitlements(plan)">Entitlements</button>
+              <button class="btn-secondary btn-sm" (click)="openEntitlements(plan)">Features</button>
               <button class="btn-secondary btn-sm" (click)="openEdit(plan)">Edit</button>
               <button class="btn-deactivate btn-sm" (click)="deletePlan(plan.plan_id)"
                 *ngIf="plan.is_active">Deactivate</button>
             </div>
           </td>
         </tr>
+        <tr *ngIf="displayPlans.length === 0">
+          <td colspan="8" class="empty-table-cell">No plans found</td>
+        </tr>
       </tbody>
     </table>
-    <div class="empty-state" *ngIf="filteredPlans.length === 0">No plans found for selected type</div>
+
+    <!-- Workspace-Style Pagination Bar (Matching Organization Management Page) -->
+    <div class="pagination-container" *ngIf="totalFilteredCount > 0">
+      <div class="pagination-info">
+        {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ totalFilteredCount }} Items
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(1)" data-tt="First Page">«</button>
+        <button class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(page - 1)" data-tt="Previous Page">‹</button>
+        <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p
+          }}</button>
+        <button class="page-btn tt tt-top" [disabled]="page === totalPagesCount" (click)="goToPage(page + 1)"
+          data-tt="Next Page">›</button>
+        <button class="page-btn tt tt-top" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)"
+          data-tt="Last Page">»</button>
+      </div>
+            <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="showLimitDropdown = !showLimitDropdown; $event.stopPropagation()">
+            <span>{{ limit }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showLimitDropdown" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 10" (click)="limit = 10; onLimitChange(); showLimitDropdown = false">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 25" (click)="limit = 25; onLimitChange(); showLimitDropdown = false">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 50" (click)="limit = 50; onLimitChange(); showLimitDropdown = false">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 100" (click)="limit = 100; onLimitChange(); showLimitDropdown = false">100</button>
+          </div>
+        </div>
+        <span class="limit-label">items per page</span>
+      </div>
+    </div>
   </div>
 
   <!-- Entitlements Table View (Replaces Plans List when active) -->
@@ -126,28 +233,84 @@
     <table class="data-table" *ngIf="!loadingEntitlements">
       <thead>
         <tr>
-          <th style="width:22%">FEATURE NAME</th>
-          <th style="width:16%">KEY</th>
-          <th style="width:10%">TYPE</th>
-          <th style="width:18%">ENABLED / VALUE</th>
-          <th style="width:12%">LIMIT</th>
-          <th style="width:22%">DISPLAY TEXT</th>
+          <th style="width:22%">
+            <span class="sort-header-clickable" (click)="sortByFeature('name')">
+              <span>FEATURE NAME</span>
+              <span class="sort-icon" [class.active]="featureSortColumn === 'name'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:16%">
+            <span class="sort-header-clickable" (click)="sortByFeature('feature_key')">
+              <span>KEY</span>
+              <span class="sort-icon" [class.active]="featureSortColumn === 'feature_key'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortByFeature('value_type')">
+              <span>TYPE</span>
+              <span class="sort-icon" [class.active]="featureSortColumn === 'value_type'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:18%">
+            <span class="sort-header-clickable" (click)="sortByFeature('value')">
+              <span>ENABLED / VALUE</span>
+              <span class="sort-icon" [class.active]="featureSortColumn === 'value'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:12%">
+            <span class="sort-header-clickable" (click)="sortByFeature('limit_value')">
+              <span>LIMIT</span>
+              <span class="sort-icon" [class.active]="featureSortColumn === 'limit_value'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:22%">
+            <span class="sort-header-clickable" (click)="sortByFeature('display_text')">
+              <span>DISPLAY TEXT</span>
+              <span class="sort-icon" [class.active]="featureSortColumn === 'display_text'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let ent of planEntitlements">
+        <tr *ngFor="let ent of paginatedPlanEntitlements" [style.position]="'relative'" [style.z-index]="activeEntDropdownId === ent.feature_id ? 999 : 1">
           <td><strong class="user-name-text">{{ ent.name }}</strong></td>
           <td><code>{{ ent.feature_key }}</code></td>
           <td><span class="badge badge-free">{{ ent.value_type }}</span></td>
-          <td>
-            <select class="form-select" [(ngModel)]="ent.value"
-              style="width:130px;padding:5px 28px 5px 10px;font-size:13px;height:32px"
-              *ngIf="ent.value_type === 'boolean'">
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
-            </select>
+          <td style="overflow:visible!important;position:relative">
+            <div class="custom-select-container" style="width:120px" *ngIf="ent.value_type === 'boolean'">
+              <button class="custom-select-btn" [class.open]="activeEntDropdownId === ent.feature_id"
+                style="height:30px;padding:0 8px"
+                (click)="activeEntDropdownId = (activeEntDropdownId === ent.feature_id ? null : ent.feature_id); $event.stopPropagation()">
+                <span>{{ (ent.value === 'true' || ent.value === true) ? 'Enabled' : 'Disabled' }}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="activeEntDropdownId === ent.feature_id" style="z-index:99999!important">
+                <div class="custom-select-option" [class.active]="ent.value === 'true' || ent.value === true"
+                  (click)="ent.value = 'true'; activeEntDropdownId = null">
+                  Enabled
+                </div>
+                <div class="custom-select-option" [class.active]="ent.value === 'false' || ent.value === false"
+                  (click)="ent.value = 'false'; activeEntDropdownId = null">
+                  Disabled
+                </div>
+              </div>
+            </div>
             <input class="form-input" [(ngModel)]="ent.value"
-              style="width:140px;padding:5px 8px;font-size:13px;height:32px" *ngIf="ent.value_type !== 'boolean'"
+              style="width:140px;padding:4px 8px;font-size:13px;height:30px" *ngIf="ent.value_type !== 'boolean'"
               placeholder="Value">
           </td>
           <td>
@@ -159,14 +322,44 @@
               style="width:220px;padding:5px 8px;font-size:13px;height:32px" [placeholder]="getFeaturePlaceholder(ent)">
           </td>
         </tr>
-        <tr *ngIf="planEntitlements.length === 0">
-          <td colspan="6" class="empty-table-cell">No features available</td>
+        <tr *ngIf="paginatedPlanEntitlements.length === 0">
+          <td colspan="5" class="empty-table-cell">No features found</td>
         </tr>
       </tbody>
     </table>
+
+    <!-- Workspace-Style Pagination Bar for Entitlements -->
+    <div class="pagination-container" *ngIf="totalFeatureCount > 0">
+      <div class="pagination-info">
+        {{ featurePaginationStartIndex }}-{{ featurePaginationEndIndex }} of {{ totalFeatureCount }} Items
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn tt tt-top" [disabled]="featurePage === 1" (click)="goToFeaturePage(1)" data-tt="First Page">«</button>
+        <button class="page-btn tt tt-top" [disabled]="featurePage === 1" (click)="goToFeaturePage(featurePage - 1)" data-tt="Previous Page">‹</button>
+        <button class="page-btn" *ngFor="let p of featureTotalPages" [class.active]="p === featurePage" (click)="goToFeaturePage(p)">{{ p }}</button>
+        <button class="page-btn tt tt-top" [disabled]="featurePage === totalFeaturePagesCount" (click)="goToFeaturePage(featurePage + 1)" data-tt="Next Page">›</button>
+        <button class="page-btn tt tt-top" [disabled]="featurePage === totalFeaturePagesCount" (click)="goToFeaturePage(totalFeaturePagesCount)" data-tt="Last Page">»</button>
+      </div>
+      <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="showFeatureLimitDropdown = !showFeatureLimitDropdown; $event.stopPropagation()">
+            <span>{{ featureLimit }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showFeatureLimitDropdown" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="featureLimit === 10" (click)="featureLimit = 10; onFeatureLimitChange(); showFeatureLimitDropdown = false">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="featureLimit === 25" (click)="featureLimit = 25; onFeatureLimitChange(); showFeatureLimitDropdown = false">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="featureLimit === 50" (click)="featureLimit = 50; onFeatureLimitChange(); showFeatureLimitDropdown = false">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="featureLimit === 100" (click)="featureLimit = 100; onFeatureLimitChange(); showFeatureLimitDropdown = false">100</button>
+          </div>
+        </div>
+        <span class="limit-label">items per page</span>
+      </div>
+    </div>
+
     <div class="table-footer-bar" *ngIf="!loadingEntitlements">
       <button class="btn-secondary" (click)="closeEntitlementsView()">Cancel</button>
-      <button class="btn-primary" (click)="saveEntitlements()">Save Entitlements</button>
+      <button class="btn-primary" (click)="saveEntitlements()">Save Features</button>
     </div>
   </div>
 
@@ -174,7 +367,7 @@
   <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
     <div class="modal-content" style="width:720px;max-width:92vw;padding:28px" (click)="$event.stopPropagation()">
       <div class="modal-header" style="margin-bottom:24px">
-        <h3 class="modal-title" style="margin:0;font-size:20px">{{ editMode ? 'Edit Plan' : 'Create Plan' }}</h3>
+        <h3 class="modal-title" style="margin:0">{{ editMode ? 'Edit Plan' : 'Create Plan' }}</h3>
         <button class="modal-close" (click)="closeModal()">✕</button>
       </div>
 
@@ -185,7 +378,7 @@
         <div class="plan-type-selector" style="gap:12px">
           <button type="button" class="plan-type-option" style="padding:14px"
             [class.selected]="form.plan_type === 'individual'"
-            (click)="form.plan_type = 'individual'; form.is_per_seat = false; form.included_seats = 1">
+            (click)="form.plan_type = 'individual'; form.is_per_seat = false; form.included_seats = 1; form.is_custom = false">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -287,7 +480,7 @@
       <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px"
         *ngIf="form.plan_type === 'organization' || form.plan_type === 'both'">
         <div class="form-group" style="margin:0">
-          <label class="form-label" style="font-size:12px;font-weight:700">INCLUDED SEATS (-1 = UNLIMITED)</label>
+          <label class="form-label" style="font-size:12px;font-weight:700">MEMBERS COUNT (-1 = UNLIMITED)</label>
           <input class="form-input" style="height:38px" type="number" [(ngModel)]="form.included_seats">
         </div>
         <div class="form-group" style="margin:0;display:flex;align-items:center;padding-top:22px">
@@ -326,8 +519,15 @@
             for="is_active" style="font-weight:600">Active</label></div>
         <div class="form-check"><input type="checkbox" id="is_public" [(ngModel)]="form.is_public"><label
             for="is_public" style="font-weight:600">Public (visible on pricing page)</label></div>
-        <div class="form-check"><input type="checkbox" id="is_custom" [(ngModel)]="form.is_custom"><label
-            for="is_custom" style="font-weight:600">Custom Plan</label></div>
+        <div class="form-check"
+          [title]="form.plan_type === 'individual' ? 'Custom plan is only available for Business/Organization plans' : ''">
+          <input type="checkbox" id="is_custom" [(ngModel)]="form.is_custom"
+            [disabled]="form.plan_type === 'individual'">
+          <label for="is_custom" style="font-weight:600" [style.opacity]="form.plan_type === 'individual' ? '0.5' : '1'"
+            [style.cursor]="form.plan_type === 'individual' ? 'not-allowed' : 'pointer'">
+            Custom Plan
+          </label>
+        </div>
       </div>
 
       <div class="form-row" *ngIf="form.is_custom" style="margin-bottom:20px">

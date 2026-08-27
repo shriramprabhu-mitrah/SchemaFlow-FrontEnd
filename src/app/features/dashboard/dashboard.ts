@@ -99,8 +99,11 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
                     // Navigate to most recent diagram
                     this.router.navigate([], { queryParams: { id: diagrams[0].id, sample: null }, queryParamsHandling: 'merge' });
                   } else {
-                    // Create a blank diagram
-                    this.svc.createDiagram('').subscribe({
+                    const activeWsId = this.svc.activeWorkspaceId();
+                    const createReq$ = activeWsId
+                      ? this.svc.createWorkspaceDiagram(activeWsId, '')
+                      : this.svc.createDiagram('');
+                    createReq$.subscribe({
                       next: (newDiag: any) => {
                         this.svc.clearDiagram(true);
                         this.svc.code = '';

@@ -12,8 +12,40 @@ app-org-layout {
   background: #08101f;
   color: #e6eef9;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 15px;
+  font-size: 13.5px;
   overflow: hidden;
+
+  /* Force font inheritance on elements that browsers do NOT inherit by default */
+  button,
+  input,
+  select,
+  textarea,
+  table,
+  th,
+  td,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .form-input,
+  .form-select,
+  .search-input,
+  .page-btn,
+  .page-size-select {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13.5px;
+  }
+
+  /* Keep sort headers neutral without changing color on hover */
+  .sort-header-clickable {
+    cursor: pointer;
+  }
+
+  /* Table headers â€” normal weight, no uppercase */
+  .data-table th {
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
 
   &.collapsed .org-sidebar {
     width: 64px;
@@ -21,6 +53,13 @@ app-org-layout {
     .sidebar-header {
       justify-content: center;
       padding: 12px 0;
+    }
+
+    .brand-mark {
+      justify-content: center;
+      margin: 0 auto;
+      width: 40px;
+      height: 40px;
     }
   }
 }
@@ -40,10 +79,11 @@ app-org-layout {
 .org-sidebar .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 16px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: none;
   min-height: 58px;
+  box-sizing: border-box;
 }
 
 .org-sidebar .brand-mark {
@@ -97,6 +137,16 @@ app-org-layout {
   }
 }
 
+.org-shell.collapsed .org-sidebar {
+  overflow: visible !important;
+  
+  .sidebar-nav {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+  }
+}
+
 .org-sidebar .nav-item {
   display: flex;
   align-items: center;
@@ -115,6 +165,7 @@ app-org-layout {
   text-align: left;
   white-space: nowrap;
   box-sizing: border-box;
+  font-family: inherit;
 
   svg {
     stroke: #94a3b8;
@@ -162,7 +213,10 @@ app-org-layout {
 
 .org-shell.collapsed .org-sidebar .nav-item {
   justify-content: center;
-  padding: 10px;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
 }
 
 .org-sidebar .sidebar-footer {
@@ -262,7 +316,84 @@ app-org-layout {
   padding: 28px;
 }
 
-/* ── Light Theme Overrides ── */
+/* --- Subscription Premium Table Dark Theme --- */
+.subscription-premium-table-wrap {
+  width: 100%;
+  overflow: visible;
+  padding-bottom: 20px;
+}
+
+.table-scroll-area {
+  border-radius: 8px;
+  overflow-x: auto;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+}
+
+.subscription-premium-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  table-layout: fixed; /* Ensures consistent column widths */
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8fa0be;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(8px);
+    text-align: left !important; /* Force left alignment */
+    
+    .sort-header-clickable {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important; /* Ensure content starts at the left */
+    }
+  }
+
+  tbody tr {
+    transition: background-color 0.15s ease;
+
+    &:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.015); /* Subtle zebra stripe */
+    }
+
+    &:not(:last-child) td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  tbody td {
+    padding: 10px 20px;
+    font-size: 13px;
+    color: #e2e8f0;
+    border: none;
+    text-align: left !important; /* Force left alignment */
+    vertical-align: middle;
+  }
+}
+
+/* â”€â”€ Light Theme Overrides â”€â”€ */
 body.light-theme {
 
   app-org-layout,
@@ -278,7 +409,7 @@ body.light-theme {
     border-right: 1px solid #e2e8f0 !important;
 
     .sidebar-header {
-      border-bottom: 1px solid #e2e8f0 !important;
+      border-bottom: none !important;
 
       .brand-mark {
         color: #2563eb !important;
@@ -382,6 +513,120 @@ body.light-theme {
       }
     }
   }
+
+  /* --- Settings UI Light Theme Overrides --- */
+  .settings-header-icon {
+    background: #eff6ff !important;
+    color: #2563eb !important;
+    border: 1px solid rgba(37, 99, 235, 0.2) !important;
+  }
+
+  .settings-form-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  }
+
+  .settings-card-title {
+    color: #0f172a !important;
+  }
+
+  .settings-sidebar-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  }
+
+  .settings-sidebar-title {
+    color: #64748b !important;
+  }
+
+  .settings-slug-container {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  .settings-slug-label {
+    color: #94a3b8 !important;
+  }
+
+  .settings-slug-value {
+    color: #2563eb !important;
+  }
+
+  .settings-sidebar-desc {
+    color: #64748b !important;
+  }
+
+  .settings-tips-card {
+    background: #eff6ff !important;
+    border-color: rgba(37, 99, 235, 0.12) !important;
+  }
+
+  .settings-tips-title {
+    color: #2563eb !important;
+  }
+
+  .settings-tips-list {
+    color: #475569 !important;
+  }
+}
+
+/* --- Settings UI Dark Theme Defaults --- */
+.settings-header-icon {
+  background: rgba(62, 197, 193, 0.12);
+  color: #3ec5c1;
+  border: 1px solid rgba(62, 197, 193, 0.25);
+}
+
+.settings-form-card {
+  background: #0b1426;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+}
+
+.settings-card-title {
+  color: #3ec5c1;
+}
+
+.settings-sidebar-card {
+  background: linear-gradient(145deg, #101a2e, #0b1426);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+}
+
+.settings-sidebar-title {
+  color: #94a3b8;
+}
+
+.settings-slug-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.settings-slug-label {
+  color: #64748b;
+}
+
+.settings-slug-value {
+  color: #3ec5c1;
+}
+
+.settings-sidebar-desc {
+  color: #64748b;
+}
+
+.settings-tips-card {
+  background: rgba(62, 197, 193, 0.03);
+  border: 1px solid rgba(62, 197, 193, 0.12);
+}
+
+.settings-tips-title {
+  color: #3ec5c1;
+}
+
+.settings-tips-list {
+  color: #94a3b8;
 }
 
 /* Global Dropdown Rules for Organization & Admin Pages (Dark Mode + Light Mode) */
@@ -402,42 +647,32 @@ select,
   transition: all 0.18s ease !important;
 
   &:hover {
-    border-color: #2563eb !important;
+    border-color: #3ec5c1 !important;
   }
 
   &:focus,
   &.open {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+    border-color: #3ec5c1 !important;
+    box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.25) !important;
   }
 
   option {
     color-scheme: dark !important;
     background-color: #0f1629 !important;
-    color: #ffffff !important;
+    color: #e2e8f0 !important;
     padding: 8px 12px !important;
 
     &:hover,
     &:focus,
-    &:active {
-      background-color: #2563eb !important;
-      background: #2563eb !important;
-      color: #ffffff !important;
-    }
-
-    &:checked {
-      background-color: rgba(37, 99, 235, 0.3) !important;
-      background: rgba(37, 99, 235, 0.3) !important;
-      color: #60a5fa !important;
-      font-weight: 600 !important;
-    }
-
+    &:active,
+    &:checked,
     &:checked:hover,
     &:checked:focus,
     &:checked:active {
-      background-color: #2563eb !important;
-      background: #2563eb !important;
-      color: #ffffff !important;
+      background-color: #162a36 !important;
+      background: #162a36 !important;
+      color: #3ec5c1 !important;
+      font-weight: 600 !important;
     }
   }
 }
@@ -469,13 +704,13 @@ select,
 
     &.selected,
     &.active {
-      background-color: rgba(37, 99, 235, 0.25) !important;
-      background: rgba(37, 99, 235, 0.25) !important;
-      color: #60a5fa !important;
+      background-color: rgba(62, 197, 193, 0.25) !important;
+      background: rgba(62, 197, 193, 0.25) !important;
+      color: #3ec5c1 !important;
       font-weight: 600 !important;
 
       svg {
-        stroke: #60a5fa !important;
+        stroke: #3ec5c1 !important;
       }
     }
 
@@ -545,25 +780,15 @@ body.light-theme {
 
       &:hover,
       &:focus,
-      &:active {
-        background-color: #2563eb !important;
-        background: #2563eb !important;
-        color: #ffffff !important;
-      }
-
-      &:checked {
+      &:active,
+      &:checked,
+      &:checked:hover,
+      &:checked:focus,
+      &:checked:active {
         background-color: #eff6ff !important;
         background: #eff6ff !important;
         color: #2563eb !important;
         font-weight: 600 !important;
-      }
-
-      &:checked:hover,
-      &:checked:focus,
-      &:checked:active {
-        background-color: #2563eb !important;
-        background: #2563eb !important;
-        color: #ffffff !important;
       }
     }
   }
@@ -610,5 +835,110 @@ body.light-theme {
         }
       }
     }
+    }
+  }
+
+  body.light-theme .table-scroll-area {
+    &::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.15) !important;
+    }
+  }
+
+  /* --- Subscription Premium Table Light Theme --- */
+  body.light-theme .subscription-premium-table {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+
+    thead th {
+      color: #64748b !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      background: #f8fafc !important;
+    }
+
+    tbody tr {
+      background: #ffffff !important;
+      
+      &:nth-child(even) {
+        background-color: #f8fafc !important; /* Light theme zebra stripe */
+      }
+
+      &:not(:last-child) td {
+        border-bottom: 1px solid #f1f5f9 !important;
+      }
+
+      &:hover {
+        background-color: #f1f5f9 !important; /* Slightly darker on hover */
+      }
+    }
+
+    tbody td {
+      color: #334155 !important;
+    }
+  }
+
+.custom-dropdown-option {
+  color: #0f172a !important;
+  background: transparent !important;
+
+  &.selected,
+  &.active {
+    background-color: #eff6ff !important;
+    background: #eff6ff !important;
+    color: #2563eb !important;
+    font-weight: 600 !important;
+
+    svg {
+      stroke: #2563eb !important;
+    }
+  }
+
+  &:hover,
+  &:focus {
+    background-color: #2563eb !important;
+    background: #2563eb !important;
+    color: #ffffff !important;
+
+    svg,
+    .action-item-left svg {
+      stroke: #ffffff !important;
+      color: #ffffff !important;
+    }
   }
 }
+
+/* --- Roles UI Theme Classes --- */
+.role-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Dark Theme Default */
+  background: rgba(62, 197, 193, 0.1);
+  color: #3ec5c1;
+}
+
+.role-badge {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: monospace;
+  border-radius: 6px;
+  padding: 4px 8px;
+  /* Dark Theme Default */
+  background: rgba(62, 197, 193, 0.15);
+  color: #3ec5c1;
+}
+
+body.light-theme {
+  .role-icon-box {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+  }
+  
+  .role-badge {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
+}
+

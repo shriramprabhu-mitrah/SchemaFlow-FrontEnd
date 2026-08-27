@@ -41,10 +41,10 @@
           </div>
 
           <div class="submenu-item" [class.active]="(svc.diagramWorkspaceType() | titlecase) === 'Team'"
-            (click)="entitlementService.canUseFeature('create_workspaces') ? openWorkspaceModal('my-workspaces') : openUpgradeModal('create_workspaces'); closePersonalMenu(); closeWorkspaceSubmenu()">
+            (click)="(entitlementService.isMember() || auth.getOrganizationId() || entitlementService.canUseFeature('create_workspaces')) ? openWorkspaceModal('my-workspaces') : openUpgradeModal('create_workspaces'); closePersonalMenu(); closeWorkspaceSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Team Workspace
-              <app-icons *ngIf="!entitlementService.canUseFeature('create_workspaces')" name="premium-crown" size="14"
+              <app-icons *ngIf="!entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
                 color="#f59e0b"></app-icons>
             </span>
             <svg *ngIf="(svc.diagramWorkspaceType() | titlecase) === 'Team'" width="14" height="14" viewBox="0 0 24 24"
@@ -54,11 +54,11 @@
             </svg>
           </div>
 
-          <div class="submenu-item"
-            (click)="entitlementService.canUseFeature('create_workspaces') ? openWorkspaceModal('create-workspace') : openUpgradeModal('create_workspaces'); closePersonalMenu(); closeWorkspaceSubmenu()">
+          <div class="submenu-item" [class.disabled]="entitlementService.isMember()"
+            (click)="!entitlementService.isMember() && (entitlementService.canUseFeature('create_workspaces') ? openWorkspaceModal('create-workspace') : openUpgradeModal('create_workspaces')); !entitlementService.isMember() && closePersonalMenu(); !entitlementService.isMember() && closeWorkspaceSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Create Workspace
-              <app-icons *ngIf="!entitlementService.canUseFeature('create_workspaces')" name="premium-crown" size="14"
+              <app-icons *ngIf="!entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
                 color="#f59e0b"></app-icons>
             </span>
           </div>
@@ -90,7 +90,7 @@
           <div class="submenu-item" (click)="createSampleDiagram('group'); closePersonalMenu(); closeSampleSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Modular Schema (Table Group Diagram)
-              <app-icons *ngIf="!entitlementService.canUseFeature('table_group')" name="premium-crown" size="14"
+              <app-icons *ngIf="!entitlementService.orgHasFeature('table_group')" name="premium-crown" size="14"
                 color="#f59e0b"></app-icons>
             </span>
           </div>
@@ -133,18 +133,38 @@
         <span class="item-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
             with Me</span>
-          <app-icons *ngIf="!entitlementService.canUseFeature('share_diagram')" name="premium-crown" size="14"
+          <app-icons *ngIf="!entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14"
             color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </span>
       </button>
     </div>
   </div>
-  <div class="divider" *ngIf="!isProfilePage"></div>
+  <!-- <div class="divider" *ngIf="!isProfilePage"></div> -->
   <div class="diagram-title-controls" *ngIf="!isProfilePage">
-    <div #diagramNameEl class="diagram-name" contenteditable="true" spellcheck="false" placeholder="Untitled Diagram"
-      (input)="onDiagramNameInput($event)" (blur)="onDiagramNameBlur($event)"></div>
+    <div class="diagram-name-wrapper" *ngIf="hasEffectiveEditPermission() && isLoggedIn && !isSampleDiagram()">
+      <div style="display: flex; align-items: center; margin-right: 8px; cursor: default;"
+           class="tt tt-bottom"
+           [attr.data-tt]="(svc.isSaving() || svc.hasUnsavedChanges()) ? 'Saving...' : 'Saved'">
+        <!-- Loading spinner (shown when saving or waiting to save) -->
+        <svg *ngIf="svc.isSaving() || svc.hasUnsavedChanges()" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+             style="color: var(--text-secondary, #9ca3af); animation: spin 1.5s linear infinite; stroke-dasharray: 2 6;">
+          <circle cx="12" cy="12" r="9"></circle>
+        </svg>
+
+        <!-- Saved cloud (shown when NOT saving and NO unsaved changes) -->
+        <svg *ngIf="!svc.isSaving() && !svc.hasUnsavedChanges()" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" fill="#22c55e"></path>
+          <polyline points="7.5 13.5 10.5 16.5 16.5 10" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></polyline>
+        </svg>
+      </div>
+      <div #diagramNameEl class="diagram-name" contenteditable="true" spellcheck="false" placeholder="Untitled Diagram"
+        (input)="onDiagramNameInput($event)" (blur)="onDiagramNameBlur($event)"></div>
+    </div>
+    <div class="diagram-name-wrapper" *ngIf="!hasEffectiveEditPermission() || !isLoggedIn || isSampleDiagram()">
+      <div #diagramNameEl class="diagram-name" contenteditable="false" spellcheck="false" placeholder="Untitled Diagram"></div>
+    </div>
   </div>
-  <app-button *ngIf="!isProfilePage" variant="default" (onClick)="toggleDocs()" [disabled]="isSampleDiagram()">
+  <app-button *ngIf="!isProfilePage" variant="default" (onClick)="toggleDocs()" [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('document_view') && !entitlementService.canUseFeature('document_view'))">
     <svg *ngIf="!svc.showDocs" class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -164,14 +184,14 @@
     </svg>
 
     {{ svc.showDocs ? 'View Diagram' : 'View Docs' }}
-    <app-icons *ngIf="!entitlementService.canUseFeature('document_view')" name="premium-crown" size="14" color="#f59e0b"
+    <app-icons *ngIf="!entitlementService.orgHasFeature('document_view')" name="premium-crown" size="14" color="#f59e0b"
       style="margin-left: 4px; vertical-align: middle;"></app-icons>
   </app-button>
 
   <!-- Import dropdown -->
-  <div id="import-dropdown" class="export-dropdown-wrap" *ngIf="!isProfilePage">
-    <app-button variant="default" customClass="export-trigger" id="import-trigger-btn" (onClick)="toggleImportMenu()"
-      [class.active]="importMenuOpen" [disabled]="isSampleDiagram()">
+  <div id="import-dropdown" class="import-dropdown-wrap" *ngIf="!isProfilePage">
+    <app-button variant="default" customClass="import-trigger" id="import-trigger-btn" (onClick)="toggleImportMenu()"
+      [class.active]="importMenuOpen" [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -179,7 +199,7 @@
         <line x1="12" y1="5" x2="12" y2="15" />
       </svg>
       Import
-      <app-icons *ngIf="!entitlementService.canUseFeature('import_sql')" name="premium-crown" size="14" color="#f59e0b"
+      <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14" color="#f59e0b"
         style="margin-left: 4px; vertical-align: middle;"></app-icons>
       <svg class="chevron" [class.open]="importMenuOpen" width="12" height="12" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -192,20 +212,20 @@
 
       <!-- PostgreSQL -->
       <button class="export-item" id="import-postgres-btn"
-        (click)="openImportModal('postgres'); $event.stopPropagation()" [disabled]="importing">
+        (click)="openImportModal('postgres'); $event.stopPropagation()" [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
         <span class="db-icon postgres-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
           </svg>
         </span>
         PostgreSQL
-        <app-icons *ngIf="!entitlementService.canUseFeature('import_sql')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
       <!-- MySQL -->
       <button class="export-item" id="import-mysql-btn" (click)="openImportModal('mysql'); $event.stopPropagation()"
-        [disabled]="importing">
+        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
         <span class="db-icon mysql-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -213,20 +233,20 @@
           </svg>
         </span>
         MySQL
-        <app-icons *ngIf="!entitlementService.canUseFeature('import_sql')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
       <!-- SQL Server -->
       <button class="export-item" id="import-sqlserver-btn"
-        (click)="openImportModal('sqlserver'); $event.stopPropagation()" [disabled]="importing">
+        (click)="openImportModal('sqlserver'); $event.stopPropagation()" [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
         <span class="db-icon mssql-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
           </svg>
         </span>
         SQL Server
-        <app-icons *ngIf="!entitlementService.canUseFeature('import_sql')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
@@ -241,7 +261,7 @@
   <!-- Export dropdown -->
   <div id="export-dropdown" class="export-dropdown-wrap" *ngIf="!isProfilePage">
     <app-button variant="default" customClass="export-trigger" id="export-trigger-btn" (onClick)="toggleExportMenu()"
-      [class.active]="exportMenuOpen" [disabled]="isSampleDiagram()">
+      [class.active]="exportMenuOpen" [disabled]="isSampleDiagram() || ((entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image')) && (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql')))">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -259,7 +279,7 @@
       <div class="export-menu-label">Export as diagram</div>
 
       <!-- Image / PDF Section -->
-      <button class="export-item" id="export-pdf-btn" (click)="exportPDF(); $event.stopPropagation()">
+      <button class="export-item" id="export-pdf-btn" (click)="exportPDF(); $event.stopPropagation()" [disabled]="entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image')">
         <span class="db-icon pdf-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -271,11 +291,11 @@
           </svg>
         </span>
         PDF
-        <app-icons *ngIf="!entitlementService.canUseFeature('export_image')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('export_image')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
-      <button class="export-item" id="export-png-btn" (click)="exportPNG(); $event.stopPropagation()">
+      <button class="export-item" id="export-png-btn" (click)="exportPNG(); $event.stopPropagation()" [disabled]="entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image')">
         <span class="db-icon png-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -285,11 +305,11 @@
           </svg>
         </span>
         PNG
-        <app-icons *ngIf="!entitlementService.canUseFeature('export_image')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('export_image')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
-      <button class="export-item" id="export-svg-btn" (click)="exportSVG(); $event.stopPropagation()">
+      <button class="export-item" id="export-svg-btn" (click)="exportSVG(); $event.stopPropagation()" [disabled]="entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image')">
         <span class="db-icon svg-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -299,7 +319,7 @@
           </svg>
         </span>
         SVG
-        <app-icons *ngIf="!entitlementService.canUseFeature('export_image')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('export_image')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
@@ -309,20 +329,20 @@
 
       <!-- PostgreSQL -->
       <button class="export-item" id="export-postgres-btn" (click)="exportSQL('postgres'); $event.stopPropagation()"
-        [disabled]="exporting">
+        [disabled]="exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
         <span class="db-icon postgres-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
           </svg>
         </span>
         PostgreSQL
-        <app-icons *ngIf="!entitlementService.canUseFeature('export_sql')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
       <!-- MySQL -->
       <button class="export-item" id="export-mysql-btn" (click)="exportSQL('mysql'); $event.stopPropagation()"
-        [disabled]="exporting">
+        [disabled]="exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
         <span class="db-icon mysql-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -330,20 +350,20 @@
           </svg>
         </span>
         MySQL
-        <app-icons *ngIf="!entitlementService.canUseFeature('export_sql')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
       <!-- SQL Server -->
       <button class="export-item" id="export-sqlserver-btn" (click)="exportSQL('sqlserver'); $event.stopPropagation()"
-        [disabled]="exporting">
+        [disabled]="exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
         <span class="db-icon mssql-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
           </svg>
         </span>
         SQL Server
-        <app-icons *ngIf="!entitlementService.canUseFeature('export_sql')" name="premium-crown" size="14"
+        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
@@ -356,6 +376,14 @@
   </div>
 
   <div class="spacer"></div>
+  
+  <div class="active-users-container" *ngIf="svc.diagramWorkspaceType() === 'Team' && svc.activeRoomUsers().length > 0">
+    <div *ngFor="let u of svc.activeRoomUsers()" class="avatar-circle tt tt-bottom" [style.background-color]="u.color" [attr.data-tt]="u.username + ' (' + u.permission + ')'">
+      <img *ngIf="u.profilePicture" [src]="u.profilePicture" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+      <ng-container *ngIf="!u.profilePicture">{{ u.username.charAt(0).toUpperCase() }}</ng-container>
+    </div>
+  </div>
+
   <app-button *ngIf="!isProfilePage && isLoggedIn && !isUpgradeDisabled" variant="none" customClass="btn-upgrade"
     (onClick)="openUpgradeModal()">
     <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -363,7 +391,7 @@
     </svg>
     Upgrade
   </app-button>
-  <app-button *ngIf="!isProfilePage" variant="default" [disabled]="isSampleDiagram()"
+  <app-button *ngIf="!isProfilePage" variant="default" [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('version_history') && !entitlementService.canUseFeature('version_history'))"
     (onClick)="toggleVersionHistory()">
     <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -371,10 +399,10 @@
       <polyline points="12 6 12 12 16 14" />
     </svg>
     History
-    <app-icons *ngIf="!entitlementService.canUseFeature('version_history')" name="premium-crown" size="14"
+    <app-icons *ngIf="!entitlementService.orgHasFeature('version_history')" name="premium-crown" size="14"
       color="#f59e0b" style="margin-left: 4px; vertical-align: middle;"></app-icons>
   </app-button>
-  <app-button *ngIf="!isProfilePage" variant="default" (onClick)="openShareModal()" [disabled]="isSampleDiagram()">
+  <app-button *ngIf="!isProfilePage" variant="default" (onClick)="openShareModal()" [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('share_diagram') && !entitlementService.canUseFeature('share_diagram'))">
     <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="18" cy="5" r="3"></circle>
@@ -384,18 +412,8 @@
       <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
     </svg>
     Share
-    <app-icons *ngIf="!entitlementService.canUseFeature('share_diagram')" name="premium-crown" size="14" color="#f59e0b"
+    <app-icons *ngIf="!entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14" color="#f59e0b"
       style="margin-left: 4px; vertical-align: middle;"></app-icons>
-  </app-button>
-  <app-button *ngIf="!isProfilePage && hasEffectiveEditPermission()" variant="default" (onClick)="saveDiagram()"
-    [disabled]="isSampleDiagram()">
-    <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-      <polyline points="17 21 17 13 7 13 7 21"></polyline>
-      <polyline points="7 3 7 8 15 8"></polyline>
-    </svg>
-    Save
   </app-button>
   <app-button *ngIf="!isLoggedIn" variant="default" (onClick)="goToLogin()">
     <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -433,7 +451,7 @@
 
       <div class="menu-divider"></div>
 
-      <button *ngIf="auth.isSuperAdmin() || auth.isOrganizationOwner() || auth.isOrganizationAdmin()"
+      <button *ngIf="auth.isSuperAdmin() || auth.isOrganizationAdmin()"
         class="profile-menu-item" (click)="goToAdminDashboard(); closeProfileMenu()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -566,7 +584,7 @@
     <!-- Footer -->
     <div class="import-modal-footer">
       <app-button variant="none" customClass="import-btn-cancel" id="import-cancel-btn" (onClick)="closeImportModal()"
-        [disabled]="importing">Cancel</app-button>
+        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">Cancel</app-button>
       <app-button variant="none" customClass="import-btn-convert" id="import-convert-btn" (onClick)="submitImport()"
         [disabled]="importing || !importSqlText.trim() || !!importValidationError || importValidating">
         <span *ngIf="importing">

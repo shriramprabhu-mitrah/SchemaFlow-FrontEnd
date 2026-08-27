@@ -31,6 +31,8 @@
 @use 'org-layout';
 @use 'public-viewer';
 @use 'upgrade-modal';
+@use 'organization-features';
+@use '../app/features/profile/profile';
 
 
 /* ==========================================
@@ -44,7 +46,9 @@ body {
 * {
   scrollbar-width: thin !important;
   scrollbar-color: rgba(62, 197, 193, 0.4) rgba(255, 255, 255, 0.02) !important;
+}
 
+*, html, body {
   &::-webkit-scrollbar {
     width: 6px !important;
     height: 6px !important;
@@ -83,8 +87,10 @@ body.light-theme {
 }
 
 body.light-theme * {
-  scrollbar-color: rgba(37, 99, 235, 0.4) rgba(0, 0, 0, 0.03) !important;
+  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.03) !important;
+}
 
+body.light-theme *, html.light-theme, body.light-theme {
   &::-webkit-scrollbar {
     width: 6px !important;
     height: 6px !important;
@@ -96,11 +102,11 @@ body.light-theme * {
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(37, 99, 235, 0.4) !important;
+    background: rgba(59, 130, 246, 0.5) !important;
     border-radius: 3px !important;
 
     &:hover {
-      background: rgba(37, 99, 235, 0.7) !important;
+      background: rgba(59, 130, 246, 0.8) !important;
     }
   }
 }

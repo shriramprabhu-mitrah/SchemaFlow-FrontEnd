@@ -69,6 +69,6 @@
   </div>
 
   <!-- Full-page Diagram Loader Component -->
-  <app-loader *ngIf="svc.isDiagramLoading() || svc.isSaving()" 
-              [text]="svc.isSaving() ? 'Saving Diagram...' : 'Loading Diagram...'"></app-loader>
+  <app-loader *ngIf="svc.isDiagramLoading()" 
+              text="Loading Diagram..."></app-loader>
 </div>

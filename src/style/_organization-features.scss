@@ -1,0 +1,124 @@
+/* ==========================================
+   ORGANIZATION FEATURES (INLINE STYLES REFACTOR)
+   ========================================== */
+
+/* ---------------------------------
+   Common & Shared
+--------------------------------- */
+
+
+/* ==========================================
+   ORGANIZATION FEATURES (INLINE STYLES REFACTOR)
+   ========================================== */
+
+/* Utility & Layout Classes */
+.org-page-subtitle { margin: 4px 0 0; }
+.search-box-wrap { position: relative; }
+.search-icon-svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; }
+.search-input-field { width: 190px; padding: 6px 10px 6px 28px; font-size: 14px; }
+
+/* Table Elements */
+.col-sno { width: 60px; }
+.sort-header-default { cursor: default; }
+.user-cell-wrap { display: flex; align-items: center; gap: 10px; }
+.actions-cell-wrap { display: flex; gap: 6px; align-items: center; }
+.btn-icon-flex { display: inline-flex; align-items: center; gap: 4px; }
+.page-size-selector-wrap { display: flex; align-items: center; gap: 8px; }
+.dropdown-container-rel { position: relative; }
+.page-size-trigger { width: 60px !important; min-width: unset !important; padding: 4px 8px !important; }
+
+/* Modal Classes */
+.modal-md { width: 580px; }
+.modal-confirm-upgrade { width: 440px; max-width: 92vw; padding: 28px; border-radius: 14px; text-align: center; }
+.upgrade-icon-wrap { width: 54px; height: 54px; border-radius: 50%; background: rgba(37, 99, 235, 0.12); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.upgrade-title { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; }
+.upgrade-desc { margin: 0 0 24px 0; font-size: 14px; line-height: 1.5; }
+
+/* Form & Checkbox Elements */
+.form-check-flex { display: flex !important; align-items: center; gap: 12px; cursor: pointer; justify-content: flex-start; margin-bottom: 0; }
+.checkbox-label-col { display: flex; flex-direction: column; margin-top: 2px; }
+.checkbox-title { font-weight: 600; font-size: 14px; }
+.checkbox-desc { font-size: 12px; font-weight: normal; opacity: 0.7; margin-top: 4px; }
+.section-label-sm { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0; opacity: 0.7; }
+.form-check-compact { display: flex !important; align-items: center; gap: 6px; cursor: pointer; justify-content: flex-start; margin-bottom: 0; width: max-content; }
+.form-check-compact-gap8 { display: flex !important; align-items: center; gap: 8px; cursor: pointer; justify-content: flex-start; margin-bottom: 0; width: max-content; }
+.checkbox-sm-title { font-size: 12px; font-weight: 600; margin-top: 2px; }
+.checkbox-sm-text { font-size: 13px; margin-top: 2px; }
+
+/* Spacing & Flex Helpers */
+.mb-16 { margin-bottom: 16px; }
+.mt-20 { margin-top: 20px; }
+.ml-auto { margin-left: auto; }
+.flex-between-mb-12 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.flex-center-gap-12 { display: flex; gap: 12px; justify-content: center; }
+.btn-min-110 { min-width: 110px; }
+.btn-min-140 { min-width: 140px; }
+
+
+/* Dashboard & Generic */
+.mb-24 { margin-bottom: 24px; }
+.flex-between-center { display: flex; align-items: center; justify-content: space-between; }
+.org-title-lg { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.org-subtitle-sm { margin: 0; font-size: 13.5px; }
+
+
+
+
+/* Settings Page */
+.loading-state-pad { padding: 40px 0; text-align: center; }
+.settings-grid-layout { display: grid; grid-template-columns: 1.6fr 1fr; gap: 24px; align-items: start; }
+.settings-card-pad { padding: 28px; border-radius: 12px; }
+.settings-card-title-flex { font-size: 16px; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 8px; }
+.mb-20 { margin-bottom: 20px; }
+.form-label-upper { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.form-input-lg { padding: 12px 14px; font-size: 14.5px; height: 44px; border-radius: 8px; }
+.invalid-feedback-lg { color: #f87171; font-size: 13px; margin-top: 6px; display: block; }
+.form-textarea-lg { padding: 12px 14px; font-size: 14.5px; border-radius: 8px; resize: vertical; line-height: 1.5; }
+.form-actions-footer { padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: flex-end; }
+.flex-col-gap-20 { display: flex; flex-direction: column; gap: 20px; }
+.sidebar-card-pad { border-radius: 12px; padding: 24px; }
+.sidebar-card-title-lg { font-size: 13.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 16px 0; }
+.flex-col-gap-14 { display: flex; flex-direction: column; gap: 14px; }
+.slug-container-pad { border-radius: 8px; padding: 12px 16px; }
+.slug-label-upper { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
+.slug-value-mono { font-family: monospace; font-size: 14.5px; background: transparent; border: none; padding: 0; }
+.badge-slug-sm { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 6px; }
+.sidebar-desc-sm { font-size: 12px; margin: 0; line-height: 1.4; }
+.tips-card-pad { border-radius: 12px; padding: 20px; }
+.tips-title-flex { font-size: 13.5px; font-weight: 700; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px; }
+.tips-list-col { margin: 0; padding-left: 18px; font-size: 12.5px; display: flex; flex-direction: column; gap: 8px; }
+.roles-section-divider { padding-top: 30px; border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08)); }
+.roles-title-lg { font-size: 18px; font-weight: 700; margin: 0 0 4px 0; }
+.roles-subtitle-sm { margin: 0; font-size: 13.5px; }
+.roles-table-wrap { border-radius: 12px; padding: 0; overflow: hidden; max-width: 800px; }
+.role-row-flex { padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.08)); }
+.role-info-flex { display: flex; align-items: center; gap: 16px; }
+.role-name-lg { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
+.role-desc-sm { font-size: 12.5px; }
+.empty-state-pad { padding: 40px; text-align: center; border-radius: 12px; }
+
+
+/* Subscription & Plans */
+.sub-hero-card { padding: 24px; margin-bottom: 20px; }
+.sub-hero-flex { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.current-plan-label-text { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.card-heading-lg { margin: 0; font-size: 22px; }
+.flex-center-gap-8-mt-8 { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.flex-center-gap-10 { display: flex; gap: 10px; align-items: center; }
+.seats-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 20px; }
+.section-header-flex { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 14px; flex-wrap: wrap; gap: 12px; }
+.m-0 { margin: 0; }
+.search-input-w190 { width: 190px; }
+.col-w7 { width: 7%; }
+.modal-lg-700 { width: 700px; }
+.plan-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.plan-card-style { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; }
+.card-heading-m4 { margin: 0 0 4px; font-size: 16px; }
+.plan-price-text { color: #60a5fa; font-size: 20px; font-weight: 700; margin: 8px 0; }
+.plan-seats-text { font-size: 13.5px; color: #64748b; }
+.mt-8 { margin-top: 8px; }
+.modal-sm-440 { width: 440px; }
+.target-email-highlight { color: #60a5fa; font-weight: 600; }
+.modal-sm-400 { width: 400px; }
+.mb-0 { margin-bottom: 0; }
+

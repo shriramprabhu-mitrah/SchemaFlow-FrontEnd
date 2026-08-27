@@ -18,8 +18,10 @@ export class AdminService {
   }
 
   // ── Plans ──
-  getPlans(): Observable<any> {
-    return this.http.get(this.urls.plans, { withCredentials: true });
+  getPlans(page = 1, limit = 10, search = '', sortColumn = 'display_order', sortAsc = true): Observable<any> {
+    let params = new HttpParams().set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);
+    if (search) params = params.set('search', search);
+    return this.http.get(this.urls.plans, { params, withCredentials: true });
   }
 
   createPlan(data: any): Observable<any> {
@@ -47,8 +49,10 @@ export class AdminService {
   }
 
   // ── Features ──
-  getFeatures(): Observable<any> {
-    return this.http.get(this.urls.features, { withCredentials: true });
+  getFeatures(page = 1, limit = 10, search = '', sortColumn = 'display_order', sortAsc = true): Observable<any> {
+    let params = new HttpParams().set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);
+    if (search) params = params.set('search', search);
+    return this.http.get(this.urls.features, { params, withCredentials: true });
   }
 
   createFeature(data: any): Observable<any> {
@@ -66,9 +70,9 @@ export class AdminService {
   }
 
   // ── Organizations ──
-  getOrganizations(page = 1, limit = 10, search = ''): Observable<any> {
+  getOrganizations(page = 1, limit = 10, search = '', sortColumn = 'organization_id', sortAsc = false): Observable<any> {
     let params = new HttpParams()
-      .set('page', page).set('limit', limit);
+      .set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);
     if (search) params = params.set('search', search);
     return this.http.get(this.urls.organizations, { params, withCredentials: true });
   }
@@ -89,10 +93,11 @@ export class AdminService {
   }
 
   // ── Users ──
-  getUsers(page = 1, limit = 10, search = ''): Observable<any> {
+  getUsers(page = 1, limit = 10, search = '', sortColumn = 'createddate', sortAsc = false, organization = ''): Observable<any> {
     let params = new HttpParams()
-      .set('page', page).set('limit', limit);
+      .set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);
     if (search) params = params.set('search', search);
+    if (organization) params = params.set('organization', organization);
     return this.http.get(this.urls.users, { params, withCredentials: true });
   }
 
@@ -102,17 +107,18 @@ export class AdminService {
   }
 
   // ── Subscriptions ──
-  getSubscriptions(page = 1, limit = 10, status?: string): Observable<any> {
+  getSubscriptions(page = 1, limit = 10, status?: string, search = '', sortColumn = 'created_at', sortAsc = false): Observable<any> {
     let params = new HttpParams()
-      .set('page', page).set('limit', limit);
+      .set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);
     if (status) params = params.set('status', status);
+    if (search) params = params.set('search', search);
     return this.http.get(this.urls.subscriptions, { params, withCredentials: true });
   }
 
   // ── Audit Logs ──
-  getAuditLogs(page = 1, limit = 20, filters: any = {}): Observable<any> {
+  getAuditLogs(page = 1, limit = 20, filters: any = {}, sortColumn = 'created_at', sortAsc = false): Observable<any> {
     let params = new HttpParams()
-      .set('page', page).set('limit', limit);
+      .set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);
     Object.keys(filters).forEach(key => {
       if (filters[key]) params = params.set(key, filters[key]);
     });

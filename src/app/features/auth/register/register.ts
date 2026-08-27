@@ -203,7 +203,7 @@ export class RegisterComponent implements OnInit {
         if (this.auth.isLoggedIn()) {
           if (this.auth.isSuperAdmin()) {
             this.router.navigate(['/admin']);
-          } else if (this.auth.isOrganizationOwner() || this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+          } else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
             this.router.navigate(['/organization']);
           } else {
             this.router.navigate(['/dashboard']);
