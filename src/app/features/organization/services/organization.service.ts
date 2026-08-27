@@ -24,15 +24,27 @@ export class OrganizationService {
     return this.http.put(this.urls.organizationById.replace('{id}', id), data, { withCredentials: true });
   }
 
-  // ── Members ──
-  getMembers(orgId: number, page = 1, limit = 10, search = ''): Observable<any> {
-    let params = new HttpParams().set('page', page).set('limit', limit);
+  getOrganizationDashboard(id: number): Observable<any> {
+    return this.http.get(`${this.urls.organizationById.replace('{id}', id)}/dashboard`, { withCredentials: true });
+  }
+
+  getOrganizationAuditLogs(id: number, page = 1, limit = 10, search = '', sortColumn = '', sortAsc = true): Observable<any> {
+    let params = new HttpParams().set('page', page).set('limit', limit).set('sortAsc', sortAsc);
     if (search) params = params.set('search', search);
+    if (sortColumn) params = params.set('sortColumn', sortColumn);
+    return this.http.get(`${this.urls.organizationById.replace('{id}', id)}/audit-logs`, { params, withCredentials: true });
+  }
+
+  // ── Members ──
+  getMembers(orgId: number, page = 1, limit = 10, search = '', sortColumn = 'joined', sortAsc = false): Observable<any> {
+    let params = new HttpParams().set('page', page).set('limit', limit).set('sortAsc', sortAsc);
+    if (search) params = params.set('search', search);
+    if (sortColumn) params = params.set('sortColumn', sortColumn);
     return this.http.get(this.urls.orgMembers.replace('{id}', orgId), { params, withCredentials: true });
   }
 
-  inviteMember(orgId: number, email: string, role = 'member', orgName?: string): Observable<any> {
-    const payload: any = { email, role };
+  inviteMember(orgId: number, email: string, role = 'member', orgName?: string, featureAccess?: string[]): Observable<any> {
+    const payload: any = { email, role, featureAccess: featureAccess || [] };
     if (orgName) payload.orgName = orgName;
     return this.http.post(this.urls.orgMembers.replace('{id}', orgId).replace('/members', '/invite'), payload, { withCredentials: true });
   }
@@ -45,9 +57,9 @@ export class OrganizationService {
     return this.http.delete(this.urls.orgMembers.replace('{id}', String(orgId)) + `/${encodeURIComponent(userId)}`, { withCredentials: true });
   }
 
-  updateMemberRole(orgId: number, userId: any, role: string): Observable<any> {
+  updateMemberRole(orgId: number, userId: any, role: string, featureAccess?: string[]): Observable<any> {
     const url = this.urls.orgMemberRole.replace('{id}', String(orgId)).replace('{userId}', String(userId));
-    return this.http.put(url, { role }, { withCredentials: true });
+    return this.http.put(url, { role, featureAccess: featureAccess || [] }, { withCredentials: true });
   }
 
   // ── Subscription ──
@@ -63,13 +75,20 @@ export class OrganizationService {
     return this.http.post(this.urls.orgDowngrade.replace('{id}', orgId), { planSlug }, { withCredentials: true });
   }
 
+  requestSeats(orgId: number, quantity: number): Observable<any> {
+    return this.http.post(`${this.urls.orgSubscription.replace('{id}', orgId)}/request-seats`, { quantity }, { withCredentials: true });
+  }
+
   addSeats(orgId: number, quantity: number): Observable<any> {
     return this.http.post(this.urls.orgAddSeats.replace('{id}', orgId), { quantity }, { withCredentials: true });
   }
 
   // ── Entitlements ──
-  getEntitlements(orgId: number): Observable<any> {
-    return this.http.get(this.urls.orgEntitlements.replace('{id}', orgId), { withCredentials: true });
+  getEntitlements(orgId: number, page = 1, limit = 10, search = '', status = 'all', sortColumn = 'feature_name', sortAsc = true): Observable<any> {
+    let params = new HttpParams().set('page', page).set('limit', limit).set('status', status).set('sortAsc', sortAsc);
+    if (search) params = params.set('search', search);
+    if (sortColumn) params = params.set('sortColumn', sortColumn);
+    return this.http.get(this.urls.orgEntitlements.replace('{id}', orgId), { params, withCredentials: true });
   }
 
   getUsage(orgId: number): Observable<any> {

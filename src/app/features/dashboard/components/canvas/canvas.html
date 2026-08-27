@@ -2,6 +2,18 @@
   [class.tool-pan]="svc.tool === 'pan'" [class.tool-select]="svc.tool === 'select'" [class.panning]="isPanning"
   [class.dragging]="draggingTable !== null" [style.display]="svc.showDocs ? 'none' : ''">
 
+  <div *ngIf="svc.isReadOnly" style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 1000; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); backdrop-filter: blur(4px);"
+       [style.backgroundColor]="svc.theme() === 'light' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.15)'"
+       [style.color]="svc.theme() === 'light' ? '#b45309' : '#fcd34d'"
+       [style.border]="svc.theme() === 'light' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(245, 158, 11, 0.4)'">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    You are viewing this diagram in Read-Only mode. You cannot make structural changes, but you can move tables around.
+  </div>
+
   <div id="canvas-wrap" #canvasWrap>
     <canvas #canvas (mousedown)="onCanvasMouseDown($event)" (contextmenu)="onCanvasContextMenu($event)"
       (mouseleave)="onCanvasMouseLeave()"></canvas>
@@ -153,9 +165,10 @@
     (blur)="commitInlineEdit()" (mousedown)="$event.stopPropagation()" />
 
   <div id="create-table-control" *ngIf="!svc.isPublicViewer">
-    <app-button variant="toolbar" customClass="create-table-button" (onClick)="createTable()" [disabled]="!auth.isLoggedIn()">
+    <app-button variant="toolbar" customClass="create-table-button" (onClick)="entitlementService.canUseFeature('edit_diagram') ? createTable() : svc.showUpgradeModal()" [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('edit_diagram') && !entitlementService.canUseFeature('edit_diagram'))">
       <span class="create-table-icon"><app-icons name="plus" size="17"></app-icons></span>
       <span>Create table</span>
+      <app-icons *ngIf="!entitlementService.orgHasFeature('edit_diagram')" name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 3px; right: 3px;"></app-icons>
     </app-button>
   </div>
 
@@ -163,14 +176,14 @@
     <app-button [variant]="svc.showDiagramViews ? 'toolbar-active' : 'toolbar'"
       (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(false) : svc.showUpgradeModal()"
       [tooltip]="'Diagram Views'" tooltipPosition="left"
-      style="position: relative;" [disabled]="!auth.isLoggedIn()">
+      style="position: relative;" [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
       <svg viewBox="0 0 24 24" style="width: 17px; height: 17px;" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round" fill="none">
         <polygon points="12 2 2 7 12 12 22 7 12 2" />
         <polyline points="2 17 12 22 22 17" />
         <polyline points="2 12 12 17 22 12" />
       </svg>
-      <app-icons *ngIf="!entitlementService.canUseFeature('digram_view')" name="premium-crown" size="10" color="#f59e0b"
+      <app-icons *ngIf="!entitlementService.orgHasFeature('digram_view')" name="premium-crown" size="10" color="#f59e0b"
         style="position: absolute; top: 3px; right: 3px;"></app-icons>
     </app-button>
 
@@ -263,7 +276,7 @@
     </div>
   </div>
 
-  <div class="table-modal-backdrop" *ngIf="tableModal.visible" (click)="closeTableModal()"
+  <div class="table-modal-backdrop" *ngIf="tableModal.visible"
     (wheel)="$event.stopPropagation()">
     <section class="table-modal" role="dialog" aria-modal="true" aria-labelledby="table-modal-title"
       (click)="closeAllDropdowns($event)">
@@ -285,9 +298,10 @@
             Table
           </button>
           <button type="button" class="toggle-option" [class.active]="tableModal.isGroup"
-            (click)="toggleGroupOption(true)" style="display: flex; align-items: center; gap: 4px;">
+            (click)="toggleGroupOption(true)" style="display: flex; align-items: center; gap: 4px;"
+            [disabled]="entitlementService.orgHasFeature('table_group') && !entitlementService.canUseFeature('table_group')">
             Group
-            <app-icons *ngIf="!entitlementService.canUseFeature('table_group')" name="premium-crown" size="12" color="#f59e0b"></app-icons>
+            <app-icons *ngIf="!entitlementService.orgHasFeature('table_group')" name="premium-crown" size="12" color="#f59e0b"></app-icons>
           </button>
         </div>
       </div>
@@ -419,7 +433,7 @@
   </div>
 
   <!-- Edit Table Group Modal -->
-  <div class="table-modal-backdrop" *ngIf="groupModal.visible" (click)="closeGroupModal()"
+  <div class="table-modal-backdrop" *ngIf="groupModal.visible"
     (wheel)="$event.stopPropagation()">
     <section class="table-modal table-group-modal" role="dialog" aria-modal="true" aria-labelledby="group-modal-title"
       (click)="$event.stopPropagation()">
@@ -623,13 +637,13 @@
 
       <!-- Add sticky note button -->
       <ng-container *ngIf="!svc.isReadOnly">
-        <app-button variant="extra" (onClick)="addNoteAtCenter()" [tooltip]="'Add sticky note — ' + svc.notes.length" style="position: relative;" [disabled]="!auth.isLoggedIn()">
+        <app-button variant="extra" (onClick)="entitlementService.canUseFeature('diagram_notes') ? addNoteAtCenter() : svc.showUpgradeModal()" [tooltip]="'Add sticky note — ' + svc.notes.length" style="position: relative;" [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('diagram_notes') && !entitlementService.canUseFeature('diagram_notes'))">
           <svg viewBox="0 0 24 24" style="width:16px;height:16px;" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4h16v10l-6 6H4z"></path>
             <path d="M14 20v-6h6"></path>
           </svg>
-          <app-icons *ngIf="!entitlementService.canUseFeature('diagram_notes')" name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+          <app-icons *ngIf="!entitlementService.orgHasFeature('diagram_notes')" name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
 
         <!-- Vertical Divider line -->
@@ -637,7 +651,7 @@
 
         <!-- Detail Level Trigger Button -->
         <app-button [variant]="showDetailLevelMenu ? 'extra-active' : 'extra'" customClass="detail-level-btn"
-          (onClick)="toggleDetailLevelMenu($event)" [tooltip]="'Change diagram detail level'" style="position: relative;" [disabled]="!auth.isLoggedIn()">
+          (onClick)="entitlementService.canUseFeature('diagram_detailing') ? toggleDetailLevelMenu($event) : svc.showUpgradeModal()" [tooltip]="'Change diagram detail level'" style="position: relative;" [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('diagram_detailing') && !entitlementService.canUseFeature('diagram_detailing'))">
           <div style="display: flex; align-items: center; padding: 0 4px;">
             <app-icons [name]="getCurrentDetailLevelIcon()" size="15" style="display: flex;"></app-icons>
             <span style="margin: 0 6px 0 6px; font-size: 12px; font-weight: 500; white-space: nowrap;">{{
@@ -645,17 +659,17 @@
             <app-icons name="chevron-down" size="10"
               [style]="{ display: 'flex', 'transition': 'transform 0.15s ease', 'transform': showDetailLevelMenu ? 'rotate(180deg)' : 'rotate(0deg)' }"></app-icons>
           </div>
-          <app-icons *ngIf="!entitlementService.canUseFeature('diagram_detailing')" name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+          <app-icons *ngIf="!entitlementService.orgHasFeature('diagram_detailing')" name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
         <app-button variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
           (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(true) : svc.showUpgradeModal()"
-          [tooltip]="'Search / Diagram Views'" style="position: relative;" [disabled]="!auth.isLoggedIn()">
+          [tooltip]="'Search / Diagram Views'" style="position: relative;" [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
           <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;" fill="none" stroke="currentColor"
             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <app-icons *ngIf="!entitlementService.canUseFeature('digram_view')" name="premium-crown" size="10" color="#f59e0b"
+          <app-icons *ngIf="!entitlementService.orgHasFeature('digram_view')" name="premium-crown" size="10" color="#f59e0b"
             style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
       </ng-container>

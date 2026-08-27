@@ -27,7 +27,17 @@ export class OrgLayoutComponent {
   }
 
   get isOwner(): boolean {
-    return this.auth.isOrganizationOwner();
+    return this.auth.isOrganizationAdmin();
+  }
+
+  get pageTitle(): string {
+    const url = this.router.url;
+    if (url.includes('/dashboard')) return 'Organization Dashboard';
+    if (url.includes('/settings')) return 'General Settings';
+    if (url.includes('/subscription')) return 'Subscription';
+    if (url.includes('/members')) return 'Members';
+    if (url.includes('/roles')) return 'Roles';
+    return 'Organization';
   }
 
   toggleSidebar(): void {

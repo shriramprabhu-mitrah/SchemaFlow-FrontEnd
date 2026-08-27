@@ -1,0 +1,148 @@
+<div class="admin-page">
+  <div class="page-header" style="margin-bottom: 24px;">
+    <div class="flex-between-center" style="width: 100%;">
+      <div>
+        <h1>Audit Logs</h1>
+        <p class="text-muted org-page-subtitle">System activity trail, security events, and admin operations history.</p>
+      </div>
+      <div>
+        <div class="search-box-wrap search-wrapper-rel">
+          <svg class="search-icon search-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input class="search-input search-input-field" placeholder="Search logs..." [ngModel]="search" (ngModelChange)="onSearch($event)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div><span>Loading audit logs...</span>
+  </div>
+
+  <div class="subscription-premium-table-wrap" *ngIf="!loading">
+    <div class="table-scroll-area">
+      <table class="subscription-premium-table">
+      <thead>
+        <tr>
+          <th class="col-sno" style="width: 80px;">
+            <span class="sort-header-clickable sort-header-default">
+              <span>S.NO</span>
+            </span>
+          </th>
+          <th style="width: 250px;">
+            <span class="sort-header-clickable" (click)="sortBy('time')">
+              <span>TIME</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'time'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width: 200px;">
+            <span class="sort-header-clickable" (click)="sortBy('user')">
+              <span>ACTOR</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'user'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width: 300px;">
+            <span class="sort-header-clickable" (click)="sortBy('action')">
+              <span>ACTION</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'action'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th>
+            <span class="sort-header-clickable" (click)="sortBy('details')">
+              <span>DETAILS</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'details'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of auditLogs; let i = index">
+          <td>{{ (page - 1) * limit + i + 1 }}</td>
+          <td>{{ log.time }}</td>
+          <td>{{ log.user }}</td>
+          <td>
+            <span class="badge" 
+              [class.badge-active]="log.action.toLowerCase().includes('create') || log.action.toLowerCase().includes('invit')"
+              [class.badge-inactive]="log.action.toLowerCase().includes('delete') || log.action.toLowerCase().includes('remove')"
+              [class.badge-team]="log.action.toLowerCase().includes('update') || log.action.toLowerCase().includes('edit')"
+              [class.badge-free]="!log.action.toLowerCase().includes('create') && !log.action.toLowerCase().includes('invit') && !log.action.toLowerCase().includes('update') && !log.action.toLowerCase().includes('edit') && !log.action.toLowerCase().includes('delete') && !log.action.toLowerCase().includes('remove')">
+              {{ log.action }}
+            </span>
+          </td>
+          <td (click)="openDetailsModal(log)" [style.cursor]="log.details ? 'pointer' : 'default'">
+            <div style="max-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span *ngIf="log.details" style="transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">{{ log.details | json }}</span>
+              <span *ngIf="!log.details" class="text-muted" style="font-style: italic;">No details provided</span>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="auditLogs.length === 0">
+          <td colspan="5" class="empty-table-cell text-center">No audit logs found.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <!-- Workspace-Style Pagination Bar -->
+    <div class="pagination-container" *ngIf="meta.total > 0">
+      <div class="pagination-info">
+        {{ Math.min((page - 1) * limit + 1, meta.total) }}-{{ Math.min(page * limit, meta.total) }} of {{ meta.total }} Items
+      </div>
+      
+      <div class="pagination-controls">
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">&laquo;</button>
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">&lsaquo;</button>
+        <ng-container *ngFor="let p of totalPagesArray">
+          <button class="page-btn" [class.active]="p === page" (click)="goToPage(p)">{{ p }}</button>
+        </ng-container>
+        <button class="page-btn" [disabled]="page === totalPages" (click)="goToPage(page + 1)" title="Next Page">&rsaquo;</button>
+        <button class="page-btn" [disabled]="page === totalPages" (click)="goToPage(totalPages)" title="Last Page">&raquo;</button>
+      </div>
+
+      <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="togglePageSizeDropdown($event)">
+            <span>{{ limit }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showPageSizeDropdown" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 10" (click)="selectPageSize(10)">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 25" (click)="selectPageSize(25)">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 50" (click)="selectPageSize(50)">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 100" (click)="selectPageSize(100)">100</button>
+          </div>
+        </div>
+        <span class="limit-label">items per page</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+    <div class="modal-content modal-lg-700" (click)="$event.stopPropagation()">
+      <div class="modal-header" style="padding-bottom: 10px; border-bottom: none;">
+        <h3 class="modal-title" style="margin-bottom: 0;">Log Details</h3>
+        <button class="modal-close" (click)="closeDetailsModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 0 24px 24px 24px;">
+        <div style="margin-bottom: 12px;">
+          <strong style="color: inherit;">Action: </strong> 
+          <span class="text-muted">{{ selectedLogAction }}</span>
+        </div>
+        <div style="background: rgba(128, 128, 128, 0.08); border: 1px solid var(--border-color, rgba(128, 128, 128, 0.2)); border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+          <pre style="margin: 0; background: transparent; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; color: inherit; padding: 0; border: none; font-family: monospace;">{{ selectedLogDetails | json }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

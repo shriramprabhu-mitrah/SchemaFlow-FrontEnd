@@ -53,6 +53,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private panStart = { x: 0, y: 0 };
 
   draggingTable: string | null = null;
+  private dragTableStartPos: { x: number; y: number } | null = null;
   private dragOffset = { x: 0, y: 0 };
   draggingGroup: string | null = null;
   private dragGroupStartMouse = { x: 0, y: 0 };
@@ -999,10 +1000,59 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.drawStickyNotes(ctx);
     }
 
+    if (this.svc.diagramWorkspaceType() === 'Team' && !this.drawingClean) {
+      this.drawRemoteCursors(ctx);
+    }
+
     ctx.restore();
 
     if (this.contextMenu.visible && !this.drawingClean) {
       this.drawContextMenu(ctx);
+    }
+  }
+
+  private drawRemoteCursors(ctx: CanvasRenderingContext2D): void {
+    const cursors = this.svc.remoteCursors();
+    for (const userId of Object.keys(cursors)) {
+      const c = cursors[Number(userId)];
+      if (c && c.line === -1 && c.col === -1 && c.x !== undefined && c.y !== undefined) {
+        ctx.save();
+        
+        // Draw the cursor arrow (classic mouse pointer shape)
+        ctx.fillStyle = c.color;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);           // Tip
+        ctx.lineTo(c.x, c.y + 16);      // Down left edge
+        ctx.lineTo(c.x + 4.5, c.y + 11.5); // Inner corner
+        ctx.lineTo(c.x + 11, c.y + 11.5);  // Right edge
+        ctx.closePath();
+        
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw the username badge
+        ctx.font = '500 11px system-ui, sans-serif';
+        const metrics = ctx.measureText(c.username);
+        const textWidth = metrics.width;
+        
+        ctx.fillStyle = c.color;
+        // Position below and to the right of the cursor
+        ctx.beginPath();
+        ctx.roundRect(c.x + 8, c.y + 16, textWidth + 12, 18, 4);
+        ctx.fill();
+        ctx.stroke(); // Add white stroke to badge too
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(c.username, c.x + 14, c.y + 25);
+        
+        ctx.restore();
+      }
     }
   }
 
@@ -2629,6 +2679,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const hit = this.findTableAt(wp.x, wp.y);
     if (hit) {
       this.draggingTable = hit.name;
+      this.dragTableStartPos = { x: hit.x, y: hit.y };
       this.dragOffset = { x: wp.x - hit.x, y: wp.y - hit.y };
       this.svc.tables = this.svc.tables.filter((t) => t.name !== hit.name).concat(hit);
       this.svc.selectedConnectionIndex = -1;
@@ -2680,8 +2731,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       // Update drag positions dynamically as the view shifts
       if (this.draggingTable) {
         const wp = this.worldPointFromEvent(e);
-        const nx = wp.x - this.dragOffset.x;
-        const ny = wp.y - this.dragOffset.y;
+        const nx = Math.round(wp.x - this.dragOffset.x);
+        const ny = Math.round(wp.y - this.dragOffset.y);
         this.svc.tablePositions[this.draggingTable] = { x: nx, y: ny };
         const t = this.svc.tables.find((tt) => tt.name === this.draggingTable);
         if (t) {
@@ -2692,9 +2743,24 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private lastCursorEmit = 0;
+
   @HostListener('window:mousemove', ['$event'])
   onWindowMouseMove(e: MouseEvent): void {
     const wp = this.worldPointFromEvent(e);
+
+    // Sync cursor for real-time collaboration
+    if (this.svc.diagramWorkspaceType() === 'Team') {
+      const now = performance.now();
+      if (now - this.lastCursorEmit > 50) {
+        this.lastCursorEmit = now;
+        const id = this.svc.diagramId();
+        if (id) {
+          // Pass -1 for line/col since this is a canvas cursor, pass x/y coords
+          this.svc.socketService.sendCursor(id, -1, -1, Math.round(wp.x), Math.round(wp.y));
+        }
+      }
+    }
 
     // Update hovered table and column under cursor so they are always current (even during drags)
     const tableUnderCursor = this.findTableAt(wp.x, wp.y);
@@ -2715,8 +2781,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         g.tables.forEach((tableName) => {
           const startPos = this.dragGroupStartPoints[tableName];
           if (startPos) {
-            const nx = startPos.x + dx;
-            const ny = startPos.y + dy;
+            const nx = Math.round(startPos.x + dx);
+            const ny = Math.round(startPos.y + dy);
             this.svc.tablePositions[tableName] = { x: nx, y: ny };
             const t = this.svc.tables.find((tt) => tt.name === tableName);
             if (t) {
@@ -2821,8 +2887,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         this.commitInlineEdit();
       }
       // Tables may occupy any world coordinate in the infinite workspace.
-      const nx = wp.x - this.dragOffset.x;
-      const ny = wp.y - this.dragOffset.y;
+      const nx = Math.round(wp.x - this.dragOffset.x);
+      const ny = Math.round(wp.y - this.dragOffset.y);
       this.svc.tablePositions[this.draggingTable] = { x: nx, y: ny };
       const t = this.svc.tables.find((tt) => tt.name === this.draggingTable);
       if (t) {
@@ -2996,6 +3062,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.draggingGroup = null;
       this.dragGroupStartPoints = {};
       this.dragGroupStartGroupPos = null;
+      if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
+        if (this.svc.hasUnsavedChanges()) {
+          this.svc.emitCollabChange();
+        }
+      }
       this.scheduleDraw();
       return;
     }
@@ -3037,7 +3108,48 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.connectionDraft = null;
     this.reconnectDraft = null;
-    this.draggingTable = null;
+    if (this.draggingTable) {
+      const droppedTableName = this.draggingTable;
+      this.draggingTable = null;
+
+      // Check if dropped overlapping a group
+      const t = this.svc.tables.find(tbl => tbl.name === droppedTableName);
+      if (t) {
+        const tLeft = t.x;
+        const tRight = t.x + t.width;
+        const tTop = t.y;
+        const tBottom = t.y + t.height;
+        const geometry: Record<string, TableDef> = {};
+        this.svc.tables.forEach(tbl => (geometry[tbl.name] = tbl));
+
+        let overlapsGroup = false;
+        for (const g of this.svc.groups) {
+          if (g.tables.includes(droppedTableName)) continue;
+          const bounds = this.getGroupBounds(g, geometry);
+          if (bounds) {
+            if (tLeft < bounds.x + bounds.w && tRight > bounds.x && tTop < bounds.y + bounds.h && tBottom > bounds.y) {
+              overlapsGroup = true;
+              break;
+            }
+          }
+        }
+
+        if (overlapsGroup && this.dragTableStartPos) {
+          t.x = this.dragTableStartPos.x;
+          t.y = this.dragTableStartPos.y;
+          this.svc.tablePositions[droppedTableName] = { x: t.x, y: t.y };
+          this.svc.showToast(`Cannot drop table over a group. Use the group's gear icon to add it.`, 3000, 'error');
+        }
+      }
+
+      this.dragTableStartPos = null;
+
+      if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
+        if (this.svc.hasUnsavedChanges()) {
+          this.svc.emitCollabChange();
+        }
+      }
+    }
     this.isPanning = false;
     this.scheduleDraw();
   }
@@ -3387,7 +3499,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleDetailLevelMenu(event: MouseEvent): void {
     if (!this.entitlementService.canUseFeature('diagram_detailing')) {
-      this.svc.showUpgradeModal();
+      if (!this.entitlementService.orgHasFeature('diagram_detailing')) {
+        this.svc.showUpgradeModal();
+      }
       return;
     }
     console.log('toggleDetailLevelMenu called! Current state:', this.showDetailLevelMenu);
@@ -3641,7 +3755,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openGroupModal(groupName: string): void {
     if (!this.entitlementService.canUseFeature('table_group')) {
-      this.svc.showUpgradeModal();
+      if (!this.entitlementService.orgHasFeature('table_group')) {
+        this.svc.showUpgradeModal();
+      }
       return;
     }
     const group = this.svc.groups.find(g => g.name === groupName);
@@ -3842,7 +3958,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openColorPickerForConnection(refIndex: number, e: MouseEvent): void {
     if (!this.entitlementService.canUseFeature('table_color_and_connection_color')) {
-      this.svc.showUpgradeModal();
+      if (!this.entitlementService.orgHasFeature('table_color_and_connection_color')) {
+        this.svc.showUpgradeModal();
+      }
       return;
     }
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
@@ -3873,7 +3991,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openColorPickerForTable(tableName: string, e: MouseEvent): void {
     if (!this.entitlementService.canUseFeature('table_color_and_connection_color')) {
-      this.svc.showUpgradeModal();
+      if (!this.entitlementService.orgHasFeature('table_color_and_connection_color')) {
+        this.svc.showUpgradeModal();
+      }
       return;
     }
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
@@ -3905,7 +4025,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openColorPickerForGroup(groupName: string, e: MouseEvent): void {
     if (!this.entitlementService.canUseFeature('table_color_and_connection_color')) {
-      this.svc.showUpgradeModal();
+      if (!this.entitlementService.orgHasFeature('table_color_and_connection_color')) {
+        this.svc.showUpgradeModal();
+      }
       return;
     }
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
@@ -4430,9 +4552,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.deleteTable(table.name);
     } else if (label === 'Change Color') {
       if (!this.entitlementService.canUseFeature('table_color_and_connection_color')) {
+      if (!this.entitlementService.orgHasFeature('table_color_and_connection_color')) {
         this.svc.showUpgradeModal();
-        return;
       }
+      return;
+    }
       const isLight = this.svc.theme() === 'light';
       this.colorPicker = {
         visible: true,
@@ -4457,9 +4581,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.deleteGroup(groupName);
     } else if (label === 'Change Color') {
       if (!this.entitlementService.canUseFeature('table_color_and_connection_color')) {
+      if (!this.entitlementService.orgHasFeature('table_color_and_connection_color')) {
         this.svc.showUpgradeModal();
-        return;
       }
+      return;
+    }
       const group = this.svc.groups.find(g => g.name === groupName);
       this.colorPicker = {
         visible: true,
@@ -4582,7 +4708,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Add a new note at the center of the current canvas viewport */
   addNoteAtCenter(): void {
     if (!this.entitlementService.canUseFeature('diagram_notes')) {
-      this.svc.showUpgradeModal();
+      if (!this.entitlementService.orgHasFeature('diagram_notes')) {
+        this.svc.showUpgradeModal();
+      }
       return;
     }
     const canvas = this.canvasRef?.nativeElement;

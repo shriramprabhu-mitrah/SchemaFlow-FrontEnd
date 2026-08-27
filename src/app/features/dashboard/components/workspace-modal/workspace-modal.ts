@@ -9,13 +9,15 @@ import { EntitlementService } from '../../../../core/services/entitlement.servic
 import { Icons } from '../../../../core/component/icons/icons';
 import { LoaderComponent } from '../../../../shared/loader/loader';
 
-export type PermissionType = 'Viewer' | 'Editor' | 'Editor & Inviter' | 'Owner';
+export type PermissionType = 'Viewer' | 'Editor' | 'Editor & Inviter' | 'Owner' | 'admin' | 'member';
 
 export interface WorkspaceMemberItem {
   id?: number;
   email: string;
   permission: PermissionType;
   isNew?: boolean;
+  featureAccess?: string[];
+  isAdminSelected?: boolean;
 }
 
 export type UserWorkspacePermission = 'Owner' | 'EditorInvite' | 'Editor' | 'Viewer';
@@ -47,6 +49,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   @Output() close = new EventEmitter<void>();
 
   sharedDiagrams: any[] = [];
+  availableFeatures: any[] = [];
+
   isLoadingSharedDiagrams = false;
 
   searchQuery = '';
@@ -150,6 +154,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   private membersSearch$ = new Subject<string>();
 
   ngOnInit(): void {
+    this.entitlementService.orgEntitlements$.subscribe(entitlements => {
+      this.availableFeatures = entitlements.filter(e => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'pdf_export' || e.feature_key === 'version_history' || e.feature_key === 'advanced_sharing' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram'));
+    });
     this.diagramsSearch$.pipe(
       debounceTime(800)
     ).subscribe((val) => {
@@ -845,7 +852,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       this.membersList.push({
         email: email,
         permission: this.invitePermission,
-        isNew: true
+        isNew: true,
+        isAdminSelected: false,
+        featureAccess: []
       });
     }
 
@@ -867,6 +876,32 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.cdr.detectChanges();
   }
 
+  toggleMemberAdmin(index: number): void {
+    if (index >= 0 && index < this.membersList.length) {
+      const m = this.membersList[index];
+      m.isAdminSelected = !m.isAdminSelected;
+      if (m.isAdminSelected) {
+        m.featureAccess = this.availableFeatures.map(f => f.feature_key);
+      }
+      this.cdr.detectChanges();
+    }
+  }
+
+  toggleMemberFeature(index: number, featureKey: string): void {
+    if (index >= 0 && index < this.membersList.length) {
+      const m = this.membersList[index];
+      if (m.isAdminSelected) return;
+      if (!m.featureAccess) m.featureAccess = [];
+      const fIndex = m.featureAccess.indexOf(featureKey);
+      if (fIndex > -1) {
+        m.featureAccess.splice(fIndex, 1);
+      } else {
+        m.featureAccess.push(featureKey);
+      }
+      this.cdr.detectChanges();
+    }
+  }
+
   toggleMemberDropdown(index: number, e: Event): void {
     if (e) e.stopPropagation();
     this.activeMemberDropdownIndex = this.activeMemberDropdownIndex === index ? null : index;
@@ -880,6 +915,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
     this.activeMemberDropdownIndex = null;
   }
+
+
 
   onMemberPermissionSelectChange(index: number, val: string): void {
     if (val === 'REMOVE') {
@@ -903,7 +940,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       workspaceName: name,
       members: this.membersList.map(m => ({
         email: m.email,
-        permission: this.normalizePermissionRole(m.permission)
+        permission: m.permission === 'Editor & Inviter' ? 'EditorInvite' : m.permission,
       }))
     };
 
@@ -1003,7 +1040,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         const email = (m?.email || '').toString();
         const rawPerm = m?.permission || m?.role || m?.access || m?.permission_type || m?.permissionType || '';
         const permission = (rawPerm.toString().toLowerCase() === 'owner') ? 'Owner' : this.mapPermission(rawPerm);
-        return { id, email, permission };
+        const isAdminSelected = (rawPerm.toString().toLowerCase() === 'admin' || permission === 'Owner');
+        const featureAccess = m?.feature_access || m?.featureAccess || this.availableFeatures.map(f => f.feature_key);
+        return { id, email, permission, isAdminSelected, featureAccess };
       });
       
       // Sort to ensure 'Owner' is always first
@@ -1250,7 +1289,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         .filter(m => m.permission !== 'Owner')
         .map(m => ({
           email: m.email,
-          permission: this.normalizePermissionRole(m.permission)
+          permission: m.permission === 'Editor & Inviter' ? 'EditorInvite' : m.permission
         }))
     };
 
@@ -1456,5 +1495,30 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
     this.permissionDropdownOpen = false;
     this.activeMemberDropdownIndex = null;
+  }
+  isFeatureRequired(featureKey: string): boolean {
+    const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces'];
+    return required.includes(featureKey);
+  }
+  selectAllFeatures(index: number): void {
+    if (index >= 0 && index < this.membersList.length) {
+      const m = this.membersList[index];
+      if (!m.isAdminSelected) {
+        m.featureAccess = this.availableFeatures.map(f => f.feature_key);
+        this.cdr.detectChanges();
+      }
+    }
+  }
+
+  unselectAllFeatures(index: number): void {
+    if (index >= 0 && index < this.membersList.length) {
+      const m = this.membersList[index];
+      if (!m.isAdminSelected) {
+        m.featureAccess = this.availableFeatures
+          .filter(f => this.isFeatureRequired(f.feature_key))
+          .map(f => f.feature_key);
+        this.cdr.detectChanges();
+      }
+    }
   }
 }

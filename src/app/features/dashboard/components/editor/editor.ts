@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -31,7 +31,15 @@ export class EditorComponent implements OnInit, OnDestroy {
     private readonly auth: AuthService,
     private readonly router: Router,
     private readonly cdr: ChangeDetectorRef
-  ) { }
+  ) {
+    // Re-render cursors whenever the remoteCursors signal changes
+    effect(() => {
+      const cursors = this.svc.remoteCursors();
+      if (this.highlight?.nativeElement) {
+        this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+      }
+    });
+  }
 
   get isLoggedIn(): boolean {
     return this.auth.isLoggedIn();
@@ -99,23 +107,41 @@ export class EditorComponent implements OnInit, OnDestroy {
     const ta = e.target as HTMLTextAreaElement;
     const val = ta.value;
     this.displayCode = val;
-    this.highlightedHtml = this.highlightCode(val);
     this.svc.code = val;
     this.onCodeInput();
+    this.emitCursor(ta);
   }
 
   onCodeChange(val: string): void {
     this.displayCode = val;
-    this.highlightedHtml = this.highlightCode(val);
-    this.highlight.nativeElement.innerHTML = this.colorize(val);
     this.svc.code = val;
     this.onCodeInput();
+  }
+  
+  onCursorEvent(e: Event): void {
+    const ta = e.target as HTMLTextAreaElement;
+    this.emitCursor(ta);
+  }
+  
+  private emitCursor(ta: HTMLTextAreaElement): void {
+    if (this.svc.diagramWorkspaceType() !== 'Team') return;
+    const pos = ta.selectionStart;
+    const textBefore = ta.value.substring(0, pos);
+    const linesBefore = textBefore.split('\n');
+    const line = linesBefore.length;
+    const col = linesBefore[linesBefore.length - 1].length;
+    
+    const id = this.svc.diagramId();
+    if (id) {
+      this.svc.socketService.sendCursor(id, line, col);
+    }
   }
 
   private renderTimer: any = null;
 
   onCodeInput(): void {
     this.svc.updateGutter();
+    this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
     clearTimeout(this.renderTimer);
     this.renderTimer = setTimeout(() => this.svc.parseAndLayout(), 150);
   }
@@ -173,6 +199,35 @@ export class EditorComponent implements OnInit, OnDestroy {
 
     if (text.endsWith('\n')) {
       text += ' ';
+    }
+    
+    // Inject remote cursors
+    if (this.svc.diagramWorkspaceType() === 'Team') {
+      const cursors = this.svc.remoteCursors();
+      const lines = text.split('\n');
+      
+      for (const userId of Object.keys(cursors)) {
+        const c = cursors[Number(userId)];
+        if (c && c.line > 0 && c.line <= lines.length) {
+          const lineIdx = c.line - 1;
+          const lineText = lines[lineIdx];
+          
+          // Account for editor padding: 16px top, 52px left. Font is 15px with 1.62 line height (24.3px).
+          // Monospace char width for 15px is typically exactly 9px (15 * 0.6).
+          const topPos = 16 + (lineIdx * 24.3);
+          const leftPos = 52 + (c.col * 9);
+          
+          const cursorHtml = `
+            <span class="remote-cursor" style="position: absolute; left: ${leftPos}px; top: ${topPos}px; height: 20px; border-left: 2px solid ${c.color}; z-index: 10; pointer-events: none;">
+              <span style="position: absolute; top: -18px; left: 0px; background-color: ${c.color}; color: white; font-size: 10px; line-height: 1; padding: 3px 5px; border-radius: 3px; border-bottom-left-radius: 0; white-space: nowrap; font-family: system-ui, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                ${c.username}
+              </span>
+            </span>
+          `;
+          lines[lineIdx] = lineText + cursorHtml;
+        }
+      }
+      text = lines.join('\n');
     }
 
     return text;

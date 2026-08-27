@@ -674,13 +674,35 @@ app-version-history {
   font-size: 13px;
 }
 
-.table-modal-close,
 .column-delete {
   border: 0;
   background: transparent;
   color: #98a7c4;
   font-size: 24px;
   cursor: pointer;
+}
+
+.table-modal-close {
+  background: none;
+  border: none;
+  color: #7082a0;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  padding-bottom: 2px;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+
+  &:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .table-name-field {
@@ -1444,12 +1466,21 @@ body.light-theme {
     color: #1f2937 !important;
     box-shadow: 0 22px 65px rgba(0, 0, 0, 0.08) !important;
 
-    .table-modal-close,
     .column-delete {
       color: #6b7280 !important;
 
       &:hover {
         color: #f27272 !important;
+      }
+    }
+
+    .table-modal-close {
+      color: #64748b !important;
+      background: transparent !important;
+
+      &:hover {
+        color: #0f172a !important;
+        background: rgba(0, 0, 0, 0.06) !important;
       }
     }
 

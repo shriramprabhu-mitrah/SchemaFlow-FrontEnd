@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, EMPTY, Observable, Subject, catchError, debounceTime, finalize, map, switchMap, tap, throwError, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { AppConfigService } from './app-config.service';
+import { EntitlementService } from './entitlement.service';
+import { SocketService } from './socket.service';
 
 export interface Column {
   name: string;
@@ -431,6 +433,14 @@ export class DashboardService {
     if (normalizedValue === this._code) return;
     this._code = normalizedValue;
     this.code$.next(normalizedValue);
+    
+    // INSTANT REAL-TIME COLLAB: Bypass RxJS completely to guarantee emission
+    if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+      if (this.hasUnsavedChanges()) {
+        this.emitCollabChange();
+      }
+    }
+    
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('active_diagram_code', normalizedValue);
     }
@@ -637,6 +647,10 @@ export class DashboardService {
   private originalIsSmoothLine = true;
   private originalIsEnabled = false;
   private originalNotes = '[]';
+  
+  private originalZoomPercent: number | null = null;
+  private originalGridOn: boolean = true;
+  private originalShowAllConnections: boolean = false;
 
   private originalCode = '';
   private originalName = '';
@@ -656,6 +670,10 @@ export class DashboardService {
   forceRedraw$ = new Subject<void>();
   readonly splitViewRequested$ = new Subject<void>();
   readonly canvasFitRequested$ = new Subject<void>();
+
+  // Collaboration State
+  readonly activeRoomUsers = signal<any[]>([]);
+  readonly remoteCursors = signal<Record<number, {line: number, col: number, x?: number, y?: number, username: string, color: string}>>({});
 
   showDiagramViews = false;
   focusDiagramViewsSearch = false
@@ -751,8 +769,13 @@ export class DashboardService {
   constructor(
     private readonly http: HttpClient,
     private readonly auth: AuthService,
-    private readonly appConfig: AppConfigService
+    private readonly appConfig: AppConfigService,
+    private entitlementService: EntitlementService,
+    public socketService: SocketService
   ) {
+    if (typeof window !== 'undefined') {
+      (window as any)._dashboardService = this;
+    }
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as 'dark' | 'light';
       if (savedTheme) {
@@ -763,6 +786,19 @@ export class DashboardService {
     this.updateGutter();
     this.loadPersistedState();
     this.updateOriginalState();
+    
+    // Subscribe to local code changes for instant real-time collab emission
+    this.code$.pipe(debounceTime(300)).subscribe(() => {
+      console.log('[Collab] code$ emitted. Workspace:', this.diagramWorkspaceType(), 'isConnected:', this.socketService.isConnected);
+      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+        console.log('[Collab] Checking unsaved changes. hasUnsaved:', this.hasUnsavedChanges());
+        if (this.hasUnsavedChanges()) { // Bypassed canSaveDiagram()
+          console.log('[Collab] Emitting collab change!');
+          this.emitCollabChange();
+        }
+      }
+    });
+
     this.dbmlChanges$.pipe(
       debounceTime(500),
       tap(() => {
@@ -821,6 +857,32 @@ export class DashboardService {
         }
       }
     });
+
+    if (typeof window !== 'undefined') {
+      setInterval(() => {
+        if (
+          this.auth.isLoggedIn() &&
+          this.hasUnsavedChanges() &&
+          this.canSaveDiagram() &&
+          this.validateDiagramName()
+        ) {
+          // If connected to a Team diagram socket, use socket emit
+          if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+            this.emitCollabChange();
+          } else {
+            this.saveDiagram().subscribe();
+          }
+        }
+      }, 5000);
+    }
+  }
+
+  emitCollabChange(): void {
+    const id = this.diagramId();
+    if (id) {
+      this.socketService.sendChange(id, this.code, this.diagramName, this.buildLayoutPayload());
+      this.updateOriginalState();
+    }
   }
 
   loadPersistedState(): void {
@@ -1021,6 +1083,10 @@ export class DashboardService {
    * saving is still permitted so a brand-new diagram isn't blocked forever.
    */
   canSaveDiagram(): boolean {
+    if (this.isReadOnly) {
+      return false;
+    }
+
     const errors = this.getValidationErrors();
     if (errors.length > 0) {
       const firstMessage =
@@ -1045,10 +1111,7 @@ export class DashboardService {
       return false;
     }
 
-    if (name.toLowerCase() === 'untitled diagram' || name.toLowerCase() === 'untitled') {
-      this.showToast('This diagram cannot save as untitled diagram', 4000, 'error');
-      return false;
-    }
+
 
     const currentId = this.diagramId();
     const duplicate = this.diagrams().some(
@@ -1220,7 +1283,7 @@ export class DashboardService {
     const pos = { x: 60 + col * (this.CARD_W + 150), y: 60 + row * 300 };
     this.tablePositions[name] = pos;
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('drag position', JSON.stringify(this.tablePositions));
+      localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
     }
     return pos;
   }
@@ -1286,24 +1349,27 @@ export class DashboardService {
 
       if (hasNewTables) {
         let minX = Infinity;
-        let minY = Infinity;
+        let maxY = -Infinity;
         if (prevGroup) {
           g.tables.forEach((tName: string) => {
             if (prevGroup.tables.includes(tName)) {
               const pos = this.tablePositions[tName];
+              const tDef = parsed.tables.find(t => t.name === tName);
+              const tHeight = tDef ? this.getTableHeight(tDef.columns) : 100;
               if (pos) {
                 if (pos.x < minX) minX = pos.x;
-                if (pos.y < minY) minY = pos.y;
+                if (pos.y + tHeight > maxY) maxY = pos.y + tHeight;
               }
             }
           });
         }
 
-        if (minX !== Infinity && minY !== Infinity) {
+        if (minX !== Infinity && maxY !== -Infinity) {
           const horizGap = 150;
           const vertGap = 60;
-          const localColHeights = [minY, minY];
-          g.tables.forEach((tName: string, index: number) => {
+          const newTables = g.tables.filter((tName: string) => !prevGroup?.tables.includes(tName));
+          const localColHeights = [maxY + vertGap, maxY + vertGap];
+          newTables.forEach((tName: string, index: number) => {
             const tDef = parsed.tables.find(t => t.name === tName);
             const tHeight = tDef ? this.getTableHeight(tDef.columns) : 100;
             const col = index % 2;
@@ -1455,7 +1521,7 @@ export class DashboardService {
     });
 
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('drag position', JSON.stringify(this.tablePositions));
+      localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
     }
 
     const prevNames = this.tables.map(t => t.name).sort().join(',');
@@ -1622,7 +1688,7 @@ export class DashboardService {
       }
     });
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('ref colors', JSON.stringify(this.refColors));
+      localStorage.setItem('ref colors', this.deterministicStringify(this.refColors));
     }
   }
 
@@ -1764,7 +1830,7 @@ export class DashboardService {
       delete this.tablePositions[oldName];
     }
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('drag position', JSON.stringify(this.tablePositions));
+      localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
     }
     this.updateGutter();
     this.parseAndLayout();
@@ -1815,7 +1881,7 @@ export class DashboardService {
     const key = `${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}`;
     delete this.refColors[key];
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('ref colors', JSON.stringify(this.refColors));
+      localStorage.setItem('ref colors', this.deterministicStringify(this.refColors));
     }
   }
 
@@ -1976,7 +2042,7 @@ export class DashboardService {
   setTableColor(tableName: string, color: string): void {
     this.tableColorsMap[tableName] = color;
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('table_colors_map', JSON.stringify(this.tableColorsMap));
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
     }
     const t = this.tables.find(tbl => tbl.name === tableName);
     if (t) {
@@ -1988,7 +2054,7 @@ export class DashboardService {
   setGroupColor(groupName: string, color: string): void {
     this.groupColors[groupName] = color;
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('group_colors', JSON.stringify(this.groupColors));
+      localStorage.setItem('group_colors', this.deterministicStringify(this.groupColors));
     }
 
     this.parseAndLayout();
@@ -2018,7 +2084,7 @@ export class DashboardService {
     this.tables.push(newTable);
     this.tablePositions[tableName] = { x, y };
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('drag position', JSON.stringify(this.tablePositions));
+      localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
     }
 
     const tableBlock =
@@ -2097,7 +2163,7 @@ export class DashboardService {
     const key = `${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}`;
     this.refColors[key] = hex;
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('ref colors', JSON.stringify(this.refColors));
+      localStorage.setItem('ref colors', this.deterministicStringify(this.refColors));
     }
 
     this.scheduleDraw();
@@ -2523,48 +2589,9 @@ export class DashboardService {
 
     return deepFind(response);
   }
+  private applyParsedLayout(layout: any, diagram: any = null): void {
+    if (!layout) return;
 
-  private applyLoadedDiagram(response: any, id: number, fallbackWorkspace?: { id: number; name?: string } | null): void {
-    const diagram = response?.data?.diagram ?? response?.data ?? response?.diagram ?? response;
-    const rawWsId = diagram?.workspaceid ?? diagram?.workspaceId ?? diagram?.workspace_id ?? diagram?.workspaceID
-      ?? diagram?.workspace?.id ?? diagram?.workspace?.workspaceid
-      ?? response?.data?.workspaceid ?? response?.data?.workspaceId
-      ?? response?.workspaceid ?? response?.workspaceId
-      ?? this.extractWorkspaceId(response)
-      ?? fallbackWorkspace?.id       // ← fall back to what we already know
-      ?? null;
-    this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, fallbackWorkspace?.name);
-
-    const wsType = diagram?.workspacetype ?? diagram?.workspaceType ?? diagram?.workspace_type ?? diagram?.workspace?.workspacetype
-      ?? this.extractWorkspaceType(response)
-      ?? 'Personal';
-    this.diagramWorkspaceType.set(wsType);
-
-    let layout = diagram?.layout;
-    if (typeof layout === 'string') {
-      try {
-        layout = JSON.parse(layout);
-      } catch {
-        layout = undefined;
-      }
-    }
-
-    this.diagramId.set(Number(diagram?.id ?? id));
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('active_diagram_id', String(diagram?.id ?? id));
-    }
-
-    const rawWsName = diagram?.workspace?.workspacename ?? diagram?.workspace?.name ?? diagram?.workspace?.workspace_name
-      ?? response?.data?.workspace?.workspacename ?? response?.data?.workspace?.name ?? response?.data?.workspace?.workspace_name
-      ?? fallbackWorkspace?.name ?? undefined;
-
-    this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, rawWsName);
-    this.diagramName = diagram?.name || 'Untitled Diagram';
-    this.isEnabled = diagram?.isEnabled !== undefined ? !!diagram.isEnabled : false;
-    this.publicToken = diagram?.publictoken || diagram?.publicToken || diagram?.public_token || '';
-    this.isDiagramPublic = diagram?.ispublic !== false; // defaults to true unless explicitly false
-    this.diagramPassword = diagram?.protectedpassword || diagram?.protectedPassword || '';
-    this.showDocs = false;
     this.tablePositions = {};
     this.refColors = {};
     this.groupColors = {};
@@ -2611,7 +2638,10 @@ export class DashboardService {
       this.isColumnNameOnly = diagProps.isColumnNameOnly !== undefined ? !!diagProps.isColumnNameOnly : (diagram?.isColumnNameOnly !== undefined ? !!diagram.isColumnNameOnly : false);
       this.isStraightLine = diagProps.isStraightLine !== undefined ? !!diagProps.isStraightLine : (diagram?.isStraightLine !== undefined ? !!diagram.isStraightLine : false);
       this.isSmoothLine = diagProps.isSmoothLine !== undefined ? !!diagProps.isSmoothLine : (diagram?.isSmoothLine !== undefined ? !!diagram.isSmoothLine : true);
-    } else {
+      if (diagProps.showAllConnections != null) {
+        this.showAllConnections = !!diagProps.showAllConnections;
+      }
+    } else if (diagram) {
       this.isAllFields = diagram?.isAllFields !== undefined ? !!diagram.isAllFields : true;
       this.isKeyOnly = diagram?.isKeyOnly !== undefined ? !!diagram.isKeyOnly : false;
       this.isColumnNameOnly = diagram?.isColumnNameOnly !== undefined ? !!diagram.isColumnNameOnly : false;
@@ -2637,7 +2667,58 @@ export class DashboardService {
     } else {
       this.notes = [];
     }
+  }
 
+  private applyLoadedDiagram(response: any, id: number, fallbackWorkspace?: { id: number; name?: string } | null): void {
+    const diagram = response?.data?.diagram ?? response?.data ?? response?.diagram ?? response;
+    const rawWsId = diagram?.workspaceid ?? diagram?.workspaceId ?? diagram?.workspace_id ?? diagram?.workspaceID
+      ?? diagram?.workspace?.id ?? diagram?.workspace?.workspaceid
+      ?? response?.data?.workspaceid ?? response?.data?.workspaceId
+      ?? response?.workspaceid ?? response?.workspaceId
+      ?? this.extractWorkspaceId(response)
+      ?? fallbackWorkspace?.id       // ← fall back to what we already know
+      ?? null;
+    this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, fallbackWorkspace?.name);
+
+    const wsType = diagram?.workspacetype ?? diagram?.workspaceType ?? diagram?.workspace_type ?? diagram?.workspace?.workspacetype
+      ?? this.extractWorkspaceType(response)
+      ?? 'Personal';
+    this.diagramWorkspaceType.set(wsType);
+    
+    const permission = diagram?.permission ?? diagram?.workspace?.permission ?? diagram?.shared_permission ?? response?.data?.permission ?? 'Editor';
+    if (wsType === 'Team' && permission === 'Viewer') {
+      this.isReadOnly = true;
+    } else {
+      this.isReadOnly = false;
+    }
+
+    let layout = diagram?.layout;
+    if (typeof layout === 'string') {
+      try {
+        layout = JSON.parse(layout);
+      } catch {
+        layout = undefined;
+      }
+    }
+
+    this.diagramId.set(Number(diagram?.id ?? id));
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('active_diagram_id', String(diagram?.id ?? id));
+    }
+
+    const rawWsName = diagram?.workspace?.workspacename ?? diagram?.workspace?.name ?? diagram?.workspace?.workspace_name
+      ?? response?.data?.workspace?.workspacename ?? response?.data?.workspace?.name ?? response?.data?.workspace?.workspace_name
+      ?? fallbackWorkspace?.name ?? undefined;
+
+    this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, rawWsName);
+    this.diagramName = diagram?.name || 'Untitled Diagram';
+    this.isEnabled = diagram?.isEnabled !== undefined ? !!diagram.isEnabled : false;
+    this.publicToken = diagram?.publictoken || diagram?.publicToken || diagram?.public_token || '';
+    this.isDiagramPublic = diagram?.ispublic !== false; // defaults to true unless explicitly false
+    this.diagramPassword = diagram?.protectedpassword || diagram?.protectedPassword || '';
+    this.showDocs = false;
+
+    this.applyParsedLayout(layout, diagram);
 
     const rawCode =
       diagram?.diagramDbml ??
@@ -2652,13 +2733,139 @@ export class DashboardService {
     this.parseAndLayout();
     this.requestCanvasFit();
     this.updateOriginalState();
+    
+    // Join socket room if Team workspace
+    if (this.diagramWorkspaceType() === 'Team') {
+      const dId = this.diagramId();
+      if (dId) {
+        this.socketService.connect();
+        this.socketService.joinDiagram(dId);
+        
+        // Setup once listener for this diagram
+        this.setupSocketListeners();
+      }
+    }
+  }
+  
+  private socketListenersSetup = false;
+  private readonly collabColors = [
+    '#EF4444', // Red 500
+    '#F97316', // Orange 500
+    '#F59E0B', // Amber 500
+    '#84CC16', // Lime 500
+    '#22C55E', // Green 500
+    '#10B981', // Emerald 500
+    '#14B8A6', // Teal 500
+    '#06B6D4', // Cyan 500
+    '#0EA5E9', // Sky 500
+    '#3B82F6', // Blue 500
+    '#6366F1', // Indigo 500
+    '#8B5CF6', // Violet 500
+    '#A855F7', // Purple 500
+    '#D946EF', // Fuchsia 500
+    '#EC4899', // Pink 500
+    '#F43F5E'  // Rose 500
+  ];
+  
+  private setupSocketListeners(): void {
+    if (this.socketListenersSetup) return;
+    this.socketListenersSetup = true;
+    
+    this.socketService.onUpdate().subscribe((data) => {
+      if (data && data.dbml !== undefined) {
+        this._code = data.dbml;
+        this.code$.next(this._code);
+        
+        if (data.name) {
+          this.diagramNameSignal.set(data.name);
+        }
+
+        if (data.layout) {
+          // Parse layout from other users to sync positions and all customizations instantly
+          let layoutObj = data.layout;
+          if (typeof layoutObj === 'string') {
+            try { layoutObj = JSON.parse(layoutObj); } catch { layoutObj = undefined; }
+          }
+          if (layoutObj) {
+            this.applyParsedLayout(layoutObj);
+          }
+        }
+        
+        this.parseAndLayout();
+        
+        // Prevent echoing back the change by marking it as the new original state
+        // MUST BE CALLED AFTER parseAndLayout() SO THE NEW COORDINATES ARE SAVED AS ORIGINAL!
+        this.updateOriginalState();
+      }
+    });
+
+    this.socketService.onRoomState().subscribe((data) => {
+      if (data && data.users) {
+        // Filter out current user based on userId matching auth
+        const payload = this.auth.getTokenPayload();
+        const currentUserId = payload?.userId || payload?.id;
+        const others = data.users.filter((u: any) => u.userId !== currentUserId);
+        
+        // Assign colors
+        others.forEach((u: any, i: number) => {
+          u.color = this.collabColors[i % this.collabColors.length];
+        });
+        
+        this.activeRoomUsers.set(others);
+      }
+    });
+
+    this.socketService.onUserJoined().subscribe((data) => {
+      const payload = this.auth.getTokenPayload();
+      const currentUserId = payload?.userId || payload?.id;
+      if (data && data.userId !== currentUserId) {
+        const users = [...this.activeRoomUsers()];
+        if (!users.find(u => u.userId === data.userId)) {
+          data.color = this.collabColors[users.length % this.collabColors.length];
+          users.push(data);
+          this.activeRoomUsers.set(users);
+        }
+      }
+    });
+
+    this.socketService.onUserLeft().subscribe((data) => {
+      if (data && data.userId) {
+        const users = this.activeRoomUsers().filter(u => u.userId !== data.userId);
+        this.activeRoomUsers.set(users);
+        
+        // Also clean up their cursor
+        const cursors = { ...this.remoteCursors() };
+        if (cursors[data.userId]) {
+          delete cursors[data.userId];
+          this.remoteCursors.set(cursors);
+        }
+      }
+    });
+
+    this.socketService.onCursorUpdate().subscribe((data) => {
+      const payload = this.auth.getTokenPayload();
+      const currentUserId = payload?.userId || payload?.id;
+      if (data && data.userId && data.userId !== currentUserId) {
+        const cursors = { ...this.remoteCursors() };
+        const user = this.activeRoomUsers().find(u => u.userId === data.userId);
+        cursors[data.userId] = {
+          line: data.line,
+          col: data.col,
+          x: data.x,
+          y: data.y,
+          username: data.username || user?.username || user?.email || 'Unknown',
+          color: user?.color || '#3ec5c1'
+        };
+        this.remoteCursors.set(cursors);
+      }
+    });
   }
 
   private buildLayoutPayload(): {
     tables: { name: string; posx: string; posy: string; color: string }[];
     relations: { from: string; to: string; color: string }[];
     tableGroup?: { id?: number | string; name: string; color: string; posx: number; posy: number; tables: string[] }[];
-    diagramProperties: { zoomLevel: number; isGridView: boolean; isAllFields: boolean; isKeyOnly: boolean; isColumnNameOnly: boolean; isStraightLine: boolean; isSmoothLine: boolean }[];
+    diagramProperties: { zoomLevel: number; isGridView: boolean; isAllFields: boolean; isKeyOnly: boolean; isColumnNameOnly: boolean; isStraightLine: boolean; isSmoothLine: boolean; showAllConnections: boolean }[];
     diagramNotes: DiagramNote[];
   } {
     const tableGroup = (this.groups || []).map((group) => {
@@ -2700,7 +2907,8 @@ export class DashboardService {
           isKeyOnly: this.isKeyOnly,
           isColumnNameOnly: this.isColumnNameOnly,
           isStraightLine: this.isStraightLine,
-          isSmoothLine: this.isSmoothLine
+          isSmoothLine: this.isSmoothLine,
+          showAllConnections: this.showAllConnections
         }
       ],
       diagramNotes: this.notes.map(n => {
@@ -2719,8 +2927,9 @@ export class DashboardService {
 
   createDiagram(name = ''): Observable<any> {
     const headers = this.getAuthHeaders();
+    const payload = { name: name || 'Untitled Diagram' };
     const url = this.appConfig.environment?.diagramApiUrls?.diagrams ?? "";
-    return this.http.post<any>(url, null, { headers }).pipe(
+    return this.http.post<any>(url, payload, { headers }).pipe(
       tap((res) => {
         const id = res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
           ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
@@ -2794,8 +3003,8 @@ export class DashboardService {
       const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', currentId.toString()) ?? "";
       return this.http.put<any>(url, payload, { headers }).pipe(
         tap((res) => {
-          this.updateOriginalState();
           this.extractIdsFromResponse(res);
+          this.updateOriginalState();
         }),
         finalize(() => this.isSaving.set(false))
       );
@@ -2946,6 +3155,9 @@ export class DashboardService {
   }
 
   clearDiagram(preserveDiagramId = false): void {
+    this.socketService.disconnect();
+    this.activeRoomUsers.set([]);
+    this.remoteCursors.set({});
     this.code = '';
     this.tables = [];
     this.refs = [];
@@ -3211,17 +3423,31 @@ export class DashboardService {
   updateOriginalState(): void {
     this.originalCode = this.code;
     this.originalName = this.diagramName;
-    this.originalTablePositions = JSON.stringify(this.tablePositions);
-    this.originalRefColors = JSON.stringify(this.refColors);
-    this.originalGroupColors = JSON.stringify(this.groupColors);
-    this.originalTableColorsMap = JSON.stringify(this.tableColorsMap);
+    this.originalTablePositions = this.deterministicStringify(this.tablePositions);
+    this.originalRefColors = this.deterministicStringify(this.refColors);
+    this.originalGroupColors = this.deterministicStringify(this.groupColors);
+    this.originalTableColorsMap = this.deterministicStringify(this.tableColorsMap);
     this.originalIsAllFields = this.isAllFields;
     this.originalIsKeyOnly = this.isKeyOnly;
     this.originalIsColumnNameOnly = this.isColumnNameOnly;
     this.originalIsStraightLine = this.isStraightLine;
     this.originalIsSmoothLine = this.isSmoothLine;
     this.originalIsEnabled = this.isEnabled;
-    this.originalNotes = JSON.stringify(this.notes);
+    this.originalNotes = this.deterministicStringify(this.notes);
+    this.originalZoomPercent = this.zoomPercent;
+    this.originalGridOn = this.gridOn;
+    this.originalShowAllConnections = this.showAllConnections;
+  }
+
+  
+  private deterministicStringify(obj: any): string {
+    if (obj === null || obj === undefined) return 'null';
+    if (Array.isArray(obj)) return '[' + obj.map(v => this.deterministicStringify(v)).join(',') + ']';
+    if (typeof obj === 'object') {
+      const keys = Object.keys(obj).sort();
+      return '{' + keys.map(k => '"' + k + '":' + this.deterministicStringify(obj[k])).join(',') + '}';
+    }
+    return JSON.stringify(obj);
   }
 
   hasUnsavedChanges(): boolean {
@@ -3239,10 +3465,10 @@ export class DashboardService {
 
     const codeChanged = currentNormalized !== originalNormalized;
     const nameChanged = this.diagramName !== this.originalName;
-    const positionsChanged = JSON.stringify(this.tablePositions) !== this.originalTablePositions;
-    const colorsChanged = JSON.stringify(this.refColors) !== this.originalRefColors;
-    const groupColorsChanged = JSON.stringify(this.groupColors) !== this.originalGroupColors;
-    const tableColorsChanged = JSON.stringify(this.tableColorsMap) !== this.originalTableColorsMap;
+    const positionsChanged = this.deterministicStringify(this.tablePositions) !== this.originalTablePositions;
+    const colorsChanged = this.deterministicStringify(this.refColors) !== this.originalRefColors;
+    const groupColorsChanged = this.deterministicStringify(this.groupColors) !== this.originalGroupColors;
+    const tableColorsChanged = this.deterministicStringify(this.tableColorsMap) !== this.originalTableColorsMap;
 
     const settingsChanged =
       this.isAllFields !== this.originalIsAllFields ||
@@ -3252,9 +3478,42 @@ export class DashboardService {
       this.isSmoothLine !== this.originalIsSmoothLine ||
       this.isEnabled !== this.originalIsEnabled;
 
-    const notesChanged = JSON.stringify(this.notes) !== this.originalNotes;
+    const viewChanged =
+      (this.originalZoomPercent !== null && this.zoomPercent !== this.originalZoomPercent) ||
+      this.gridOn !== this.originalGridOn ||
+      this.showAllConnections !== this.originalShowAllConnections;
 
-    return codeChanged || nameChanged || positionsChanged || colorsChanged || groupColorsChanged || tableColorsChanged || settingsChanged || notesChanged;
+    const notesChanged = this.deterministicStringify(this.notes) !== this.originalNotes;
+
+    const hasChanges = codeChanged || nameChanged || positionsChanged || colorsChanged || groupColorsChanged || tableColorsChanged || settingsChanged || notesChanged || viewChanged;
+    
+    if (hasChanges) {
+      console.log('[Collab Debug] hasUnsavedChanges is TRUE because:', {
+        codeChanged, nameChanged, positionsChanged, colorsChanged, groupColorsChanged, tableColorsChanged, settingsChanged, viewChanged, notesChanged
+      });
+      if (viewChanged) {
+        console.log('[Collab Debug] viewChanged details:', {
+          originalZoom: this.originalZoomPercent, zoom: this.zoomPercent,
+          originalGrid: this.originalGridOn, grid: this.gridOn,
+          originalShowAll: this.originalShowAllConnections, showAll: this.showAllConnections
+        });
+      }
+    }
+
+    if (hasChanges && (typeof window !== 'undefined')) {
+      (window as any)._lastUnsavedReason = { codeChanged, nameChanged, positionsChanged, colorsChanged, groupColorsChanged, tableColorsChanged, settingsChanged, notesChanged, viewChanged };
+      if (positionsChanged) {
+        console.log('[Collab Debug] positionsChanged is TRUE!');
+        console.log('Original Table Positions:', this.originalTablePositions);
+        console.log('Current Table Positions:', this.deterministicStringify(this.tablePositions));
+        (window as any)._positionsDiff = {
+          original: this.originalTablePositions,
+          current: this.deterministicStringify(this.tablePositions)
+        };
+      }
+    }
+
+    return hasChanges;
   }
 
   askForConfirmation(onProceed: () => void, onCancel?: () => void): void {

@@ -13,7 +13,7 @@
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
-    <input class="search-input" placeholder="Search organizations..." [(ngModel)]="search" (input)="onSearch()">
+      <input class="search-input" placeholder="Search organizations..." [(ngModel)]="search" (input)="onSearch()">
     </div>
   </div>
 
@@ -25,62 +25,52 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th style="width:7%">
+          <th style="width:5%">
             <span class="sort-header-clickable" style="cursor: default;">
               <span>S.No</span>
             </span>
           </th>
-          <th style="width:25%" (click)="sortBy('name')">
-            <span class="sort-header-clickable">
+          <th style="width:22%">
+            <span class="sort-header-clickable" (click)="sortBy('name')">
               <span>NAME</span>
               <span class="sort-icon" [class.active]="sortColumn === 'name'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:20%" (click)="sortBy('slug')">
-            <span class="sort-header-clickable">
+          <th style="width:16%">
+            <span class="sort-header-clickable" (click)="sortBy('slug')">
               <span>SLUG</span>
               <span class="sort-icon" [class.active]="sortColumn === 'slug'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:12%" (click)="sortBy('members')">
-            <span class="sort-header-clickable">
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('members')">
               <span>MEMBERS</span>
               <span class="sort-icon" [class.active]="sortColumn === 'members'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:15%" (click)="sortBy('plan')">
-            <span class="sort-header-clickable">
+          <th style="width:12%">
+            <span class="sort-header-clickable" (click)="sortBy('plan')">
               <span>PLAN</span>
               <span class="sort-icon" [class.active]="sortColumn === 'plan'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:11%" (click)="sortBy('status')">
-            <span class="sort-header-clickable">
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('status')">
               <span>STATUS</span>
               <span class="sort-icon" [class.active]="sortColumn === 'status'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:10%">ACTIONS</th>
+          <th style="width:25%">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
@@ -93,7 +83,7 @@
           <td><span class="badge" [class.badge-active]="org.status === 'active'"
               [class.badge-inactive]="org.status !== 'active'">{{ org.status }}</span></td>
           <td>
-            <button class="btn-secondary btn-sm" (click)="viewOrg(org)">Details</button>
+            <button type="button" class="btn-secondary btn-sm" (click)="viewOrg(org)">Details</button>
           </td>
         </tr>
         <tr *ngIf="displayOrgs.length === 0">
@@ -107,23 +97,32 @@
       <div class="pagination-info">
         {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ totalFilteredCount }} Items
       </div>
-      <div class="pagination-controls" *ngIf="totalPagesCount > 1">
-        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">«</button>
-        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">‹</button>
-        <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p
+      <div class="pagination-controls">
+        <button type="button" class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(1)"
+          data-tt="First Page">«</button>
+        <button type="button" class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(page - 1)"
+          data-tt="Previous Page">‹</button>
+        <button type="button" class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page"
+          (click)="goToPage(p)">{{ p
           }}</button>
-        <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(page + 1)"
-          title="Next Page">›</button>
-        <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)"
-          title="Last Page">»</button>
+        <button type="button" class="page-btn tt tt-top" [disabled]="page === totalPagesCount"
+          (click)="goToPage(page + 1)" data-tt="Next Page">›</button>
+        <button type="button" class="page-btn tt tt-top" [disabled]="page === totalPagesCount"
+          (click)="goToPage(totalPagesCount)" data-tt="Last Page">»</button>
       </div>
-      <div class="page-size-selector">
-        <select class="page-size-select" [(ngModel)]="limit" (change)="onLimitChange()">
-          <option [ngValue]="5">5</option>
-          <option [ngValue]="10">10</option>
-          <option [ngValue]="25">25</option>
-          <option [ngValue]="50">50</option>
-        </select>
+            <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="showLimitDropdown = !showLimitDropdown; $event.stopPropagation()">
+            <span>{{ limit }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showLimitDropdown" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 10" (click)="limit = 10; onLimitChange(); showLimitDropdown = false">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 25" (click)="limit = 25; onLimitChange(); showLimitDropdown = false">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 50" (click)="limit = 50; onLimitChange(); showLimitDropdown = false">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 100" (click)="limit = 100; onLimitChange(); showLimitDropdown = false">100</button>
+          </div>
+        </div>
         <span class="limit-label">items per page</span>
       </div>
     </div>
@@ -131,140 +130,167 @@
 
   <!-- Organization Details Modal (Redesigned Cards & Form Layout) -->
   <div class="modal-overlay" *ngIf="showDetail" (click)="closeDetail()">
-    <div class="modal-content" style="width:760px;max-width:92vw;padding:28px" (click)="$event.stopPropagation()">
+    <div class="modal-content" style="width:760px;max-width:92vw;padding:24px 28px" (click)="$event.stopPropagation()">
       <!-- Modal Header -->
-      <div class="modal-header" style="margin-bottom:24px">
+      <div class="modal-header" style="margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:12px">
-          <h3 class="modal-title" style="margin:0;font-size:20px">{{ selectedOrg?.name }}</h3>
+          <h3 class="modal-title" style="margin:0">{{ selectedOrg?.name }}</h3>
           <span class="badge" [class.badge-active]="selectedOrg?.status==='active'"
             [class.badge-inactive]="selectedOrg?.status!=='active'">
             {{ selectedOrg?.status }}
           </span>
         </div>
-        <button class="modal-close" (click)="closeDetail()">✕</button>
+        <button type="button" class="modal-close" (click)="closeDetail()">✕</button>
       </div>
 
       <!-- Top Info Summary Cards Grid -->
       <div class="summary-card-grid"
-        style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px;padding:18px;border-radius:12px">
+        style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;padding:12px 16px;border-radius:10px">
         <div>
-          <span class="form-label" style="margin-bottom:4px">Slug</span>
+          <span class="form-label" style="margin-bottom:3px">Slug</span>
           <div class="info-value"><code>{{ selectedOrg?.slug }}</code></div>
         </div>
         <div>
-          <span class="form-label" style="margin-bottom:4px">Total Members</span>
+          <span class="form-label" style="margin-bottom:3px">Total Members</span>
           <div class="info-value" style="font-size:15px;font-weight:700">{{ selectedOrg?.memberCount || 0 }}</div>
-        </div>
-        <div>
-          <span class="form-label" style="margin-bottom:4px">Organization ID</span>
-          <div class="info-value" style="font-size:14px;font-weight:600">#{{ selectedOrg?.organization_id }}</div>
         </div>
       </div>
 
       <div *ngIf="selectedOrg?.subscription">
         <!-- Active Subscription Panel -->
-        <h4 class="sub-heading" style="margin-top:0">Active Subscription</h4>
+        <h4 class="sub-heading" style="margin-top:0;margin-bottom:6px">Active Subscription</h4>
         <div class="sub-panel-card"
-          style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;padding:16px;border-radius:10px">
+          style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;padding:12px 16px;border-radius:10px">
           <div>
-            <span class="form-label" style="margin-bottom:6px">Active Plan</span>
-            <div><span class="badge badge-free" style="font-size:13px;padding:4px 14px">{{
+            <span class="form-label" style="margin-bottom:4px">Active Plan</span>
+            <div><span class="badge badge-free" style="font-size:13px;padding:3px 12px">{{
                 selectedOrg.subscription.plan_name }}</span></div>
           </div>
           <div>
-            <span class="form-label" style="margin-bottom:6px">Billing Cycle</span>
-            <div class="info-value" style="font-size:14.5px;font-weight:600">{{ selectedOrg.subscription.billing_cycle |
+            <span class="form-label" style="margin-bottom:4px">Billing Cycle</span>
+            <div class="info-value" style="font-size:14px;font-weight:600">{{ selectedOrg.subscription.billing_cycle |
               uppercase }}</div>
           </div>
         </div>
 
         <!-- Manage Seats Add-ons Panel -->
-        <h4 class="sub-heading" style="margin-top:24px">Manage Seats Add-ons</h4>
-        <div class="addons-panel-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:10px;margin-bottom:24px;gap:16px">
+        <h4 class="sub-heading" style="margin-top:10px;margin-bottom:6px">Manage Seats Add-ons</h4>
+        <div class="addons-panel-card"
+          style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:10px;margin-bottom:12px;gap:14px">
           <div>
-            <span class="form-label" style="margin-bottom:3px">Included Seats</span>
-            <div class="info-value" style="font-size:15px;font-weight:700">{{ selectedOrg.subscription.included_seats === -1 ? 'Unlimited' : selectedOrg.subscription.included_seats }}</div>
+            <span class="form-label" style="margin-bottom:2px">Included Seats</span>
+            <div class="info-value" style="font-size:14.5px;font-weight:700">{{ selectedOrg.subscription.included_seats
+              === -1 ? 'Unlimited' : selectedOrg.subscription.included_seats }}</div>
           </div>
           <div>
             <span class="form-label" style="margin-bottom:3px">Purchased Add-ons</span>
             <div style="color:#fbbf24;font-size:15px;font-weight:700" *ngIf="selectedOrg.addons">
-              {{ selectedOrg.addons.length > 0 ? selectedOrg.addons[0].quantity : 0 }} seats
+              {{ getTotalAddonSeats() }} seats
             </div>
           </div>
           <div>
-          <div style="display:flex;align-items:center;gap:10px">
-             <input type="number" class="form-input" [class.is-invalid]="seatQuantityError"
-                style="width:85px;height:38px;padding:6px 10px;text-align:center;font-size:14px"
-                [(ngModel)]="seatQuantity" (input)="seatQuantityError=''" min="1">
-              <button class="btn-primary btn-sm" style="height:38px;padding:0 18px;font-size:13.5px"
-                (click)="addSeatAddon()">+ Add Seats</button>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="number" class="form-input" [class.is-invalid]="seatQuantityError"
+                style="width:85px;text-align:center" [(ngModel)]="seatQuantity" (input)="seatQuantityError=''" min="1">
+              <button type="button" class="btn-primary" [disabled]="isSubmittingOverride"
+                (click)="addSeatAddon($event)">+ Add Seats</button>
             </div>
             <span class="invalid-feedback" *ngIf="seatQuantityError">{{ seatQuantityError }}</span>
           </div>
         </div>
 
         <!-- Overrides -->
-        <h4 class="sub-heading" style="margin-top:20px">Entitlement Overrides</h4>
-        
+        <h4 class="sub-heading" style="margin-top:10px;margin-bottom:6px">Entitlement Overrides</h4>
+
         <!-- Active Overrides Table -->
-        <div style="margin-bottom:16px">
-          <table class="data-table" style="font-size:12px" *ngIf="selectedOrg.overrides && selectedOrg.overrides.length > 0">
-            <thead><tr><th>Feature</th><th>Value</th><th>Limit</th><th>Reason</th><th>Action</th></tr></thead>
+        <div style="margin-bottom:12px; overflow-x:auto;">
+          <table class="data-table modal-data-table" style="font-size:12px; width:100%; min-width:0; table-layout:auto;"
+            *ngIf="selectedOrg.overrides && selectedOrg.overrides.length > 0">
+            <thead>
+              <tr>
+                <th style="width:25%">Feature</th>
+                <th style="width:15%">Value</th>
+                <th style="width:15%">Limit</th>
+                <th style="width:30%">Reason</th>
+                <th style="width:15%; text-align:center">Action</th>
+              </tr>
+            </thead>
             <tbody>
               <tr *ngFor="let ov of selectedOrg.overrides">
                 <td><code>{{ ov.feature_key }}</code></td>
                 <td><strong class="user-name-text">{{ ov.override_value }}</strong></td>
                 <td>{{ ov.override_limit === -1 ? '∞' : (ov.override_limit || '') }}</td>
-                <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" [title]="ov.reason">{{ ov.reason || '' }}</td>
-                <td><button class="btn-danger btn-sm" style="padding:4px 8px"
-                    (click)="deleteOverride(ov.feature_id)">✕</button></td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis" [title]="ov.reason">{{ ov.reason ||
+                  '' }}</td>
+                <td style="text-align:center"><button type="button" class="btn-danger btn-sm" style="padding:4px 8px"
+                    [disabled]="isSubmittingOverride" (click)="deleteOverride(ov.feature_id, $event)">✕</button></td>
               </tr>
             </tbody>
           </table>
-          <div class="text-muted" style="font-style:italic;font-size:13.5px;padding:8px 0" *ngIf="!selectedOrg.overrides || selectedOrg.overrides.length === 0">
-          No custom overrides configured for this organization.
+          <div class="text-muted" style="font-style:italic;font-size:13px;padding:4px 0"
+            *ngIf="!selectedOrg.overrides || selectedOrg.overrides.length === 0">
+            No custom overrides configured for this organization.
+          </div>
         </div>
-      </div>
 
         <!-- Apply Custom Override Card Form -->
-        <div class="sub-panel-card" style="padding:18px;border-radius:12px">
-          <div class="form-subtitle" style="margin-bottom:14px;font-size:14.5px;font-weight:700">Apply Custom Override
+        <div class="sub-panel-card" style="padding:14px 16px;border-radius:10px">
+          <div class="form-subtitle" style="margin-bottom:10px;font-size:13.5px;font-weight:700">Apply Custom Override
           </div>
 
-          <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:14px">
-            <div>
-              <span class="form-label">Feature</span>
-              <select class="form-select" style="height:38px;font-size:13.5px" [(ngModel)]="overrideForm.feature_id"(change)="onFeatureChange()">
-                <option *ngFor="let f of features" [value]="f.feature_id">{{ f.name }} ({{ f.feature_key }})</option>
-              </select>
+          <div style="margin-bottom:10px">
+            <span class="form-label">Feature</span>
+            <div class="custom-select-container" style="width:100%">
+              <button type="button" class="custom-select-btn" [class.open]="showFeatureOverrideDropdown"
+                style="height:34px;width:100%" (click)="toggleFeatureDropdown($event)">
+                <span>{{ getSelectedFeatureLabel() }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showFeatureOverrideDropdown">
+                <div class="custom-select-option" *ngFor="let f of features"
+                  [class.active]="overrideForm.feature_id == f.feature_id"
+                  (click)="selectFeatureOption(f.feature_id, $event)">
+                  {{ f.name }} ({{ f.feature_key }})
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
               <span class="form-label">Value</span>
-              <input type="text" class="form-input" style="height:38px;font-size:13.5px"[(ngModel)]="overrideForm.override_value" placeholder="e.g. true or 10">
+              <input type="text" class="form-input" [(ngModel)]="overrideForm.override_value"
+                placeholder="e.g. true or 10">
             </div>
             <div>
               <span class="form-label">Limit (Optional)</span>
-              <input type="number" class="form-input" style="height:38px;font-size:13.5px"
-                [(ngModel)]="overrideForm.override_limit" placeholder="Unlimited">
+              <input type="number" class="form-input" [(ngModel)]="overrideForm.override_limit" placeholder="Unlimited">
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end">
+          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end">
             <div>
               <span class="form-label">Reason</span>
-              <input type="text" class="form-input" style="height:38px;font-size:13.5px"
-                [(ngModel)]="overrideForm.reason" placeholder="e.g. Special customer request">
+              <input type="text" class="form-input" [(ngModel)]="overrideForm.reason"
+                placeholder="e.g. Special customer request">
             </div>
-            <button class="btn-primary" style="height:38px;padding:0 24px;font-size:13.5px;font-weight:700"(click)="applyOverride()">Apply</button>
+            <button type="button" class="btn-primary" [disabled]="isSubmittingOverride"
+              (click)="applyOverride($event)">Apply</button>
           </div>
         </div>
       </div>
 
       <!-- Modal Footer -->
-      <div class="modal-footer" style="margin-top:28px">
-        <button class="btn-danger" (click)="updateOrgStatus(selectedOrg.organization_id, 'suspended')" *ngIf="selectedOrg?.status==='active'">Suspend Org</button>
-        <button class="btn-primary" (click)="updateOrgStatus(selectedOrg.organization_id, 'active')" *ngIf="selectedOrg?.status!=='active'">Activate Org</button>
-        <button class="btn-secondary" (click)="closeDetail()">Close</button>
+      <div class="modal-footer" style="margin-top:16px">
+        <button type="button" class="btn-danger" [disabled]="isSubmittingOverride"
+          (click)="updateOrgStatus(selectedOrg.organization_id, 'suspended', $event)"
+          *ngIf="selectedOrg?.status==='active'">Suspend Org</button>
+        <button type="button" class="btn-primary" [disabled]="isSubmittingOverride"
+          (click)="updateOrgStatus(selectedOrg.organization_id, 'active', $event)"
+          *ngIf="selectedOrg?.status!=='active'">Activate Org</button>
+        <button type="button" class="btn-secondary" (click)="closeDetail()">Close</button>
       </div>
     </div>
   </div>

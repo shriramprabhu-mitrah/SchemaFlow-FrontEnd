@@ -33,6 +33,11 @@ export class AdminLayoutComponent {
     return this.auth.getUserEmail();
   }
 
+  get userInitial(): string {
+    const email = this.userEmail;
+    return email ? email.charAt(0).toUpperCase() : 'A';
+  }
+
   toggleSidebar(): void {
     this.sidebarCollapsed = !this.sidebarCollapsed;
   }

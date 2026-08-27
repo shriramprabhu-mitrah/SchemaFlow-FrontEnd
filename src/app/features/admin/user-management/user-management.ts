@@ -1,13 +1,17 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Icons } from '../../../core/component/icons/icons';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
 
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Icons],
   templateUrl: './user-management.html'
 })
 export class UserManagementComponent implements OnInit {
@@ -19,49 +23,20 @@ export class UserManagementComponent implements OnInit {
   search = '';
   page = 1;
   limit = 10;
-  sortColumn = 'username';
-  sortAsc = true;
+  showLimitDropdown = false;
+  totalFilteredCount = 0;
+  selectedOrganization = '';
+  showOrgDropdown = false;
+  organizationsList: any[] = [];
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.showLimitDropdown = false;
+    this.showOrgDropdown = false;
+  }
+  sortColumn = 'userid';
+  sortAsc = false;
   loading = true;
-
-  get filteredUsersList(): any[] {
-    if (!this.allUsers) return [];
-    let list = [...this.allUsers];
-
-    if (this.search.trim()) {
-      const q = this.search.trim().toLowerCase();
-      list = list.filter(u =>
-        (u.username || '').toLowerCase().includes(q) ||
-        (u.email || '').toLowerCase().includes(q) ||
-        String(u.userid || '').includes(q)
-      );
-    }
-
-    list.sort((a, b) => {
-      let valA: any = a[this.sortColumn] ?? '';
-      let valB: any = b[this.sortColumn] ?? '';
-
-      if (this.sortColumn === 'joined') {
-        valA = new Date(a.createddate || 0).getTime();
-        valB = new Date(b.createddate || 0).getTime();
-      } else if (this.sortColumn === 'status') {
-        valA = a.isactive !== false ? 'Active' : 'Inactive';
-        valB = b.isactive !== false ? 'Active' : 'Inactive';
-      }
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return this.sortAsc ? -1 : 1;
-      if (valA > valB) return this.sortAsc ? 1 : -1;
-      return 0;
-    });
-
-    return list;
-  }
-
-  get totalFilteredCount(): number {
-    return this.filteredUsersList.length;
-  }
 
   get totalPagesCount(): number {
     return Math.ceil(this.totalFilteredCount / this.limit) || 1;
@@ -100,17 +75,37 @@ export class UserManagementComponent implements OnInit {
   }
 
   get displayUsers(): any[] {
-    const start = (this.page - 1) * this.limit;
-    return this.filteredUsersList.slice(start, start + this.limit);
+    return this.allUsers;
   }
 
-  ngOnInit(): void { this.load(); }
+  selectOrg(orgName: string) {
+    this.selectedOrganization = orgName;
+    this.showOrgDropdown = false;
+    this.page = 1;
+    this.load();
+  }
+
+  private searchSubject = new Subject<string>();
+
+  ngOnInit(): void { 
+    this.admin.getOrganizations(1, 1000).subscribe({
+      next: (res) => {
+        this.organizationsList = res?.data || res || [];
+      }
+    });
+    this.load(); 
+    this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
+      this.page = 1;
+      this.load();
+    });
+  }
 
   load(): void {
     this.loading = true;
-    this.admin.getUsers().subscribe({
+    this.admin.getUsers(this.page, this.limit, this.search, this.sortColumn, this.sortAsc, this.selectedOrganization).subscribe({
       next: (res) => {
         this.allUsers = res?.data || res || [];
+        this.totalFilteredCount = res?.meta?.total || this.allUsers.length;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -121,9 +116,19 @@ export class UserManagementComponent implements OnInit {
     });
   }
 
-  onSearch(): void { this.page = 1; }
-  goToPage(p: number): void { this.page = p; }
-  onLimitChange(): void { this.page = 1; }
+  onSearch(): void { this.searchSubject.next(this.search); }
+
+  goToPage(p: number): void {
+    if (this.page !== p) {
+      this.page = p;
+      this.load();
+    }
+  }
+
+  onLimitChange(): void {
+    this.page = 1;
+    this.load();
+  }
 
   sortBy(col: string): void {
     if (this.sortColumn === col) {
@@ -132,6 +137,8 @@ export class UserManagementComponent implements OnInit {
       this.sortColumn = col;
       this.sortAsc = true;
     }
+    this.page = 1;
+    this.load();
   }
 
   showConfirmModal = false;

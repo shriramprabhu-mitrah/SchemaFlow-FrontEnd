@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { EntitlementService } from '../../../core/services/entitlement.service';
 import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
@@ -23,6 +24,7 @@ export class AcceptInvitationComponent implements OnInit {
     private router: Router,
     public svc: DashboardService,
     public auth: AuthService,
+    public entitlementService: EntitlementService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -161,11 +163,12 @@ export class AcceptInvitationComponent implements OnInit {
         this.isLoading = false;
         this.isSuccess = true;
         this.svc.showToast('Invitation accepted successfully!', 3000);
+        this.entitlementService.loadEntitlements(true).subscribe();
         this.cdr.markForCheck();
 
         const navigateToApp = () => {
           setTimeout(() => {
-            if (this.auth.isOrganizationOwner() || this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+            if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
               this.router.navigate(['/organization']);
             } else {
               this.router.navigate(['/dashboard'], { queryParams: { welcome: 'true' } });

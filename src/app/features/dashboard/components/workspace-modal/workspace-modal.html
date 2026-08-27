@@ -17,32 +17,32 @@
           : 'Personal Workspace')) }}</div>
       </div>
 
-      <!-- Action button (Create New Workspace) -->
       <div class="workspace-action-buttons">
-        <button class="btn-workspace-action primary-action tt" style="position: relative;"
-          (click)="entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces')"
+        <button class="btn-workspace-action primary-action tt tt-right" style="position: relative;"
+          (click)="!entitlementService.isMember() && (entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces'))"
+          [class.disabled]="entitlementService.isMember() || (entitlementService.orgHasFeature('create_workspaces') && !entitlementService.canUseFeature('create_workspaces'))"
           data-tt="Create New Workspace">
           <span class="plus-icon">+</span>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Create New
             Workspace</span>
-          <app-icons *ngIf="!entitlementService.canUseFeature('create_workspaces')" name="premium-crown" size="14"
+          <app-icons *ngIf="!entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
             color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </button>
       </div>
 
       <!-- Navigation tabs -->
       <div class="workspace-nav">
-        <button class="nav-item tt" [class.active]="activeTab === 'my-diagrams' && !selectedWorkspace"
-          (click)="selectPersonalWorkspace()" data-tt="My Diagrams">
+        <button class="nav-item" [class.active]="activeTab === 'my-diagrams' && !selectedWorkspace"
+          (click)="selectPersonalWorkspace()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
           </svg>
           <span>My Diagrams</span>
         </button>
 
-        <button class="nav-item tt" [class.active]="activeTab === 'shared'" style="position: relative;"
+        <button class="nav-item" [class.active]="activeTab === 'shared'" style="position: relative;"
           (click)="entitlementService.canUseFeature('share_diagram') ? openSharedTab() : svc.showUpgradeModal('share_diagram')"
-          data-tt="Shared with Me">
+          [class.disabled]="entitlementService.orgHasFeature('share_diagram') && !entitlementService.canUseFeature('share_diagram')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
             <polyline points="16 6 12 2 8 6" />
@@ -50,21 +50,20 @@
           </svg>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
             with Me</span>
-          <app-icons *ngIf="!entitlementService.canUseFeature('share_diagram')" name="premium-crown" size="14"
+          <app-icons *ngIf="!entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14"
             color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </button>
 
-        <button class="nav-item tt" [class.active]="activeTab === 'my-workspaces' || activeTab === 'edit-workspace'"
+        <button class="nav-item" [class.active]="activeTab === 'my-workspaces' || activeTab === 'edit-workspace'"
           style="position: relative;"
-          (click)="entitlementService.canUseFeature('create_workspaces') ? openMyWorkspaces() : svc.showUpgradeModal('create_workspaces')"
-          data-tt="My Workspaces">
+          (click)="(entitlementService.isMember() || auth.getOrganizationId() || entitlementService.canUseFeature('create_workspaces')) ? openMyWorkspaces() : svc.showUpgradeModal('create_workspaces')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
           </svg>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">My
             Workspaces</span>
-          <app-icons *ngIf="!entitlementService.canUseFeature('create_workspaces')" name="premium-crown" size="14"
+          <app-icons *ngIf="!entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
             color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </button>
       </div>
@@ -534,7 +533,7 @@
             </div>
             <p class="empty-desc">{{ workspacesSearch ? 'Try searching for something else.' : 'Create your first
               workspace to collaborate on diagrams with your team.' }}</p>
-            <button class="btn-create-first" (click)="openCreateWorkspace()">+ Create
+            <button *ngIf="auth.hasWorkspaceCreatePermission()" class="btn-create-first" (click)="openCreateWorkspace()">+ Create
               Workspace</button>
           </div>
 
@@ -1016,7 +1015,7 @@
                 <div class="member-actions-wrap" style="display: flex; align-items: center; gap: 8px;">
                   <div class="member-permission-dropdown-wrap" (click)="$event.stopPropagation()">
                     <button class="btn-member-perm-select"
-                      (click)="activeMemberDropdownIndex = activeMemberDropdownIndex === i ? null : i; $event.stopPropagation()">
+                      (click)="toggleMemberDropdown(i, $event)">
                       <span>{{ getPermissionLabel(m.permission) }}</span>
                       <svg class="chevron" [class.open]="activeMemberDropdownIndex === i" width="12" height="12"
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1026,45 +1025,28 @@
 
                     <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === i"
                       (click)="$event.stopPropagation()">
-                      <button class="perm-option-item" [class.selected]="m.permission === 'Editor & Inviter'"
-                        (click)="changeMemberPermission(i, 'Editor & Inviter', $event)">
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor & Inviter', $event)" [class.selected]="m.permission === 'Editor & Inviter'">
                         <div class="perm-option-header">
-                          <span class="perm-option-title">Can edit & invite</span>
-                          <svg *ngIf="m.permission === 'Editor & Inviter'" width="14" height="14" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <span class="perm-option-title">Can edit & invite <span *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can edit & invite people.</div>
-                      </button>
-
-                      <button class="perm-option-item" [class.selected]="m.permission === 'Editor'"
-                        (click)="changeMemberPermission(i, 'Editor', $event)">
+                      </div>
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor', $event)" [class.selected]="m.permission === 'Editor'">
                         <div class="perm-option-header">
-                          <span class="perm-option-title">Can edit</span>
-                          <svg *ngIf="m.permission === 'Editor'" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="3" class="check-icon">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <span class="perm-option-title">Can edit <span *ngIf="m.permission === 'Editor'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can edit, but not invite people.</div>
-                      </button>
-
-                      <button class="perm-option-item" [class.selected]="m.permission === 'Viewer'"
-                        (click)="changeMemberPermission(i, 'Viewer', $event)">
+                      </div>
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Viewer', $event)" [class.selected]="m.permission === 'Viewer'">
                         <div class="perm-option-header">
-                          <span class="perm-option-title">Can view</span>
-                          <svg *ngIf="m.permission === 'Viewer'" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="3" class="check-icon">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
+                          <span class="perm-option-title">Can view <span *ngIf="m.permission === 'Viewer'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can view, but not edit.</div>
-                      </button>
+                      </div>
                     </div>
                   </div>
 
-                  <button type="button" class="btn-remove-member-icon" *ngIf="m.permission !== 'Owner'"
+                  <button type="button" class="btn-remove-member-icon"
                     (click)="removeMember(i, $event)" title="Remove Member">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
@@ -1170,47 +1152,29 @@
 
                       <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === i"
                         (click)="$event.stopPropagation()">
-                        <button class="perm-option-item" [class.selected]="m.permission === 'Editor & Inviter'"
-                          (click)="changeMemberPermission(i, 'Editor & Inviter', $event)">
-                          <div class="perm-option-header">
-                            <span class="perm-option-title">Can edit & invite</span>
-                            <svg *ngIf="m.permission === 'Editor & Inviter'" width="14" height="14" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                          <div class="perm-option-desc">Can edit & invite people.</div>
-                        </button>
-
-                        <button class="perm-option-item" [class.selected]="m.permission === 'Editor'"
-                          (click)="changeMemberPermission(i, 'Editor', $event)">
-                          <div class="perm-option-header">
-                            <span class="perm-option-title">Can edit</span>
-                            <svg *ngIf="m.permission === 'Editor'" width="14" height="14" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                          <div class="perm-option-desc">Can edit, but not invite people.</div>
-                        </button>
-
-                        <button class="perm-option-item" [class.selected]="m.permission === 'Viewer'"
-                          (click)="changeMemberPermission(i, 'Viewer', $event)">
-                          <div class="perm-option-header">
-                            <span class="perm-option-title">Can view</span>
-                            <svg *ngIf="m.permission === 'Viewer'" width="14" height="14" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="3" class="check-icon">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                          <div class="perm-option-desc">Can view, but not edit.</div>
-                        </button>
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor & Inviter', $event)" [class.selected]="m.permission === 'Editor & Inviter'">
+                        <div class="perm-option-header">
+                          <span class="perm-option-title">Can edit & invite <span *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
+                        </div>
+                        <div class="perm-option-desc">Can edit & invite people.</div>
+                      </div>
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor', $event)" [class.selected]="m.permission === 'Editor'">
+                        <div class="perm-option-header">
+                          <span class="perm-option-title">Can edit <span *ngIf="m.permission === 'Editor'">✓</span></span>
+                        </div>
+                        <div class="perm-option-desc">Can edit, but not invite people.</div>
+                      </div>
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Viewer', $event)" [class.selected]="m.permission === 'Viewer'">
+                        <div class="perm-option-header">
+                          <span class="perm-option-title">Can view <span *ngIf="m.permission === 'Viewer'">✓</span></span>
+                        </div>
+                        <div class="perm-option-desc">Can view, but not edit.</div>
+                      </div>
                       </div>
                     </div>
 
                     <button type="button" class="btn-remove-member-icon" [disabled]="!m.isNew"
-                      [class.disabled-icon]="!m.isNew" (click)="m.isNew ? removeMember(i, $event) : null"
-                      title="Remove Member">
+                      (click)="removeMember(i, $event)" [attr.title]="!m.isNew ? 'Cannot remove existing members here' : 'Remove Member'">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>

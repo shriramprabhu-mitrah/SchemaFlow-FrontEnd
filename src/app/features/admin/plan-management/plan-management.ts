@@ -1,13 +1,17 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
 
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Icons } from '../../../core/component/icons/icons';
+
 @Component({
   selector: 'app-plan-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Icons],
   templateUrl: './plan-management.html'
 })
 export class PlanManagementComponent implements OnInit {
@@ -17,6 +21,30 @@ export class PlanManagementComponent implements OnInit {
 
   plans: any[] = [];
   features: any[] = [];
+  rawPlanEntitlements: any[] = []; // Stores all entitlements for the selected plan
+  search = '';
+  featureSearch = '';
+  featureSortColumn = 'name';
+  featureSortAsc = true;
+  
+  featurePage = 1;
+  featureLimit = 10;
+  totalFeatureCount = 0;
+  showFeatureLimitDropdown = false;
+
+  page = 1;
+  limit = 10;
+  showLimitDropdown = false;
+  activeEntDropdownId: number | null = null;
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.showLimitDropdown = false;
+    this.activeEntDropdownId = null;
+  }
+
+  sortColumn = 'name';
+  sortAsc = true;
   loading = true;
   loadingEntitlements = false;
   showModal = false;
@@ -29,9 +57,130 @@ export class PlanManagementComponent implements OnInit {
   /** Filter tab on the plans list: 'all' | 'individual' | 'organization' */
   planTypeFilter: 'all' | 'individual' | 'organization' = 'all';
 
+
+
+  get totalFeaturePagesCount(): number {
+    return Math.ceil(this.totalFeatureCount / this.featureLimit) || 1;
+  }
+
+  get featureTotalPages(): number[] {
+    const total = this.totalFeaturePagesCount;
+    const current = this.featurePage;
+    const maxVisible = 5;
+
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    const pages: number[] = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  get featurePaginationStartIndex(): number {
+    if (this.totalFeatureCount === 0) return 0;
+    return (this.featurePage - 1) * this.featureLimit + 1;
+  }
+
+  get featurePaginationEndIndex(): number {
+    return Math.min(this.featurePage * this.featureLimit, this.totalFeatureCount);
+  }
+
+  get paginatedPlanEntitlements(): any[] {
+    return this.planEntitlements;
+  }
+
+  goToFeaturePage(p: number): void {
+    if (p >= 1 && p <= this.totalFeaturePagesCount && this.featurePage !== p) {
+      this.featurePage = p;
+      this.loadFeatures();
+    }
+  }
+
+  onFeatureLimitChange(): void {
+    this.featurePage = 1;
+    this.loadFeatures();
+  }
+
+  sortByFeature(col: string): void {
+    if (this.featureSortColumn === col) {
+      this.featureSortAsc = !this.featureSortAsc;
+    } else {
+      this.featureSortColumn = col;
+      this.featureSortAsc = true;
+    }
+    this.featurePage = 1;
+    this.loadFeatures();
+  }
+
+  totalFilteredCount = 0;
+  get filteredPlansList(): any[] { return this.plans; }
+
   get filteredPlans(): any[] {
-    if (this.planTypeFilter === 'all') return this.plans;
-    return this.plans.filter(p => p.plan_type === this.planTypeFilter || p.plan_type === 'both');
+    return this.filteredPlansList;
+  }
+
+
+  get totalPagesCount(): number {
+    return Math.ceil(this.totalFilteredCount / this.limit) || 1;
+  }
+
+  get totalPages(): number[] {
+    const total = this.totalPagesCount;
+    const current = this.page;
+    const maxVisible = 5;
+
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    const pages: number[] = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  get paginationStartIndex(): number {
+    if (this.totalFilteredCount === 0) return 0;
+    return (this.page - 1) * this.limit + 1;
+  }
+
+  get paginationEndIndex(): number {
+    return Math.min(this.page * this.limit, this.totalFilteredCount);
+  }
+
+  get displayPlans(): any[] { return this.filteredPlansList; }
+
+  onSearch(): void { this.searchSubject.next(this.search); }
+  goToPage(p: number): void { if (this.page !== p) { this.page = p; this.loadPlans(); } }
+  onLimitChange(): void { this.page = 1; this.loadPlans(); }
+
+  sortBy(col: string): void {
+    if (this.sortColumn === col) {
+      this.sortAsc = !this.sortAsc;
+    } else {
+      this.sortColumn = col;
+      this.sortAsc = true;
+    }
+    this.page = 1;
+    this.loadPlans();
   }
 
   get individualPlanCount(): number {
@@ -42,13 +191,31 @@ export class PlanManagementComponent implements OnInit {
     return this.plans.filter(p => p.plan_type === 'organization' || p.plan_type === 'both').length;
   }
 
-  ngOnInit(): void { this.loadPlans(); this.loadFeatures(); }
+  private searchSubject = new Subject<string>();
+  private featureSearchSubject = new Subject<string>();
+
+  ngOnInit(): void { 
+    this.loadPlans(); 
+    this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
+      this.page = 1;
+      this.loadPlans();
+    });
+    this.featureSearchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
+      this.featurePage = 1;
+      this.loadFeatures();
+    });
+  }
+
+  onFeatureSearch(): void {
+    this.featureSearchSubject.next(this.featureSearch);
+  }
 
   loadPlans(): void {
     this.loading = true;
-    this.admin.getPlans().subscribe({
+    this.admin.getPlans(this.page, this.limit, this.search, this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
         this.plans = res?.data || [];
+        this.totalFilteredCount = res?.meta?.total || this.plans.length;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -60,11 +227,37 @@ export class PlanManagementComponent implements OnInit {
   }
 
   loadFeatures(): void {
-    this.admin.getFeatures().subscribe({
+    this.loadingEntitlements = true;
+    this.admin.getFeatures(this.featurePage, this.featureLimit, this.featureSearch, this.featureSortColumn, this.featureSortAsc).subscribe({
       next: (res) => {
         this.features = res?.data || [];
+        this.totalFeatureCount = res?.meta?.total || 0;
+        this.mapFeaturesToEntitlements();
+        this.loadingEntitlements = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingEntitlements = false;
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  mapFeaturesToEntitlements(): void {
+    this.planEntitlements = this.features.map(f => {
+      const existing = this.rawPlanEntitlements.find((e: any) => e.feature_id === f.feature_id);
+      const rawText = (existing?.display_text || '').trim();
+      const cleanText = (rawText === '—' || rawText === '-' || rawText === 'null') ? '' : rawText;
+
+      return {
+        feature_id: f.feature_id,
+        feature_key: f.feature_key,
+        name: f.name,
+        value_type: f.value_type,
+        value: existing?.value || 'false',
+        limit_value: existing?.limit_value || null,
+        display_text: cleanText
+      };
     });
   }
 
@@ -106,6 +299,11 @@ export class PlanManagementComponent implements OnInit {
   savePlan(): void {
     this.formErrors = { name: '', slug: '' };
     let hasError = false;
+
+    if (this.form.plan_type === 'individual') {
+      this.form.is_custom = false;
+      this.form.custom_email = '';
+    }
 
     if (!this.form.name || !this.form.name.trim()) {
       this.formErrors.name = 'Plan name is required.';
@@ -188,25 +386,14 @@ export class PlanManagementComponent implements OnInit {
     this.selectedPlan = plan;
     this.showEntitlementsView = true;
     this.loadingEntitlements = true;
+    this.featureSearch = '';
+    this.featureSortColumn = 'name';
+    this.featureSortAsc = true;
+    this.featurePage = 1;
     this.admin.getPlanEntitlements(plan.plan_id).subscribe({
       next: (res) => {
-        this.planEntitlements = this.features.map(f => {
-          const existing = (res?.data || []).find((e: any) => e.feature_id === f.feature_id);
-          const rawText = (existing?.display_text || '').trim();
-          const cleanText = (rawText === '—' || rawText === '-' || rawText === 'null') ? '' : rawText;
-
-          return {
-            feature_id: f.feature_id,
-            feature_key: f.feature_key,
-            name: f.name,
-            value_type: f.value_type,
-            value: existing?.value || 'false',
-            limit_value: existing?.limit_value || null,
-            display_text: cleanText
-          };
-        });
-        this.loadingEntitlements = false;
-        this.cdr.detectChanges();
+        this.rawPlanEntitlements = res?.data || [];
+        this.loadFeatures();
       },
       error: () => {
         this.loadingEntitlements = false;

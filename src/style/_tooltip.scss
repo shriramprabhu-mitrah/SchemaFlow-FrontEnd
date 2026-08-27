@@ -7,13 +7,15 @@
     position: absolute;
     bottom: calc(100% + 8px);
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateZ(0);
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
     background: #19191a;
     color: #ffffff !important;
     padding: 6px 10px;
     border-radius: 5px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     white-space: nowrap;
     z-index: 9999;
     pointer-events: none;
@@ -36,6 +38,22 @@
     pointer-events: none;
     animation: tt-fade 0.15s ease-out;
   }
+
+  &:not([data-tt]):hover::after,
+  &:not([data-tt]):hover::before,
+  &[data-tt=""]:hover::after,
+  &[data-tt=""]:hover::before,
+  &.disabled:hover::after,
+  &.disabled:hover::before,
+  &:disabled:hover::after,
+  &:disabled:hover::before,
+  &[disabled]:hover::after,
+  &[disabled]:hover::before,
+  &.is-disabled:hover::after,
+  &.is-disabled:hover::before {
+    content: none !important;
+    display: none !important;
+  }
 }
 
 /* Tooltip Positions */
@@ -44,7 +62,7 @@
     top: calc(100% + 8px);
     bottom: auto;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateZ(0);
     animation: tt-fade-bottom 0.15s ease-out;
   }
 
@@ -68,7 +86,7 @@
     bottom: auto;
     right: 0;
     left: auto;
-    transform: none;
+    transform: translateZ(0);
     animation: tt-fade-bottom 0.15s ease-out;
   }
 
@@ -92,7 +110,7 @@
     bottom: auto;
     left: auto;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) translateZ(0);
     color: #ffffff !important;
     animation: tt-fade-left 0.15s ease-out;
   }
@@ -118,7 +136,7 @@
     bottom: auto;
     right: auto;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) translateZ(0);
     animation: tt-fade-right 0.15s ease-out;
   }
 

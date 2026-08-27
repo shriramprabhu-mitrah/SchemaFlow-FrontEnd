@@ -24,8 +24,12 @@ export class EntitlementService {
   private entitlementsSubject = new BehaviorSubject<EffectiveEntitlement[]>([]);
   public entitlements$ = this.entitlementsSubject.asObservable();
 
+  private orgEntitlementsSubject = new BehaviorSubject<EffectiveEntitlement[]>([]);
+  public orgEntitlements$ = this.orgEntitlementsSubject.asObservable();
+
   private loadedOrgId: number | null = null;
   private inflightRequest$: Observable<EffectiveEntitlement[]> | null = null;
+  public memberFeatureAccess: string[] | null = null;
 
   loadEntitlements(force = false): Observable<EffectiveEntitlement[]> {
     if (this.inflightRequest$ && !force) {
@@ -33,31 +37,10 @@ export class EntitlementService {
     }
 
     const orgId = this.auth.getOrganizationId();
-    if (!orgId) {
-      if (!force) {
-        const cached = this.auth.getEntitlements();
-        if (cached && cached.length > 0) {
-          this.entitlementsSubject.next(cached);
-          // don't return early if we want to refresh in background, or just return.
-          // return of(cached);
-        }
-      }
-      this.inflightRequest$ = this.auth.getUserFeatures().pipe(
-        map(res => (res?.data?.entitlements || res?.entitlements || [])),
-        tap(data => {
-          this.entitlementsSubject.next(data);
-          this.inflightRequest$ = null;
-        }),
-        shareReplay(1)
-      );
-      return this.inflightRequest$;
-    }
-
     if (!force) {
       if (this.loadedOrgId === orgId && this.entitlementsSubject.value.length > 0) {
         return of(this.entitlementsSubject.value);
       }
-      
       const cached = this.auth.getEntitlements();
       if (cached && cached.length > 0) {
         this.loadedOrgId = orgId;
@@ -65,14 +48,21 @@ export class EntitlementService {
       }
     }
 
-    // Call user features to sync personal plan data
-    this.auth.getUserFeatures().subscribe();
+    this.inflightRequest$ = this.auth.getUserFeatures(orgId || undefined).pipe(
+      map(res => {
+        if (res?.data?.memberFeatureAccess) this.memberFeatureAccess = res.data.memberFeatureAccess;
+        else if (res?.memberFeatureAccess) this.memberFeatureAccess = res.memberFeatureAccess;
+        else this.memberFeatureAccess = null;
 
-    this.inflightRequest$ = this.orgService.getEntitlements(orgId).pipe(
-      map(res => res?.data || []),
+        if (res?.data?.purchasedPlan?.slug) this.auth.setCurrentPlanSlug(res.data.purchasedPlan.slug);
+
+        return (res?.data?.entitlements || res?.entitlements || []);
+      }),
       tap(data => {
         this.loadedOrgId = orgId;
+        this.auth.setEntitlements(data);
         this.entitlementsSubject.next(data);
+        this.orgEntitlementsSubject.next(data);
         this.inflightRequest$ = null;
       }),
       shareReplay(1)
@@ -80,12 +70,64 @@ export class EntitlementService {
     return this.inflightRequest$;
   }
 
-  getEntitlement(featureKey: string): EffectiveEntitlement | undefined {
+  getEntitlement(featureKey: string): any | undefined {
     return this.entitlementsSubject.value.find(e => e.feature_key === featureKey);
+  }
+
+  isMember(): boolean {
+    return !!this.memberFeatureAccess;
+  }
+
+  hasMemberAccess(featureKey: string): boolean {
+    if (this.auth.isSuperAdmin() || this.auth.isOrganizationAdmin()) return true;
+    if (!this.auth.getOrganizationId()) return true; // Personal workspaces have no member restrictions
+    
+    if (this.memberFeatureAccess) {
+      if (this.memberFeatureAccess.includes(featureKey)) return true;
+      
+      // Handle aliases/plurals that might have been saved inconsistently in the past
+      if (featureKey === 'create_diagrams' && (this.memberFeatureAccess.includes('create_diagram') || this.memberFeatureAccess.includes('diagram_creation'))) return true;
+      if (featureKey === 'create_diagram' && this.memberFeatureAccess.includes('create_diagrams')) return true;
+      if (featureKey === 'create_workspaces' && this.memberFeatureAccess.includes('create_workspace')) return true;
+      if (featureKey === 'create_workspace' && this.memberFeatureAccess.includes('create_workspaces')) return true;
+      
+      return false;
+    }
+    return true; // default to true if we don't have restriction data
+  }
+
+
+  orgHasFeature(featureKey: string): boolean {
+    if (this.auth.isSuperAdmin()) return true;
+    
+    const env = (window as any).appConfig?.environment;
+    if (env && env.isSaaS === false) return true;
+    
+    // If the member doesn't have access, pretend the org has the feature.
+    // This forces the UI condition (orgHasFeature && !canUseFeature) to be true,
+    // which results in the button being visually disabled rather than showing an upgrade modal.
+    if (!this.hasMemberAccess(featureKey)) return true;
+
+    // Check org entitlements if available
+    const orgEnts = this.orgEntitlementsSubject.value;
+    if (orgEnts && orgEnts.length > 0) {
+        const orgEnt = orgEnts.find(e => e.feature_key === featureKey);
+        if (orgEnt) {
+            return orgEnt.enabled === true || (orgEnt as any).value === 'true' || (orgEnt as any).value === true;
+        }
+    }
+    
+    // Fallback to canUseFeature if orgEntitlements are not available yet
+    return this.canUseFeature(featureKey);
   }
 
   canUseFeature(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
+
+    // Check member specific restrictions first
+    if (!this.hasMemberAccess(featureKey)) {
+      return false;
+    }
 
     // 1. Check loaded entitlements from organization Context / backend API
     const ent = this.getEntitlement(featureKey);

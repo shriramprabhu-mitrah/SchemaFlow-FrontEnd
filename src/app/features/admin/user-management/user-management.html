@@ -4,7 +4,18 @@
       <h1>User Management</h1>
       <p class="text-muted" style="margin:4px 0 0">Manage registered user accounts, admin privileges, and status.</p>
     </div>
-    <div class="header-actions">
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <div class="custom-status-dropdown-container dropdown-container-rel" style="width: 200px; z-index: 10;">
+        <button class="custom-status-dropdown-trigger" style="width: 100%; height: 38px; justify-content: space-between;" (click)="showOrgDropdown = !showOrgDropdown; $event.stopPropagation()">
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ selectedOrganization || 'All Organizations' }}</span>
+          <app-icons name="chevron-down" size="14"></app-icons>
+        </button>
+        <div class="custom-status-dropdown-menu" *ngIf="showOrgDropdown" (click)="$event.stopPropagation()" style="width: 100%; max-height: 250px; overflow-y: auto;">
+          <button class="custom-status-dropdown-option" [class.selected]="!selectedOrganization" (click)="selectOrg('')">All Organizations</button>
+          <button class="custom-status-dropdown-option" *ngFor="let org of organizationsList" [class.selected]="selectedOrganization === org.name" (click)="selectOrg(org.name)">{{ org.name }}</button>
+          <button class="custom-status-dropdown-option" [class.selected]="selectedOrganization === 'Individual'" (click)="selectOrg('Individual')">Individual</button>
+        </div>
+      </div>
       <div class="search-box-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
@@ -15,7 +26,9 @@
     </div>
   </div>
 
-  <div class="loading-state" *ngIf="loading"><div class="spinner"></div><span>Loading users...</span></div>
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div><span>Loading users...</span>
+  </div>
 
   <div class="data-table-wrap" *ngIf="!loading">
     <table class="data-table">
@@ -23,39 +36,47 @@
         <tr>
           <th style="width:5%">
             <span class="sort-header-clickable" style="cursor: default;">
-              <span>S.No</span>
+              <span>S.NO</span>
             </span>
           </th>
-          <th style="width:18%" (click)="sortBy('username')">
-            <span class="sort-header-clickable">
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('username')">
               <span>USERNAME</span>
               <span class="sort-icon" [class.active]="sortColumn === 'username'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:27%" (click)="sortBy('email')">
-            <span class="sort-header-clickable">
+          <th style="width:25%">
+            <span class="sort-header-clickable" (click)="sortBy('email')">
               <span>EMAIL</span>
               <span class="sort-icon" [class.active]="sortColumn === 'email'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:10%" (click)="sortBy('status')">
-            <span class="sort-header-clickable">
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('organization')">
+              <span>ORGANIZATION</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'organization'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('status')">
               <span>STATUS</span>
               <span class="sort-icon" [class.active]="sortColumn === 'status'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
 
-          <th style="width:11%" (click)="sortBy('joined')">
-            <span class="sort-header-clickable">
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('joined')">
               <span>JOINED</span>
               <span class="sort-icon" [class.active]="sortColumn === 'joined'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
@@ -67,6 +88,7 @@
           <td>{{ paginationStartIndex + i }}</td>
           <td><strong class="user-name-text">{{ u.username }}</strong></td>
           <td><span class="user-email-text">{{ u.email }}</span></td>
+          <td><span class="text-muted">{{ u.organization_name || 'Individual' }}</span></td>
           <td>
             <span class="badge" [class.badge-active]="u.isactive !== false" [class.badge-inactive]="u.isactive === false">
               {{ u.isactive !== false ? 'Active' : 'Inactive' }}
@@ -86,7 +108,7 @@
           </td>
         </tr>
         <tr *ngIf="displayUsers.length === 0">
-          <td colspan="6" class="empty-table-cell">No users found</td>
+          <td colspan="7" class="empty-table-cell">No users found</td>
         </tr>
       </tbody>
     </table>
@@ -96,20 +118,28 @@
       <div class="pagination-info">
         {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ totalFilteredCount }} Items
       </div>
-      <div class="pagination-controls" *ngIf="totalPagesCount > 1">
-        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">«</button>
-        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">‹</button>
+      <div class="pagination-controls">
+        <button class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(1)" data-tt="First Page">«</button>
+        <button class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(page - 1)" data-tt="Previous Page">‹</button>
         <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p }}</button>
-        <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(page + 1)" title="Next Page">›</button>
-        <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)" title="Last Page">»</button>
+        <button class="page-btn tt tt-top" [disabled]="page === totalPagesCount" (click)="goToPage(page + 1)"
+          data-tt="Next Page">›</button>
+        <button class="page-btn tt tt-top" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)"
+          data-tt="Last Page">»</button>
       </div>
-      <div class="page-size-selector">
-        <select class="page-size-select" [(ngModel)]="limit" (change)="onLimitChange()">
-          <option [ngValue]="5">5</option>
-          <option [ngValue]="10">10</option>
-          <option [ngValue]="25">25</option>
-          <option [ngValue]="50">50</option>
-        </select>
+            <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="showLimitDropdown = !showLimitDropdown; $event.stopPropagation()">
+            <span>{{ limit }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showLimitDropdown" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 10" (click)="limit = 10; onLimitChange(); showLimitDropdown = false">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 25" (click)="limit = 25; onLimitChange(); showLimitDropdown = false">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 50" (click)="limit = 50; onLimitChange(); showLimitDropdown = false">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 100" (click)="limit = 100; onLimitChange(); showLimitDropdown = false">100</button>
+          </div>
+        </div>
         <span class="limit-label">items per page</span>
       </div>
     </div>

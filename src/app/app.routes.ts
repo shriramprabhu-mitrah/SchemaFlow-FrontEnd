@@ -58,11 +58,12 @@ export const routes: Routes = [
     canActivate: [orgAdminGuard],
     loadComponent: () => import('./features/organization/org-layout/org-layout').then(m => m.OrgLayoutComponent),
     children: [
-      { path: '', redirectTo: 'settings', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', loadComponent: () => import('./features/organization/org-dashboard/org-dashboard').then(m => m.OrgDashboardComponent) },
       { path: 'settings', loadComponent: () => import('./features/organization/org-settings/org-settings').then(m => m.OrgSettingsComponent) },
       { path: 'subscription', canActivate: [orgOwnerGuard], loadComponent: () => import('./features/organization/subscription/subscription').then(m => m.SubscriptionComponent) },
       { path: 'members', loadComponent: () => import('./features/organization/members/members').then(m => m.MembersComponent) },
-      { path: 'roles', loadComponent: () => import('./features/organization/roles/roles').then(m => m.RolesComponent) },
+      { path: 'audit-logs', loadComponent: () => import('./features/organization/org-audit-logs/org-audit-logs.component').then(m => m.OrgAuditLogsComponent) },
     ]
   },
   {
@@ -71,6 +72,7 @@ export const routes: Routes = [
   },
   {
     path: 'public-diagram/:token',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/public-viewer/public-viewer').then(m => m.PublicViewerComponent)
   },
   {

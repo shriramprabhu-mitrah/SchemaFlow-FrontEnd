@@ -1,31 +1,18 @@
 <div class="admin-shell" [class.collapsed]="sidebarCollapsed">
   <!-- Sidebar -->
   <aside class="admin-sidebar">
-    <div class="sidebar-header">
-      <!-- When collapsed: click logo to expand sidebar -->
-      <div *ngIf="sidebarCollapsed" class="brand-mark" (click)="toggleSidebar()" title="Expand Sidebar"
-        style="cursor:pointer">
-        <app-icons name="db-diagram-logo" size="34"></app-icons>
-      </div>
-
-      <!-- When expanded: click logo/text to navigate to landing page -->
-      <a *ngIf="!sidebarCollapsed" routerLink="/" class="brand-mark" title="Go to Home"
-        style="text-decoration:none;cursor:pointer">
-        <app-icons name="db-diagram-logo" size="34"></app-icons>
-        <span class="brand-text">MS Dbdiagram</span>
+    <div class="sidebar-header sidebar-header-flex">
+      <!-- Logo and brand text always centered inside header -->
+      <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed" [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
+        <app-icons name="db-diagram-logo" size="32" class="brand-icon-wrap"></app-icons>
+        <span class="brand-text brand-text-flex" *ngIf="!sidebarCollapsed">DB Nexus</span>
       </a>
-      <button class="collapse-btn" *ngIf="!sidebarCollapsed" (click)="toggleSidebar()" title="Collapse Sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round">
-          <line x1="17" y1="12" x2="7" y2="12" />
-          <polyline points="11 8 7 12 11 16" />
-        </svg>
-      </button>
     </div>
 
     <nav class="sidebar-nav">
       <a *ngFor="let item of navItems" [routerLink]="item.path" routerLinkActive="active" class="nav-item"
-        [title]="sidebarCollapsed ? item.label : ''">
+        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
+        [attr.data-tt]="sidebarCollapsed ? item.label : null">
         <!-- Dashboard -->
         <svg *ngIf="item.icon === 'dashboard'" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -80,16 +67,19 @@
 
     <div class="sidebar-footer">
       <button class="nav-item footer-action" (click)="goToDashboard()"
-        [title]="sidebarCollapsed ? 'Got to Application' : ''">
+        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
+        [attr.data-tt]="sidebarCollapsed ? 'Go to Application' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-          stroke-linecap="round">
+          stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
           <polyline points="10 17 15 12 10 7" />
           <line x1="15" y1="12" x2="3" y2="12" />
         </svg>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Go to Application</span>
       </button>
-      <button class="nav-item footer-action logout" (click)="logout()" [title]="sidebarCollapsed ? 'Logout' : ''">
+      <button class="nav-item footer-action logout" (click)="logout()"
+        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
+        [attr.data-tt]="sidebarCollapsed ? 'Logout' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -104,12 +94,19 @@
   <!-- Main Content -->
   <main class="admin-main">
     <header class="admin-header">
-      <div class="header-left">
-        <h2 class="page-title">Super Admin</h2>
+      <div class="header-left header-left-flex">
+        <button class="theme-toggle-btn tt tt-bottom toggle-sidebar-btn" (click)="toggleSidebar()" data-tt="Toggle Sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
       </div>
       <div class="header-right">
-        <button class="theme-toggle-btn" (click)="dashService.toggleTheme()"
-          [title]="dashService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+        <button class="theme-toggle-btn tt tt-bottom" (click)="dashService.toggleTheme()"
+          [attr.data-tt]="dashService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
           <svg *ngIf="dashService.theme() === 'light'" width="18" height="18" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
@@ -127,8 +124,10 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
           </svg>
         </button>
-        <span class="admin-badge">ADMIN</span>
-        <span class="user-email">{{ userEmail }}</span>
+        <span class="user-email-chip" *ngIf="userEmail">
+          <span class="avatar-mini">{{ userInitial }}</span>
+          <span>{{ userEmail }}</span>
+        </span>
       </div>
     </header>
     <div class="admin-content">

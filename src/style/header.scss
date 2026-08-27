@@ -263,14 +263,14 @@ body.light-theme {
       }
 
       .btn-delete {
-      background-color: #ef4444 !important;
-      color: #ffffff !important;
-      border: none !important;
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
 
-      &:hover {
-        background-color: #dc2626 !important;
+        &:hover {
+          background-color: #dc2626 !important;
+        }
       }
-    }
     }
   }
 
@@ -663,7 +663,8 @@ app-docs {
     border: none;
     color: #e6eef9;
     font-size: 13.5px;
-    font-weight: 600;
+    font-weight: 700;
+    font-family: Inter, system-ui, sans-serif !important;
     padding: 6px 10px;
     border-radius: 6px;
     cursor: pointer;
@@ -838,13 +839,19 @@ app-docs {
             flex: 1;
           }
 
-          &:hover {
+          &:hover:not(.disabled) {
             background: rgba(62, 197, 193, 0.15);
             color: #ffffff;
 
             .diagram-icon {
               color: #3ec5c1;
             }
+          }
+
+          &.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: auto;
           }
 
           &.active {
@@ -869,27 +876,35 @@ app-docs {
   align-items: center;
   gap: 8px;
 
-  .diagram-name {
-    font-size: 14px;
-    color: rgb(255, 255, 255);
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 999px;
+  .diagram-name-wrapper {
+    display: flex;
+    align-items: center;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    min-width: 170px;
-    max-width: 320px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    cursor: text;
-    outline: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    
+    .diagram-name {
+      font-size: 14px;
+      color: rgb(255, 255, 255);
+      font-weight: 600;
+      min-width: 150px;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: text;
+      outline: none;
+      background: transparent;
+      border: none;
+      padding: 0;
 
-    &:empty::before {
-      content: attr(placeholder);
-      color: #5a6b8c;
-      font-weight: normal;
-      opacity: 0.65;
+      &:empty::before {
+        content: attr(placeholder);
+        color: #5a6b8c;
+        font-weight: normal;
+        opacity: 0.65;
+      }
     }
   }
 
@@ -955,7 +970,8 @@ app-docs {
 
 
 /* ============ EXPORT DROPDOWN ============ */
-.export-dropdown-wrap {
+.export-dropdown-wrap,
+.import-dropdown-wrap {
   position: relative;
   z-index: 9999; // must be high enough to escape topbar stacking context
 
@@ -1640,26 +1656,7 @@ canvas {
 }
 
 /* ============ TOOLTIP UTILITY ============ */
-.tt {
-  position: relative;
 
-  &:hover::after {
-    content: attr(data-tt);
-    position: absolute;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(12, 18, 34, 0.98);
-    color: #e6eef9;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 11.5px;
-    white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    z-index: 1000;
-  }
-}
 
 
 /* ============ IMPORT MODAL ============ */
@@ -2327,6 +2324,38 @@ body.light-theme {
           transform: translateX(14px);
         }
       }
+    }
+  }
+}
+.active-users-container {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+  
+  .avatar-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    border: 2px solid var(--header-bg, #1e293b);
+    margin-left: -8px;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s, z-index 0.2s;
+    cursor: pointer;
+    
+    &:first-child {
+      margin-left: 0;
+    }
+    
+    &:hover {
+      z-index: 10;
+      transform: translateY(-2px);
     }
   }
 }
