@@ -60,6 +60,17 @@
         color: #ffffff;
       }
     }
+
+    &.toast-info {
+      background: #1e293b;
+      color: #ffffff;
+      border: 1px solid #3b82f6;
+      box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25), 0 4px 8px rgba(0, 0, 0, 0.4);
+
+      .toast-icon {
+        color: #60a5fa;
+      }
+    }
   }
 
   /* Admin style */
@@ -101,6 +112,11 @@
 
     &.toast-error {
       background: #ef4444 !important;
+      color: #ffffff !important;
+    }
+
+    &.toast-info {
+      background: #2563eb !important;
       color: #ffffff !important;
     }
   }

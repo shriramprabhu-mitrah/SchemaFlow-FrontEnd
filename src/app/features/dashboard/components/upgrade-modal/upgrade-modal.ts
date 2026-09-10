@@ -9,11 +9,12 @@ import { ButtonComponent } from '../../../../shared/button/button';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { OrganizationService } from '../../../organization/services/organization.service';
 import { timeout } from 'rxjs';
+import { ContactSalesModalComponent } from '../../../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 
 @Component({
   selector: 'app-upgrade-modal',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent],
   templateUrl: './upgrade-modal.html'
 })
 export class UpgradeModalComponent implements OnInit {
@@ -21,8 +22,21 @@ export class UpgradeModalComponent implements OnInit {
   @Input()
   set visible(val: boolean) {
     this._visible = val;
-      if (val) {
+    if (val) {
       this.isLoggedIn = this.auth.isLoggedIn();
+
+      if (this.isLoggedIn) {
+        const orgId = this.auth.getOrganizationId() || undefined;
+        this.auth.getUserFeatures(orgId).subscribe({
+          next: (res) => {
+            this.currentPlanSlug = res?.data?.purchasedPlan?.slug || '';
+            this.currentPlanStatus = res?.data?.purchasedPlan?.status || '';
+            this.hasUsedTrial = res?.data?.hasUsedTrial || false;
+            this.cdr.detectChanges();
+          }
+        });
+      }
+
       if (this._featureKey === 'create_diagrams') {
         this.showLimitWarning = true;
       } else {
@@ -64,6 +78,12 @@ export class UpgradeModalComponent implements OnInit {
   plans: any[] = [];
   loading = true;
 
+  currentPlanSlug = '';
+  currentPlanStatus = '';
+  hasUsedTrial = false;
+  showPlanSwitchAlert = false;
+  showContactModal = false;
+
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
   private cdr = inject(ChangeDetectorRef);
@@ -92,6 +112,15 @@ export class UpgradeModalComponent implements OnInit {
   ngOnInit(): void {
     // Pre-load plans on init so they are ready when clicking upgrade
     if (this.auth.isLoggedIn()) {
+      const orgId = this.auth.getOrganizationId() || undefined;
+      this.auth.getUserFeatures(orgId).subscribe({
+        next: (res) => {
+          this.currentPlanSlug = res?.data?.purchasedPlan?.slug || '';
+          this.currentPlanStatus = res?.data?.purchasedPlan?.status || '';
+          this.hasUsedTrial = res?.data?.hasUsedTrial || false;
+          this.cdr.detectChanges();
+        }
+      });
       this.loadPlans();
     }
   }
@@ -133,9 +162,8 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   get displayedPlans(): any[] {
-    // If it's a workspace or version history restriction, or they are an org account, show Team & Enterprise
     if (this._featureKey === 'create_workspaces' || this._featureKey === 'version_history' || this.isOrganization) {
-      return this.plans.filter(p => p.slug === 'team' || p.slug === 'enterprise');
+      return this.plans.filter(p => p.slug === 'team');
     }
     // Otherwise, show only the two individual plans (Free & Premium)
     return this.plans.filter(p => p.slug === 'free' || p.slug === 'premium');
@@ -152,6 +180,7 @@ export class UpgradeModalComponent implements OnInit {
   getPrice(plan: any): string {
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
     if (monthlyPrice === 0) return 'Free';
+
     const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 10;
     const price = this.isAnnual ? annualPrice : monthlyPrice;
     return '₹' + price;
@@ -187,8 +216,7 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   getCtaLabel(plan: any): string {
-    const currentPlanSlug = (this.auth as any).getCurrentPlanSlug?.() || '';
-    if (this.isLoggedIn && currentPlanSlug && currentPlanSlug === plan.slug) return 'Current Plan';
+    if (this.isLoggedIn && this.currentPlanSlug && this.currentPlanSlug === plan.slug && this.currentPlanStatus === 'active') return 'Current Plan';
 
     if (plan.slug === 'enterprise') return 'Contact Sales';
 
@@ -201,6 +229,9 @@ export class UpgradeModalComponent implements OnInit {
       return 'Sign Up & Get Started';
     }
 
+    if (this.isEligibleForTrial() && plan.slug !== 'free') return 'Start free trial for 45 days';
+
+
     // Logged-in user: show contextual upgrade label based on plan type
     if (monthlyPrice === 0) return 'Start for Free';
     const planName = plan.name || 'Plan';
@@ -209,8 +240,31 @@ export class UpgradeModalComponent implements OnInit {
 
   isCtaDisabled(plan: any): boolean {
     if (!this.isLoggedIn) return false;
-    const currentPlanSlug = (this.auth as any).getCurrentPlanSlug?.() || '';
-    return !!(currentPlanSlug && currentPlanSlug === plan.slug);
+    if (this.currentPlanStatus === 'trial') return false;
+    if (this.currentPlanStatus === 'expired') return false;
+    return !!(this.currentPlanSlug && this.currentPlanSlug === plan.slug);
+  }
+
+  isEligibleForTrial(): boolean {
+    if (!this.isLoggedIn) return true;
+    if (this.hasUsedTrial) return false;
+    return this.currentPlanStatus === 'trial' || this.currentPlanSlug === 'free';
+  }
+
+  contactModalMessage = 'Your 45-day free trial has expired. To continue using premium features, please contact our sales team.';
+
+  closeContactModal(): void {
+    this.showContactModal = false;
+  }
+
+  closePlanSwitchAlert(): void {
+    this.showPlanSwitchAlert = false;
+  }
+
+  contactSalesFromAlert(): void {
+    this.closePlanSwitchAlert();
+    this.contactModalMessage = 'If you want to switch to another plan, please cancel your ongoing plan first.';
+    this.showContactModal = true;
   }
 
   selectPlan(plan: any): void {
@@ -222,6 +276,17 @@ export class UpgradeModalComponent implements OnInit {
           plan: plan.slug
         }
       });
+      return;
+    }
+
+    if (this.currentPlanStatus === 'expired' && plan.slug !== 'free') {
+      this.showContactModal = true;
+      return;
+    }
+
+    if ((this.hasUsedTrial || (this.currentPlanStatus === 'active' && this.currentPlanSlug !== 'free')) && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
+      this.contactModalMessage = 'To upgrade to a new plan, you need to deactivate the ongoing plan. Please contact sales.';
+      this.showContactModal = true;
       return;
     }
 

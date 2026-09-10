@@ -18,6 +18,7 @@ export class AdminLayoutComponent {
   public dashService = inject(DashboardService);
 
   sidebarCollapsed = false;
+  mobileSidebarOpen = false;
 
   navItems = [
     { path: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -26,15 +27,30 @@ export class AdminLayoutComponent {
     { path: '/admin/organizations', icon: 'organizations', label: 'Organizations' },
     { path: '/admin/users', icon: 'users', label: 'Users' },
     { path: '/admin/subscriptions', icon: 'subscriptions', label: 'Subscriptions' },
+    { path: '/admin/enquiries', icon: 'enquiries', label: 'Enquiries' },
     { path: '/admin/audit-logs', icon: 'audit', label: 'Audit Logs' },
+    { path: '/admin/docs', icon: 'documentation', label: 'Documentation' },
   ];
 
   get userEmail(): string {
     return this.auth.getUserEmail();
   }
 
+  get userInitial(): string {
+    const email = this.userEmail;
+    return email ? email.charAt(0).toUpperCase() : 'A';
+  }
+
   toggleSidebar(): void {
-    this.sidebarCollapsed = !this.sidebarCollapsed;
+    if (window.innerWidth <= 768) {
+      this.mobileSidebarOpen = !this.mobileSidebarOpen;
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+    }
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen = false;
   }
 
   goToDashboard(): void {

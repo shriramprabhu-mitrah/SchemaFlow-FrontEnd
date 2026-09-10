@@ -43,7 +43,7 @@ export class Toast {
     return {
       position: 'fixed',
       right: '24px',
-      top: '24px',
+      top: '76px',
       left: 'auto',
       bottom: 'auto',
       width: '360px',

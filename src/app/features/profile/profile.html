@@ -1,72 +1,81 @@
 <app-header [isProfilePage]="true"></app-header>
 <app-loader *ngIf="isLoading()" [text]="loadingText()"></app-loader>
-<div class="profile-page">
+
+<div class="profile-layout">
   <div class="profile-container">
-    <div class="section-header" style="display: flex; align-items: center; gap: 16px;">
-      <button class="btn-back" (click)="goBack()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
+    
+    <!-- Header Section -->
+    <div class="profile-header">
+      <button class="btn-icon-back tt tt-bottom" (click)="goBack()" data-tt="Go Back">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
-      <h2 style="margin: 0;">Manage Account</h2>
+      <h2>Manage Account</h2>
     </div>
 
-    <div class="profile-section">
-      <h3>User Profile Image</h3>
-      <div class="avatar-block">
-        <div class="avatar-circle">
-          <img *ngIf="previewUrl()" [src]="previewUrl()" alt="Profile Preview"
-            style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-          <svg *ngIf="!previewUrl()" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-          </svg>
+    <!-- Main Content Wrapper -->
+    <div class="profile-content">
+      
+      <!-- Avatar Section -->
+      <div class="avatar-section">
+        <h3>User Profile Image</h3>
+        <div class="avatar-block">
+          <div class="avatar-wrapper">
+            <div class="avatar-circle">
+              <img *ngIf="previewUrl()" [src]="previewUrl()" alt="Profile Preview" class="avatar-img">
+              <svg *ngIf="!previewUrl()" class="avatar-placeholder" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+              </svg>
+            </div>
+            <input type="file" #fileInput (change)="onFileSelected($event)" class="hidden-input" accept="image/*">
+          </div>
+          <button class="btn-choose" (click)="fileInput.click()">Choose Profile</button>
         </div>
-        <div class="avatar-info">
-          <button class="btn-form" (click)="fileInput.click()">
-            Choose Profile
-          </button>
-          <input type="file" #fileInput (change)="onFileSelected($event)" style="display: none;" accept="image/*">
+      </div>
+
+      <!-- User Information Section -->
+      <div class="info-section">
+        <h3>User Information</h3>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Display Name</label>
+            <input type="text" [ngModel]="displayName()" (ngModelChange)="displayName.set($event)" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" class="form-control" disabled />
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="profile-section">
-      <h3>User Information</h3>
-
-      <div class="form-group">
-        <label>Display Name</label>
-        <input type="text" [ngModel]="displayName()" (ngModelChange)="displayName.set($event)" class="form-control" />
+      <!-- Action Buttons -->
+      <div class="card-actions">
+        <button class="btn-save" (click)="saveProfile()">
+          Save
+        </button>
       </div>
 
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" class="form-control" disabled />
-      </div>
-
-      <button class="btn-form btn-save" (click)="saveProfile()">Save</button>
-
-      <div class="success-message" *ngIf="showSuccessMessage()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
+      <!-- Feedback Messages -->
+      <div class="alert-message success" *ngIf="showSuccessMessage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
           <polyline points="22 4 12 14.01 9 11.01"></polyline>
         </svg>
-        <span>Profile updated successfully</span>
+        <span>Profile updated successfully!</span>
       </div>
 
-      <div class="error-message" *ngIf="showErrorMessage()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
+      <div class="alert-message error" *ngIf="showErrorMessage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
         <span>{{ errorMessage() }}</span>
       </div>
+
     </div>
-
-
   </div>
 </div>

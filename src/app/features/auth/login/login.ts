@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { EntitlementService } from '../../../core/services/entitlement.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { SeoService } from '../../../core/services/seo.service';
 import { Icons } from '../../../core/component/icons/icons';
 
 import { ButtonComponent } from '../../../shared/button/button';
@@ -35,8 +36,15 @@ export class LoginComponent {
     private route: ActivatedRoute,
     private svc: DashboardService,
     private cdr: ChangeDetectorRef,
-    private entitlementService: EntitlementService
+    private entitlementService: EntitlementService,
+    private seoService: SeoService
   ) {
+    this.seoService.updateTags({
+      title: 'Login - DBNexus',
+      description: 'Log in to your DBNexus account to access your database schemas, collaborate with your team, and manage your diagrams.',
+      url: 'https://dbnexus.up.railway.app/login'
+    });
+
     // If already logged in, redirect directly to dashboard
     if (this.auth.isLoggedIn()) {
       this.router.navigate(['/dashboard']);
@@ -126,6 +134,12 @@ export class LoginComponent {
     this.isLoading = false;
     this.svc.showToast('Logged in successfully.', 3000, 'success');
 
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
+
     const pendingInviteUrl = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_url') : null;
     const pendingInviteId = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_id') : null;
 
@@ -147,7 +161,7 @@ export class LoginComponent {
     }
 
     // Organization redirect
-    if (this.auth.isOrganizationOwner() || this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+    if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
       this.router.navigate(['/organization']);
       return;
     }

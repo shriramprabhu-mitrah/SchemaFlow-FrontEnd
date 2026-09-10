@@ -2,15 +2,20 @@ import { HttpInterceptorFn, HttpErrorResponse, HttpResponse } from '@angular/com
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 import { AppConfigService } from '../services/app-config.service';
+import { DashboardService } from '../services/dashboard.service';
 import { Router } from '@angular/router';
 
 import { catchError, switchMap, throwError, map } from 'rxjs';
+
+import { EntitlementService } from '../services/entitlement.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const appConfig = inject(AppConfigService);
   const baseUrl = appConfig.environment?.apiConfig?.baseUrl || '';
+  const dashboardSvc = inject(DashboardService);
+  const entitlementSvc = inject(EntitlementService);
 
   /** URLs that must NOT carry an Authorization header (public endpoints) */
   const publicUrls = [
@@ -33,6 +38,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     map((event) => {
       if (event instanceof HttpResponse) {
+        // Check for custom header indicating subscription expired during this request
+        const isExpiredHeader = event.headers.get('x-subscription-expired');
+        if (isExpiredHeader === 'true') {
+          if (!dashboardSvc.isSubscriptionExpired()) {
+            dashboardSvc.isSubscriptionExpired.set(true);
+            // Clear collaboration indicators
+            dashboardSvc.activeRoomUsers.set([]);
+            dashboardSvc.remoteCursors.set({});
+            entitlementSvc.loadEntitlements(true).subscribe();
+          }
+        }
+
         const body = event.body as any;
         if (body && (body.statusCode === 401 || body.status === 401)) {
           throw new HttpErrorResponse({

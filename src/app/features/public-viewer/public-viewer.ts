@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { DashboardService } from '../../core/services/dashboard.service';
+import { SeoService } from '../../core/services/seo.service';
 import { CanvasComponent } from '../dashboard/components/canvas/canvas';
 import { LoaderComponent } from '../../shared/loader/loader';
 
@@ -31,7 +32,8 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     public svc: DashboardService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private seoService: SeoService
   ) {}
 
   ngOnInit(): void {
@@ -150,6 +152,20 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
 
     this.diagramName = data.name || 'Untitled Diagram';
     this.svc.diagramName = this.diagramName;
+
+    this.seoService.updateTags({
+      title: `${this.diagramName} - DBNexus`,
+      description: `View the public database diagram for ${this.diagramName}. Designed with DBNexus.`,
+      url: `https://dbnexus.up.railway.app/public-diagram/${this.token}`
+    });
+
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "ImageObject",
+      "name": this.diagramName,
+      "description": `Database diagram schema for ${this.diagramName}`,
+      "contentUrl": `https://dbnexus.up.railway.app/public-diagram/${this.token}`
+    });
     
     let rawCode = data.diagramDbml || data.diagram_dbml || data.diagramdbml || data.diagramdbnl || data.dbml || data.code || '';
     if (!rawCode) {

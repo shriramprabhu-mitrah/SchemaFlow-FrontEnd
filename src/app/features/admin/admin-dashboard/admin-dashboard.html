@@ -47,35 +47,143 @@
       </div>
     </div>
 
-    <!-- Plan Distribution + Recent Users -->
-    <div class="dashboard-grid">
-      <div class="dashboard-card">
-        <h3 class="card-title">Plan Distribution</h3>
-        <div class="distribution-list">
-          <div class="distribution-item" *ngFor="let plan of planDistribution">
-            <span class="dist-plan-name">{{ plan.name }}</span>
-            <div class="dist-bar-wrap">
-              <div class="dist-bar" [style.width.%]="getPercentage(plan.count)"></div>
-            </div>
-            <span class="dist-count">{{ plan.count }}</span>
+    <!-- Charts Grid (2 Vertical Bar Charts Side by Side) -->
+    <div class="dashboard-grid charts-grid">
+      <!-- Chart 1: System Overview (True Horizontal Bar Chart) -->
+      <div class="dashboard-card chart-card">
+        <div class="card-header-flex">
+          <div>
+            <h3 class="card-title">System Overview</h3>
+            <span class="chart-subtitle">Users, Organizations, Subscriptions & Plans</span>
           </div>
-          <div class="empty-state" *ngIf="planDistribution.length === 0">No subscription data yet</div>
+        </div>
+
+        <div class="hbar-chart-wrapper">
+          <!-- Y-Axis Entity Names (Left) -->
+          <div class="hbar-y-labels">
+            <span *ngFor="let item of systemOverviewMetrics" [title]="item.name">{{ item.name }}</span>
+          </div>
+
+          <div class="hbar-chart-body">
+            <div class="hbar-chart-container">
+              <!-- Vertical Grid Lines -->
+              <div class="hbar-grid-lines">
+                <div class="v-grid-line"></div>
+                <div class="v-grid-line"></div>
+                <div class="v-grid-line"></div>
+                <div class="v-grid-line"></div>
+                <div class="v-grid-line"></div>
+              </div>
+
+              <!-- Horizontal Bars Rows Container -->
+              <div class="hbar-bars-wrap">
+                <div class="hbar-row-item" *ngFor="let item of systemOverviewMetrics">
+                  <div class="hbar-bar-fill chart-tooltip-host"
+                    [style.width.%]="getSystemPercentage(item.count)"
+                    [class.zero-val]="item.count == 0">
+                    <!-- Popover Tooltip matching user screenshot -->
+                    <div class="chart-popover-tooltip hbar-tooltip">
+                      <div class="popover-title">{{ item.name }}</div>
+                      <div class="popover-meta">
+                        <span class="popover-color-box"></span>
+                        <span class="popover-value">Count: {{ item.count }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- X-Axis Scale Numbers Below Horizontal Chart -->
+            <div class="hbar-x-scale-row">
+              <span>0</span>
+              <span>{{ Math.round(getSystemMaxScale() * 0.25) }}</span>
+              <span>{{ Math.round(getSystemMaxScale() * 0.5) }}</span>
+              <span>{{ Math.round(getSystemMaxScale() * 0.75) }}</span>
+              <span>{{ getSystemMaxScale() }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="dashboard-card">
-        <h3 class="card-title">Recent Users</h3>
-        <div class="recent-users-list">
-          <div class="recent-user" *ngFor="let user of recentUsers">
-            <div class="user-avatar">{{ (user.username || user.email || '?')[0].toUpperCase() }}</div>
-            <div class="user-info">
-              <span class="user-name">{{ user.username }}</span>
-              <span class="user-email">{{ user.email }}</span>
-            </div>
-            <span class="user-date">{{ user.createddate | date:'shortDate' }}</span>
+      <!-- Chart 2: Plan Distribution (Vertical Bar Chart) -->
+      <div class="dashboard-card chart-card">
+        <div class="card-header-flex">
+          <div>
+            <h3 class="card-title">Plan Distribution</h3>
+            <span class="chart-subtitle">Active subscriptions by plan type</span>
           </div>
-          <div class="empty-state" *ngIf="recentUsers.length === 0">No users yet</div>
         </div>
+
+        <div class="vertical-chart-wrapper" *ngIf="planDistribution.length > 0">
+          <!-- Y-Axis Labels -->
+          <div class="y-axis-labels">
+            <span>{{ getMaxScale() }}</span>
+            <span>{{ Math.round(getMaxScale() * 0.75) }}</span>
+            <span>{{ Math.round(getMaxScale() * 0.5) }}</span>
+            <span>{{ Math.round(getMaxScale() * 0.25) }}</span>
+            <span>0</span>
+          </div>
+
+          <div class="vertical-chart-body">
+            <div class="vertical-chart-container">
+              <!-- Background Grid Lines -->
+              <div class="chart-grid-lines">
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+              </div>
+
+              <!-- Vertical Bars Flex Container -->
+              <div class="chart-bars-wrap">
+                <div class="chart-col" *ngFor="let plan of planDistribution">
+                  <!-- Vertical Bar Track -->
+                  <div class="bar-track">
+                    <div class="bar-fill chart-tooltip-host"
+                      [style.height.%]="getPercentage(plan.count)"
+                      [class.zero-val]="plan.count == 0">
+                      <!-- Popover Tooltip matching user screenshot -->
+                      <div class="chart-popover-tooltip vbar-tooltip">
+                        <div class="popover-title">{{ plan.name }}</div>
+                        <div class="popover-meta">
+                          <span class="popover-color-box"></span>
+                          <span class="popover-value">Count: {{ plan.count }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dedicated X-Axis Labels Row Below Chart -->
+            <div class="x-axis-labels-row">
+              <div class="x-label-item" *ngFor="let plan of planDistribution" [title]="plan.name">
+                {{ plan.name }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="planDistribution.length === 0">No subscription data available</div>
+      </div>
+    </div>
+
+    <!-- Recent Users Card -->
+    <div class="dashboard-card full-width-card" style="margin-top: 16px;">
+      <h3 class="card-title">Recent Users</h3>
+      <div class="recent-users-list">
+        <div class="recent-user" *ngFor="let user of recentUsers; let i = index">
+          <div class="user-number-badge">{{ i + 1 }}</div>
+          <div class="user-info">
+            <span class="user-name">{{ user.username }}</span>
+            <span class="user-email">{{ user.email }}</span>
+          </div>
+          <span class="user-date">{{ user.createddate | date:'shortDate' }}</span>
+        </div>
+        <div class="empty-state" *ngIf="recentUsers.length === 0">No users yet</div>
       </div>
     </div>
   </div>

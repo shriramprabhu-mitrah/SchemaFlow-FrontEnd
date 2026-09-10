@@ -140,9 +140,15 @@
               <!-- Paid Plan -->
               <ng-container *ngIf="+plan.price_monthly > 0 && plan.slug !== 'enterprise'">
                 <div class="price-val-row">
-                  <span class="currency">₹</span>
-                  <span class="price-amount">{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) :
-                    plan.price_monthly }}</span>
+                  <span class="currency" *ngIf="!isEligibleForTrial()">₹</span>
+                  <span class="price-amount">
+                    <ng-container *ngIf="isEligibleForTrial()">
+                      <s style="opacity: 0.7; margin-right: 8px;">₹{{ isAnnual ? (plan.price_annual ||
+                        plan.price_monthly * 10) : plan.price_monthly }}</s>
+                    </ng-container>
+                    <ng-container *ngIf="!isEligibleForTrial()">{{ isAnnual ? (plan.price_annual || plan.price_monthly *
+                      10) : plan.price_monthly }}</ng-container>
+                  </span>
                 </div>
                 <span class="price-period">
                   {{ (plan.plan_type === 'organization' || plan.is_per_seat) ? 'per seat / mo' : 'per month' }}
@@ -194,4 +200,8 @@
 
     </ng-container>
   </div>
+
+  <!-- Contact Sales Modal -->
+  <app-contact-sales-modal [visible]="showContactModal" (close)="closeContactModal()"></app-contact-sales-modal>
+
 </div>

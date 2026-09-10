@@ -24,6 +24,7 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/profile/profile').then(m => m.ProfileComponent),
   },
   {
@@ -49,8 +50,19 @@ export const routes: Routes = [
       { path: 'organizations', loadComponent: () => import('./features/admin/organization-management/organization-management').then(m => m.OrganizationManagementComponent) },
       { path: 'users', loadComponent: () => import('./features/admin/user-management/user-management').then(m => m.UserManagementComponent) },
       { path: 'subscriptions', loadComponent: () => import('./features/admin/subscription-management/subscription-management').then(m => m.SubscriptionManagementComponent) },
+      { path: 'enquiries', loadComponent: () => import('./features/admin/enquiries-management/enquiries-management').then(m => m.EnquiriesManagementComponent) },
       { path: 'audit-logs', loadComponent: () => import('./features/admin/audit-logs/audit-logs').then(m => m.AuditLogsComponent) },
+      { path: 'docs', loadComponent: () => import('./features/admin/cms-docs/cms-docs').then(m => m.CmsDocsComponent) },
     ]
+  },
+  // Public Application Documentation
+  {
+    path: 'docs',
+    loadComponent: () => import('./features/docs/public-docs/public-docs').then(m => m.PublicDocsComponent)
+  },
+  {
+    path: 'docs/:slug',
+    loadComponent: () => import('./features/docs/public-docs/public-docs').then(m => m.PublicDocsComponent)
   },
   // Tenant Organization Settings
   {
@@ -58,11 +70,12 @@ export const routes: Routes = [
     canActivate: [orgAdminGuard],
     loadComponent: () => import('./features/organization/org-layout/org-layout').then(m => m.OrgLayoutComponent),
     children: [
-      { path: '', redirectTo: 'settings', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', loadComponent: () => import('./features/organization/org-dashboard/org-dashboard').then(m => m.OrgDashboardComponent) },
       { path: 'settings', loadComponent: () => import('./features/organization/org-settings/org-settings').then(m => m.OrgSettingsComponent) },
       { path: 'subscription', canActivate: [orgOwnerGuard], loadComponent: () => import('./features/organization/subscription/subscription').then(m => m.SubscriptionComponent) },
       { path: 'members', loadComponent: () => import('./features/organization/members/members').then(m => m.MembersComponent) },
-      { path: 'roles', loadComponent: () => import('./features/organization/roles/roles').then(m => m.RolesComponent) },
+      { path: 'audit-logs', loadComponent: () => import('./features/organization/org-audit-logs/org-audit-logs.component').then(m => m.OrgAuditLogsComponent) },
     ]
   },
   {
@@ -71,6 +84,7 @@ export const routes: Routes = [
   },
   {
     path: 'public-diagram/:token',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/public-viewer/public-viewer').then(m => m.PublicViewerComponent)
   },
   {

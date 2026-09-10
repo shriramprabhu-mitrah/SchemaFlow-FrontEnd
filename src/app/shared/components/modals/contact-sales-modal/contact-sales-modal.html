@@ -1,0 +1,134 @@
+<div class="modal-overlay" *ngIf="visible">
+  <div class="modal-content modal-lg-700" [class.success-state]="submitSuccess" (click)="$event.stopPropagation()">
+    <div class="modal-header" *ngIf="!submitSuccess">
+      <h3 class="modal-title modal-inner-header">Contact Sales</h3>
+      <button class="modal-close ml-auto" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <ng-container *ngIf="!submitSuccess">
+        <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+
+          <div class="form-group mb-16">
+            <label class="form-label form-label-uppercase">How would you
+              like to hear back?</label>
+            <div class="btn-group">
+              <button type="button" class="btn-pill"
+                [ngClass]="contactType === 'email_me' ? 'btn-primary' : 'btn-secondary'"
+                (click)="setContactType('email_me')" class="btn-pill btn-pill-flex">
+                EMAIL ME BACK
+              </button>
+              <button type="button" class="btn-pill"
+                [ngClass]="contactType === 'book_call' ? 'btn-primary' : 'btn-secondary'"
+                (click)="setContactType('book_call')" class="btn-pill btn-pill-flex">
+                BOOK A CALL
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group mb-16">
+            <label class="form-label">Tell us more about your project <span class="text-muted">(Optional)</span></label>
+            <textarea class="form-input" formControlName="project_details" rows="3"
+              placeholder="A bit of context connects you to the right team faster"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group form-col">
+              <label class="form-label">First Name</label>
+              <input type="text" class="form-input" formControlName="first_name"
+                [class.is-invalid]="contactForm.get('first_name')?.invalid && contactForm.get('first_name')?.touched" />
+              <div *ngIf="contactForm.get('first_name')?.invalid && contactForm.get('first_name')?.touched"
+                class="error-message">
+                First Name is required.
+              </div>
+            </div>
+            <div class="form-group form-col">
+              <label class="form-label">Last Name</label>
+              <input type="text" class="form-input" formControlName="last_name"
+                [class.is-invalid]="contactForm.get('last_name')?.invalid && contactForm.get('last_name')?.touched" />
+              <div *ngIf="contactForm.get('last_name')?.invalid && contactForm.get('last_name')?.touched"
+                class="error-message">
+                Last Name is required.
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group form-col">
+              <label class="form-label">Company Email/Personal Email</label>
+              <input type="email" class="form-input" formControlName="company_email"
+                [class.is-invalid]="contactForm.get('company_email')?.invalid && contactForm.get('company_email')?.touched" />
+              <div *ngIf="contactForm.get('company_email')?.invalid && contactForm.get('company_email')?.touched"
+                class="error-message">
+                <span *ngIf="contactForm.get('company_email')?.errors?.['required']">Email is required.</span>
+                <span *ngIf="contactForm.get('company_email')?.errors?.['pattern']">Please enter a valid email
+                  address.</span>
+              </div>
+            </div>
+            <div class="form-group form-col">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" class="form-input" formControlName="phone_number"
+                [class.is-invalid]="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched" />
+              <div *ngIf="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched"
+                class="error-message">
+                <span *ngIf="contactForm.get('phone_number')?.errors?.['required']">Phone Number is required.</span>
+                <span *ngIf="contactForm.get('phone_number')?.errors?.['pattern']">Please enter a valid phone number
+                  (10-20 digits).</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group mb-24">
+            <label class="form-label">Country <span class="text-muted">(Optional)</span></label>
+            <div class="custom-dropdown-container">
+              <button type="button" class="custom-dropdown-trigger form-input"
+                (click)="showCountryDropdown = !showCountryDropdown; $event.stopPropagation()">
+                <span [class.placeholder]="!contactForm.get('country')?.value">
+                  {{ contactForm.get('country')?.value || 'Select Country' }}
+                </span>
+                <svg class="dropdown-chevron" [class.open]="showCountryDropdown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-dropdown-menu" *ngIf="showCountryDropdown" (click)="$event.stopPropagation()">
+                <button type="button" class="custom-dropdown-option"
+                  *ngFor="let c of countries"
+                  [class.selected]="contactForm.get('country')?.value === c"
+                  (click)="contactForm.patchValue({ country: c }); showCountryDropdown = false">
+                  {{ c }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+
+          <div *ngIf="submitError" class="submit-error-message">
+            {{ submitError }}
+          </div>
+
+        </form>
+      </ng-container>
+
+      <div *ngIf="submitSuccess" class="success-container">
+        <div class="success-icon-wrapper">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h3 class="success-title">Request Submitted!</h3>
+        <div class="success-description">
+          Your request has been submitted to the sales team.<br>We will come back to you shortly.
+        </div>
+        <button class="btn-primary" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+
+    <div class="modal-footer" *ngIf="!submitSuccess">
+      <button class="btn-primary" (click)="onSubmit()" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+      </button>
+    </div>
+  </div>
+</div>

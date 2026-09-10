@@ -2,19 +2,17 @@
   <div class="page-header">
     <div>
       <h1>Members</h1>
-      <p class="text-muted" style="margin:4px 0 0">Manage your team members, invitations, and role-based permissions.
+      <p class="text-muted org-page-subtitle">Manage your team members, invitations, and role-based permissions.
       </p>
     </div>
     <div class="header-actions">
-      <div class="search-box-wrap" style="position:relative">
-        <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2.2"
-          style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none">
+      <div class="search-box-wrap search-wrapper-rel">
+        <svg class="search-icon search-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <input class="search-input" placeholder="Search members..." [(ngModel)]="search" (input)="onSearch()"
-          style="width:190px;padding:6px 10px 6px 28px;font-size:14px">
+        <input class="search-input search-input-field" placeholder="Search members..." [ngModel]="search" (ngModelChange)="onSearch($event)">
       </div>
       <button class="btn-primary" (click)="openAddModal()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -42,166 +40,148 @@
     <div class="spinner"></div><span>Loading members...</span>
   </div>
 
-  <div class="data-table-wrap" *ngIf="!loading">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th (click)="sortBy('user')">
-            <span class="sort-header-clickable">
-              <span>USER</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'user'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+  <div class="subscription-premium-table-wrap" *ngIf="!loading">
+    <div class="table-scroll-area">
+      <table class="subscription-premium-table">
+        <thead>
+          <tr>
+            <th class="col-sno">
+              <span class="sort-header-clickable sort-header-default">
+                <span>S.NO</span>
               </span>
-            </span>
-          </th>
-          <th (click)="sortBy('email')">
-            <span class="sort-header-clickable">
-              <span>EMAIL</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'email'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+            </th>
+            <th>
+              <span class="sort-header-clickable" (click)="sortBy('user')">
+                <span>USER</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'user'">
+                  <app-icons name="sort" size="14"></app-icons>
+                </span>
               </span>
-            </span>
-          </th>
-          <th (click)="sortBy('role')">
-            <span class="sort-header-clickable">
-              <span>ROLE</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'role'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+            </th>
+            <th>
+              <span class="sort-header-clickable" (click)="sortBy('email')">
+                <span>EMAIL</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'email'">
+                  <app-icons name="sort" size="14"></app-icons>
+                </span>
               </span>
-            </span>
-          </th>
-          <th (click)="sortBy('status')">
-            <span class="sort-header-clickable">
-              <span>STATUS</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'status'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+            </th>
+            <th>
+              <span class="sort-header-clickable" (click)="sortBy('role')">
+                <span>ROLE</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'role'">
+                  <app-icons name="sort" size="14"></app-icons>
+                </span>
               </span>
-            </span>
-          </th>
-          <th (click)="sortBy('joined')">
-            <span class="sort-header-clickable">
-              <span>JOINED</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'joined'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16" />
-                </svg>
+            </th>
+            <th>
+              <span class="sort-header-clickable" (click)="sortBy('status')">
+                <span>STATUS</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'status'">
+                  <app-icons name="sort" size="14"></app-icons>
+                </span>
               </span>
-            </span>
-          </th>
-          <th>ACTIONS</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let m of members">
-          <td>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="user-avatar-circle" [style.background]="getAvatarBg(getUsername(m))">
-                {{ getInitial(getUsername(m)) }}
+            </th>
+            <th>
+              <span class="sort-header-clickable" (click)="sortBy('joined')">
+                <span>JOINED</span>
+                <span class="sort-icon" [class.active]="sortColumn === 'joined'">
+                  <app-icons name="sort" size="14"></app-icons>
+                </span>
+              </span>
+            </th>
+            <th>
+              <span class="sort-header-clickable sort-header-default">
+                <span>ACTIONS</span>
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of members; let i = index">
+            <td class="text-muted">{{ (page - 1) * limit + i + 1 }}</td>
+            <td>
+              <div class="user-cell-wrap">
+                <strong class="user-name-text">{{ getUsername(m) }}</strong>
               </div>
-              <strong class="user-name-text">{{ getUsername(m) }}</strong>
-            </div>
-          </td>
-          <td><span class="user-email-text">{{ m.email || '—' }}</span></td>
-          <td>
-            <span class="badge" [class.badge-active]="m.org_role==='owner'||m.org_role==='admin'"
-              [class.badge-free]="m.org_role==='member'">
-              {{ (m.org_role || 'member') | titlecase }}
-            </span>
-          </td>
-          <td>
-            <span class="badge" [class.badge-active]="(m.status || 'active') === 'active'"
-              [class.badge-inactive]="(m.status || 'active') !== 'active'">
-              {{ (m.status || 'Active') | titlecase }}
-            </span>
-          </td>
-          <td><span class="text-muted">{{ m.joined_at | date:'mediumDate' }}</span></td>
-          <td>
-            <div style="display:flex;gap:6px;align-items:center" *ngIf="m.org_role !== 'owner'">
-              <button class="btn-secondary btn-sm" (click)="openEditRoleModal(m)" title="Edit Member Role"
-                style="display:inline-flex;align-items:center;gap:4px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-                Edit
-              </button>
-              <button class="btn-danger btn-sm" (click)="promptRemoveMember(m)" title="Delete Member"
-                style="display:inline-flex;align-items:center;gap:4px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-                Delete
-              </button>
-            </div>
-            <span class="text-muted" style="font-size:13.5px;font-style:italic" *ngIf="m.org_role === 'owner'">Primary
-              Owner</span>
-          </td>
-        </tr>
-        <tr *ngIf="members.length === 0">
-          <td colspan="5" class="empty-table-cell">No members found</td>
-        </tr>
-      </tbody>
-    </table>
+            </td>
+            <td><span class="user-email-text">{{ m.email || '—' }}</span></td>
+            <td>
+              <span class="badge" [class.badge-active]="m.org_role==='admin'" [class.badge-free]="m.org_role==='member'">
+                {{ (m.org_role || 'member') | titlecase }}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [class.badge-active]="(m.status || 'active') === 'active'"
+                [class.badge-inactive]="(m.status || 'active') !== 'active'">
+                {{ (m.status || 'Active') | titlecase }}
+              </span>
+            </td>
+            <td><span class="text-muted">{{ m.joined_at | date:'mediumDate' }}</span></td>
+            <td>
+              <div class="actions-cell-wrap" *ngIf="!isCurrentUser(m)">
+                <button class="btn-secondary btn-sm btn-icon-flex" (click)="openEditRoleModal(m)" title="Edit Member Role">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit
+                </button>
+                <button class="btn-danger btn-sm btn-icon-flex" (click)="promptRemoveMember(m)" title="Delete Member">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="members.length === 0">
+            <td colspan="7" class="empty-table-cell">No members found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Workspace-Style Pagination Bar -->
     <div class="pagination-container" *ngIf="meta.total > 0">
       <div class="pagination-info">
-        {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ meta.total }} Items
+        {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ meta.total }} items
       </div>
-      <div class="pagination-controls" *ngIf="meta.totalPages > 1">
-        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">«</button>
-        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">‹</button>
-        <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p
-          }}</button>
-        <button class="page-btn" [disabled]="page === meta.totalPages" (click)="goToPage(page + 1)"
-          title="Next Page">›</button>
-        <button class="page-btn" [disabled]="page === meta.totalPages" (click)="goToPage(meta.totalPages)"
-          title="Last Page">»</button>
+      
+      <div class="pagination-controls">
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">&laquo;</button>
+        <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">&lsaquo;</button>
+        <ng-container *ngFor="let p of totalPages">
+          <button class="page-btn" [class.active]="p === page" (click)="goToPage(p)">{{ p }}</button>
+        </ng-container>
+        <button class="page-btn" [disabled]="page === meta.totalPages" (click)="goToPage(page + 1)" title="Next Page">&rsaquo;</button>
+        <button class="page-btn" [disabled]="page === meta.totalPages" (click)="goToPage(meta.totalPages)" title="Last Page">&raquo;</button>
       </div>
-      <div class="page-size-selector">
-        <select class="page-size-select" [(ngModel)]="limit" (change)="onLimitChange()">
-          <option [ngValue]="10">10</option>
-          <option [ngValue]="25">25</option>
-          <option [ngValue]="50">50</option>
-        </select>
+
+      <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="togglePageSizeDropdown($event)">
+            <span>{{ limit }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showPageSizeDropdown" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 10" (click)="selectPageSize(10)">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 25" (click)="selectPageSize(25)">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 50" (click)="selectPageSize(50)">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 100" (click)="selectPageSize(100)">100</button>
+          </div>
+        </div>
         <span class="limit-label">items per page</span>
       </div>
     </div>
   </div>
 
-  <!-- Add Member Modal -->
-  <div class="modal-overlay" *ngIf="showAddModal" (click)="closeAddModal()">
-    <div class="modal-content" style="width:420px" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3 class="modal-title">Add Member</h3><button class="modal-close" (click)="closeAddModal()">✕</button>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email Address</label>
-        <input class="form-input" [class.is-invalid]="addEmailError" [(ngModel)]="addEmail" (input)="addEmailError=''" placeholder="Enter email address">
-        <span class="invalid-feedback" *ngIf="addEmailError">{{ addEmailError }}</span>
-      </div>
-      <div class="form-group"><label class="form-label">Role</label>
-        <select class="form-select" [(ngModel)]="addRole">
-          <option *ngFor="let role of availableRoles" [value]="role.name || role.slug">{{ (role.name || role.slug) | titlecase }}</option>
-        </select>
-      </div>
-      <div class="modal-footer"><button class="btn-secondary" (click)="closeAddModal()">Cancel</button><button
-          class="btn-primary" (click)="inviteMember()">Add</button></div>
-    </div>
-  </div>
 
   <!-- Delete Confirmation Popup Card Modal -->
-  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
-    <div class="modal-content popup-card-modal" style="width:440px" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="showDeleteModal">
+    <div class="modal-content popup-card-modal modal-sm-440" (click)="$event.stopPropagation()">
       <div class="popup-card-header danger">
         <div class="popup-icon-wrap danger">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -230,61 +210,73 @@
     </div>
   </div>
 
-  <!-- Edit Role Confirmation Popup Card Modal -->
-  <div class="modal-overlay" *ngIf="showEditModal" (click)="cancelEditRole()">
-    <div class="modal-content popup-card-modal" style="width:440px" (click)="$event.stopPropagation()">
-      <div class="popup-card-header primary">
-        <div class="popup-icon-wrap primary">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        </div>
-        <div>
-          <h3 class="popup-title">Edit Member Role</h3>
-          <p class="popup-subtitle">Select and update organization role for this team member.</p>
-        </div>
+  <!-- Unified Member Modal (Add / Edit) -->
+  <div class="modal-overlay" *ngIf="showMemberModal">
+    <div class="modal-content modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">{{ isEditMode ? 'Edit Member Access' : 'Add Member' }}</h3>
+        <button class="modal-close ml-auto" (click)="closeMemberModal()">✕</button>
       </div>
-      <div class="popup-card-body" *ngIf="memberToEdit">
-        <div class="target-info-card" style="margin-bottom:16px">
+
+      <div class="modal-body">
+        <!-- Edit Mode: User Info -->
+        <div class="target-info-card mb-16" *ngIf="isEditMode && memberToEdit">
           <div class="target-name">{{ getUsername(memberToEdit) }}</div>
           <div class="target-email" *ngIf="memberToEdit.email">{{ memberToEdit.email }}</div>
         </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">New Organization Role</label>
-          <select class="form-select" [(ngModel)]="pendingRole">
-            <option value="admin">Admin</option>
-            <option value="member">Member</option>
-          </select>
+
+        <!-- Add Mode: Email Input -->
+        <div class="form-group" *ngIf="!isEditMode">
+          <label class="form-label">Email Address</label>
+          <input class="form-input" [class.is-invalid]="addEmailError" [(ngModel)]="addEmail" (input)="addEmailError=''"
+            placeholder="Enter email address">
+          <span class="invalid-feedback" *ngIf="addEmailError">{{ addEmailError }}</span>
+        </div>
+
+        <!-- Shared: Role & Feature Access -->
+        <div class="form-group member-admin-box">
+          <label class="form-label form-check form-check-flex">
+            <input type="checkbox" [checked]="isAdminSelected" (change)="toggleAdmin()">
+            <div class="checkbox-label-col">
+              <span class="checkbox-title">Make user an Admin</span>
+              <span class="checkbox-desc">Grants full access to
+                all features automatically</span>
+            </div>
+          </label>
+        </div>
+        <div class="form-group mt-20">
+          <div class="flex-between-mb-12">
+            <label class="form-label section-label-sm">Granular
+              Features Access</label>
+            <label class="form-check form-check-compact">
+              <input type="checkbox" [checked]="areAllFeaturesSelected()" [disabled]="isAdminSelected"
+                (change)="toggleAllFeatures($event)">
+              <span class="checkbox-sm-title"
+                [style.opacity]="isAdminSelected ? '0.5' : '0.8'">Select All</span>
+            </label>
+          </div>
+          <div class="member-features-grid">
+            <label class="form-check form-check-compact-gap8" *ngFor="let feature of availableFeatures">
+              <input type="checkbox"
+                [checked]="selectedFeatures.includes(feature.feature_key) || isAdminSelected || isFeatureRequired(feature.feature_key)"
+                [disabled]="isAdminSelected || !feature.enabled || isFeatureRequired(feature.feature_key)"
+                (change)="toggleFeature(feature.feature_key)">
+              <span class="checkbox-sm-text"
+                [style.opacity]="(isAdminSelected || !feature.enabled) ? '0.5' : '1'">{{ feature.feature_name ||
+                feature.feature_key | titlecase }}</span>
+            </label>
+          </div>
         </div>
       </div>
+
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="cancelEditRole()">Cancel</button>
-        <button class="btn-primary" (click)="confirmChangeRole()">Save Role</button>
+        <button class="btn-secondary" (click)="closeMemberModal()">Cancel</button>
+        <button class="btn-primary" (click)="isEditMode ? confirmChangeRole() : inviteMember()">{{ isEditMode ? 'Update
+          Member' : 'Add Member' }}</button>
       </div>
     </div>
   </div>
 
-  <!-- Custom Upgrade Plan Confirmation Popup Card Modal (Replaces browser alert) -->
-  <div class="modal-overlay" *ngIf="showUpgradeModal" (click)="showUpgradeModal = false">
-    <div class="modal-content confirmation-card-modal"
-      style="width:440px;max-width:92vw;padding:28px;border-radius:14px;text-align:center"
-      (click)="$event.stopPropagation()">
-      <div
-        style="width:54px;height:54px;border-radius:50%;background:rgba(37,99,235,0.12);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-      </div>
-      <h3 style="margin:0 0 8px 0;font-size:20px;font-weight:700">Upgrade Plan Required</h3>
-      <p class="text-muted" style="margin:0 0 24px 0;font-size:14px;line-height:1.5">You need to upgrade your plan to
-        add more team members to this organization.</p>
-      <div style="display:flex;gap:12px;justify-content:center">
-        <button class="btn-secondary" (click)="showUpgradeModal = false" style="min-width:110px">Cancel</button>
-        <button class="btn-primary" (click)="goToUpgrade()" style="min-width:140px">View Plans & Upgrade</button>
-      </div>
-    </div>
-  </div>
+
 
 </div>

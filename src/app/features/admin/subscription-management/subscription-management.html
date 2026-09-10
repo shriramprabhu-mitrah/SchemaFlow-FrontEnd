@@ -15,58 +15,86 @@
       </div>
 
       <!-- Status Filter -->
-    <select class="form-select" style="width:160px;padding:6px 10px;font-size:13.5px;height:36px" [(ngModel)]="statusFilter" (change)="onFilter()">
-      <option value="">All Statuses</option>
-      <option value="active">Active</option>
-      <option value="trial">Trial</option>
-      <option value="cancelled">Cancelled</option>
-      <option value="expired">Expired</option>
-    </select>
+      <div class="custom-select-container" style="width:160px">
+        <button class="custom-select-btn" [class.open]="showStatusFilterDropdown" style="height:36px;padding:0 12px"
+          (click)="showStatusFilterDropdown = !showStatusFilterDropdown; $event.stopPropagation()">
+          <span>{{ getStatusFilterLabel() }}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="custom-select-menu" *ngIf="showStatusFilterDropdown">
+          <div class="custom-select-option" *ngFor="let opt of [
+            {value:'', label:'All Statuses'},
+            {value:'active', label:'Active'},
+            {value:'trial', label:'Trial'},
+            {value:'cancelled', label:'Cancelled'},
+            {value:'expired', label:'Expired'}
+          ]" [class.active]="statusFilter === opt.value"
+            (click)="statusFilter = opt.value; onFilter(); showStatusFilterDropdown = false">
+            {{ opt.label }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
-  <div class="loading-state" *ngIf="loading"><div class="spinner"></div><span>Loading subscriptions...</span></div>
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div><span>Loading subscriptions...</span>
+  </div>
 
   <div class="data-table-wrap" *ngIf="!loading">
     <table class="data-table">
       <thead>
         <tr>
-          <th style="width:7%">
+          <th style="width:5%">
             <span class="sort-header-clickable" style="cursor: default;">
-              <span>S.No</span>
+              <span>S.NO</span>
             </span>
           </th>
-          <th style="width:28%" (click)="sortBy('user')">
-            <span class="sort-header-clickable">
+          <th style="width:25%">
+            <span class="sort-header-clickable" (click)="sortBy('email')">
               <span>USER</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'user'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              <span class="sort-icon" [class.active]="sortColumn === 'email'">
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:22%" (click)="sortBy('plan')">
-            <span class="sort-header-clickable">
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('plan_name')">
               <span>PLAN</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'plan'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+              <span class="sort-icon" [class.active]="sortColumn === 'plan_name'">
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:15%" (click)="sortBy('status')">
-            <span class="sort-header-clickable">
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('status')">
               <span>STATUS</span>
               <span class="sort-icon" [class.active]="sortColumn === 'status'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
           </th>
-          <th style="width:13%">BILLING</th>
-          <th style="width:15%" (click)="sortBy('started')">
-            <span class="sort-header-clickable">
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('billing')">
+              <span>BILLING</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'billing'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('started')">
               <span>STARTED</span>
               <span class="sort-icon" [class.active]="sortColumn === 'started'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                <app-icons name="sort" size="14"></app-icons>
               </span>
+            </span>
+          </th>
+          <th style="width:10%">
+            <span class="sort-header-clickable" style="cursor: default;">
+              <span>ACTIONS</span>
             </span>
           </th>
         </tr>
@@ -85,35 +113,115 @@
               {{ s.status }}
             </span>
           </td>
-          <td>{{ s.billing_cycle | uppercase }}</td>
+          <td>
+            {{ s.status === 'trial' ? 'TRIAL' : (s.status === 'active' ? (s.billing_cycle | uppercase) : (s.trial_start && s.trial_end ? 'TRIAL' : (s.billing_cycle | uppercase))) }}
+          </td>
           <td><span class="text-muted">{{ s.current_period_start | date:'mediumDate' }}</span></td>
+          <td>
+            <button class="action-btn" (click)="openEditModal(s)" title="Edit Plan" style="background:none; border:none; cursor:pointer; color:#94a3b8; padding:4px; border-radius:4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+          </td>
         </tr>
         <tr *ngIf="displaySubscriptions.length === 0">
-          <td colspan="6" class="empty-table-cell">No subscriptions found</td>
+          <td colspan="7" class="empty-table-cell">No subscriptions found</td>
         </tr>
       </tbody>
     </table>
 
-  <!-- Workspace-Style Pagination Bar -->
-  <div class="pagination-container" *ngIf="totalFilteredCount > 0">
-    <div class="pagination-info">
-      {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ totalFilteredCount }} Items
+    <!-- Workspace-Style Pagination Bar -->
+    <div class="pagination-container" *ngIf="totalFilteredCount > 0">
+      <div class="pagination-info">
+        {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ totalFilteredCount }} Items
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(1)" data-tt="First Page">«</button>
+        <button class="page-btn tt tt-top" [disabled]="page === 1" (click)="goToPage(page - 1)" data-tt="Previous Page">‹</button>
+        <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p }}</button>
+        <button class="page-btn tt tt-top" [disabled]="page === totalPagesCount" (click)="goToPage(page + 1)" data-tt="Next Page">›</button>
+        <button class="page-btn tt tt-top" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)" data-tt="Last Page">»</button>
+      </div>
+      <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="showLimitDropdown = !showLimitDropdown; $event.stopPropagation()">
+            <span>{{ limit }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showLimitDropdown" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 10" (click)="limit = 10; onLimitChange(); showLimitDropdown = false">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 25" (click)="limit = 25; onLimitChange(); showLimitDropdown = false">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 50" (click)="limit = 50; onLimitChange(); showLimitDropdown = false">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit === 100" (click)="limit = 100; onLimitChange(); showLimitDropdown = false">100</button>
+          </div>
+        </div>
+        <span class="limit-label">items per page</span>
+      </div>
     </div>
-    <div class="pagination-controls" *ngIf="totalPagesCount > 1">
-      <button class="page-btn" [disabled]="page === 1" (click)="goToPage(1)" title="First Page">«</button>
-      <button class="page-btn" [disabled]="page === 1" (click)="goToPage(page - 1)" title="Previous Page">‹</button>
-      <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === page" (click)="goToPage(p)">{{ p }}</button>
-      <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(page + 1)" title="Next Page">›</button>
-      <button class="page-btn" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)" title="Last Page">»</button>
-    </div>
-    <div class="page-size-selector">
-      <select class="page-size-select" [(ngModel)]="limit" (change)="onLimitChange()">
-        <option [ngValue]="5">5</option>
-        <option [ngValue]="10">10</option>
-        <option [ngValue]="25">25</option>
-        <option [ngValue]="50">50</option>
-      </select>
-      <span class="limit-label">items per page</span>
+  </div>
+
+  <!-- Edit Plan Modal -->
+  <div class="modal-overlay" *ngIf="showEditModal">
+    <div class="modal-content" style="width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title modal-inner-header">Edit Subscription Plan</h3>
+        <button class="modal-close ml-auto" (click)="closeEditModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group mb-16">
+          <label class="form-label">User / Organization Email</label>
+          <input type="text" class="form-input" [value]="editForm.email" disabled>
+        </div>
+
+        <div class="form-group mb-16">
+          <label class="form-label">Select Plan</label>
+          <div class="custom-select-container">
+            <button type="button" class="custom-select-btn" [class.open]="showPlanDropdown" style="height:36px" (click)="showPlanDropdown = !showPlanDropdown; showBillingDropdown = false; $event.stopPropagation()">
+              <span>{{ editForm.planName }}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="custom-select-menu" *ngIf="showPlanDropdown" (click)="$event.stopPropagation()">
+              <div class="custom-select-option" *ngFor="let p of allPlans" [class.active]="editForm.planId === p.plan_id" [class.disabled]="p.disabled" [style.opacity]="p.disabled ? 0.5 : 1" [style.pointer-events]="p.disabled ? 'none' : 'auto'" (click)="editForm.planId = p.plan_id; editForm.planName = p.name; showPlanDropdown = false">
+                {{ p.name }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group mb-16">
+          <label class="form-label">Billing Cycle</label>
+          <div class="custom-select-container">
+            <button type="button" class="custom-select-btn" [class.open]="showBillingDropdown" style="height:36px" (click)="showBillingDropdown = !showBillingDropdown; showPlanDropdown = false; $event.stopPropagation()">
+              <span>{{ editForm.billingCycle === 'annual' ? 'Yearly' : (editForm.billingCycle === 'trial' ? 'Trial (45 Days)' : 'Monthly') }}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="custom-select-menu" *ngIf="showBillingDropdown" (click)="$event.stopPropagation()">
+              <div class="custom-select-option" [class.active]="editForm.billingCycle === 'monthly'" (click)="editForm.billingCycle = 'monthly'; showBillingDropdown = false">Monthly</div>
+              <div class="custom-select-option" [class.active]="editForm.billingCycle === 'annual'" (click)="editForm.billingCycle = 'annual'; showBillingDropdown = false">Yearly</div>
+              <div class="custom-select-option" [class.active]="editForm.billingCycle === 'trial'" [class.disabled]="disableTrialOption" [style.opacity]="disableTrialOption ? 0.5 : 1" [style.pointer-events]="disableTrialOption ? 'none' : 'auto'" (click)="editForm.billingCycle = 'trial'; showBillingDropdown = false">Trial (45 Days)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group mb-8">
+          <label class="form-label">Email Message Content</label>
+          <textarea class="form-textarea" [(ngModel)]="editForm.message" rows="4" style="min-height: 80px;" placeholder="Custom message to send in the email confirmation"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeEditModal()" [disabled]="savingEdit" style="margin-right: 12px;">Cancel</button>
+        <button class="btn-primary" (click)="saveSubscription()" [disabled]="savingEdit || !editForm.planId" style="display: inline-flex; align-items: center; gap: 8px;">
+          <span *ngIf="savingEdit" class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+          {{ savingEdit ? 'Updating...' : 'Update Plan' }}
+        </button>
       </div>
     </div>
   </div>

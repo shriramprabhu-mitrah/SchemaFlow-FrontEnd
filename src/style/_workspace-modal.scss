@@ -141,7 +141,7 @@
       text-align: left;
       box-sizing: border-box;
 
-      &:hover {
+      &:hover:not(.disabled) {
         background: rgba(255, 255, 255, 0.09);
         border-color: rgba(62, 197, 193, 0.3);
         color: #ffffff;
@@ -153,10 +153,16 @@
         color: #3ec5c1;
         font-weight: 600;
 
-        &:hover {
+        &:hover:not(.disabled) {
           background: rgba(62, 197, 193, 0.2);
           color: #ffffff;
         }
+      }
+
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: auto;
       }
 
       .plus-icon {
@@ -189,9 +195,25 @@
       transition: all 0.18s ease;
       box-sizing: border-box;
 
-      &:hover {
+      &:hover:not(.disabled) {
         background: rgba(255, 255, 255, 0.05);
         color: #ffffff;
+      }
+
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: auto;
+
+        &:hover {
+          background: transparent !important;
+          color: #98a7c4 !important;
+
+          svg {
+            color: #98a7c4 !important;
+            stroke: #98a7c4 !important;
+          }
+        }
       }
 
       &.active {
@@ -720,7 +742,7 @@
 
               .action-menu-dropdown {
                 position: absolute;
-                right: 28px !important;
+                right: 16px !important;
                 top: calc(100% + 6px);
                 width: max-content !important;
                 min-width: 160px !important;
@@ -1193,7 +1215,7 @@
                 position: absolute !important;
                 top: calc(100% + 6px) !important;
                 bottom: auto !important;
-                right: 0 !important;
+                right: 16px !important;
                 width: 180px !important;
                 min-width: 170px !important;
                 background: #141c2e !important;
@@ -1276,7 +1298,7 @@
               .permission-dropdown-menu {
                 position: absolute !important;
                 margin-top: 4px;
-                margin-left: -105px;
+                right: 0;
                 width: 230px;
                 min-width: 230px;
                 background: #141c2e;
@@ -1304,7 +1326,7 @@
                   justify-content: center;
                   width: 100%;
                   box-sizing: border-box;
-                  padding: 8px 10px;
+                  padding: 5px 10px;
                   background: transparent;
                   border: none;
                   border-radius: 6px;
@@ -1577,7 +1599,7 @@
 
               .action-menu-dropdown {
                 position: absolute;
-                right: 28px !important;
+                right: 16px !important;
                 top: calc(100% + 6px);
                 background: #141c2e;
                 border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1747,7 +1769,7 @@ body.light-theme {
         border-color: rgba(0, 0, 0, 0.12);
         color: #1e293b;
 
-        &:hover {
+        &:hover:not(.disabled) {
           background: #f1f5f9;
           border-color: rgba(37, 99, 235, 0.3);
           color: #0f172a;
@@ -1758,7 +1780,7 @@ body.light-theme {
           border-color: rgba(37, 99, 235, 0.25);
           color: #2563eb;
 
-          &:hover {
+          &:hover:not(.disabled) {
             background: rgba(37, 99, 235, 0.15);
             color: #1d4ed8;
           }
@@ -1767,20 +1789,62 @@ body.light-theme {
             color: #2563eb;
           }
         }
+
+        &.disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          pointer-events: auto;
+
+          &:hover {
+            background: #ffffff !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
+            color: #1e293b !important;
+          }
+        }
+
+        &.primary-action.disabled {
+          &:hover {
+            background: rgba(37, 99, 235, 0.08) !important;
+            border-color: rgba(37, 99, 235, 0.25) !important;
+            color: #2563eb !important;
+          }
+        }
       }
     }
 
     .workspace-nav {
       .nav-item {
-        color: #475569;
+        color: #0f172a;
 
-        &:hover {
+        svg {
+          stroke: #0f172a !important;
+          color: #0f172a !important;
+        }
+
+        &:hover:not(.disabled) {
           background: rgba(0, 0, 0, 0.04) !important;
           color: #0f172a !important;
           box-shadow: none !important;
 
           svg {
-            stroke: #64748b !important;
+            stroke: #0f172a !important;
+            color: #0f172a !important;
+          }
+        }
+
+        &.disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          pointer-events: auto;
+
+          &:hover {
+            background: transparent !important;
+            color: #0f172a !important;
+
+            svg {
+              color: #0f172a !important;
+              stroke: #0f172a !important;
+            }
           }
         }
 
@@ -2387,7 +2451,7 @@ body.light-theme {
 
 .action-menu-dropdown {
   position: absolute !important;
-  right: 28px !important;
+  right: 16px !important;
   top: calc(100% + 6px) !important;
   z-index: 100000 !important;
   width: max-content !important;
@@ -2411,8 +2475,6 @@ body.light-theme {
 }
 
 /* Make dropdowns in the last 2 rows open upwards to prevent expanding the scroll container */
-tbody tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-dropdown,
-.diagram-list-grid .diagram-card:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-dropdown,
 .member-item-row:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .member-context-menu {
   top: auto !important;
   bottom: calc(100% + 6px) !important;
@@ -2572,7 +2634,7 @@ tbody tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-
         font-size: 13px !important;
         font-weight: 500 !important;
         color: #94a3b8 !important;
-        padding-right: 8px !important;
+        padding-right: 16px !important;
       }
 
       .member-permission-dropdown-wrap {
@@ -2615,7 +2677,7 @@ tbody tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-
         .member-perm-menu {
           position: absolute !important;
           margin-top: 4px !important;
-          margin-left: 0 !important;
+          margin-left: auto !important;
           right: 0 !important;
           top: 100% !important;
           bottom: auto !important;
@@ -2644,7 +2706,7 @@ tbody tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-
             flex-direction: column !important;
             align-items: flex-start !important;
             width: 100% !important;
-            padding: 8px 10px !important;
+            padding: 5px 10px !important;
             background: transparent !important;
             border: none !important;
             border-radius: 7px !important;
@@ -2748,6 +2810,8 @@ body.light-theme .members-list-wrapper .member-item-row .btn-remove-member-icon 
   &[disabled],
   &.disabled-icon {
     opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
   }
 }
 
@@ -3148,7 +3212,7 @@ th.sortable-head {
   position: absolute !important;
   bottom: calc(100% + 6px) !important;
   top: auto !important;
-  right: 0 !important;
+  right: 16px !important;
   width: 175px !important;
   min-width: 165px !important;
   background: #090d16 !important;
@@ -3570,7 +3634,9 @@ body.light-theme {
       outline: none !important;
       box-shadow: none !important;
 
-      &:focus, &:active, &:focus-visible {
+      &:focus,
+      &:active,
+      &:focus-visible {
         border: none !important;
         outline: none !important;
         box-shadow: none !important;
@@ -4111,7 +4177,7 @@ body.light-theme {
   margin-top: 0 !important;
   bottom: 100% !important;
   top: auto !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 2px !important;
 }
 
 /* Upward dropdown logic to prevent clipping in scroll container for the bottom items */
@@ -4120,5 +4186,5 @@ body.light-theme {
   margin-top: 0 !important;
   bottom: 100% !important;
   top: auto !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 2px !important;
 }

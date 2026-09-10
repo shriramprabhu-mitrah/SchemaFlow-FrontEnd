@@ -18,6 +18,20 @@ export class OrgLayoutComponent {
   public dashService = inject(DashboardService);
   sidebarCollapsed = false;
 
+  ngOnInit() {
+    this.checkScreenSize();
+    window.addEventListener('resize', this.checkScreenSize.bind(this));
+  }
+
+  ngOnDestroy() {
+    window.removeEventListener('resize', this.checkScreenSize.bind(this));
+  }
+
+  private checkScreenSize() {
+    if (window.innerWidth <= 768) {
+      this.sidebarCollapsed = true;
+    }
+  }
   get userEmail(): string {
     return this.auth.getUserEmail() || '';
   }
@@ -27,7 +41,17 @@ export class OrgLayoutComponent {
   }
 
   get isOwner(): boolean {
-    return this.auth.isOrganizationOwner();
+    return this.auth.isOrganizationAdmin();
+  }
+
+  get pageTitle(): string {
+    const url = this.router.url;
+    if (url.includes('/dashboard')) return 'Organization Dashboard';
+    if (url.includes('/settings')) return 'General Settings';
+    if (url.includes('/subscription')) return 'Subscription';
+    if (url.includes('/members')) return 'Members';
+    if (url.includes('/roles')) return 'Roles';
+    return 'Organization';
   }
 
   toggleSidebar(): void {

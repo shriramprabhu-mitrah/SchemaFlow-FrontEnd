@@ -389,7 +389,8 @@ app-version-history {
   }
 }
 
-#zoom-pct, #zoom-pct-input {
+#zoom-pct,
+#zoom-pct-input {
   width: 42px;
   text-align: center;
   font-size: 12.5px;
@@ -415,7 +416,6 @@ app-version-history {
     -webkit-appearance: none;
     margin: 0;
   }
-  -moz-appearance: textfield;
 }
 
 .color-picker-popup {
@@ -674,13 +674,35 @@ app-version-history {
   font-size: 13px;
 }
 
-.table-modal-close,
 .column-delete {
   border: 0;
   background: transparent;
   color: #98a7c4;
   font-size: 24px;
   cursor: pointer;
+}
+
+.table-modal-close {
+  background: none;
+  border: none;
+  color: #7082a0;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  padding-bottom: 2px;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+
+  &:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+  }
 }
 
 .table-name-field {
@@ -1210,9 +1232,11 @@ app-version-history {
 .custom-fk-menu::-webkit-scrollbar {
   width: 6px;
 }
+
 .custom-fk-menu::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-fk-menu::-webkit-scrollbar-thumb {
   background: #32445f;
   border-radius: 99px;
@@ -1405,6 +1429,7 @@ body.light-theme {
           outline: none !important;
           box-shadow: none !important;
           border: none !important;
+
           &:focus {
             outline: none !important;
             box-shadow: none !important;
@@ -1444,12 +1469,21 @@ body.light-theme {
     color: #1f2937 !important;
     box-shadow: 0 22px 65px rgba(0, 0, 0, 0.08) !important;
 
-    .table-modal-close,
     .column-delete {
       color: #6b7280 !important;
 
       &:hover {
         color: #f27272 !important;
+      }
+    }
+
+    .table-modal-close {
+      color: #64748b !important;
+      background: transparent !important;
+
+      &:hover {
+        color: #0f172a !important;
+        background: rgba(0, 0, 0, 0.06) !important;
       }
     }
 
@@ -1965,11 +1999,11 @@ body.light-theme .detail-level-dropdown {
 
 body.light-theme #extra-controls {
   .detail-level-btn {
-    color: #32a9a5 !important;
+    color: #337ab7 !important;
     /* normal color light theme */
 
     &.extra-active {
-      color: #278f8b !important;
+      color: #337ab7 !important;
       /* active color light theme */
     }
   }
@@ -2061,7 +2095,9 @@ body.light-theme #extra-controls {
   display: flex;
   align-items: center;
 
-  &:active { cursor: move; }
+  &:active {
+    cursor: move;
+  }
 }
 
 .sticky-note-name {
@@ -2081,12 +2117,12 @@ body.light-theme #extra-controls {
   font-weight: 600;
   font-family: 'Segoe UI', sans-serif;
   background: transparent !important;
-  border: 1px solid rgba(0,0,0,0.2) !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
   border-radius: 3px;
   padding: 0 4px;
   margin: 0;
   outline: none !important;
-  color: rgba(0,0,0,0.8) !important;
+  color: rgba(0, 0, 0, 0.8) !important;
   min-width: 0;
   width: 0;
   height: 18px;
@@ -2126,7 +2162,7 @@ body.light-theme #extra-controls {
   position: absolute;
   width: max-content;
   background: #ffffff;
-  box-shadow: 0 6px 22px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
   border-radius: 10px;
   z-index: 100;
   min-width: 140px;
@@ -2134,14 +2170,14 @@ body.light-theme #extra-controls {
   flex-direction: column;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  
+
   &.dark {
     background: #141d31;
-    box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
 
     .snd-item {
       color: #e6eef9;
-      border-top-color: rgba(255,255,255,0.06);
+      border-top-color: rgba(255, 255, 255, 0.06);
 
       &.danger-item {
         color: #ef4444;
@@ -2153,7 +2189,7 @@ body.light-theme #extra-controls {
 .snd-item {
   background: transparent;
   border: none;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   padding: 0 14px;
   height: 34px;
   display: flex;
@@ -2353,7 +2389,7 @@ body.light-theme #extra-controls {
   background: #ffffff;
   border: 1px solid #cbd5e1;
   color: #64748b;
-  
+
   &:hover {
     background: #f8fafc;
     border-color: #94a3b8;
@@ -2364,7 +2400,7 @@ body.light-theme #extra-controls {
 .sncp-yes {
   background: #0084ff;
   color: #ffffff;
-  
+
   &:hover {
     background: #0074e0;
   }
@@ -2380,7 +2416,7 @@ body.light-theme #extra-controls {
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-top: 6px solid #ffffff;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -2420,7 +2456,7 @@ body.light-theme #extra-controls {
   .sncp-yes {
     background: #0084ff;
     color: #ffffff;
-    
+
     &:hover {
       background: #0074e0;
     }

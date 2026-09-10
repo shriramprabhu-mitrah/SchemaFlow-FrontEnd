@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { Icons } from '../../core/component/icons/icons';
 import { ButtonComponent } from '../../shared/button/button';
 import { DashboardService } from '../../core/services/dashboard.service';
+import { SeoService } from '../../core/services/seo.service';
 
 interface HeroTable {
   name: string;
@@ -21,6 +22,11 @@ interface HeroTable {
 })
 export class HomeComponent implements OnInit {
   isLoggedIn = false;
+  isMobileMenuOpen = false;
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
 
   // Static preview data for the hero illustration — a small, believable
   // slice of the E-Commerce sample schema, arranged as floating cards
@@ -60,10 +66,30 @@ export class HomeComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private router: Router,
-    private svc: DashboardService
+    private svc: DashboardService,
+    private seoService: SeoService
   ) { }
 
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'DBNexus - Database Schema Design Tool',
+      description: 'Design, document, and collaborate on database schemas with ease. A simple and powerful tool for developers and teams.',
+      url: 'https://dbnexus.up.railway.app/'
+    });
+    
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "DBNexus",
+      "operatingSystem": "Any",
+      "applicationCategory": "DeveloperApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    });
+
     if (typeof window !== 'undefined') {
       this.isLoggedIn = this.auth.isLoggedIn();
     }

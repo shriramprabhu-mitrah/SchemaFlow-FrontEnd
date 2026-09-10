@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { SeoService } from '../../../core/services/seo.service';
 import { Icons } from '../../../core/component/icons/icons';
 
 import { ButtonComponent } from '../../../shared/button/button';
@@ -37,10 +38,17 @@ export class ResetPasswordComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private svc: DashboardService
+    private svc: DashboardService,
+    private seoService: SeoService
   ) {}
 
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'Reset Password - DBNexus',
+      description: 'Reset your DBNexus account password.',
+      url: 'https://dbnexus.up.railway.app/reset-password'
+    });
+
     this.route.queryParams.subscribe(params => {
       this.token = params['token'] || '';
       if (!this.token) {

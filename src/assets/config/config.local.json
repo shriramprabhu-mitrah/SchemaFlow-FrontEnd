@@ -84,6 +84,8 @@
     "users": "http://192.168.3.84:4000/api/admin/users",
     "userById": "http://192.168.3.84:4000/api/admin/users/{id}",
     "subscriptions": "http://192.168.3.84:4000/api/admin/subscriptions",
-    "auditLogs": "http://192.168.3.84:4000/api/admin/audit-logs"
+    "subscriptionById": "http://192.168.3.84:4000/api/admin/subscriptions/{id}",
+    "auditLogs": "http://192.168.3.84:4000/api/admin/audit-logs",
+    "enquiries": "http://192.168.3.84:4000/api/admin/enquiries"
   }
 }

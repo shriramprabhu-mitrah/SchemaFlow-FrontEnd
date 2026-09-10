@@ -1,0 +1,738 @@
+<div class="cms-docs-container" [class.workspace-fullscreen]="isWorkspaceExpanded" [class.light-theme]="isLightTheme()">
+
+  <!-- Top Action & Navigation Bar -->
+  <div class="cms-top-bar">
+    <div class="top-bar-left">
+      <div class="cms-title-badge">
+        <app-icons name="db-diagram-logo" size="22"></app-icons>
+        <span>DB Nexus CMS</span>
+      </div>
+
+      <!-- Navigation Mode Switcher -->
+      <div class="cms-mode-switcher">
+        <button type="button" class="mode-btn" [class.active]="activeViewMode === 'editor'"
+          (click)="activeViewMode = 'editor'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Admin CMS Editor
+        </button>
+
+        <button type="button" class="mode-btn" [class.active]="activeViewMode === 'navigation'"
+          (click)="activeViewMode = 'navigation'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          Navigation Hierarchy Manager
+        </button>
+      </div>
+    </div>
+
+    <div class="top-bar-right">
+      <!-- Expand Workspace Toggle Button -->
+      <button type="button" class="cms-btn btn-secondary" (click)="toggleWorkspaceExpand()"
+        [title]="isWorkspaceExpanded ? 'Contract Workspace Sidebars' : 'Expand Editor Workspace'">
+        <span *ngIf="!isWorkspaceExpanded">⛶ Expand Workspace</span>
+        <span *ngIf="isWorkspaceExpanded">🗗 Contract Workspace</span>
+      </button>
+
+      <!-- Public Live View Button -->
+      <button type="button" class="cms-btn btn-secondary" (click)="viewPublicDocs()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+        Public Documentation Page
+      </button>
+
+      <!-- Save & Publish Controls -->
+      <button type="button" class="cms-btn btn-primary" (click)="savePageChanges()" [disabled]="!selectedPage">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        Save Changes
+      </button>
+
+      <button type="button" class="cms-btn" [class.btn-success]="editForm.status !== 'published'"
+        [class.btn-warning]="editForm.status === 'published'" (click)="togglePublishStatus()"
+        [disabled]="!selectedPage">
+        {{ editForm.status === 'published' ? 'Unpublish' : 'Publish Live' }}
+      </button>
+    </div>
+  </div>
+
+
+  <!-- VIEW MODE 1: EDITOR VIEW -->
+  <div class="cms-main-layout" *ngIf="activeViewMode === 'editor'">
+
+    <!-- Left Navigation Tree Sidebar (Hidden in Expand Workspace Mode) -->
+    <aside class="cms-sidebar" *ngIf="!isWorkspaceExpanded">
+      <div class="sidebar-search">
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search docs pages..." class="search-input" />
+        <button type="button" class="btn-add-mini" (click)="openNewPageModal()" title="Add New Page">+</button>
+      </div>
+
+      <div class="sections-tree">
+        <div *ngFor="let sec of sections" class="section-group">
+          <div class="section-header">
+            <span class="section-title">{{ sec.title }}</span>
+            <div class="sec-actions-mini">
+              <span class="section-count">{{ getPagesForSection(sec.id).length }}</span>
+              <button type="button" class="btn-add-page-icon" (click)="openNewPageModal(sec.id)"
+                title="Add page to {{sec.title}}">+</button>
+              <button type="button" class="btn-delete-sec-icon" (click)="deleteSection(sec, $event)"
+                title="Delete Section {{sec.title}}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="pages-list">
+            <div *ngFor="let page of getPagesForSection(sec.id)" class="page-item"
+              [class.active]="selectedPage?.id === page.id" [class.is-child-page]="!!page.parentId"
+              (click)="selectPage(page)">
+              <span class="child-indent-icon" *ngIf="page.parentId">↳ </span>
+              <span class="page-title-text">{{ page.title }}</span>
+              <span class="parent-badge" *ngIf="getParentPageTitle(page.parentId)">{{ getParentPageTitle(page.parentId)
+                }}</span>
+              <span class="status-badge" [class.status-published]="page.status === 'published'"
+                [class.status-draft]="page.status === 'draft'">
+                {{ page.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer-actions">
+        <button type="button" class="btn-block-action" (click)="showNewSectionModal = true">+ Add New Section</button>
+      </div>
+    </aside>
+
+    <!-- Center Editor & Preview Area -->
+    <main class="cms-editor-area" *ngIf="selectedPage; else noSelection">
+
+      <!-- Breadcrumbs & Status Bar -->
+      <div class="editor-header-bar">
+        <div class="breadcrumbs">
+          <span>Documentation</span>
+          <span class="sep">/</span>
+          <span>{{ getSectionTitle(editForm.sectionId || '') }}</span>
+          <ng-container *ngIf="getParentPageTitle(editForm.parentId) as parentTitle">
+            <span class="sep">/</span>
+            <span>{{ parentTitle }}</span>
+          </ng-container>
+          <span class="sep">/</span>
+          <span class="current">{{ editForm.title }}</span>
+        </div>
+      </div>
+
+      <!-- Editor Tabs Removed -->
+
+      <!-- TAB 1: CONTENT EDITOR -->
+      <div class="tab-body" *ngIf="activeTab === 'content'">
+        <!-- Page Attributes Row -->
+        <div class="fields-grid">
+          <div class="form-group">
+            <label>Title *</label>
+            <input type="text" [(ngModel)]="editForm.title" (ngModelChange)="updatePreview()" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label>Slug *</label>
+            <input type="text" [(ngModel)]="editForm.slug" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label>Status</label>
+            <div class="custom-status-dropdown-container" style="width: 100%; position: relative;">
+              <button type="button" class="custom-status-dropdown-trigger" style="width: 100%; justify-content: space-between;" (click)="showStatusDropdown = !showStatusDropdown; $event.stopPropagation()">
+                <span style="text-transform: capitalize;">{{ editForm.status || 'draft' }}</span>
+                <app-icons name="chevron-down" size="14"></app-icons>
+              </button>
+              <div class="custom-status-dropdown-menu" *ngIf="showStatusDropdown" (click)="$event.stopPropagation()" style="width: 100%; max-height: 180px; overflow-y: auto;">
+                <button type="button" class="custom-status-dropdown-option" [class.selected]="editForm.status === 'published'" (click)="editForm.status = 'published'; showStatusDropdown = false">Published</button>
+                <button type="button" class="custom-status-dropdown-option" [class.selected]="editForm.status === 'draft'" (click)="editForm.status = 'draft'; showStatusDropdown = false">Draft</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Section</label>
+            <div class="custom-status-dropdown-container" style="width: 100%; position: relative;">
+              <button type="button" class="custom-status-dropdown-trigger" style="width: 100%; justify-content: space-between;" (click)="showSectionDropdown = !showSectionDropdown; $event.stopPropagation()">
+                <span>{{ getSectionTitle(editForm.sectionId) }}</span>
+                <app-icons name="chevron-down" size="14"></app-icons>
+              </button>
+              <div class="custom-status-dropdown-menu" *ngIf="showSectionDropdown" (click)="$event.stopPropagation()" style="width: 100%; max-height: 180px; overflow-y: auto;">
+                <button type="button" class="custom-status-dropdown-option" *ngFor="let sec of sections" [class.selected]="editForm.sectionId === sec.id" (click)="editForm.sectionId = sec.id; onSectionOrParentChange(); showSectionDropdown = false">{{ sec.title }}</button>
+              </div>
+            </div>
+          </div>
+
+
+
+          <div class="form-group">
+            <label>Order</label>
+            <input type="number" [(ngModel)]="editForm.sortOrder" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Google Docs Style Comprehensive Rich Markdown Toolbar -->
+        <div class="md-rich-toolbar">
+          <div class="tb-left-group">
+            <!-- 1. Heading Selector Dropdown -->
+            <div class="tb-dropdown-wrap">
+              <button type="button" class="tb-dropdown-btn" (click)="toggleHeadingMenu(); $event.stopPropagation()" title="Text Style">
+                <span><b class="text-prefix">T</b> {{ selectedHeadingLabel }}</span>
+                <svg class="arrow" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor"
+                  stroke-width="1.5">
+                  <path d="M1 1L5 5L9 1" />
+                </svg>
+              </button>
+              <div class="tb-dropdown-menu" *ngIf="showHeadingMenu">
+                <button type="button" (click)="applyHeading('', 'Normal text'); $event.stopPropagation()">Normal text</button>
+                <button type="button" (click)="applyHeading('# ', 'Heading 1'); $event.stopPropagation()">
+                  <h1 class="dd-h1">Heading 1</h1>
+                </button>
+                <button type="button" (click)="applyHeading('## ', 'Heading 2'); $event.stopPropagation()">
+                  <h2 class="dd-h2">Heading 2</h2>
+                </button>
+                <button type="button" (click)="applyHeading('### ', 'Heading 3'); $event.stopPropagation()">
+                  <h3 class="dd-h3">Heading 3</h3>
+                </button>
+                <button type="button" (click)="applyHeading('#### ', 'Heading 4'); $event.stopPropagation()">
+                  <h4 class="dd-h4">Heading 4</h4>
+                </button>
+              </div>
+            </div>
+
+            <span class="tb-sep"></span>
+
+            <!-- 2. Typography Formatting (Bold, Underline, Italic, Strikethrough, Clear Formatting) -->
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdown('**', '**'); $event.stopPropagation()"
+              title="Bold (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdown('<u>', '</u>'); $event.stopPropagation()"
+              title="Underline (Ctrl+U)"><u>U</u></button>
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdown('*', '*'); $event.stopPropagation()"
+              title="Italic (Ctrl+I)"><i>I</i></button>
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdown('~~', '~~'); $event.stopPropagation()"
+              title="Strikethrough"><s>S</s></button>
+            <button type="button" class="tb-icon-btn" (click)="clearFormatting(); $event.stopPropagation()" title="Clear Formatting">🧹</button>
+
+            <span class="tb-sep"></span>
+
+            <!-- 3. Lists & Structure -->
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdown('- ', ''); $event.stopPropagation()" title="Bullet List">•≡</button>
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdown('1. ', ''); $event.stopPropagation()"
+              title="Numbered List">1≡</button>
+
+
+
+            <span class="tb-sep"></span>
+
+
+            <button type="button" class="tb-icon-btn tb-media-btn" (click)="openMediaModal('image'); $event.stopPropagation()"
+              title="Insert Image">🖼️</button>
+
+            <!-- Mention Tag Direct Button -->
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdownAtCursor('@'); $event.stopPropagation()"
+              title="Insert Mention Tag (@)">@</button>
+
+            <!-- Emoji Picker Dropdown -->
+            <div class="tb-dropdown-wrap">
+              <button type="button" class="tb-icon-btn" (click)="toggleEmojiMenu(); $event.stopPropagation()" title="Insert Emoji">
+                😊 <svg class="arrow" width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor"
+                  stroke-width="1.5">
+                  <path d="M1 1L5 5L9 1" />
+                </svg>
+              </button>
+              <div class="tb-dropdown-menu emoji-grid-menu" *ngIf="showEmojiMenu">
+                <div class="emoji-grid">
+                  <button type="button" (click)="insertEmoji('🚀'); $event.stopPropagation()">🚀</button>
+                  <button type="button" (click)="insertEmoji('💡'); $event.stopPropagation()">💡</button>
+                  <button type="button" (click)="insertEmoji('⚡'); $event.stopPropagation()">⚡</button>
+                  <button type="button" (click)="insertEmoji('🔍'); $event.stopPropagation()">🔍</button>
+                  <button type="button" (click)="insertEmoji('📌'); $event.stopPropagation()">📌</button>
+                  <button type="button" (click)="insertEmoji('⚠️'); $event.stopPropagation()">⚠️</button>
+                  <button type="button" (click)="insertEmoji('✅'); $event.stopPropagation()">✅</button>
+                  <button type="button" (click)="insertEmoji('❌'); $event.stopPropagation()">❌</button>
+                  <button type="button" (click)="insertEmoji('🎉'); $event.stopPropagation()">🎉</button>
+                  <button type="button" (click)="insertEmoji('📝'); $event.stopPropagation()">📝</button>
+                  <button type="button" (click)="insertEmoji('🔧'); $event.stopPropagation()">🔧</button>
+                  <button type="button" (click)="insertEmoji('🎨'); $event.stopPropagation()">🎨</button>
+                  <button type="button" (click)="insertEmoji('📊'); $event.stopPropagation()">📊</button>
+                  <button type="button" (click)="insertEmoji('🛡️'); $event.stopPropagation()">🛡️</button>
+                  <button type="button" (click)="insertEmoji('🌐'); $event.stopPropagation()">🌐</button>
+                  <button type="button" (click)="insertEmoji('💻'); $event.stopPropagation()">💻</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Callout Alerts Dropdown -->
+            <div class="tb-dropdown-wrap">
+              <button type="button" class="tb-icon-btn" (click)="toggleCalloutMenu(); $event.stopPropagation()" title="Insert Callout Alert Box">
+                🗂️ <svg class="arrow" width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor"
+                  stroke-width="1.5">
+                  <path d="M1 1L5 5L9 1" />
+                </svg>
+              </button>
+              <div class="tb-dropdown-menu" *ngIf="showCalloutMenu">
+                <button type="button" (click)="insertCallout('NOTE'); $event.stopPropagation()">📘 Note Box</button>
+                <button type="button" (click)="insertCallout('TIP'); $event.stopPropagation()">💡 Tip Box</button>
+                <button type="button" (click)="insertCallout('WARNING'); $event.stopPropagation()">⚠️ Warning Box</button>
+                <button type="button" (click)="insertCallout('IMPORTANT'); $event.stopPropagation()">🔥 Important Box</button>
+              </div>
+            </div>
+
+            <!-- Code Language Dropdown -->
+            <div class="tb-dropdown-wrap">
+              <button type="button" class="tb-icon-btn" (click)="toggleCodeLangMenu(); $event.stopPropagation()" title="Insert Code Block">
+                📁 <svg class="arrow" width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor"
+                  stroke-width="1.5">
+                  <path d="M1 1L5 5L9 1" />
+                </svg>
+              </button>
+              <div class="tb-dropdown-menu" *ngIf="showCodeLangMenu">
+                <button type="button" (click)="insertCodeBlock('dbml'); $event.stopPropagation()">📊 DBML Schema</button>
+                <button type="button" (click)="insertCodeBlock('sql'); $event.stopPropagation()">🗄️ SQL Query</button>
+                <button type="button" (click)="insertCodeBlock('typescript'); $event.stopPropagation()">💻 TypeScript / JS</button>
+                <button type="button" (click)="insertCodeBlock('json'); $event.stopPropagation()">📋 JSON Data</button>
+                <button type="button" (click)="insertCodeBlock('html'); $event.stopPropagation()">🌐 HTML / SCSS</button>
+              </div>
+            </div>
+
+
+
+            <!-- Plus Universal Add Dropdown -->
+            <div class="tb-dropdown-wrap">
+              <button type="button" class="tb-icon-btn tb-plus-btn" (click)="togglePlusMenu(); $event.stopPropagation()"
+                title="Quick Insert Elements (+)">
+                ➕
+              </button>
+              <div class="tb-dropdown-menu" *ngIf="showPlusMenu">
+                <button type="button" (click)="openMediaModal('video'); $event.stopPropagation()">🎥 Insert Video Embed</button>
+                <button type="button" (click)="openMediaModal('image'); $event.stopPropagation()">🖼️ Insert Image Asset</button>
+                <button type="button" (click)="insertTableGrid(3, 3); $event.stopPropagation()">📊 Insert Markdown Table</button>
+                <button type="button" (click)="insertCallout('NOTE'); $event.stopPropagation()">💡 Insert Callout Note</button>
+                <button type="button" (click)="insertHorizontalRule(); $event.stopPropagation()">➖ Insert Horizontal Divider</button>
+              </div>
+            </div>
+
+            <span class="tb-sep"></span>
+
+            <!-- 5. Link Insert -->
+            <button type="button" class="tb-icon-btn" (click)="insertMarkdown('[', '](https://)'); $event.stopPropagation()"
+              title="Insert Hyperlink">🔗</button>
+
+            <span class="tb-sep"></span>
+
+            <!-- 6. Revert (Undo), Forward (Redo), Revision History & Bookmark Pin -->
+            <button type="button" class="tb-icon-btn" (click)="triggerUndo(); $event.stopPropagation()" title="Revert / Undo (Ctrl+Z)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 14L4 9l5-5" />
+                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+              </svg>
+            </button>
+            <button type="button" class="tb-icon-btn" (click)="triggerRedo(); $event.stopPropagation()" title="Forward / Redo (Ctrl+Y)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 14l5-5-5-5" />
+                <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13" />
+              </svg>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Split View: Markdown Input & Live Preview with Top Right Expand Icons -->
+        <div class="split-editor-pane" [class.pane-mode-editor]="activePaneView === 'editor-only'"
+          [class.pane-mode-preview]="activePaneView === 'preview-only'"
+          [class.pane-mode-both]="activePaneView === 'both'">
+
+          <!-- MARKDOWN EDITOR PANE -->
+          <div class="pane-column pane-editor" *ngIf="activePaneView === 'both' || activePaneView === 'editor-only'">
+            <div class="pane-header">
+              <span>MARKDOWN EDITOR</span>
+
+              <!-- Top Right Expand Button for Editor -->
+              <button type="button" class="btn-pane-expand" (click)="toggleExpandEditor()"
+                [title]="activePaneView === 'editor-only' ? 'Show Side-by-Side View' : 'Expand Editor Full Width'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline *ngIf="activePaneView !== 'editor-only'" points="15 3 21 3 21 9"></polyline>
+                  <polyline *ngIf="activePaneView !== 'editor-only'" points="9 21 3 21 3 15"></polyline>
+                  <line *ngIf="activePaneView !== 'editor-only'" x1="21" y1="3" x2="14" y2="10"></line>
+                  <line *ngIf="activePaneView !== 'editor-only'" x1="3" y1="21" x2="10" y2="14"></line>
+                  <polyline *ngIf="activePaneView === 'editor-only'" points="4 14 10 14 10 20"></polyline>
+                  <polyline *ngIf="activePaneView === 'editor-only'" points="20 10 14 10 14 4"></polyline>
+                  <line *ngIf="activePaneView === 'editor-only'" x1="14" y1="10" x2="21" y2="3"></line>
+                  <line *ngIf="activePaneView === 'editor-only'" x1="10" y1="14" x2="3" y2="21"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div class="editor-textarea-wrapper">
+              <!-- Line Numbers Gutter -->
+              <div class="editor-gutter" #lineGutter>
+                <span *ngFor="let num of getLineNumbers()" class="line-num">{{ num }}</span>
+              </div>
+
+              <textarea id="cms-markdown-textarea" #editorTextarea [(ngModel)]="editForm.content"
+                (keydown)="onEditorKeydown($event)" (ngModelChange)="onContentChange()"
+                (scroll)="onEditorScroll(editorTextarea, lineGutter)" class="md-textarea"
+                placeholder="Enter documentation Markdown content..."></textarea>
+            </div>
+
+            <div class="editor-stats">
+              <span>Words: {{ getWordCount() }}</span>
+              <span>•</span>
+              <span>Characters: {{ getCharacterCount() }}</span>
+              <span class="saved-time">Saved: {{ selectedPage.updatedAt | date:'mediumTime' }}</span>
+            </div>
+          </div>
+
+          <!-- LIVE PREVIEW PANE -->
+          <div class="pane-column pane-preview" *ngIf="activePaneView === 'both' || activePaneView === 'preview-only'">
+            <div class="pane-header">
+              <div class="header-left-title">
+                <span>LIVE PREVIEW</span>
+                <span class="preview-badge">Live Sync</span>
+              </div>
+
+              <!-- Top Right Expand Button for Live Preview -->
+              <button type="button" class="btn-pane-expand" (click)="toggleExpandPreview()"
+                [title]="activePaneView === 'preview-only' ? 'Show Side-by-Side View' : 'Expand Live Preview Full Width'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline *ngIf="activePaneView !== 'preview-only'" points="15 3 21 3 21 9"></polyline>
+                  <polyline *ngIf="activePaneView !== 'preview-only'" points="9 21 3 21 3 15"></polyline>
+                  <line *ngIf="activePaneView !== 'preview-only'" x1="21" y1="3" x2="14" y2="10"></line>
+                  <line *ngIf="activePaneView !== 'preview-only'" x1="3" y1="21" x2="10" y2="14"></line>
+                  <polyline *ngIf="activePaneView === 'preview-only'" points="4 14 10 14 10 20"></polyline>
+                  <polyline *ngIf="activePaneView === 'preview-only'" points="20 10 14 10 14 4"></polyline>
+                  <line *ngIf="activePaneView === 'preview-only'" x1="14" y1="10" x2="21" y2="3"></line>
+                  <line *ngIf="activePaneView === 'preview-only'" x1="10" y1="14" x2="3" y2="21"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div class="rendered-preview-body" [innerHTML]="previewHtml"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 2: SEO -->
+      <div class="tab-body" *ngIf="activeTab === 'seo'">
+        <div class="form-group-block">
+          <label>SEO Meta Title</label>
+          <input type="text" [(ngModel)]="editForm.seoTitle" placeholder="Custom SEO title for search engines"
+            class="form-input" />
+        </div>
+
+        <div class="form-group-block">
+          <label>SEO Meta Description</label>
+          <textarea [(ngModel)]="editForm.seoDescription" placeholder="Meta description snippet for search engines..."
+            class="form-textarea" rows="4"></textarea>
+        </div>
+      </div>
+
+      <!-- TAB 3: SETTINGS -->
+      <div class="tab-body" *ngIf="activeTab === 'settings'">
+        <div class="form-group-block">
+          <label>Featured Banner Image URL</label>
+          <input type="text" [(ngModel)]="editForm.featuredImage" placeholder="https://images.unsplash.com/..."
+            class="form-input" />
+        </div>
+
+        <div class="form-group-block">
+          <label>Description Summary</label>
+          <textarea [(ngModel)]="editForm.description" placeholder="Brief summary of this documentation page..."
+            class="form-textarea" rows="3"></textarea>
+        </div>
+      </div>
+
+      <!-- TAB 4: REVISION HISTORY -->
+      <div class="tab-body" *ngIf="activeTab === 'history' || activeTab === 'versions'">
+        <h4 class="revisions-title">Page Revisions & Audit Log</h4>
+        <p class="revisions-sub">Every update creates an immutable revision record in local state.</p>
+
+        <div class="revisions-list">
+          <div *ngFor="let rev of revisions" class="revision-card">
+            <div class="rev-header">
+              <span class="rev-version">Version {{ rev.version }}</span>
+              <span class="rev-date">{{ rev.createdAt | date:'medium' }}</span>
+              <span class="rev-by">By {{ rev.createdBy }}</span>
+              <span class="status-badge" [class.status-published]="rev.status === 'published'"
+                [class.status-draft]="rev.status === 'draft'">
+                {{ rev.status }}
+              </span>
+            </div>
+            <div class="rev-summary">{{ rev.changeSummary }}</div>
+            <div class="rev-actions">
+              <button type="button" class="btn-restore" (click)="restoreRevision(rev)">Restore Version {{ rev.version
+                }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Empty Selection State -->
+    <ng-template #noSelection>
+      <div class="no-selection-container">
+        <app-icons name="db-diagram-logo" size="48"></app-icons>
+        <h3>No Page Selected</h3>
+        <p>Select a page from the left sidebar navigation tree or create a new documentation page.</p>
+        <button type="button" class="cms-btn btn-primary" (click)="openNewPageModal()">+ Create New Page</button>
+      </div>
+    </ng-template>
+
+    <!-- Right Side Information & Quick Actions Panel (Hidden in Expand Workspace Mode) -->
+    <aside class="cms-info-panel" *ngIf="selectedPage && !isWorkspaceExpanded">
+      <div class="panel-card">
+        <div class="card-title">Page Information</div>
+        <div class="info-row">
+          <span class="lbl">Page ID</span>
+          <span class="val">#{{ selectedPage.id }}</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Created By</span>
+          <span class="val author">{{ selectedPage.createdBy }}</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Created At</span>
+          <span class="val">{{ selectedPage.createdAt | date:'mediumDate' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Updated At</span>
+          <span class="val">{{ selectedPage.updatedAt | date:'mediumDate' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">Published At</span>
+          <span class="val">{{ selectedPage.publishedAt ? (selectedPage.publishedAt | date:'mediumDate') : 'Not
+            Published' }}</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions Card -->
+      <div class="panel-card">
+        <div class="card-title">Quick Actions</div>
+        <button type="button" class="action-btn" (click)="duplicateCurrentPage()">📋 Duplicate Page</button>
+        <button type="button" class="action-btn" (click)="copyPublicLink()">🔗 Copy Public Link</button>
+        <button type="button" class="action-btn" (click)="exportCurrentPageMarkdown()">📥 Export as Markdown
+          (.md)</button>
+        <button type="button" class="action-btn danger" (click)="deleteCurrentPage()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+          Delete Page
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- VIEW MODE 2: NAVIGATION HIERARCHY MANAGER -->
+  <div class="cms-nav-manager" *ngIf="activeViewMode === 'navigation'">
+    <div class="nav-manager-header">
+      <div class="header-left">
+        <h2>Navigation Hierarchy Manager</h2>
+        <p>Configure public navigation menus, sidebar hierarchy order, and URL routing paths across documentation
+          sections.</p>
+      </div>
+
+      <button type="button" class="cms-btn btn-primary" (click)="showNewSectionModal = true">
+        + Add New Section
+      </button>
+    </div>
+
+    <div class="nav-tree-container">
+      <div *ngFor="let sec of sections" class="sec-nav-card">
+        <div class="sec-nav-header">
+          <div class="sec-nav-title-group">
+            <span class="sec-nav-icon">📁</span>
+            <h3 class="sec-title">{{ sec.title }}</h3>
+            <span class="sec-count-badge">{{ getPagesForSection(sec.id).length }} Pages</span>
+          </div>
+
+          <div class="sec-header-actions">
+            <button type="button" class="btn-add-doc-mini" (click)="openNewPageModal(sec.id)">
+              + Add Page
+            </button>
+            <button type="button" class="btn-delete-sec-mini" (click)="deleteSection(sec)"
+              title="Delete section {{sec.title}}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Delete Section
+            </button>
+          </div>
+        </div>
+
+        <div class="sec-nav-body">
+          <div *ngFor="let page of getPagesForSection(sec.id)" class="nav-item-card">
+            <div class="drag-handle" title="Drag to reorder">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="5" r="1"></circle>
+                <circle cx="9" cy="12" r="1"></circle>
+                <circle cx="9" cy="19" r="1"></circle>
+                <circle cx="15" cy="5" r="1"></circle>
+                <circle cx="15" cy="12" r="1"></circle>
+                <circle cx="15" cy="19" r="1"></circle>
+              </svg>
+            </div>
+
+            <div class="item-details">
+              <span class="item-title">{{ page.title }}</span>
+              <span class="item-slug">/docs/{{ page.slug }}</span>
+            </div>
+
+            <div class="item-actions">
+              <span class="status-badge" [class.status-published]="page.status === 'published'"
+                [class.status-draft]="page.status === 'draft'">
+                {{ page.status }}
+              </span>
+
+              <button type="button" class="btn-edit-doc" (click)="selectPage(page); activeViewMode = 'editor'">
+                ✏️ Edit Doc
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="getPagesForSection(sec.id).length === 0" class="empty-sec-notice">
+            No documentation pages in this section yet. Click "+ Add Page" above to create one.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- MODAL 1: INSERT IMAGE / VIDEO (Inside .cms-docs-container so modal backdrop overlay styling applies!) -->
+  <div class="cms-modal-backdrop" *ngIf="showMediaModal">
+    <div class="cms-media-modal">
+      <div class="media-modal-header">
+        <h3>Insert {{ mediaModalType === 'video' ? 'video' : 'image' }}</h3>
+        <button type="button" class="btn-close" (click)="showMediaModal = false">✕</button>
+      </div>
+
+      <div class="media-modal-body">
+        <div class="tab-pane-upload">
+          <div class="upload-dropzone" (click)="fileInput.click()">
+            <input #fileInput type="file" (change)="onMediaFileSelected($event)"
+              [accept]="mediaModalType === 'video' ? 'video/*' : 'image/*'" hidden />
+
+            <div class="upload-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+
+            <div class="upload-title">Drag file here, or click to browse</div>
+            <div class="upload-sub">MP4, MOV, PNG, JPG, WEBP up to 500 MB</div>
+            <div *ngIf="mediaUrl" class="upload-preview-tag">✓ File Selected: {{ mediaCaption }}</div>
+          </div>
+        </div>
+
+        <div class="form-group-block caption-group">
+          <label>Caption</label>
+          <input type="text" [(ngModel)]="mediaCaption" placeholder="e.g. Walkthrough Video" class="form-input" />
+        </div>
+      </div>
+
+      <div class="media-modal-footer">
+        <button type="button" class="cms-btn btn-secondary" (click)="showMediaModal = false">Cancel</button>
+        <button type="button" class="cms-btn btn-primary" (click)="insertMediaFromModal()"
+          [disabled]="!mediaUrl">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: NEW PAGE -->
+  <div class="cms-modal-backdrop" *ngIf="showNewPageModal">
+    <div class="cms-modal">
+      <h3>Create Documentation Page</h3>
+      <div class="form-group">
+        <label>Page Title</label>
+        <input type="text" [(ngModel)]="newPageTitle" placeholder="e.g. Exporting Schemas to SQL" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label>Section</label>
+        <div class="custom-status-dropdown-container" style="width: 100%; position: relative;">
+          <button type="button" class="custom-status-dropdown-trigger" style="width: 100%; justify-content: space-between;" (click)="showNewPageSectionDropdown = !showNewPageSectionDropdown; $event.stopPropagation()">
+            <span>{{ getSectionTitle(newPageSectionId) }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu" *ngIf="showNewPageSectionDropdown" (click)="$event.stopPropagation()" style="width: 100%; max-height: 180px; overflow-y: auto;">
+            <button type="button" class="custom-status-dropdown-option" *ngFor="let sec of sections" [class.selected]="newPageSectionId === sec.id" (click)="newPageSectionId = sec.id; showNewPageSectionDropdown = false">{{ sec.title }}</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="cms-btn btn-secondary" (click)="showNewPageModal = false">Cancel</button>
+        <button type="button" class="cms-btn btn-primary" (click)="createNewPage()">Create Page</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: NEW SECTION -->
+  <div class="cms-modal-backdrop" *ngIf="showNewSectionModal">
+    <div class="cms-modal">
+      <h3>Create Navigation Section</h3>
+      <div class="form-group">
+        <label>Section Title</label>
+        <input type="text" [(ngModel)]="newSectionTitle" placeholder="e.g. API Reference" class="form-input" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="cms-btn btn-secondary" (click)="showNewSectionModal = false">Cancel</button>
+        <button type="button" class="cms-btn btn-primary" (click)="createNewSection()">Create Section</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: CONFIRMATION POP-UP CARD -->
+  <div class="cms-modal-backdrop" *ngIf="showConfirmModal">
+    <div class="cms-modal cms-confirm-modal">
+      <div class="confirm-icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+
+      <h3>{{ confirmModalTitle }}</h3>
+      <p class="confirm-message">{{ confirmModalMessage }}</p>
+
+      <div class="modal-actions">
+        <button type="button" class="cms-btn btn-secondary" (click)="cancelConfirmModal()">Cancel</button>
+        <button type="button" class="cms-btn btn-danger" (click)="executeConfirmAction()">Confirm </button>
+      </div>
+    </div>
+  </div>
+
+</div>

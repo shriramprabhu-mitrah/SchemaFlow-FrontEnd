@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { SeoService } from '../../../core/services/seo.service';
 import { Icons } from '../../../core/component/icons/icons';
 
 import { ButtonComponent } from '../../../shared/button/button';
@@ -52,8 +53,15 @@ export class RegisterComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
-    private svc: DashboardService
+    private svc: DashboardService,
+    private seoService: SeoService
   ) {
+    this.seoService.updateTags({
+      title: 'Sign Up - DBNexus',
+      description: 'Create a new DBNexus account to start designing, documenting, and sharing your database schemas.',
+      url: 'https://dbnexus.up.railway.app/auth/register'
+    });
+
     // If already logged in, redirect directly to dashboard
     if (this.auth.isLoggedIn()) {
       this.router.navigate(['/dashboard']);
@@ -203,7 +211,7 @@ export class RegisterComponent implements OnInit {
         if (this.auth.isLoggedIn()) {
           if (this.auth.isSuperAdmin()) {
             this.router.navigate(['/admin']);
-          } else if (this.auth.isOrganizationOwner() || this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+          } else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
             this.router.navigate(['/organization']);
           } else {
             this.router.navigate(['/dashboard']);

@@ -1,16 +1,20 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrganizationService } from '../services/organization.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { HttpClient } from '@angular/common/http';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AppConfigService } from '../../../core/services/app-config.service';
+import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
   selector: 'app-subscription',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './subscription.html'
+  imports: [CommonModule, FormsModule, Icons],
+  templateUrl: './subscription.html',
+  styleUrls: ['./subscription.scss']
 })
 export class SubscriptionComponent implements OnInit {
   private orgService = inject(OrganizationService);
@@ -21,109 +25,85 @@ export class SubscriptionComponent implements OnInit {
 
   subscription: any = null;
   entitlements: any[] = [];
+  meta: any = {};
   plans: any[] = [];
   loading = true;
-
-  // Change Plan Selection Modal
-  showUpgradeModal = false;
-
-  // Plan Confirmation Popup Card Modal
-  showPlanConfirmModal = false;
-  pendingPlan: any = null;
-  pendingAction: 'upgrade' | 'downgrade' = 'upgrade';
 
   // Add Seats Popup Card Modal
   showAddSeatsModal = false;
   addSeatCount = 1;
+  isRequestSeatSuccess = false;
+  requestSeatSuccessMessage = '';
 
   // Toast Notification Card Popup
   showToast = false;
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
 
-  // Search, Filter, Sort & Pagination for Entitlements
+  private searchSubject = new Subject<string>();
+
+  // Search, Sort & Pagination for Entitlements
   searchTerm = '';
-  statusFilter: 'all' | 'enabled' | 'disabled' = 'all';
+  showPageSizeDropdown = false;
   sortColumn: string = 'feature_name';
   sortAsc: boolean = true;
   currentPage: number = 1;
-  pageSize: number = 5;
+  pageSize: number = 10;
+
+  @HostListener('document:click')
+  closeDropdowns() {
+    this.showPageSizeDropdown = false;
+  }
+
+  togglePageSizeDropdown(event: Event) {
+    event.stopPropagation();
+    this.showPageSizeDropdown = !this.showPageSizeDropdown;
+  }
+
+  selectPageSize(size: number) {
+    this.pageSize = size;
+    this.currentPage = 1;
+    this.showPageSizeDropdown = false;
+    this.loadEntitlements();
+  }
 
   get orgId(): number { return this.auth.getOrganizationId() || 0; }
 
-  get filteredEntitlements(): any[] {
-    let result = [...(this.entitlements || [])];
-
-    if (this.searchTerm && this.searchTerm.trim()) {
-      const term = this.searchTerm.toLowerCase().trim();
-      result = result.filter(e =>
-        (e.feature_name && e.feature_name.toLowerCase().includes(term)) ||
-        (e.feature_key && e.feature_key.toLowerCase().includes(term))
-      );
-    }
-
-    if (this.statusFilter !== 'all') {
-      const isEnabled = this.statusFilter === 'enabled';
-      result = result.filter(e => !!e.enabled === isEnabled);
-    }
-
-    result.sort((a, b) => {
-      let valA = a[this.sortColumn];
-      let valB = b[this.sortColumn];
-
-      const isNullA = valA === undefined || valA === null;
-      const isNullB = valB === undefined || valB === null;
-      if (isNullA && isNullB) return 0;
-      if (isNullA) return this.sortAsc ? 1 : -1;
-      if (isNullB) return this.sortAsc ? -1 : 1;
-
-      // Numeric sorting for limits and usage
-      if (this.sortColumn === 'effective_limit' || this.sortColumn === 'limit' || this.sortColumn === 'used') {
-        let numA = Number(valA);
-        let numB = Number(valB);
-
-        // -1 represents unlimited (∞) -> sort at top for descending, bottom for ascending
-        if (numA === -1) numA = Infinity;
-        if (numB === -1) numB = Infinity;
-
-        if (isNaN(numA)) numA = 0;
-        if (isNaN(numB)) numB = 0;
-
-        return this.sortAsc ? numA - numB : numB - numA;
-      }
-
-      // Boolean sorting for status
-      if (this.sortColumn === 'enabled') {
-        const boolA = valA ? 1 : 0;
-        const boolB = valB ? 1 : 0;
-        return this.sortAsc ? boolA - boolB : boolB - boolA;
-      }
-
-      // String sorting for feature name
-      const strA = String(valA).toLowerCase();
-      const strB = String(valB).toLowerCase();
-      return this.sortAsc ? strA.localeCompare(strB) : strB.localeCompare(strA);
-    });
-
-    return result;
-  }
-
-  get paginatedEntitlements(): any[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredEntitlements.slice(start, start + this.pageSize);
+  onSearch(term: string): void {
+    this.searchSubject.next(term);
   }
 
   get totalPages(): number {
-    return Math.ceil(this.filteredEntitlements.length / this.pageSize) || 1;
+    return this.meta?.totalPages || 1;
+  }
+
+  get pageList(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  get visiblePages(): (number | '...')[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | '...')[] = [1];
+    const rangeStart = Math.max(2, current - 1);
+    const rangeEnd = Math.min(total - 1, current + 1);
+    if (rangeStart > 2) pages.push('...');
+    for (let i = rangeStart; i <= rangeEnd; i++) pages.push(i);
+    if (rangeEnd < total - 1) pages.push('...');
+    pages.push(total);
+    return pages;
   }
 
   get paginationStartIndex(): number {
-    if (this.filteredEntitlements.length === 0) return 0;
+    if (this.entitlements.length === 0) return 0;
     return (this.currentPage - 1) * this.pageSize + 1;
   }
 
   get paginationEndIndex(): number {
-    return Math.min(this.currentPage * this.pageSize, this.filteredEntitlements.length);
+    return Math.min(this.currentPage * this.pageSize, this.meta?.total || 0);
   }
 
   sortBy(col: string): void {
@@ -134,19 +114,28 @@ export class SubscriptionComponent implements OnInit {
       this.sortAsc = true;
     }
     this.currentPage = 1;
-    this.cdr.detectChanges();
+    this.loadEntitlements();
   }
 
   setPage(p: number): void {
     if (p >= 1 && p <= this.totalPages) {
       this.currentPage = p;
-      this.cdr.detectChanges();
+      this.loadEntitlements();
     }
   }
 
   ngOnInit(): void {
     this.loadSubscription();
     this.loadPlans();
+
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(term => {
+      this.searchTerm = term;
+      this.currentPage = 1;
+      this.loadEntitlements();
+    });
   }
 
   loadSubscription(): void {
@@ -166,9 +155,10 @@ export class SubscriptionComponent implements OnInit {
   }
 
   loadEntitlements(): void {
-    this.orgService.getEntitlements(this.orgId).subscribe({
+    this.orgService.getEntitlements(this.orgId, this.currentPage, this.pageSize, this.searchTerm, 'all', this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
         this.entitlements = res?.data || [];
+        this.meta = res?.meta || {};
         this.cdr.detectChanges();
       }
     });
@@ -186,53 +176,10 @@ export class SubscriptionComponent implements OnInit {
     }
   }
 
-  openUpgradeModal(): void { this.showUpgradeModal = true; }
-  closeUpgradeModal(): void { this.showUpgradeModal = false; }
-
-  selectPlan(plan: any): void {
-    const current = this.subscription?.plan_slug;
-    if (plan.slug === current) return;
-
-    this.pendingPlan = plan;
-    this.pendingAction = plan.display_order > (this.subscription?.display_order || 0) ? 'upgrade' : 'downgrade';
-    this.showPlanConfirmModal = true;
-    this.cdr.detectChanges();
-  }
-
-  cancelPlanConfirm(): void {
-    this.showPlanConfirmModal = false;
-    this.pendingPlan = null;
-    this.cdr.detectChanges();
-  }
-
-  executePlanChange(): void {
-    if (!this.pendingPlan) return;
-    const plan = this.pendingPlan;
-    const action = this.pendingAction;
-
-    const obs = action === 'upgrade'
-      ? this.orgService.upgrade(this.orgId, plan.slug)
-      : this.orgService.downgrade(this.orgId, plan.slug);
-
-    obs.subscribe({
-      next: () => {
-        this.auth.getUserFeatures().subscribe();
-        this.showPlanConfirmModal = false;
-        this.closeUpgradeModal();
-        this.pendingPlan = null;
-        this.triggerToast(`Successfully ${action === 'upgrade' ? 'upgraded' : 'downgraded'} to ${plan.name}!`, 'success');
-        this.loadSubscription();
-      },
-      error: (err: any) => {
-        this.showPlanConfirmModal = false;
-        this.triggerToast(err?.error?.message || 'Error changing plan', 'error');
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
   openAddSeatsModal(): void {
     this.addSeatCount = 1;
+    this.isRequestSeatSuccess = false;
+    this.requestSeatSuccessMessage = '';
     this.showAddSeatsModal = true;
     this.cdr.detectChanges();
   }
@@ -244,13 +191,15 @@ export class SubscriptionComponent implements OnInit {
 
   confirmAddSeats(): void {
     if (!this.addSeatCount || this.addSeatCount < 1) return;
-    this.orgService.addSeats(this.orgId, Number(this.addSeatCount)).subscribe({
-      next: () => {
-        this.showAddSeatsModal = false;
-        this.triggerToast(`Added ${this.addSeatCount} additional seat(s) successfully!`, 'success');
+    this.orgService.requestSeats(this.orgId, Number(this.addSeatCount)).subscribe({
+      next: (res: any) => {
+        this.isRequestSeatSuccess = true;
+        this.requestSeatSuccessMessage = res?.message || 'Will let you know once your request has been updated';
         this.loadSubscription();
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
+        this.isRequestSeatSuccess = false;
         this.showAddSeatsModal = false;
         this.triggerToast(err?.error?.message || 'Error adding seats', 'error');
         this.cdr.detectChanges();
