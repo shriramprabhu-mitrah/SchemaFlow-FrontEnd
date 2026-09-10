@@ -1,0 +1,249 @@
+<div class="admin-page org-overview-dashboard">
+  <div class="page-header mb-24">
+    <div class="flex-between-center">
+      <div>
+        <h1 class="org-title-lg">Organization Overview</h1>
+        <p class="text-muted org-subtitle-sm">Organization / Overview</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Stats Grid -->
+  <div class="stats-grid">
+    <!-- Members Stat -->
+    <div class="stat-card">
+      <div class="stat-icon users-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.members.total }}</span>
+        <span class="stat-label">Total Members</span>
+      </div>
+    </div>
+
+    <!-- Workspaces Stat -->
+    <div class="stat-card">
+      <div class="stat-icon orgs-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.workspaces.total }}</span>
+        <span class="stat-label">Total Workspaces</span>
+      </div>
+    </div>
+
+    <!-- Diagrams Stat -->
+    <div class="stat-card">
+      <div class="stat-icon subs-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.diagrams.total }}</span>
+        <span class="stat-label">Total Diagrams</span>
+      </div>
+    </div>
+
+    <!-- Plan Stat -->
+    <div class="stat-card">
+      <div class="stat-icon plans-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value" style="font-size: 20px;">{{ stats.plan.name }}</span>
+        <span class="stat-label">Current Plan: {{ stats.plan.label }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle Grid: Chart & Audit Log -->
+  <div class="dashboard-middle-grid">
+    <!-- Chart Section -->
+    <div class="dashboard-panel glass-panel" style="position: relative; display: flex; flex-direction: column;">
+
+      <div class="panel-header" style="position: relative; z-index: 2; margin-bottom: 0;">
+        <h3 class="panel-title">Organization Metrics</h3>
+      </div>
+
+      <div class="vertical-chart-wrapper" *ngIf="chartMetrics.length > 0">
+        <!-- Y-Axis Labels -->
+        <div class="y-axis-labels">
+          <span>{{ getChartMax() }}</span>
+          <span>{{ getChartMax() * 0.75 | number:'1.0-0' }}</span>
+          <span>{{ getChartMax() * 0.5 | number:'1.0-0' }}</span>
+          <span>{{ getChartMax() * 0.25 | number:'1.0-0' }}</span>
+          <span>0</span>
+        </div>
+
+        <div class="vertical-chart-body">
+          <div class="vertical-chart-container">
+            <!-- Background Grid Lines -->
+            <div class="chart-grid-lines">
+              <div class="grid-line"></div>
+              <div class="grid-line"></div>
+              <div class="grid-line"></div>
+              <div class="grid-line"></div>
+              <div class="grid-line"></div>
+            </div>
+
+            <!-- Vertical Bars Flex Container -->
+            <div class="chart-bars-wrap">
+              <div class="chart-col" *ngFor="let item of chartMetrics">
+                <!-- Vertical Bar Track -->
+                <div class="bar-track">
+                  <div class="bar-fill chart-tooltip-host"
+                    [style.height.%]="getPercentage(item.count)"
+                    [class.zero-val]="item.count == 0">
+                    <!-- Popover Tooltip -->
+                    <div class="chart-popover-tooltip vbar-tooltip">
+                      <div class="popover-title">{{ item.name }}</div>
+                      <div class="popover-meta">
+                        <span class="popover-color-box"></span>
+                        <span class="popover-value">Count: {{ item.count }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dedicated X-Axis Labels Row Below Chart -->
+          <div class="x-axis-labels-row">
+            <div class="x-label-item" *ngFor="let item of chartMetrics" [title]="item.name">
+              {{ item.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Log Section -->
+    <div class="dashboard-panel glass-panel" style="align-self: flex-start;">
+      <div class="panel-header flex-between-center">
+        <h3 class="panel-title">Audit Log</h3>
+        <a [routerLink]="['/organization/audit-logs']" class="go-to-logs-link">Go to Logs</a>
+      </div>
+      <div class="audit-timeline">
+        <div class="timeline-item" *ngFor="let log of auditLogs | slice:0:5; let last = last">
+          <div class="timeline-icon" [ngClass]="getLogType(log.action)">
+            <svg *ngIf="getLogType(log.action) === 'edit'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+            </svg>
+            <svg *ngIf="getLogType(log.action) === 'create'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="12" y1="8" x2="12" y2="16"></line>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            <svg *ngIf="getLogType(log.action) === 'invite'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+            <svg *ngIf="getLogType(log.action) === 'delete'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </div>
+          <div class="timeline-content">
+            <div class="timeline-text">
+              <span class="fw-bold">{{ log.user }}</span> {{ log.action }}
+            </div>
+            <div class="timeline-time">{{ log.time }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Grid: Tables -->
+  <div class="dashboard-bottom-grid">
+    <!-- Active Workspaces -->
+    <div class="dashboard-panel glass-panel">
+      <div class="panel-header flex-between-center">
+        <h3 class="panel-title">Active Workspaces</h3>
+      </div>
+      <div class="dashboard-table-wrapper">
+        <table class="dashboard-table">
+          <thead>
+            <tr>
+              <th>Workspace Name</th>
+              <th>Owner</th>
+              <th>Diagrams</th>
+              <th>Members</th>
+              <th>Last Activity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ws of activeWorkspaces | slice:0:4">
+              <td class="fw-medium">{{ ws.name }}</td>
+              <td>{{ ws.owner }}</td>
+              <td>{{ ws.diagrams }}</td>
+              <td>{{ ws.members }}</td>
+              <td>{{ ws.lastActivity }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pending Invitations -->
+    <div class="dashboard-panel glass-panel" *ngIf="pendingInvitations && pendingInvitations.length > 0">
+      <div class="panel-header flex-between-center">
+        <h3 class="panel-title">Pending Invitations</h3>
+      </div>
+      <div class="dashboard-table-wrapper">
+        <table class="dashboard-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let inv of pendingInvitations">
+              <td class="fw-medium">{{ inv.name }}</td>
+              <td>{{ inv.email }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="{'status-pending': inv.status === 'Pending', 'status-warning': inv.status === 'Expires soon', 'status-danger': inv.status === 'Expired'}">
+                  {{ inv.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

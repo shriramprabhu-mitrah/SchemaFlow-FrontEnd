@@ -1,0 +1,332 @@
+/* ==========================================
+   MANAGE ACCOUNT (PROFILE) - UI MATCHING MOCKUP
+   ========================================== */
+
+.profile-layout {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+  background-color: var(--bg-color, #0a0f18);
+  min-height: calc(100vh - 56px);
+  font-family: inherit;
+  color: var(--text, #f8fafc);
+  z-index: 1;
+}
+
+.profile-container {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  animation: slideUpFade 0.3s ease forwards;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  .btn-icon-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #3ec5c1;
+      color: #fff;
+      border-color: #3ec5c1;
+    }
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text, #ffffff);
+  }
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Avatar Section */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text, #fff);
+  }
+}
+
+.avatar-block {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.avatar-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(10, 16, 28, 0.8);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    color: var(--text-muted, #50617a);
+  }
+}
+
+.hidden-input {
+  display: none;
+}
+
+.btn-choose {
+  background: linear-gradient(135deg, #3ec5c1, #2eb0ac);
+  color: #fff;
+  border: none;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #32a9a5, #26918d);
+  }
+}
+
+/* Info Section & Forms */
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text, #fff);
+  }
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted, #cbd5e1);
+  }
+
+  .form-control {
+    width: 100%;
+    height: 44px;
+    padding: 0 16px;
+    background: rgba(10, 16, 28, 0.4);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--text, #fff);
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #337ab7;
+      background: rgba(10, 16, 28, 0.6);
+    }
+
+    &:disabled {
+      background: rgba(10, 16, 28, 0.8);
+      color: var(--text-muted, #64748b);
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+}
+
+/* Action Buttons */
+.card-actions {
+  display: flex;
+  margin-top: 8px;
+
+  .btn-save {
+    background: linear-gradient(135deg, #3ec5c1, #2eb0ac);
+    color: #fff;
+    border: none;
+    height: 44px;
+    padding: 0 32px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(62, 197, 193, 0.2);
+
+    &:hover {
+      background: linear-gradient(135deg, #32a9a5, #26918d);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(62, 197, 193, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Alerts */
+.alert-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideInFade 0.3s ease;
+
+  &.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  &.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+}
+
+/* Light Theme Support */
+:host-context(body.light-theme),
+body.light-theme {
+  .profile-layout {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+
+  .profile-header {
+    h2 {
+      color: #0f172a;
+    }
+    
+    .btn-icon-back {
+      border-color: #e2e8f0;
+      color: #64748b;
+
+      &:hover {
+        background: #337ab7;
+        color: #fff;
+        border-color: #337ab7;
+      }
+    }
+  }
+
+  .avatar-section h3,
+  .info-section h3 {
+    color: #0f172a;
+  }
+
+  .avatar-circle {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    .avatar-placeholder {
+      color: #94a3b8;
+    }
+  }
+
+  .form-group label {
+    color: #64748b;
+  }
+
+  .form-group .form-control {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #0f172a;
+
+    &:focus {
+      border-color: #337ab7;
+      background: #ffffff;
+    }
+
+    &:disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      border-color: #e2e8f0;
+    }
+  }
+
+  .btn-choose,
+  .btn-save {
+    background: #337ab7;
+    box-shadow: 0 4px 12px rgba(51, 122, 183, 0.2);
+
+    &:hover {
+      background: #286090;
+      box-shadow: 0 6px 16px rgba(51, 122, 183, 0.3);
+    }
+  }
+}
