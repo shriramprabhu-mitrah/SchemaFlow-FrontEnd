@@ -19,6 +19,8 @@ export class SocketService {
   private userLeftSubject = new Subject<{ userId: number; username: string }>();
   private errorSubject = new Subject<{ message: string }>();
   private savedSubject = new Subject<{ timestamp: number }>();
+  private trialExpiredSubject = new Subject<any>();
+  private connectSubject = new Subject<void>();
 
   constructor(
     @Inject(PLATFORM_ID) platformId: Object,
@@ -36,7 +38,6 @@ export class SocketService {
     if (!this.isBrowser) return;
 
     if (this.socket) {
-      console.log('[Socket] Socket already exists. connected:', this.socket.connected, 'active:', this.socket.active);
       if (!this.socket.connected && !this.socket.active) {
         this.socket.connect();
       }
@@ -44,7 +45,6 @@ export class SocketService {
     }
 
     const token = this.getAuthToken();
-    console.log('[Socket] Initializing new socket. Token exists:', !!token);
     if (!token) return;
 
     const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000';
@@ -60,21 +60,18 @@ export class SocketService {
 
   disconnect(): void {
     if (this.socket) {
-      console.log('[Socket] Disconnecting socket');
       this.socket.disconnect();
       this.socket = null;
     }
   }
 
   joinDiagram(diagramId: number): void {
-    console.log(`[Socket] joinDiagram called for id ${diagramId}. Connected:`, this.socket?.connected);
     if (this.socket && this.socket.connected) {
       this.socket.emit('diagram:join', { diagramId });
     } else {
       this.connect();
       if (this.socket) {
         this.socket.once('connect', () => {
-          console.log(`[Socket] Connected! Emitting diagram:join for id ${diagramId}`);
           this.socket?.emit('diagram:join', { diagramId });
         });
       }
@@ -102,33 +99,34 @@ export class SocketService {
   private setupListeners(): void {
     if (!this.socket) return;
 
-    this.socket.on('connect', () => console.log('[Socket] Socket.io connected to server'));
+    this.socket.on('connect', () => {
+      this.ngZone.run(() => this.connectSubject.next());
+    });
     this.socket.on('connect_error', (err) => console.error('[Socket] Socket.io connection error:', err));
-    
+
     this.socket.on('diagram:update', (data) => {
-      console.log('[Socket] diagram:update received');
       this.ngZone.run(() => this.updateSubject.next(data));
     });
     this.socket.on('diagram:cursor-update', (data) => {
       this.ngZone.run(() => this.cursorSubject.next(data));
     });
     this.socket.on('diagram:room-state', (data) => {
-      console.log('[Socket] diagram:room-state received:', data);
       this.ngZone.run(() => this.roomStateSubject.next(data));
     });
     this.socket.on('diagram:user-joined', (data) => {
-      console.log('[Socket] diagram:user-joined received:', data);
       this.ngZone.run(() => this.userJoinedSubject.next(data));
     });
     this.socket.on('diagram:user-left', (data) => {
       this.ngZone.run(() => this.userLeftSubject.next(data));
     });
     this.socket.on('diagram:error', (data) => {
-      console.error('[Socket] diagram:error received:', data);
       this.ngZone.run(() => this.errorSubject.next(data));
     });
     this.socket.on('diagram:saved', (data) => {
       this.ngZone.run(() => this.savedSubject.next(data));
+    });
+    this.socket.on('diagram:trial_expired', (data) => {
+      this.ngZone.run(() => this.trialExpiredSubject.next(data));
     });
   }
 
@@ -139,6 +137,8 @@ export class SocketService {
   onUserLeft(): Observable<any> { return this.userLeftSubject.asObservable(); }
   onError(): Observable<any> { return this.errorSubject.asObservable(); }
   onSaved(): Observable<any> { return this.savedSubject.asObservable(); }
+  onTrialExpired(): Observable<any> { return this.trialExpiredSubject.asObservable(); }
+  onConnect(): Observable<void> { return this.connectSubject.asObservable(); }
 
   private getAuthToken(): string | null {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {

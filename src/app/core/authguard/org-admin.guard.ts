@@ -6,7 +6,7 @@ export const orgAdminGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isLoggedIn() && (authService.isOrganizationOwner() || authService.isOrganizationAdmin())) {
+  if (authService.isLoggedIn() && authService.isOrganizationAdmin()) {
     return true;
   }
 

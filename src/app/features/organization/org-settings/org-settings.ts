@@ -19,6 +19,8 @@ export class OrgSettingsComponent implements OnInit {
   org: any = null;
   loading = true;
   saving = false;
+  roles: any[] = [];
+  loadingRoles = true;
 
   ngOnInit(): void {
     const orgId = this.auth.getOrganizationId();
@@ -31,6 +33,18 @@ export class OrgSettingsComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+
+    this.orgService.getRoles().subscribe({
+      next: (res) => {
+        this.roles = res?.data || [];
+        this.loadingRoles = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingRoles = false;
         this.cdr.detectChanges();
       }
     });

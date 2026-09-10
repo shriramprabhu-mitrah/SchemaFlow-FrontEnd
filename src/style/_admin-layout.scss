@@ -11,7 +11,7 @@ app-admin-layout {
   height: 100vh;
   background: #080c16;
   color: #e0e6f0;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
 }
 
@@ -23,9 +23,8 @@ app-admin-layout {
   display: flex;
   flex-direction: column;
   transition: width 0.25s cubic-bezier(.4, 0, .2, 1);
-  z-index: 10;
-  overflow: hidden !important;
-  overflow-x: hidden !important;
+  z-index: 100;
+  position: relative;
 }
 
 .collapsed .admin-sidebar {
@@ -35,26 +34,34 @@ app-admin-layout {
     justify-content: center;
     padding: 12px 0;
   }
+
+  .brand-mark {
+    justify-content: center;
+    margin: 0 auto;
+    width: 40px;
+    height: 40px;
+  }
 }
 
-.sidebar-header {
+.admin-sidebar .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 16px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: none;
   min-height: 58px;
+  box-sizing: border-box;
 }
 
-.brand-mark {
+.admin-sidebar .brand-mark {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #38bdf8;
+  color: #3ec5c1;
 }
 
-.brand-text {
-  font-size: 16px;
+.admin-sidebar .brand-text {
+  font-size: 16.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -86,8 +93,7 @@ app-admin-layout {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  overflow-x: hidden !important;
-  overflow-y: auto;
+  overflow: visible;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 
@@ -145,12 +151,76 @@ app-admin-layout {
 
 .collapsed .nav-item {
   justify-content: center;
-  padding: 10px;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
 }
 
 .nav-label {
   overflow: hidden;
   white-space: nowrap;
+}
+
+/* Mobile responsive sidebar */
+/* Mobile Drawer Overlay styles */
+.mobile-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 900;
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
+}
+
+.mobile-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  
+  &:hover {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Sidebar Breakpoints */
+@media (max-width: 768px) {
+  .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px !important;
+    transform: translateX(-100%);
+    z-index: 1000;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .admin-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .admin-sidebar.mobile-open + .mobile-sidebar-backdrop,
+  .mobile-sidebar-backdrop:has(+ .admin-sidebar.mobile-open) {
+    display: block;
+  }
+
+  .admin-sidebar .sidebar-header {
+    justify-content: space-between;
+    padding: 16px 16px;
+  }
 }
 
 /* ── Sidebar Footer ── */
@@ -177,17 +247,22 @@ app-admin-layout {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .admin-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
+  padding: 0 24px;
   height: 58px;
   background: #080c16;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    padding: 0 16px;
+  }
 }
 
 .page-title {
@@ -195,6 +270,10 @@ app-admin-layout {
   font-weight: 700;
   color: #ffffff;
   margin: 0;
+
+  @media (max-width: 480px) {
+    font-size: 15px;
+  }
 }
 
 .header-right {
@@ -211,12 +290,52 @@ app-admin-layout {
   font-weight: 800;
   letter-spacing: 0.5px;
   border-radius: 4px;
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 }
 
 .user-email {
   font-size: 14px;
   font-weight: 500;
   color: #cbd5e1;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.user-email-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #cbd5e1;
+
+  @media (max-width: 768px) {
+    padding: 4px;
+    border: none;
+    background: transparent;
+  }
+
+  .avatar-mini {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3ec5c1, #3b82f6);;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .theme-toggle-btn {
@@ -242,7 +361,13 @@ app-admin-layout {
 .admin-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px 28px;
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 }
 
 /* ── Scrollbar ── */
@@ -280,7 +405,7 @@ body.light-theme {
   }
 
   .sidebar-header {
-    border-bottom: 1px solid #e2e8f0 !important;
+    border-bottom: none !important;
   }
 
   .brand-text {
@@ -341,6 +466,17 @@ body.light-theme {
   .admin-header .user-email {
     color: #334155 !important;
     font-weight: 600 !important;
+  }
+
+  .user-email-chip {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+
+    .avatar-mini {
+      background: linear-gradient(135deg, #3ec5c1, #3b82f6) !important;
+      color: #ffffff !important;
+    }
   }
 
   .admin-header .theme-toggle-btn {

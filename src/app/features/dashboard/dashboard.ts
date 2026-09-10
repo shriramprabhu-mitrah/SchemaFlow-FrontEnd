@@ -9,6 +9,7 @@ import { DocsComponent } from './components/docs/docs';
 import { ButtonComponent } from '../../shared/button/button';
 import { LoaderComponent } from '../../shared/loader/loader';
 import { DiagramViews } from '../dashboard/components/diagram-views/diagram-views';
+import { EntitlementService } from '../../core/services/entitlement.service';
 
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -45,19 +46,47 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   showPaneMenu = false;
   private readonly splitViewSubscription: Subscription;
   private queryParamsSubscription!: Subscription;
+  private trialExpiredSubscription!: Subscription;
+  private socketConnectSubscription!: Subscription;
+  private socketErrorSubscription!: Subscription;
   private isInitialLoad = true;
 
   constructor(
     public svc: DashboardService,
-    private auth: AuthService,
-    private router: Router,
     private route: ActivatedRoute,
-    private readonly cdr: ChangeDetectorRef
+    private router: Router,
+    public auth: AuthService,
+    private readonly cdr: ChangeDetectorRef,
+    public entitlementService: EntitlementService
   ) {
     this.splitViewSubscription = this.svc.splitViewRequested$.subscribe(() => this.restoreSplitView());
   }
 
   ngOnInit(): void {
+    this.trialExpiredSubscription = this.svc.socketService.onTrialExpired().subscribe(() => {
+        this.svc.isSubscriptionExpired.set(true);
+        // Clear collaboration indicators immediately
+        this.svc.activeRoomUsers.set([]);
+        this.svc.remoteCursors.set({});
+        this.entitlementService.loadEntitlements(true).subscribe(() => {
+            this.cdr.detectChanges();
+        });
+        this.svc.socketService.disconnect();
+    });
+    this.socketConnectSubscription = this.svc.socketService.onConnect().subscribe(() => {
+        const currentId = this.svc.diagramId();
+        if (currentId) {
+            this.svc.socketService.joinDiagram(currentId);
+        }
+    });
+    this.socketErrorSubscription = this.svc.socketService.onError().subscribe((err) => {
+        if (err?.message && (err.message.includes('session expired') || err.message.includes('not joined'))) {
+            const currentId = this.svc.diagramId();
+            if (currentId) {
+                this.svc.socketService.joinDiagram(currentId);
+            }
+        }
+    });
     if (typeof window !== 'undefined') {
       this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
         const id = params['id'];
@@ -99,8 +128,11 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
                     // Navigate to most recent diagram
                     this.router.navigate([], { queryParams: { id: diagrams[0].id, sample: null }, queryParamsHandling: 'merge' });
                   } else {
-                    // Create a blank diagram
-                    this.svc.createDiagram('').subscribe({
+                    const activeWsId = this.svc.activeWorkspaceId();
+                    const createReq$ = activeWsId
+                      ? this.svc.createWorkspaceDiagram(activeWsId, '')
+                      : this.svc.createDiagram('');
+                    createReq$.subscribe({
                       next: (newDiag: any) => {
                         this.svc.clearDiagram(true);
                         this.svc.code = '';
@@ -175,10 +207,11 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.splitViewSubscription.unsubscribe();
-    if (this.queryParamsSubscription) {
-      this.queryParamsSubscription.unsubscribe();
-    }
+    if (this.splitViewSubscription) this.splitViewSubscription.unsubscribe();
+    if (this.queryParamsSubscription) this.queryParamsSubscription.unsubscribe();
+    if (this.trialExpiredSubscription) this.trialExpiredSubscription.unsubscribe();
+    if (this.socketConnectSubscription) this.socketConnectSubscription.unsubscribe();
+    if (this.socketErrorSubscription) this.socketErrorSubscription.unsubscribe();
   }
 
   showEditorFullScreen(): void {
@@ -253,5 +286,9 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     }
     this.svc.authModalVisible.set(false);
     this.router.navigate(['/login']);
+  }
+
+  openUpgradeModal(): void {
+    this.svc.showUpgradeModal('trial_expired_banner');
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -9,27 +9,37 @@ import { ButtonComponent } from '../../shared/button/button';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { OrganizationService } from '../organization/services/organization.service';
 import { EntitlementService } from '../../core/services/entitlement.service';
+import { SeoService } from '../../core/services/seo.service';
+import { ContactSalesModalComponent } from '../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent],
   templateUrl: './pricing.html',
 })
 export class PricingComponent implements OnInit {
   isLoggedIn = false;
+  isMobileMenuOpen = false;
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
   isAnnual = true;
   plans: any[] = [];
-  loading = true;
+  loading = false;
 
-  /** Which audience tab is currently selected */
-  planAudience: 'individual' | 'organization' = 'individual';
+  currentPlanSlug = 'free';
+  currentPlanStatus = 'active';
+  hasUsedTrial = false;
+  showPlanSwitchAlert = false;
 
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
   private cdr = inject(ChangeDetectorRef);
   private orgService = inject(OrganizationService);
   private entitlementService = inject(EntitlementService);
+  private seoService = inject(SeoService);
 
   constructor(
     private auth: AuthService,
@@ -37,15 +47,93 @@ export class PricingComponent implements OnInit {
     private svc: DashboardService
   ) { }
 
+  // Re-fetch data if they return to this tab and the trial might have expired
+  @HostListener('document:visibilitychange')
+  onVisibilityChange() {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible' && this.isLoggedIn) {
+      this.refreshFeatures();
+    }
+  }
+
+  refreshFeatures(): void {
+    const orgId = this.auth.getOrganizationId() || undefined;
+    this.auth.getUserFeatures(orgId).subscribe({
+      next: (res) => {
+        if (res?.data?.purchasedPlan) {
+          this.currentPlanSlug = res.data.purchasedPlan.slug || 'free';
+          this.currentPlanStatus = res.data.purchasedPlan.status || 'active';
+          this.hasUsedTrial = res.data.hasUsedTrial || false;
+          
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cachedPlanSlug', this.currentPlanSlug);
+            localStorage.setItem('cachedPlanStatus', this.currentPlanStatus);
+            localStorage.setItem('cachedHasUsedTrial', String(this.hasUsedTrial));
+          }
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to fetch user features on visibility change:', err);
+      }
+    });
+  }
+
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'Pricing - DBNexus',
+      description: 'Choose the best plan for your database diagramming needs. Flexible pricing for individuals and organizations.',
+      url: 'https://dbnexus.up.railway.app/pricing'
+    });
+
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Pricing - DBNexus",
+      "description": "Flexible pricing for individuals and organizations."
+    });
+
     if (typeof window !== 'undefined') {
       this.isLoggedIn = this.auth.isLoggedIn();
-      // Default the tab to match the logged-in user's account type
+      // Account type loaded check
       if (this.isLoggedIn) {
         const accountType = this.auth.getAccountType();
-        if (accountType === 'organization') {
-          this.planAudience = 'organization';
+        // Try to load cached state first so we don't flash incorrect states
+        if (typeof window !== 'undefined') {
+          this.currentPlanSlug = localStorage.getItem('cachedPlanSlug') || 'free';
+          this.currentPlanStatus = localStorage.getItem('cachedPlanStatus') || 'active';
+          this.hasUsedTrial = localStorage.getItem('cachedHasUsedTrial') === 'true';
+        } else {
+          this.currentPlanSlug = 'free';
+          this.currentPlanStatus = 'active';
         }
+
+        const orgId = this.auth.getOrganizationId() || undefined;
+        // Bust cache with timestamp
+        const cacheBust = `_t=${Date.now()}`;
+        this.auth.getUserFeatures(orgId).subscribe({
+          next: (res) => {
+            setTimeout(() => {
+              if (res?.data?.purchasedPlan) {
+                this.currentPlanSlug = res.data.purchasedPlan.slug || 'free';
+                this.currentPlanStatus = res.data.purchasedPlan.status || 'active';
+                this.hasUsedTrial = res.data.hasUsedTrial || false;
+                
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('cachedPlanSlug', this.currentPlanSlug);
+                  localStorage.setItem('cachedPlanStatus', this.currentPlanStatus);
+                  localStorage.setItem('cachedHasUsedTrial', String(this.hasUsedTrial));
+                }
+              }
+              this.cdr.detectChanges();
+            });
+          },
+          error: (err) => {
+            console.error('Failed to fetch user features:', err);
+            setTimeout(() => {
+              this.cdr.detectChanges();
+            });
+          }
+        });
       }
     }
     this.loadPlans();
@@ -56,38 +144,33 @@ export class PricingComponent implements OnInit {
     if (url) {
       this.http.get<any>(url).subscribe({
         next: (res) => {
-          this.plans = res?.data && res.data.length > 0 ? res.data : FALLBACK_PLANS;
-          this.loading = false;
-          this.cdr.detectChanges();
+          this.plans = res?.data && res.data.length > 0 ? res.data : [];
+          setTimeout(() => {
+            this.loading = false;
+            this.cdr.detectChanges();
+          });
         },
         error: () => {
-          this.plans = FALLBACK_PLANS;
-          this.loading = false;
-          this.cdr.detectChanges();
+          this.plans = [];
+          setTimeout(() => {
+            this.loading = false;
+            this.cdr.detectChanges();
+          });
         }
       });
     } else {
-      this.plans = FALLBACK_PLANS;
-      this.loading = false;
+      this.plans = [];
+      setTimeout(() => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      });
     }
   }
 
-  /** Plans filtered by selected audience tab.
-   *  Supports: plan.plan_type === 'individual' | 'organization' | 'both'
-   *  Falls back to showing all plans when no plan_type field is set (backward-compatible). */
+  /** Plans to display (all except enterprise by default) */
   get displayedPlans(): any[] {
-    const hasTypedPlans = this.plans.some(p => p.plan_type);
-    if (!hasTypedPlans) {
-      // Backend hasn't added plan_type yet — show all plans for both tabs
-      return this.plans;
-    }
-    return this.plans.filter(p =>
-      p.plan_type === this.planAudience || p.plan_type === 'both'
-    );
-  }
-
-  setAudience(audience: 'individual' | 'organization'): void {
-    this.planAudience = audience;
+    // Hide enterprise plan
+    return this.plans.filter(p => p.slug !== 'enterprise');
   }
 
   onCreateDiagram(): void {
@@ -111,15 +194,26 @@ export class PricingComponent implements OnInit {
   getPrice(plan: any): string {
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
     if (monthlyPrice === 0) return 'Free';
+
     const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 10;
     const price = this.isAnnual ? annualPrice : monthlyPrice;
     return '₹' + price;
   }
 
   getPeriod(plan: any): string {
-    const monthlyPrice = parseFloat(plan.price_monthly || '0');
-    if (monthlyPrice === 0) return 'Forever';
-    return this.isAnnual ? '/year' : '/month';
+    if (plan.slug === 'free') return 'forever';
+    return this.isAnnual ? 'per year' : 'per month';
+  }
+
+  getFeatureName(ent: any): string {
+    if (ent.display_text) return ent.display_text;
+    if (ent.feature_name) return ent.feature_name;
+    
+    if (ent.feature_key) {
+      const formatted = ent.feature_key.replace(/_/g, ' ');
+      return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
+    return '';
   }
 
   getFeatureValue(plan: any, featureKey: string): string {
@@ -147,38 +241,135 @@ export class PricingComponent implements OnInit {
 
     // --- Public (not logged in) ---
     if (!this.isLoggedIn) {
+      if (plan.slug !== 'free' && plan.slug !== 'enterprise') {
+        return 'Start free trial for 45 days';
+      }
       if (plan.cta_text) return plan.cta_text;
       if (monthlyPrice === 0) return 'Sign Up Free';
-      if (this.planAudience === 'organization') return 'Sign Up & Try Free';
       return 'Sign Up & Get Started';
     }
 
+
     // --- Logged-in user ---
-    const currentPlanSlug = (this.auth as any).getCurrentPlanSlug?.() || '';
-    if (currentPlanSlug && currentPlanSlug === plan.slug) return 'Current Plan';
+    if (this.currentPlanSlug && this.currentPlanSlug === plan.slug) {
+      if (this.currentPlanStatus === 'trial') {
+        return 'Current Plan (Free trial for 45 days)';
+      }
+      return 'Current Plan';
+    }
+
+    if (this.auth.isOrganizationMember() && plan.slug !== 'free') {
+      return 'Contact Sales';
+    }
+
+    if (this.isEligibleForTrial() && plan.slug !== 'free') return 'Start free trial for 45 days';
+
 
     if (monthlyPrice === 0) return 'Start for Free';
     const planName = plan.name || 'Plan';
     return `Upgrade to ${planName}`;
   }
 
-  /** Whether the CTA button should be disabled (e.g. user is already on this plan) */
+  isEligibleForTrial(): boolean {
+    if (!this.isLoggedIn) return true;
+    if (this.hasUsedTrial) return false;
+    return this.currentPlanStatus === 'trial' || this.currentPlanSlug === 'free';
+  }
+
+  isTrialExpired(): boolean {
+    if (!this.isLoggedIn) return false;
+    // The backend returns them to the free plan if their trial expires
+    return this.hasUsedTrial && this.currentPlanSlug === 'free';
+  }
+
+  showContactModal = false;
+  showLoginPromptModal = false;
+  pendingPlanSlug = '';
+
+  contactModalMessage = 'Your 45-day free trial has expired. To continue using premium features, please contact our sales team.';
+
+  openContactModal(): void {
+    this.contactModalMessage = 'Your 45-day free trial has expired. To continue using premium features, please contact our sales team.';
+    this.showContactModal = true;
+  }
+
+  closeContactModal(): void {
+    this.showContactModal = false;
+  }
+
+  openLoginPromptModal(planSlug: string): void {
+    this.pendingPlanSlug = planSlug;
+    this.showLoginPromptModal = true;
+  }
+
+  closeLoginPromptModal(): void {
+    this.showLoginPromptModal = false;
+  }
+
+  closePlanSwitchAlert(): void {
+    this.showPlanSwitchAlert = false;
+  }
+
+  navigateToLogin(): void {
+    this.router.navigate(['/login'], {
+      queryParams: {
+        type: this.pendingPlanSlug === 'team' ? 'organization' : 'individual',
+        plan: this.pendingPlanSlug
+      }
+    });
+    this.closeLoginPromptModal();
+  }
+
   isCtaDisabled(plan: any): boolean {
     if (!this.isLoggedIn) return false;
-    const currentPlanSlug = (this.auth as any).getCurrentPlanSlug?.() || '';
-    return !!(currentPlanSlug && currentPlanSlug === plan.slug);
+    if (this.currentPlanStatus === 'expired') return false;
+    
+    // If they are on this exact plan (active or trial), disable the button
+    if (this.currentPlanSlug && this.currentPlanSlug === plan.slug) {
+      return true;
+    }
+    
+    // If they are on any paid plan (not free), disable the free plan button
+    if (plan.slug === 'free' && this.currentPlanSlug && this.currentPlanSlug !== 'free') {
+      return true;
+    }
+    
+    return false;
+  }
+
+  hideFreePlanButton(plan: any): boolean {
+    // We are now disabling it instead of hiding it, so return false to always show it
+    return false;
   }
 
   upgrading = false;
 
+  contactSalesFromAlert(): void {
+    this.closePlanSwitchAlert();
+    this.contactModalMessage = 'If you want to switch to another plan, please cancel your ongoing plan first.';
+    this.showContactModal = true;
+  }
+
   selectPlan(plan: any): void {
     if (!this.isLoggedIn) {
-      this.router.navigate(['/auth/register'], {
-        queryParams: {
-          type: this.planAudience,
-          plan: plan.slug
-        }
-      });
+      this.openLoginPromptModal(plan.slug);
+      return;
+    }
+
+    if (this.isTrialExpired() && plan.slug !== 'free') {
+      this.openContactModal();
+      return;
+    }
+
+    if (this.auth.isOrganizationMember() && plan.slug !== 'free' && plan.slug !== this.currentPlanSlug) {
+      this.contactModalMessage = 'You are a team member and cannot modify the organization plan. Please contact your administrator or sales.';
+      this.showContactModal = true;
+      return;
+    }
+
+    if ((this.hasUsedTrial || (this.currentPlanStatus === 'active' && this.currentPlanSlug !== 'free')) && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
+      this.contactModalMessage = 'To upgrade to a new plan, you need to deactivate the ongoing plan. Please contact sales.';
+      this.showContactModal = true;
       return;
     }
 
@@ -187,7 +378,7 @@ export class PricingComponent implements OnInit {
       if (this.auth.isOrganizationAccount()) {
         this.router.navigate(['/organization/subscription']);
       } else {
-        window.open('mailto:sales@mitrah.in?subject=Enterprise Plan Inquiry', '_blank');
+        window.open('mailto:sales@dbnexus.com?subject=Enterprise Plan Inquiry', '_blank');
       }
       return;
     }
@@ -235,6 +426,19 @@ export class PricingComponent implements OnInit {
         this.auth.getUserFeatures().subscribe();
         this.upgrading = false;
         this.svc.showToast(`Upgraded to ${plan.name} successfully!`, 3000, 'success');
+        
+        // Proactively update localStorage so the reload is perfectly seamless
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cachedPlanSlug', plan.slug);
+          // If we upgraded to a free trial, status is trial. If we bought a plan, it's active.
+          // The backend determines this, but 'trial' is a safe guess if no money was involved initially, or 'active'.
+          // To be safe, we just leave status as is or 'active', the API will correct it in 50ms.
+          // But we DO know they used the trial now if they just started one!
+          if (plan.slug !== 'free') {
+             localStorage.setItem('cachedHasUsedTrial', 'true');
+          }
+        }
+
         if ((this.auth as any).setCurrentPlanSlug) {
           (this.auth as any).setCurrentPlanSlug(plan.slug);
         }
@@ -256,147 +460,5 @@ export class PricingComponent implements OnInit {
   }
 }
 
-const FALLBACK_PLANS = [
-  {
-    slug: 'free',
-    name: 'Free',
-    description: 'For developers drafting personal schemas and single diagrams.',
-    price_monthly: '0.00',
-    price_annual: '0.00',
-    plan_type: 'individual',
-    highlight_color: '#3ec5c1',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'false' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: 5, display_text: 'Upto 5 Diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'false' },
-      { feature_key: 'table_color_and_connection_color', value: 'false' },
-      { feature_key: 'import_sql', value: 'false' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'false' },
-      { feature_key: 'document_view', value: 'false' },
-      { feature_key: 'version_history', value: 'false' },
-      { feature_key: 'create_workspaces', value: 'false' },
-      { feature_key: 'workspace_members', value: 'false' },
-      { feature_key: 'workspace_types', value: 'personal' },
-      { feature_key: 'realtime_collab', value: 'false' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'false' },
-      { feature_key: 'diagram_notes', value: 'false' },
-      { feature_key: 'max_workspace_members', value: 'false', limit_value: 5 },
-      { feature_key: 'diagram_detailing', value: 'false' }
-    ]
-  },
-  {
-    slug: 'premium',
-    name: 'Premium Schema',
-    description: 'For individual freelancers and consultants managing relational setups.',
-    price_monthly: '399.00',
-    price_annual: '299.00',
-    plan_type: 'individual',
-    highlight_color: '#3b82f6',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'false' },
-      { feature_key: 'create_workspaces', value: 'false' },
-      { feature_key: 'workspace_members', value: 'false', limit_value: 0 },
-      { feature_key: 'workspace_types', value: 'personal' },
-      { feature_key: 'realtime_collab', value: 'false' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'false' },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  },
-  {
-    slug: 'team',
-    name: 'Team',
-    description: 'For collaborative product squads syncing database schema blueprints.',
-    price_monthly: '1999.00',
-    price_annual: '1599.00',
-    plan_type: 'organization',
-    highlight_color: '#10b981',
-    badge_text: 'POPULAR COLLABORATION',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'true' },
-      { feature_key: 'create_workspaces', value: 'true', limit_value: -1, display_text: 'Unlimited' },
-      { feature_key: 'workspace_members', value: 'true', limit_value: 5, display_text: 'Max 5 members' },
-      { feature_key: 'workspace_types', value: 'all', display_text: 'Personal & Shared' },
-      { feature_key: 'realtime_collab', value: 'true' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'false' },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  },
-  {
-    slug: 'enterprise',
-    name: 'Enterprise Shield',
-    description: 'For organizations requiring custom hostings, SLAs, and SAML SSO.',
-    price_monthly: '0.00',
-    price_annual: '0.00',
-    plan_type: 'organization',
-    highlight_color: '#f59e0b',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'true' },
-      { feature_key: 'create_workspaces', value: 'true', limit_value: -1, display_text: 'Unlimited' },
-      { feature_key: 'workspace_members', value: 'true', limit_value: -1, display_text: 'Unlimited members' },
-      { feature_key: 'workspace_types', value: 'all', display_text: 'Personal & Shared' },
-      { feature_key: 'realtime_collab', value: 'true' },
-      { feature_key: 'sso', value: 'true' },
-      { feature_key: 'audit_logs', value: 'true' },
-      { feature_key: 'custom_hosting', value: 'true' },
-      { feature_key: 'api_access', value: 'true' },
-      { feature_key: 'advanced_iam', value: 'true' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'true', limit_value: -1 },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  }
-];
+
 

@@ -35,7 +35,9 @@
   <div id="editor-scroll">
     <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
     <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
-    <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [ngModel]="svc.code$ | async"
-      (ngModelChange)="onCodeChange($event)" (scroll)="onEditorScroll($event)"></textarea>
+    <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
+      [readonly]="svc.isReadOnly"
+      (click)="onCursorEvent($event)" (keyup)="onCursorEvent($event)"
+      (input)="onTextInput($event)" (scroll)="onEditorScroll($event)"></textarea>
   </div>
 </div>

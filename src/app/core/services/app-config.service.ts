@@ -44,11 +44,6 @@ export class AppConfigService {
     return lastValueFrom(this.http.get(url)).then((configData: any) => {
       this.environment = configData;
       if (this.environment?.configuration) {
-        console.log('App configuration loaded:', {
-          environment: this.environment.configuration.environment,
-          version: this.environment.configuration.version,
-          releaseName: this.environment.configuration.releaseName,
-        });
       }
       this.injectPreconnectHints(configData);
     });

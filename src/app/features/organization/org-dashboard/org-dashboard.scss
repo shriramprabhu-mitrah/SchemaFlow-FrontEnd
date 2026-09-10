@@ -41,6 +41,10 @@
     grid-template-columns: 1fr 1fr;
     gap: 24px;
     margin-bottom: 24px;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
   }
 
   .dashboard-bottom-grid {
@@ -48,6 +52,10 @@
     grid-template-columns: 2fr 1fr;
     gap: 24px;
     margin-bottom: 24px;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
   }
 
   .dashboard-panel {
@@ -545,12 +553,14 @@
     }
 
     &.status-warning {
-      background: rgba(249, 115, 22, 0.15); /* Orange for expires soon */
+      background: rgba(249, 115, 22, 0.15);
+      /* Orange for expires soon */
       color: #ea580c;
     }
 
     &.status-danger {
-      background: rgba(239, 68, 68, 0.15); /* Red for expired */
+      background: rgba(239, 68, 68, 0.15);
+      /* Red for expired */
       color: #f87171;
     }
   }

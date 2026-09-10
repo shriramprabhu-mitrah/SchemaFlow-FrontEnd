@@ -1,13 +1,16 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
   selector: 'app-feature-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Icons],
   templateUrl: './feature-management.html'
 })
 export class FeatureManagementComponent implements OnInit {
@@ -19,6 +22,14 @@ export class FeatureManagementComponent implements OnInit {
   search = '';
   page = 1;
   limit = 10;
+  showLimitDropdown = false;
+  showValueTypeDropdown = false;
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.showLimitDropdown = false;
+    this.showValueTypeDropdown = false;
+  }
   sortColumn = 'name';
   sortAsc = true;
   loading = true;
@@ -26,42 +37,14 @@ export class FeatureManagementComponent implements OnInit {
   editMode = false;
   form: any = {};
 
+  totalFilteredCount = 0;
+
   get filteredFeaturesList(): any[] {
-    if (!this.allFeatures) return [];
-    let list = [...this.allFeatures];
-
-    if (this.search.trim()) {
-      const q = this.search.trim().toLowerCase();
-      list = list.filter(f =>
-        (f.feature_key || '').toLowerCase().includes(q) ||
-        (f.name || '').toLowerCase().includes(q) ||
-        (f.value_type || '').toLowerCase().includes(q) ||
-        (f.category || '').toLowerCase().includes(q)
-      );
-    }
-
-    list.sort((a, b) => {
-      let valA: any = a[this.sortColumn] ?? '';
-      let valB: any = b[this.sortColumn] ?? '';
-
-      if (this.sortColumn === 'status') {
-        valA = a.is_active ? 'Active' : 'Inactive';
-        valB = b.is_active ? 'Active' : 'Inactive';
-      }
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return this.sortAsc ? -1 : 1;
-      if (valA > valB) return this.sortAsc ? 1 : -1;
-      return 0;
-    });
-
-    return list;
+    return this.allFeatures;
   }
 
-  get totalFilteredCount(): number {
-    return this.filteredFeaturesList.length;
+  get totalFilteredCountValue(): number {
+    return this.totalFilteredCount;
   }
 
   get totalPagesCount(): number {
@@ -101,17 +84,28 @@ export class FeatureManagementComponent implements OnInit {
   }
 
   get displayFeatures(): any[] {
-    const start = (this.page - 1) * this.limit;
-    return this.filteredFeaturesList.slice(start, start + this.limit);
+    return this.allFeatures;
   }
 
-  ngOnInit(): void { this.load(); }
+  private searchSubject = new Subject<string>();
+
+  ngOnInit(): void {
+    this.load();
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.page = 1;
+      this.load();
+    });
+  }
 
   load(): void {
     this.loading = true;
-    this.admin.getFeatures().subscribe({
+    this.admin.getFeatures(this.page, this.limit, this.search, this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
         this.allFeatures = res?.data || res || [];
+        this.totalFilteredCount = res?.meta?.total || this.allFeatures.length;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -122,9 +116,21 @@ export class FeatureManagementComponent implements OnInit {
     });
   }
 
-  onSearch(): void { this.page = 1; }
-  goToPage(p: number): void { this.page = p; }
-  onLimitChange(): void { this.page = 1; }
+  onSearch(): void {
+    this.searchSubject.next(this.search);
+  }
+
+  goToPage(p: number): void {
+    if (this.page !== p) {
+      this.page = p;
+      this.load();
+    }
+  }
+
+  onLimitChange(): void {
+    this.page = 1;
+    this.load();
+  }
 
   sortBy(col: string): void {
     if (this.sortColumn === col) {
@@ -133,6 +139,8 @@ export class FeatureManagementComponent implements OnInit {
       this.sortColumn = col;
       this.sortAsc = true;
     }
+    this.page = 1;
+    this.load();
   }
 
   formErrors = { name: '', feature_key: '' };

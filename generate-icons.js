@@ -23,4 +23,3 @@ const iconEntries = svgFiles.map((file) => {
 const output = `export const iconRegistry: Record<string, string> = {\n${iconEntries.join(',\n')}\n};\n`;
 
 fs.writeFileSync(outputFile, output);
-console.log(`Generated ${svgFiles.length} icon(s) into ${path.relative(rootDir, outputFile)}`);

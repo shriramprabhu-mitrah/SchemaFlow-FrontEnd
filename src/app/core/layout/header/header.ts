@@ -33,9 +33,10 @@ export class HeaderComponent implements OnInit {
     }
   }
   @Input() isProfilePage = false;
+  isSampleUrl = false;
 
   isSampleDiagram(): boolean {
-    return this.route.snapshot.queryParamMap.get('sample') === 'true' || this.svc.diagramName === 'Sample Diagram';
+    return this.isSampleUrl || this.svc.diagramName === 'Sample Diagram';
   }
 
   exportMenuOpen = false;
@@ -69,7 +70,7 @@ export class HeaderComponent implements OnInit {
   private validateDebounce: any;
 
   // Deletion warning alert modal state
-  deletionAlertVisible = false;
+
 
   // Subject that drives debounced/cancelled SQL validation
   constructor(
@@ -112,6 +113,10 @@ export class HeaderComponent implements OnInit {
       return true;
     }
 
+    if (this.auth.getCurrentPlanStatus() === 'expired') {
+      return false;
+    }
+
     // Check current workspace entitlements first (works for both personal and orgs)
     const ent = this.entitlementService.getEntitlement('create_diagrams');
     if (ent) {
@@ -142,6 +147,10 @@ export class HeaderComponent implements OnInit {
     if (this.auth.isLoggedIn()) {
       this.entitlementService.loadEntitlements().subscribe();
     }
+    this.route.queryParams.subscribe(params => {
+      this.isSampleUrl = params['sample'] === 'true';
+      this.cdr.detectChanges();
+    });
     this.entitlementService.entitlements$.subscribe(() => {
       this.cdr.detectChanges();
     });
@@ -172,9 +181,14 @@ export class HeaderComponent implements OnInit {
     this.svc.askForConfirmation(action, cancelAction);
   }
 
+  isDiagramEmpty(): boolean {
+    const code = this.svc.code;
+    return !code || code.trim() === '' || this.svc.tables.length === 0;
+  }
+
   hasEffectiveEditPermission(): boolean {
     if (!this.isLoggedIn) return false;
-    
+    if (this.svc.isReadOnly) return false;
     if (this.auth.hasDiagramEditPermission()) {
       return true;
     }
@@ -195,7 +209,9 @@ export class HeaderComponent implements OnInit {
 
   createDiagram(): void {
     if (!this.entitlementService.canUseFeature('create_diagrams')) {
-      this.svc.showUpgradeModal('create_diagrams');
+      if (!this.entitlementService.orgHasFeature('create_diagrams')) {
+        this.svc.showUpgradeModal('create_diagrams');
+      }
       return;
     }
 
@@ -205,10 +221,16 @@ export class HeaderComponent implements OnInit {
     }
     this.runWithUnsavedChangesCheck(() => {
       this.svc.requestSplitView();
-      this.svc.createDiagram(this.svc.diagramName).subscribe({
+      
+      const activeWsId = this.svc.activeWorkspaceId();
+      const createReq$ = activeWsId
+        ? this.svc.createWorkspaceDiagram(activeWsId, '')
+        : this.svc.createDiagram('');
+
+      createReq$.subscribe({
         next: () => {
           this.svc.clearDiagram(true);
-          this.svc.diagramName = '';
+          this.svc.diagramName = 'Untitled Diagram';
           const id = this.svc.diagramId();
           this.svc.showToast('Diagram created successfully.', 3000, 'success');
           // Reload entitlements to update usage count
@@ -233,43 +255,10 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  saveDiagram(): void {
-    if (!this.isLoggedIn) {
-      this.svc.authModalVisible.set(true);
-      return;
-    }
-    if (!this.hasEffectiveEditPermission()) {
-      this.svc.showToast('You do not have permission to save diagrams.', 3000, 'error');
-      return;
-    }
-    if (!this.svc.validateDiagramName()) {
-      return;
-    }
-    if (!this.svc.canSaveDiagram()) {
-      return;
-    }
-    this.svc.saveDiagram().subscribe({
-      next: (res: any) => {
-        this.svc.showToast('Diagram saved.', 2000);
-      },
-      error: (err: any) => {
-        this.svc.showToast(err.error.message || 'Failed to save diagram.', 4000, 'error');
-      }
-    });
-  }
-
   selectDiagramById(id: number, onRevert?: () => void): void {
     if (!id) return;
 
-    const selectedDiagram = this.svc.diagrams().find(d => d.id === id);
-    if (selectedDiagram) {
-      const nameLower = (selectedDiagram.name || '').trim().toLowerCase();
-      if (nameLower === 'untitled' || nameLower === 'untitled diagram') {
-        this.deletionAlertVisible = true;
-      } else {
-        this.deletionAlertVisible = false;
-      }
-    }
+
 
     this.runWithUnsavedChangesCheck(() => {
       this.svc.requestSplitView();
@@ -287,9 +276,7 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  closeDeletionAlert(): void {
-    this.deletionAlertVisible = false;
-  }
+
 
   private refreshDiagrams(): void {
     this.svc.fetchDiagrams().subscribe({
@@ -316,7 +303,9 @@ export class HeaderComponent implements OnInit {
       return;
     }
     if (!this.entitlementService.canUseFeature('document_view')) {
-      this.svc.showUpgradeModal('document_view');
+      if (!this.entitlementService.orgHasFeature('document_view')) {
+        this.svc.showUpgradeModal('document_view');
+      }
       return;
     }
     this.svc.showDocs = !this.svc.showDocs;
@@ -327,7 +316,9 @@ export class HeaderComponent implements OnInit {
 
   toggleVersionHistory(): void {
     if (!this.entitlementService.canUseFeature('version_history')) {
-      this.svc.showUpgradeModal('version_history');
+      if (!this.entitlementService.orgHasFeature('version_history')) {
+        this.svc.showUpgradeModal('version_history');
+      }
       return;
     }
     this.svc.showVersionHistory.set(!this.svc.showVersionHistory());
@@ -401,7 +392,7 @@ export class HeaderComponent implements OnInit {
   goToAdminDashboard(): void {
     if (this.auth.isSuperAdmin()) {
       this.router.navigate(['/admin']);
-    } else if (this.auth.isOrganizationOwner() || this.auth.isOrganizationAdmin()) {
+    } else if (this.auth.isOrganizationAdmin()) {
       this.router.navigate(['/organization']);
     }
   }
@@ -419,7 +410,9 @@ export class HeaderComponent implements OnInit {
 
   exportPDF(): void {
     if (!this.entitlementService.canUseFeature('export_image')) {
-      this.svc.showUpgradeModal('export_image');
+      if (!this.entitlementService.orgHasFeature('export_image')) {
+        this.svc.showUpgradeModal('export_image');
+      }
       return;
     }
     this.svc.triggerExport('pdf');
@@ -428,7 +421,9 @@ export class HeaderComponent implements OnInit {
 
   exportPNG(): void {
     if (!this.entitlementService.canUseFeature('export_image')) {
-      this.svc.showUpgradeModal('export_image');
+      if (!this.entitlementService.orgHasFeature('export_image')) {
+        this.svc.showUpgradeModal('export_image');
+      }
       return;
     }
     this.svc.triggerExport('png');
@@ -437,7 +432,9 @@ export class HeaderComponent implements OnInit {
 
   exportSVG(): void {
     if (!this.entitlementService.canUseFeature('export_image')) {
-      this.svc.showUpgradeModal('export_image');
+      if (!this.entitlementService.orgHasFeature('export_image')) {
+        this.svc.showUpgradeModal('export_image');
+      }
       return;
     }
     this.svc.triggerExport('svg');
@@ -446,7 +443,9 @@ export class HeaderComponent implements OnInit {
 
   exportSQL(dialect: any): void {
     if (!this.entitlementService.canUseFeature('export_sql')) {
-      this.svc.showUpgradeModal('export_sql');
+      if (!this.entitlementService.orgHasFeature('export_sql')) {
+        this.svc.showUpgradeModal('export_sql');
+      }
       return;
     }
     const id = this.svc.diagramId() ?? 0;
@@ -512,7 +511,9 @@ export class HeaderComponent implements OnInit {
 
   openImportModal(dialect: any): void {
     if (!this.entitlementService.canUseFeature('import_sql')) {
-      this.svc.showUpgradeModal('import_sql');
+      if (!this.entitlementService.orgHasFeature('import_sql')) {
+        this.svc.showUpgradeModal('import_sql');
+      }
       return;
     }
     this.importDialect = dialect;
@@ -789,12 +790,14 @@ export class HeaderComponent implements OnInit {
       return;
     }
     if (!this.entitlementService.canUseFeature('share_diagram')) {
-      this.svc.showUpgradeModal('share_diagram');
+      if (!this.entitlementService.orgHasFeature('share_diagram')) {
+        this.svc.showUpgradeModal('share_diagram');
+      }
       return;
     }
 
     const name = (this.svc.diagramName || '').trim().toLowerCase();
-    const isUnsaved = !this.svc.diagramId() || !name || name === 'untitled diagram' || name === 'untitled';
+    const isUnsaved = !this.svc.diagramId() || !name;
 
     this.svc.showDiscardButton.set(false); // Hide the Discard button when prompting before share
 
@@ -860,7 +863,7 @@ export class HeaderComponent implements OnInit {
       return;
     }
     this.runWithUnsavedChangesCheck(() => {
-      this.deletionAlertVisible = false;
+
       this.svc.requestSplitView();
       this.svc.clearDiagram(true);
       this.svc.code = this.svc.getSampleCode(type);

@@ -35,6 +35,7 @@ export class ShareModalComponent implements OnInit {
   sharePermission = 'Viewer';
   
   linkCopied = false;
+  /*
   embedCopied = false;
 
   embedEnabled = false;
@@ -49,6 +50,7 @@ export class ShareModalComponent implements OnInit {
 
   showDetailLevelDropdown = false;
   showLinkTypeDropdown = false;
+  */
 
   constructor(
     public svc: DashboardService,
@@ -64,9 +66,11 @@ export class ShareModalComponent implements OnInit {
       this.isPublic = this.svc.isDiagramPublic;
       this.password = this.svc.diagramPassword;
       this.showPassword = false;
+      /*
       if (!this.isPublic && this.activeTab === 'embedding') {
         this.activeTab = 'sharing';
       }
+      */
     }
   }
 
@@ -76,6 +80,7 @@ export class ShareModalComponent implements OnInit {
     this.emailsInput = '';
     this.activeTab = 'sharing';
     this.invitePermission = 'can view';
+    /*
     this.embedEnabled = false;
     this.embedDarkMode = false;
     this.embedHighlight = false;
@@ -83,6 +88,7 @@ export class ShareModalComponent implements OnInit {
     this.embedDetailLevel = 'all';
     this.embedUseLinkType = true;
     this.embedLinkType = 'straight';
+    */
     this.close.emit();
   }
 
@@ -95,8 +101,10 @@ export class ShareModalComponent implements OnInit {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
+    /*
     this.showDetailLevelDropdown = false;
     this.showLinkTypeDropdown = false;
+    */
   }
 
   togglePublicStatus(): void {
@@ -172,6 +180,7 @@ export class ShareModalComponent implements OnInit {
     return `${origin}/public-diagram/${token}`;
   }
 
+  /*
   getEmbedCode(): string {
     const link = this.getShareLink();
     const queryParams = [];
@@ -196,6 +205,7 @@ export class ShareModalComponent implements OnInit {
     const queryString = queryParams.length ? '?' + queryParams.join('&') : '';
     return `<iframe src="${link}${queryString}" width="100%" height="600" style="border:1px solid #ccc; border-radius: 4px;"></iframe>`;
   }
+  */
 
   copyToClipboard(text: string, type: 'link' | 'embed'): void {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -207,14 +217,14 @@ export class ShareModalComponent implements OnInit {
             this.linkCopied = false;
             this.cdr.detectChanges();
           }, 2000);
-        } else {
+        } /* else {
           this.embedCopied = true;
           this.cdr.detectChanges();
           setTimeout(() => {
             this.embedCopied = false;
             this.cdr.detectChanges();
           }, 2000);
-        }
+        } */
       });
     }
   }

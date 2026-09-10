@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { EntitlementService } from '../../../core/services/entitlement.service';
 import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
@@ -23,6 +24,7 @@ export class AcceptInvitationComponent implements OnInit {
     private router: Router,
     public svc: DashboardService,
     public auth: AuthService,
+    public entitlementService: EntitlementService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -157,7 +159,14 @@ export class AcceptInvitationComponent implements OnInit {
         : this.svc.acceptInvitation(this.workspaceId);
 
     acceptCall.subscribe({
-      next: () => {
+      next: (res: any) => {
+        if (res?.accessToken) {
+          this.auth.setToken(res.accessToken);
+        }
+        if (res?.refreshToken) {
+          this.auth.setRefreshToken(res.refreshToken);
+        }
+
         this.isLoading = false;
         this.isSuccess = true;
         this.svc.showToast('Invitation accepted successfully!', 3000);
@@ -165,7 +174,7 @@ export class AcceptInvitationComponent implements OnInit {
 
         const navigateToApp = () => {
           setTimeout(() => {
-            if (this.auth.isOrganizationOwner() || this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+            if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
               this.router.navigate(['/organization']);
             } else {
               this.router.navigate(['/dashboard'], { queryParams: { welcome: 'true' } });
@@ -173,17 +182,20 @@ export class AcceptInvitationComponent implements OnInit {
           }, 1500);
         };
 
-        if (this.isOrgInvite) {
-          this.auth.getUserFeatures().subscribe({
-            next: () => navigateToApp(),
-            error: (err) => {
-              console.error('Failed to update user features:', err);
-              navigateToApp();
-            }
-          });
-        } else {
-          navigateToApp();
+        const returnedOrgId = res?.organization_id || res?.data?.organization_id;
+        const targetOrgId = returnedOrgId || this.orgId;
+        
+        if (this.isOrgInvite && targetOrgId) {
+          this.auth.setOrganizationId(Number(targetOrgId));
         }
+
+        this.entitlementService.loadEntitlements(true).subscribe({
+          next: () => navigateToApp(),
+          error: (err) => {
+            console.error('Failed to update entitlements:', err);
+            navigateToApp();
+          }
+        });
       },
       error: (err) => {
         this.isLoading = false;

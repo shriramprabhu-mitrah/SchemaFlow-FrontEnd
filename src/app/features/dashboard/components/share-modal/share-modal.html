@@ -4,11 +4,11 @@
     <div class="modal-tabs-header">
       <div class="tabs-list">
         <div class="tab-item" [class.active]="activeTab === 'sharing'" (click)="activeTab = 'sharing'">Sharing</div>
-        <div class="tab-item" [class.active]="activeTab === 'embedding'" [class.disabled]="!isPublic"
+        <!-- <div class="tab-item" [class.active]="activeTab === 'embedding'" [class.disabled]="!isPublic"
           (click)="isPublic && (activeTab = 'embedding')"
           [title]="!isPublic ? 'Embedding is disabled for protected diagrams' : ''">
           Embedding
-        </div>
+        </div> -->
       </div>
       <button class="close-btn" (click)="closeModal()" title="Close">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -99,8 +99,8 @@
       </div>
 
       <!-- EMBEDDING TAB -->
-      <div *ngIf="activeTab === 'embedding'" class="tab-content embedding-tab">
-        <!-- <p class="section-desc mb-3">Customize your embedded link with options</p> -->
+      <!-- <div *ngIf="activeTab === 'embedding'" class="tab-content embedding-tab">
+        <p class="section-desc mb-3">Customize your embedded link with options</p>
 
         <div class="options-grid">
           <label class="checkbox-label">
@@ -171,7 +171,7 @@
             </svg>
           </button>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 </div>

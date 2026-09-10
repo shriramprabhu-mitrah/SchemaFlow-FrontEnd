@@ -9,12 +9,12 @@
     <div class="header-inner">
       <div class="header-brand" routerLink="/" style="cursor: pointer;">
         <app-icons name="db-diagram-logo" size="36"></app-icons>
-        <span>MS Dbdiagram</span>
+        <span>DB Nexus</span>
       </div>
-      <nav class="header-nav" style="display: flex; gap: 24px; align-items: center;">
+      <nav class="header-nav">
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Features</a>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
-        <a routerLink="/dashboard" class="nav-link">Docs</a>
+        <a routerLink="/docs" routerLinkActive="active" class="nav-link">Docs</a>
       </nav>
       <div class="header-actions">
         <app-button variant="none" customClass="btn-goto" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
@@ -23,9 +23,29 @@
         </a>
         <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin" (onClick)="logout()">Sign
           Out</app-button>
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
     </div>
   </header>
+
+  <!-- MOBILE MENU OVERLAY -->
+  <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
+    <nav class="mobile-nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link" (click)="toggleMobileMenu()">Features</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/docs" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
+      
+      <div class="mobile-nav-bottom">
+        <div class="mobile-nav-divider"></div>
+        <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
+      </div>
+    </nav>
+  </div>
 
   <!-- HERO SECTION -->
   <section class="hero-section">
@@ -86,7 +106,7 @@
             <span class="c-dot green"></span>
           </div>
           <!-- Workspace Indicator -->
-          <div class="chrome-search">workspace://mitrahsoft-team/schema.dbml</div>
+          <div class="chrome-search">workspace://dbnexus-team/schema.dbml</div>
           <div class="chrome-status">
             <span class="status-indicator"></span>
             <span>Live Syncing</span>
@@ -212,7 +232,7 @@
             <div class="mockup-list-body">
               <div class="workspace-item active">
                 <span class="indicator"></span>
-                <span class="ws-name">👥 Mitrah Soft Team</span>
+                <span class="ws-name">👥 DB Nexus Team</span>
                 <span class="ws-badge">ACTIVE</span>
               </div>
               <div class="workspace-item">
@@ -306,7 +326,7 @@
       <div class="sandbox-desc">
         <span class="accent-title">SCHEMA INTEGRATION</span>
         <h2>Compile DBML to Multi-dialect DDL</h2>
-        <p>Whether you deploy to cloud databases or local servers, MS Dbdiagram generates optimized schemas instantly. Switch target dialects and export clean DDL scripts with one click.</p>
+        <p>Whether you deploy to cloud databases or local servers, DB Nexus generates optimized schemas instantly. Switch target dialects and export clean DDL scripts with one click.</p>
 
         <div class="dialect-pills">
           <span class="pill active">PostgreSQL</span>
@@ -403,10 +423,10 @@
       <div class="footer-brand-col">
         <div class="footer-logo">
           <app-icons name="db-diagram-logo" size="32"></app-icons>
-          <span>MS Dbdiagram</span>
+          <span>DB Nexus</span>
         </div>
         <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers.</p>
-        <p class="footer-copyright">&copy; 2026 MS Dbdiagram. Built for collaborative database engineering.</p>
+        <p class="footer-copyright">&copy; 2026 DB Nexus. Built for collaborative database engineering.</p>
       </div>
 
       <div class="footer-col">
@@ -419,9 +439,9 @@
 
       <div class="footer-col">
         <h4>Resources</h4>
-        <a routerLink="/dashboard">Documentation</a>
-        <a routerLink="/dashboard">DBML Language Guide</a>
-        <a routerLink="/dashboard">SQL Import/Export API</a>
+        <a routerLink="/docs">Documentation</a>
+        <a routerLink="/docs/dbml-editor">DBML Language Guide</a>
+        <a routerLink="/docs/create-your-first-diagram">SQL Import/Export API</a>
       </div>
 
       <div class="footer-col">

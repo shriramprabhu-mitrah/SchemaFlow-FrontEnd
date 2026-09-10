@@ -84,6 +84,8 @@
     "users": "API_URL/api/admin/users",
     "userById": "API_URL/api/admin/users/{id}",
     "subscriptions": "API_URL/api/admin/subscriptions",
-    "auditLogs": "API_URL/api/admin/audit-logs"
+    "subscriptionById": "API_URL/api/admin/subscriptions/{id}",
+    "auditLogs": "API_URL/api/admin/audit-logs",
+    "enquiries": "API_URL/api/admin/enquiries"
   }
 }
