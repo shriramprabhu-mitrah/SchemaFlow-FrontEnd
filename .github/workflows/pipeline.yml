@@ -95,7 +95,7 @@ jobs:
     needs: deploy-dev
 
     environment:
-      name: UAT
+      name: QA
 
     steps:
       - name: Checkout code
@@ -126,7 +126,7 @@ jobs:
     needs: deploy-uat
 
     environment:
-      name: PRODUCTION
+      name: production
 
     steps:
       - name: Checkout code
