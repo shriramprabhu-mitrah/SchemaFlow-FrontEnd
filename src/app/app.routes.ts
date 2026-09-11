@@ -93,6 +93,7 @@ export const routes: Routes = [
       { path: 'audit-logs', title: 'Organization Audit Logs - DBNexus', loadComponent: () => import('./features/organization/org-audit-logs/org-audit-logs.component').then(m => m.OrgAuditLogsComponent) },
     ]
   },
+
   {
     path: '',
     title: 'DBNexus - Database Schema Design Tool',

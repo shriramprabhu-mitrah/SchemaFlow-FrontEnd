@@ -1,0 +1,368 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="65 70 1200 535" width="1200" height="535">
+  <defs>
+    <!-- Grid pattern -->
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#e2e4ea" stroke-width="0.5" opacity="0.6"/>
+    </pattern>
+    <!-- Drop shadow for tables -->
+    <filter id="tableShadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+    <!-- Glow for group boxes -->
+    <filter id="groupGlow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.05"/>
+    </filter>
+    <!-- Cursor pointer shape -->
+    <symbol id="cursor" viewBox="0 0 20 28">
+      <path d="M1 1 L1 19 L5.5 14.5 L9.5 22 L12.5 20.5 L8.5 12.5 L14 11.5 Z" 
+            fill="currentColor" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+
+    text { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+    /* ===== CURSOR ANIMATIONS (slow, smooth movements) ===== */
+    @keyframes cursorJordan {
+      0%   { transform: translate(440px, 425px); }
+      15%  { transform: translate(485px, 450px); }
+      30%  { transform: translate(380px, 410px); }
+      50%  { transform: translate(430px, 380px); }
+      65%  { transform: translate(460px, 445px); }
+      80%  { transform: translate(400px, 430px); }
+      100% { transform: translate(440px, 425px); }
+    }
+    @keyframes cursorAlex {
+      0%   { transform: translate(530px, 450px); }
+      12%  { transform: translate(510px, 470px); }
+      28%  { transform: translate(555px, 430px); }
+      45%  { transform: translate(540px, 465px); }
+      60%  { transform: translate(520px, 440px); }
+      78%  { transform: translate(560px, 455px); }
+      100% { transform: translate(530px, 450px); }
+    }
+    @keyframes cursorPriya {
+      0%   { transform: translate(770px, 380px); }
+      18%  { transform: translate(790px, 400px); }
+      35%  { transform: translate(755px, 370px); }
+      55%  { transform: translate(800px, 395px); }
+      70%  { transform: translate(760px, 385px); }
+      85%  { transform: translate(785px, 405px); }
+      100% { transform: translate(770px, 380px); }
+    }
+    @keyframes cursorSam {
+      0%   { transform: translate(870px, 350px); }
+      14%  { transform: translate(885px, 370px); }
+      32%  { transform: translate(850px, 340px); }
+      48%  { transform: translate(895px, 365px); }
+      64%  { transform: translate(860px, 355px); }
+      82%  { transform: translate(880px, 345px); }
+      100% { transform: translate(870px, 350px); }
+    }
+    @keyframes cursorMaria {
+      0%   { transform: translate(1095px, 480px); }
+      16%  { transform: translate(1110px, 500px); }
+      33%  { transform: translate(1080px, 470px); }
+      50%  { transform: translate(1120px, 495px); }
+      67%  { transform: translate(1090px, 485px); }
+      84%  { transform: translate(1105px, 475px); }
+      100% { transform: translate(1095px, 480px); }
+    }
+
+    .cursor-jordan { animation: cursorJordan 12s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .cursor-alex   { animation: cursorAlex   14s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .cursor-priya  { animation: cursorPriya  11s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .cursor-sam    { animation: cursorSam    13s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .cursor-maria  { animation: cursorMaria  15s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+    /* Subtle pulse on cursor badges */
+    @keyframes badgePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+    .cursor-badge { animation: badgePulse 3s ease-in-out infinite; }
+
+    /* Subtle floating animation for the whole canvas */
+    @keyframes canvasFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+  </style>
+
+  <!-- Canvas background -->
+  <rect width="1368" height="648" rx="12" fill="#f8fafc"/>
+  <rect width="1368" height="648" rx="12" fill="url(#grid)"/>
+
+  <!-- ===== RELATIONSHIP LINES ===== -->
+  <g stroke="#94a3b8" stroke-width="1.5" fill="none">
+    <!-- employees.department_id -> departments.id (within group_1) -->
+    <path d="M 370 338 L 370 390 L 370 418"/>
+    <text x="375" y="395" fill="#64748b" font-size="11" font-weight="600">1</text>
+    
+    <!-- employees.id -> attendance.employee_id -->
+    <path d="M 500 280 L 580 280 L 580 230 L 630 230"/>
+    <text x="510" y="275" fill="#64748b" font-size="11" font-weight="600">1</text>
+    <text x="620" y="225" fill="#64748b" font-size="11" font-weight="600">*</text>
+
+    <!-- departments.id -> tasks.project_id (elbow) -->
+    <path d="M 500 445 L 600 445 L 600 420 L 640 420"/>
+    
+    <!-- attendance -> tasks connection -->
+    <path d="M 820 270 L 820 360"/>
+
+    <!-- projects.department_id -> departments -->
+    <path d="M 1000 258 L 1000 300 L 870 300 L 870 270"/>
+    <text x="995" y="250" fill="#64748b" font-size="11" font-weight="600">1</text>
+
+    <!-- projects.id -> employee_projects.project_id -->
+    <path d="M 1100 270 L 1100 320 L 1100 460"/>
+    <text x="1085" y="290" fill="#64748b" font-size="11" font-weight="600">1</text>
+    <text x="1085" y="455" fill="#64748b" font-size="11" font-weight="600">*</text>
+
+    <!-- tasks.assigned_to -> employee_projects -->
+    <path d="M 820 465 L 900 465 L 900 500 L 1000 500"/>
+    <text x="830" y="460" fill="#64748b" font-size="11" font-weight="600">*</text>
+
+    <!-- tasks -> projects -->
+    <path d="M 820 395 L 900 395 L 900 230 L 1000 230"/>
+    <text x="990" y="225" fill="#64748b" font-size="11" font-weight="600">1</text>
+    <text x="830" y="390" fill="#64748b" font-size="11" font-weight="600">*</text>
+  </g>
+
+  <!-- ===== GROUP 1 (Blue) - employees & departments ===== -->
+  <g filter="url(#groupGlow)">
+    <rect x="115" y="160" width="410" height="350" rx="10" fill="rgba(59,130,246,0.06)" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="0"/>
+    <!-- Group header -->
+    <g>
+      <rect x="125" y="168" width="100" height="26" rx="6" fill="#3b82f6"/>
+      <text x="135" y="186" fill="#fff" font-size="12" font-weight="600">▼ group_1</text>
+      <!-- Settings icon -->
+      <circle cx="505" cy="181" r="10" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+      <circle cx="505" cy="181" r="3" fill="#3b82f6"/>
+    </g>
+  </g>
+
+  <!-- ===== TABLE: employees ===== -->
+  <g filter="url(#tableShadow)">
+    <rect x="145" y="205" width="355" height="150" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- Header -->
+    <rect x="145" y="205" width="355" height="34" rx="8" fill="#3b82f6"/>
+    <rect x="145" y="225" width="355" height="14" fill="#3b82f6"/>
+    <text x="165" y="228" fill="#fff" font-size="14" font-weight="700">employees</text>
+    <!-- Settings circle -->
+    <circle cx="480" cy="222" r="9" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    
+    <!-- Fields -->
+    <!-- id -->
+    <circle cx="163" cy="255" r="4" fill="#eab308" stroke="#eab308" stroke-width="1"/>
+    <text x="177" y="259" fill="#1e293b" font-size="12" font-weight="500">id</text>
+    <text x="460" y="259" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="145" y1="268" x2="500" y2="268" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- name -->
+    <circle cx="163" cy="281" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="177" y="285" fill="#334155" font-size="12">name</text>
+    <text x="460" y="285" fill="#94a3b8" font-size="11" text-anchor="end">varchar</text>
+    <line x1="145" y1="294" x2="500" y2="294" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- email -->
+    <circle cx="163" cy="307" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="177" y="311" fill="#334155" font-size="12">email</text>
+    <text x="460" y="311" fill="#94a3b8" font-size="11" text-anchor="end">varchar</text>
+    <line x1="145" y1="320" x2="500" y2="320" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- department_id -->
+    <circle cx="163" cy="333" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="177" y="337" fill="#334155" font-size="12">department_id</text>
+    <text x="460" y="337" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+  </g>
+
+  <!-- ===== TABLE: departments ===== -->
+  <g filter="url(#tableShadow)">
+    <rect x="145" y="395" width="355" height="100" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- Header -->
+    <rect x="145" y="395" width="355" height="34" rx="8" fill="#3b82f6"/>
+    <rect x="145" y="415" width="355" height="14" fill="#3b82f6"/>
+    <text x="165" y="418" fill="#fff" font-size="14" font-weight="700">departments</text>
+    <circle cx="480" cy="412" r="9" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    
+    <!-- Fields -->
+    <!-- id -->
+    <circle cx="163" cy="445" r="4" fill="#eab308" stroke="#eab308" stroke-width="1"/>
+    <text x="177" y="449" fill="#1e293b" font-size="12" font-weight="500">id</text>
+    <text x="460" y="449" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="145" y1="458" x2="500" y2="458" stroke="#f1f5f9" stroke-width="1"/>
+    <!-- name -->
+    <circle cx="163" cy="471" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="177" y="475" fill="#334155" font-size="12">name</text>
+    <text x="460" y="475" fill="#94a3b8" font-size="11" text-anchor="end">varchar</text>
+  </g>
+
+  <!-- ===== GROUP 2 (Purple) - attendance ===== -->
+  <g filter="url(#groupGlow)">
+    <rect x="600" y="120" width="260" height="210" rx="10" fill="rgba(139,92,246,0.06)" stroke="#8b5cf6" stroke-width="1.5"/>
+    <!-- Group header -->
+    <g>
+      <rect x="610" y="128" width="100" height="26" rx="6" fill="#8b5cf6"/>
+      <text x="620" y="146" fill="#fff" font-size="12" font-weight="600">▼ group_2</text>
+      <circle cx="840" cy="141" r="10" fill="none" stroke="#8b5cf6" stroke-width="1.5"/>
+      <circle cx="840" cy="141" r="3" fill="#8b5cf6"/>
+    </g>
+  </g>
+
+  <!-- ===== TABLE: attendance ===== -->
+  <g filter="url(#tableShadow)">
+    <rect x="625" y="160" width="215" height="150" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- Header -->
+    <rect x="625" y="160" width="215" height="34" rx="8" fill="#8b5cf6"/>
+    <rect x="625" y="180" width="215" height="14" fill="#8b5cf6"/>
+    <text x="645" y="183" fill="#fff" font-size="14" font-weight="700">attendance</text>
+    <circle cx="820" cy="177" r="9" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    
+    <!-- Fields -->
+    <circle cx="643" cy="210" r="4" fill="#eab308" stroke="#eab308" stroke-width="1"/>
+    <text x="657" y="214" fill="#1e293b" font-size="12" font-weight="500">id</text>
+    <text x="820" y="214" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="625" y1="223" x2="840" y2="223" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="643" cy="236" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="657" y="240" fill="#334155" font-size="12">employee_id</text>
+    <text x="820" y="240" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="625" y1="249" x2="840" y2="249" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="643" cy="262" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="657" y="266" fill="#334155" font-size="12">date</text>
+    <text x="820" y="266" fill="#94a3b8" font-size="11" text-anchor="end">date</text>
+    <line x1="625" y1="275" x2="840" y2="275" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="643" cy="288" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="657" y="292" fill="#334155" font-size="12">status</text>
+    <text x="820" y="292" fill="#94a3b8" font-size="11" text-anchor="end">varchar</text>
+  </g>
+
+  <!-- ===== TABLE: tasks ===== -->
+  <g filter="url(#tableShadow)">
+    <rect x="640" y="350" width="215" height="175" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- Header -->
+    <rect x="640" y="350" width="215" height="34" rx="8" fill="#eab308"/>
+    <rect x="640" y="370" width="215" height="14" fill="#eab308"/>
+    <text x="660" y="373" fill="#fff" font-size="14" font-weight="700">tasks</text>
+    <circle cx="835" cy="367" r="9" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    
+    <!-- Fields -->
+    <circle cx="658" cy="400" r="4" fill="#eab308" stroke="#eab308" stroke-width="1"/>
+    <text x="672" y="404" fill="#1e293b" font-size="12" font-weight="500">id</text>
+    <text x="835" y="404" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="640" y1="413" x2="855" y2="413" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="658" cy="426" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="672" y="430" fill="#334155" font-size="12">project_id</text>
+    <text x="835" y="430" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="640" y1="439" x2="855" y2="439" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="658" cy="452" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="672" y="456" fill="#334155" font-size="12">assigned_to</text>
+    <text x="835" y="456" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="640" y1="465" x2="855" y2="465" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="658" cy="478" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="672" y="482" fill="#334155" font-size="12">title</text>
+    <text x="835" y="482" fill="#94a3b8" font-size="11" text-anchor="end">varchar</text>
+    <line x1="640" y1="491" x2="855" y2="491" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="658" cy="504" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="672" y="508" fill="#334155" font-size="12">status</text>
+    <text x="835" y="508" fill="#94a3b8" font-size="11" text-anchor="end">varchar</text>
+  </g>
+
+  <!-- ===== TABLE: projects ===== -->
+  <g filter="url(#tableShadow)">
+    <rect x="1000" y="185" width="215" height="125" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- Header -->
+    <rect x="1000" y="185" width="215" height="34" rx="8" fill="#22c55e"/>
+    <rect x="1000" y="205" width="215" height="14" fill="#22c55e"/>
+    <text x="1020" y="208" fill="#fff" font-size="14" font-weight="700">projects</text>
+    <circle cx="1195" cy="202" r="9" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    
+    <!-- Fields -->
+    <circle cx="1018" cy="235" r="4" fill="#eab308" stroke="#eab308" stroke-width="1"/>
+    <text x="1032" y="239" fill="#1e293b" font-size="12" font-weight="500">id</text>
+    <text x="1195" y="239" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="1000" y1="248" x2="1215" y2="248" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="1018" cy="261" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="1032" y="265" fill="#334155" font-size="12">name</text>
+    <text x="1195" y="265" fill="#94a3b8" font-size="11" text-anchor="end">varchar</text>
+    <line x1="1000" y1="274" x2="1215" y2="274" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="1018" cy="287" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="1032" y="291" fill="#334155" font-size="12">department_id</text>
+    <text x="1195" y="291" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+  </g>
+
+  <!-- ===== TABLE: employee_projects ===== -->
+  <g filter="url(#tableShadow)">
+    <rect x="1000" y="455" width="215" height="100" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- Header -->
+    <rect x="1000" y="455" width="215" height="34" rx="8" fill="#2563eb"/>
+    <rect x="1000" y="475" width="215" height="14" fill="#2563eb"/>
+    <text x="1020" y="478" fill="#fff" font-size="13" font-weight="700">employee_projects</text>
+    <circle cx="1195" cy="472" r="9" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+    
+    <!-- Fields -->
+    <circle cx="1018" cy="505" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="1032" y="509" fill="#334155" font-size="12">employee_id</text>
+    <text x="1195" y="509" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+    <line x1="1000" y1="518" x2="1215" y2="518" stroke="#f1f5f9" stroke-width="1"/>
+    
+    <circle cx="1018" cy="531" r="3.5" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="1032" y="535" fill="#334155" font-size="12">project_id</text>
+    <text x="1195" y="535" fill="#94a3b8" font-size="11" text-anchor="end">int</text>
+  </g>
+
+  <!-- ===== COLLABORATIVE CURSORS ===== -->
+  
+  <!-- Jordan (Purple) -->
+  <g class="cursor-jordan">
+    <use href="#cursor" width="16" height="22" color="#8b5cf6"/>
+    <g class="cursor-badge" transform="translate(14, 18)">
+      <rect width="52" height="20" rx="10" fill="#8b5cf6"/>
+      <text x="26" y="14" fill="#fff" font-size="10" font-weight="600" text-anchor="middle">Jordan</text>
+    </g>
+  </g>
+
+  <!-- Alex (Orange) -->
+  <g class="cursor-alex">
+    <use href="#cursor" width="16" height="22" color="#f97316"/>
+    <g class="cursor-badge" transform="translate(14, 18)">
+      <rect width="40" height="20" rx="10" fill="#f97316"/>
+      <text x="20" y="14" fill="#fff" font-size="10" font-weight="600" text-anchor="middle">Alex</text>
+    </g>
+  </g>
+
+  <!-- Priya (Green) -->
+  <g class="cursor-priya">
+    <use href="#cursor" width="16" height="22" color="#22c55e"/>
+    <g class="cursor-badge" transform="translate(14, 18)">
+      <rect width="42" height="20" rx="10" fill="#22c55e"/>
+      <text x="21" y="14" fill="#fff" font-size="10" font-weight="600" text-anchor="middle">Priya</text>
+    </g>
+  </g>
+
+  <!-- Sam (Blue) -->
+  <g class="cursor-sam">
+    <use href="#cursor" width="16" height="22" color="#3b82f6"/>
+    <g class="cursor-badge" transform="translate(14, 18)">
+      <rect width="38" height="20" rx="10" fill="#3b82f6"/>
+      <text x="19" y="14" fill="#fff" font-size="10" font-weight="600" text-anchor="middle">Sam</text>
+    </g>
+  </g>
+
+  <!-- Maria (Gold) -->
+  <g class="cursor-maria">
+    <use href="#cursor" width="16" height="22" color="#eab308"/>
+    <g class="cursor-badge" transform="translate(14, 18)">
+      <rect width="46" height="20" rx="10" fill="#eab308"/>
+      <text x="23" y="14" fill="#fff" font-size="10" font-weight="600" text-anchor="middle">Maria</text>
+    </g>
+  </g>
+</svg>

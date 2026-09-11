@@ -76,7 +76,7 @@
 
       <div class="hero-visual-content">
         <div class="hero-animation-wrapper">
-          <img src="assets/nexus_animation.gif" alt="SchemaFlow Features Animation" class="hero-animation-img" />
+          <img src="assets/nexus_canvas_animated.svg" alt="DB Nexus - Collaborative Database Schema Design" class="hero-animation-img" />
         </div>
       </div>
     </div>
@@ -393,35 +393,49 @@
   </section>
 
   <!-- FOOTER -->
-  <footer class="landing-footer-clean">
-    <div class="footer-cols">
-      <div class="footer-brand-col">
-        <div class="footer-logo dark-text">
-          <app-icons name="db-diagram-logo" size="32" color="#2563eb"></app-icons>
-          <span style="color: #0f172a; font-weight: 800; font-size: 20px;">DB Nexus</span>
+  <footer class="nexus-footer-premium">
+    <div class="footer-top">
+      <div class="footer-brand-section">
+        <div class="footer-logo">
+          <app-icons name="db-diagram-logo" size="32" color="#3ec5c1"></app-icons>
+          <span class="logo-text">DB Nexus</span>
         </div>
-        <p class="footer-slogan crisp-subtext">Sleek, collaborative database blueprinting platforms for developers.</p>
-        <p class="footer-copyright">&copy; 2026 DB Nexus. Built for collaborative database engineering.</p>
+        <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers. Built for the modern web.</p>
       </div>
 
-      <div class="footer-col">
-        <h4 class="dark-text">Builder App</h4>
-        <a class="dark-link" (click)="onCreateDiagram()">Visual Canvas</a>
-        <a class="dark-link" routerLink="/pricing">Pricing Plans</a>
-        <a class="dark-link" routerLink="/dashboard">Active Diagrams</a>
-      </div>
+      <div class="footer-links-container">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a class="footer-link" (click)="onCreateDiagram()">Schema Designer</a>
+          <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
+          <a class="footer-link" routerLink="/pricing">Pricing Options</a>
+        </div>
 
-      <div class="footer-col">
-        <h4>Resources</h4>
-        <a routerLink="/docs" target="_blank">Documentation</a>
-        <a routerLink="/docs/dbml-editor" target="_blank">DBML Language Guide</a>
-        <a routerLink="/docs/create-your-first-diagram" target="_blank">SQL Import/Export API</a>
-      </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a class="footer-link" routerLink="/docs" target="_blank">Documentation</a>
+          <a class="footer-link" routerLink="/docs/dbml-editor" target="_blank">DBML Reference</a>
+          <a class="footer-link" routerLink="/docs/create-your-first-diagram" target="_blank">API Guides</a>
+        </div>
 
-      <div class="footer-col">
-        <h4 class="dark-text">Legal & Policy</h4>
-        <a class="dark-link" routerLink="/dashboard">Privacy Terms</a>
-        <a class="dark-link" routerLink="/dashboard">Terms of Service</a>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a class="footer-link" routerLink="/docs/privacy-policy">Privacy Policy</a>
+          <a class="footer-link" routerLink="/docs/terms-of-service">Terms of Service</a>
+          <a class="footer-link" href="mailto:support@dbnexus.com">Contact Us</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="copyright">&copy; 2026 DB Nexus. All rights reserved.</p>
+      <div class="social-links">
+        <a href="#" class="social-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+        </a>
+        <a href="#" class="social-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.8c0-1.2-.5-2.3-1.4-3.2 3.5-.4 7.1-1.7 7.1-7.7 0-1.7-.6-3.1-1.6-4.2.2-.4.7-2-.2-4.1 0 0-1.3-.4-4.3 1.6-1.3-.4-2.7-.5-4-.5s-2.7.1-4 .5C3.3 2 2 2.4 2 2.4c-.9 2.1-.4 3.7-.2 4.1-1 1.1-1.6 2.5-1.6 4.2 0 5.9 3.6 7.3 7.1 7.7-.9.8-1.3 1.9-1.4 3.1v3.9"></path></svg>
+        </a>
       </div>
     </div>
   </footer>
