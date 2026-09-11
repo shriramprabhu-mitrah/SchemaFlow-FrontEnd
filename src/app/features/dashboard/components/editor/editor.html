@@ -1,7 +1,10 @@
 <div id="editor-pane">
   <div id="editor-toolbar">
     <div class="toolbar-title">
-      <span class="dot"></span> DBML
+      <span class="dot" [class.error-dot]="svc.editorErrors().length > 0"></span> DBML
+      <span class="error-badge" *ngIf="svc.editorErrors().length > 0">
+        {{ svc.editorErrors().length }} error{{ svc.editorErrors().length > 1 ? 's' : '' }}
+      </span>
     </div>
     <app-button type="button" variant="none" customClass="editor-pane-action"
       [tooltip]="svc.paneMode() === 'editor' ? 'Restore split view' : 'Expand editor'"
@@ -38,6 +41,24 @@
     <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
       [readonly]="svc.isReadOnly"
       (click)="onCursorEvent($event)" (keyup)="onCursorEvent($event)"
+      (mousemove)="onCodeAreaMouseMove($event)" (mouseleave)="onCodeAreaMouseLeave()"
       (input)="onTextInput($event)" (scroll)="onEditorScroll($event)"></textarea>
+
+    <!-- Overview Ruler Error Markers (as in Image 2 right margin) -->
+    <div class="editor-overview-ruler" *ngIf="svc.editorErrors().length > 0">
+      <div *ngFor="let err of svc.editorErrors()"
+           class="ruler-error-marker"
+           [style.top.px]="getRulerTop(err.line)"
+           [title]="err.message"
+           (click)="jumpToLine(err.line)">
+      </div>
+    </div>
+
+    <!-- Floating Error Tooltip Card -->
+    <div class="editor-error-tooltip" *ngIf="hoveredError"
+         [style.left.px]="hoverPos.x" [style.top.px]="hoverPos.y">
+      <span class="error-tooltip-icon">✕</span>
+      <span class="error-tooltip-msg">{{ hoveredError.message }}</span>
+    </div>
   </div>
 </div>

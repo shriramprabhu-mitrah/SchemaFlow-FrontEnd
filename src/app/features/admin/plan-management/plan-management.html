@@ -378,7 +378,9 @@
 
     <div class="table-footer-bar" *ngIf="!loadingEntitlements">
       <button class="btn-secondary" (click)="closeEntitlementsView()">Cancel</button>
-      <button class="btn-primary" (click)="saveEntitlements()">Save Features</button>
+      <button class="btn-primary" [disabled]="savingEntitlements" (click)="saveEntitlements()">
+        {{ savingEntitlements ? 'Saving...' : 'Save Features' }}
+      </button>
     </div>
   </div>
 
@@ -448,7 +450,7 @@
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
         Business plans include team seats, org-level roles, member management, and collaboration features. Price will be
-        shown as "per seat / month" on the pricing page.
+        shown as "per member / month" on the pricing page.
       </div>
       <div class="plan-type-notice indiv-notice" style="margin-bottom:20px;padding:12px 16px"
         *ngIf="form.plan_type === 'individual'">

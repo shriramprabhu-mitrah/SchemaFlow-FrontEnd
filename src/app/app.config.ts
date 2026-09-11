@@ -1,5 +1,5 @@
 import { ApplicationConfig, ErrorHandler, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, TitleStrategy } from '@angular/router';
 
 import { routes } from './app.routes';
 
@@ -8,6 +8,7 @@ import { authInterceptor } from './core/interceptor/interceptor';
 import { provideAppConfig } from './core/services/app-config.service';
 import { provideClientHydration } from '@angular/platform-browser';
 import { GlobalErrorHandler } from './core/services/global-error-handler';
+import { AppTitleStrategy } from './core/services/title.strategy';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,6 +17,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAppConfig(),
     provideClientHydration(),
-    { provide: ErrorHandler, useClass: GlobalErrorHandler }
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    { provide: TitleStrategy, useClass: AppTitleStrategy }
   ],
 };

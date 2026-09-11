@@ -885,6 +885,12 @@ app-docs {
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 999px;
     padding: 8px 14px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+
+    &.has-error {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.06);
+    }
     
     .diagram-name {
       font-size: 14px;
@@ -901,11 +907,13 @@ app-docs {
       border: none;
       padding: 0;
 
-      &:empty::before {
+      &:empty::before,
+      &.is-empty::before {
         content: attr(placeholder);
         color: #5a6b8c;
         font-weight: normal;
         opacity: 0.65;
+        pointer-events: none;
       }
     }
   }

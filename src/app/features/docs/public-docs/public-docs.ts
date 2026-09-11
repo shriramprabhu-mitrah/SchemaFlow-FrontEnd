@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, inject, ViewEncapsulation } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml, Title } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { CmsDocsService } from '../../../core/services/cms-docs.service';
 import { MarkdownRendererService } from '../../../core/services/markdown-renderer.service';
@@ -25,6 +25,7 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
   dashService = inject(DashboardService);
   auth = inject(AuthService);
   private sanitizer = inject(DomSanitizer);
+  private titleService = inject(Title);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private sub = new Subscription();
@@ -124,6 +125,9 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
     }
 
     this.currentPage = target;
+    if (target) {
+      this.titleService.setTitle(`${target.title} - Documentation - DBNexus`);
+    }
     if (target && target.sectionId) {
       this.collapsedSections.delete(target.sectionId);
     }

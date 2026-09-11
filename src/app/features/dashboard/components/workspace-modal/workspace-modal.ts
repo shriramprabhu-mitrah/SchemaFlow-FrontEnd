@@ -105,6 +105,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     diagramId: null as number | null,
     diagramName: ''
   };
+  activeDiagramDeleted = false;
 
   deleteMemberConfirm = {
     visible: false,
@@ -283,6 +284,50 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.workspacesSearch = '';
     this.membersSearch = '';
 
+    if (this.activeDiagramDeleted) {
+      this.activeDiagramDeleted = false;
+      this.router.navigate([], {
+        queryParams: { id: null, sample: null },
+        queryParamsHandling: 'merge'
+      });
+      this.svc.clearDiagram(false);
+      this.svc.diagramId.set(null);
+      this.svc.diagramName = 'Untitled Diagram';
+      this.svc.code = '';
+      this.svc.tables = [];
+      this.svc.refs = [];
+      this.svc.groups = [];
+      this.svc.notes = [];
+      this.svc.tablePositions = {};
+      this.svc.refColors = {};
+      this.svc.groupColors = {};
+      this.svc.groupIds = {};
+      this.svc.noteIds = {};
+      this.svc.tableColorsMap = {};
+      this.svc.showCanvasPlaceholder = true;
+      this.svc.hoveredConnectionIndex = -1;
+      this.svc.selectedConnectionIndex = -1;
+      this.svc.updateGutter();
+      this.svc.parseAndLayout();
+      this.svc.scheduleDraw();
+      this.svc.updateOriginalState();
+
+      if (this.selectedWorkspace) {
+        this.svc.setActiveWorkspace(this.selectedWorkspace.id, this.selectedWorkspace.name);
+        this.svc.diagramWorkspaceType.set('Team');
+      } else if (this.svc.activeWorkspaceId() != null) {
+        this.svc.setActiveWorkspace(this.svc.activeWorkspaceId(), this.svc.activeWorkspaceName);
+        this.svc.diagramWorkspaceType.set('Team');
+      } else {
+        this.svc.setActiveWorkspace(null);
+        this.svc.diagramWorkspaceType.set('Personal');
+      }
+
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.removeItem('active_diagram_id');
+      }
+    }
+
     this.visible = false;
     this.visibleChange.emit(false);
     this.close.emit();
@@ -290,9 +335,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   onSelectDiagram(id: number): void {
     if (!id) return;
+    this.activeDiagramDeleted = false;
     this.openMenuId = null;
     this.svc.requestSplitView();
-    this.svc.loadDiagram(id).subscribe({
+    const fallbackWs = this.selectedWorkspace
+      ? { id: this.selectedWorkspace.id, name: this.selectedWorkspace.name }
+      : null;
+    this.svc.loadDiagram(id, fallbackWs).subscribe({
       next: () => {
         this.router.navigate([], {
           queryParams: { id: id },
@@ -1209,17 +1258,31 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
     this.openWorkspaceMenuId = null;
 
+    const isFreePlan = (this.auth.getCurrentPlanSlug() || 'free') === 'free';
+    const diagramCount = this.svc.totalDiagrams() > 0 ? this.svc.totalDiagrams() : this.diagramsTotal;
+    const isAtLimit = (isFreePlan && diagramCount >= 5) || !this.entitlementService.canUseFeature('create_diagrams');
+
+    if (isAtLimit) {
+      this.onCloseModal();
+      this.svc.showUpgradeModal('create_diagrams');
+      return;
+    }
+
     this.svc.createWorkspaceDiagram(workspace.id, 'Untitled Diagram', workspace.name).subscribe({
       next: (res) => {
         const newId = this.svc.diagramId();
         this.svc.requestSplitView();
         this.svc.clearDiagram(true);
+        this.svc.setActiveWorkspace(Number(workspace.id), workspace.name);
+        this.svc.diagramWorkspaceType.set('Team');
         this.svc.code = '';
         this.svc.diagramName = 'Untitled Diagram';
         this.svc.tablePositions = {};
         this.svc.refColors = {};
         this.svc.tables = [];
         this.svc.refs = [];
+        this.svc.groups = [];
+        this.svc.notes = [];
         this.svc.showCanvasPlaceholder = true;
         this.svc.updateGutter();
         this.svc.parseAndLayout();
@@ -1240,6 +1303,11 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       },
       error: (err) => {
         console.error('Failed to create diagram in workspace:', err);
+        if (err?.status === 403) {
+          this.onCloseModal();
+          this.svc.showUpgradeModal('create_diagrams');
+          return;
+        }
         this.svc.showToast('Failed to create diagram. Please try again.', 3000, 'error');
       }
     });
@@ -1413,14 +1481,28 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   confirmDeleteDiagram(): void {
     if (!this.deleteDiagramConfirm.diagramId) return;
+    const diagramIdToDelete = this.deleteDiagramConfirm.diagramId;
     this.deleteDiagramConfirm.isDeleting = true;
+    const isViewingDeleted = (Number(this.svc.diagramId()) === Number(diagramIdToDelete));
 
-    this.svc.deleteDiagram(this.deleteDiagramConfirm.diagramId).subscribe({
+    this.svc.deleteDiagram(diagramIdToDelete).subscribe({
       next: () => {
         this.deleteDiagramConfirm.isDeleting = false;
         this.deleteDiagramConfirm.deleteSuccess = true;
-        this.svc.showToast('Diagram deleted.', 2000);
-        setTimeout(() => this.closeDeleteDiagramConfirm(), 1500);
+        if (isViewingDeleted) {
+          this.activeDiagramDeleted = true;
+        }
+        this.diagramsTotal = Math.max(0, this.diagramsTotal - 1);
+        this.diagramsTotalPages = Math.max(1, Math.ceil(this.diagramsTotal / this.diagramsLimit));
+        if (this.diagramsPage > this.diagramsTotalPages) {
+          this.diagramsPage = this.diagramsTotalPages;
+        }
+        this.loadDiagrams(this.diagramsPage);
+        this.svc.showToast('Diagram deleted successfully.', 2500);
+        this.cdr.detectChanges();
+
+        // Keep workspace dashboard open; only auto-close the confirm popup
+        setTimeout(() => this.closeDeleteDiagramConfirm(), 2000);
       },
       error: (err) => {
         console.error('Failed to delete diagram:', err);

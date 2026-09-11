@@ -7,7 +7,7 @@ app-upgrade-modal {
     height: 100vh;
     background: rgba(14, 21, 37, 0.7);
     backdrop-filter: blur(6px);
-    z-index: 10000;
+    z-index: 20000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -19,7 +19,7 @@ app-upgrade-modal {
   .modal-container {
     width: 100%;
     max-width: 692px; /* Fits two 282px cards + 24px gap + padding */
-    max-height: 90vh;
+    max-height: 92vh;
     background: #0b1425;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
@@ -139,7 +139,7 @@ app-upgrade-modal {
   }
 
   .modal-header-wrap {
-    padding: 36px 36px 16px;
+    padding: 22px 28px 12px;
     position: relative;
     flex-shrink: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
@@ -149,7 +149,7 @@ app-upgrade-modal {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 24px 36px 36px;
+    padding: 12px 24px 20px;
 
     /* Custom scrollbar style for premium dark theme */
     &::-webkit-scrollbar {
@@ -169,8 +169,8 @@ app-upgrade-modal {
 
   .close-btn {
     position: absolute;
-    top: 24px;
-    right: 24px;
+    top: 16px;
+    right: 16px;
     background: none;
     border: none;
     color: rgba(255, 255, 255, 0.45);
@@ -190,11 +190,11 @@ app-upgrade-modal {
 
   .modal-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 21px;
+    font-size: 19px;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 20px;
-    margin-top: 8px;
+    margin-bottom: 12px;
+    margin-top: 4px;
     color: #ffffff;
     letter-spacing: -0.02em;
     padding: 0 32px;
@@ -204,28 +204,28 @@ app-upgrade-modal {
   .billing-toggle-row {
     display: flex;
     justify-content: center;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
   .billing-toggle-container {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 100px;
-    padding: 5px;
+    padding: 4px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     backdrop-filter: blur(12px);
 
     .toggle-btn {
-      padding: 8px 16px;
+      padding: 6px 14px;
       border: none;
       border-radius: 100px;
       background: transparent;
       color: #9ca3af;
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
@@ -256,15 +256,102 @@ app-upgrade-modal {
   .upgrade-plans-grid {
     display: flex;
     justify-content: center;
-    gap: 24px;
+    gap: 20px;
     align-items: stretch;
     position: relative;
     width: 100%;
-    padding: 12px 4px 16px; /* Padding to prevent scale/translate clipping */
+    padding: 4px 4px 8px; /* Padding to prevent scale/translate clipping */
+
+    /* Specific compact overrides for modal cards */
+    .plan-card {
+      padding: 20px 20px 16px !important;
+
+      .plan-icon {
+        width: 44px !important;
+        height: 44px !important;
+        margin-bottom: 12px !important;
+        border-radius: 10px !important;
+
+        .plan-icon-svg {
+          width: 22px !important;
+          height: 22px !important;
+        }
+      }
+
+      .plan-title {
+        font-size: 18px !important;
+        margin: 0 0 4px !important;
+      }
+
+      .plan-audience-badge {
+        margin-bottom: 6px !important;
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+      }
+
+      .plan-desc {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        min-height: 34px !important;
+        margin-bottom: 0 !important;
+      }
+
+      .card-price {
+        margin: 12px 0 10px !important;
+        min-height: 46px !important;
+
+        .price-amount {
+          font-size: 28px !important;
+        }
+
+        .currency {
+          font-size: 16px !important;
+        }
+
+        .price-period {
+          font-size: 12px !important;
+        }
+
+        .annual-billed-label {
+          font-size: 10.5px !important;
+          margin-top: 2px !important;
+          min-height: 16px !important;
+        }
+      }
+
+      .card-features {
+        padding: 10px 0 4px !important;
+
+        ul {
+          gap: 6px !important;
+
+          li {
+            font-size: 12px !important;
+            gap: 6px !important;
+          }
+        }
+
+        .btn-show-features {
+          margin-top: 8px !important;
+          padding: 3px 8px !important;
+          font-size: 11.5px !important;
+        }
+      }
+
+      .card-action {
+        margin-top: 14px !important;
+
+        button.btn-card-cta {
+          padding: 8px 16px !important;
+          font-size: 13px !important;
+          height: 38px !important;
+        }
+      }
+    }
 
     /* Keep hover transition same, override grid translation slightly for modal context */
     .plan-card:hover {
-      transform: translateY(-8px) scale(1.02) !important;
+      transform: translateY(-4px) scale(1.01) !important;
     }
   }
 }
@@ -399,6 +486,11 @@ body.light-theme {
         li {
           color: #475569 !important;
           span { color: #475569 !important; }
+        }
+
+        .btn-show-features:hover {
+          background: rgba(0, 0, 0, 0.04) !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
         }
       }
 

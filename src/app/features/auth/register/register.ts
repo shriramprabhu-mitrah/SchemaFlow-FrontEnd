@@ -56,16 +56,23 @@ export class RegisterComponent implements OnInit {
     private svc: DashboardService,
     private seoService: SeoService
   ) {
+    // If already logged in, redirect directly according to user role
+    if (this.auth.isLoggedIn()) {
+      if (this.auth.isSuperAdmin()) {
+        this.router.navigate(['/admin']);
+      } else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+        this.router.navigate(['/organization']);
+      } else {
+        this.router.navigate(['/dashboard']);
+      }
+      return;
+    }
+
     this.seoService.updateTags({
       title: 'Sign Up - DBNexus',
       description: 'Create a new DBNexus account to start designing, documenting, and sharing your database schemas.',
       url: 'https://dbnexus.up.railway.app/auth/register'
     });
-
-    // If already logged in, redirect directly to dashboard
-    if (this.auth.isLoggedIn()) {
-      this.router.navigate(['/dashboard']);
-    }
   }
 
   ngOnInit(): void {

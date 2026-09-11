@@ -807,11 +807,8 @@ export class CmsDocsComponent implements OnInit {
   }
 
   viewPublicDocs(): void {
-    if (this.selectedPage) {
-      this.router.navigate(['/docs', this.selectedPage.slug]);
-    } else {
-      this.router.navigate(['/docs']);
-    }
+    const targetUrl = this.selectedPage ? `/docs/${this.selectedPage.slug}` : '/docs';
+    window.open(targetUrl, '_blank');
   }
 
   showToast(msg: string, type: 'success' | 'error' | 'info' = 'success', durationMs: number = 3000): void {

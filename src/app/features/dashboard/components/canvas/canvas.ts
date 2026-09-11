@@ -20,6 +20,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('canvasWrap', { static: true }) canvasWrapRef!: ElementRef<HTMLDivElement>;
   @ViewChild('canvasPane', { static: true }) canvasPaneRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('tableColumnsList') tableColumnsListRef?: ElementRef<HTMLDivElement>;
 
   private ctx!: CanvasRenderingContext2D;
   private dpr = 1;
@@ -112,6 +113,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     '#FFB3BA', '#BDE0FE', '#FFF3B0', '#D4F1C0', '#FFDDD2'
   ];
 
+  pendingNewTablePosition = { x: 0, y: 0 };
   tableModal = {
     visible: false,
     isNew: false,
@@ -631,10 +633,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
       const isEndPk = this.svc.isPrimaryKey(ref.toTable, ref.toCol);
 
-      const drawStartCircle = isStartPk;
-      const drawEndCircle = isEndPk;
-      const drawStartChevron = !isStartPk;
-      const drawEndChevron = !isEndPk;
+      let drawStartCircle = false;
+      let drawEndCircle = false;
+      let drawStartChevron = false;
+      let drawEndChevron = false;
+
+      if (ref.relType === '<>' || ref.relType === '<->') {
+        drawStartChevron = true;
+        drawEndChevron = true;
+      } else if (ref.relType === '-') {
+        drawStartCircle = true;
+        drawEndChevron = true;
+      } else {
+        // Directed relation: ortho[last] is parent/start (circle), ortho[0] is child/end (arrow)
+        drawEndCircle = true;
+        drawStartChevron = true;
+      }
 
       const drawCircle = (pt: PathPoint) => {
         svgContent += `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="${isLight ? '#ffffff' : '#161f33'}" stroke="${color}" stroke-width="1.8"/>`;
@@ -1646,14 +1660,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
       const isEndPk = this.svc.isPrimaryKey(ref.toTable, ref.toCol);
 
-      // Determine drawing configuration:
-      // - One-to-One (both PK): circles on both ends
-      // - Many-to-Many (neither PK): chevrons on both ends
-      // - One-to-Many/Many-to-One: circle on PK end, chevron on non-PK end
-      const drawStartCircle = isStartPk;
-      const drawEndCircle = isEndPk;
-      const drawStartChevron = !isStartPk;
-      const drawEndChevron = !isEndPk;
+      let drawStartCircle = false;
+      let drawEndCircle = false;
+      let drawStartChevron = false;
+      let drawEndChevron = false;
+
+      if (ref.relType === '<>' || ref.relType === '<->') {
+        drawStartChevron = true;
+        drawEndChevron = true;
+      } else if (ref.relType === '-') {
+        drawStartCircle = true;
+        drawEndChevron = true;
+      } else {
+        // Directed relation: ortho[last] is parent/start (circle), ortho[0] is child/end (arrow)
+        drawEndCircle = true;
+        drawStartChevron = true;
+      }
 
       const drawCircle = (pt: PathPoint) => {
         ctx.beginPath();
@@ -3579,9 +3601,25 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const rect = this.canvasWrapRef.nativeElement.getBoundingClientRect();
     const x = (rect.width / 2 - this.svc.view.x) / this.svc.view.scale - this.svc.CARD_W / 2;
     const y = (rect.height / 2 - this.svc.view.y) / this.svc.view.scale - 70;
-    this.svc.addTableAt(x, y);
-    const table = this.svc.tables[this.svc.tables.length - 1];
-    if (table) this.openTableModal(table, true);
+    this.pendingNewTablePosition = { x, y };
+
+    const defaultName = this.svc.generateNextTableName();
+    this.constraintDropdownIndex = null;
+    this.typeDropdownIndex = null;
+    this.groupDropdownVisible = false;
+    this.tableModal = {
+      visible: true,
+      isNew: true,
+      originalName: defaultName,
+      name: defaultName,
+      columns: [
+        { name: 'id', type: 'int', pk: true, notNull: false, unique: false, increment: false, fk: false, default: false, check: false }
+      ],
+      error: '',
+      isGroup: false,
+      groupName: '',
+      selectedExistingGroup: ''
+    };
   }
 
   openTableModal(table: TableDef, isNew = false): void {
@@ -3625,7 +3663,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   closeTableModal(discardNew = true): void {
-    if (discardNew && this.tableModal.isNew) {
+    if (discardNew && this.tableModal.isNew && this.svc.tables.some(t => t.name === this.tableModal.originalName)) {
       this.svc.deleteTableInCode(this.tableModal.originalName);
       this.svc.updateGutter();
       this.svc.parseAndLayout();
@@ -3651,6 +3689,21 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       fkTable: undefined,
       fkCol: undefined
     });
+
+    setTimeout(() => {
+      const container = this.tableColumnsListRef?.nativeElement || (document.querySelector('.table-modal .table-columns-list') as HTMLElement);
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+        const inputs = container.querySelectorAll('.table-column input[aria-label="Column name"]');
+        if (inputs && inputs.length > 0) {
+          const lastInput = inputs[inputs.length - 1] as HTMLInputElement;
+          lastInput?.focus({ preventScroll: true });
+        }
+      }
+    }, 50);
   }
 
   removeModalColumn(index: number): void {
@@ -3908,7 +3961,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.tableModal.error = 'Column names must be unique and use only letters, numbers, and underscores.';
       return;
     }
-    const duplicate = this.svc.tables.some((table) => table.name === name && table.name !== this.tableModal.originalName);
+    const isNew = this.tableModal.isNew;
+    const oldName = this.tableModal.originalName;
+
+    const duplicate = this.svc.tables.some((table) => table.name.toLowerCase() === name.toLowerCase() && (isNew || table.name.toLowerCase() !== oldName.toLowerCase()));
     if (duplicate) {
       this.tableModal.error = 'A table with this name already exists.';
       return;
@@ -3931,23 +3987,31 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       name: names[index],
       type: column.type.trim() || 'varchar'
     }));
-    const isNew = this.tableModal.isNew;
-    const oldName = this.tableModal.originalName;
 
-    // Clean up old name from groups first
-    this.svc.removeTableFromGroupsInCode(oldName);
+    if (isNew) {
+      this.svc.insertNewTableInCode(name, columns, this.pendingNewTablePosition.x, this.pendingNewTablePosition.y);
+      if (this.tableModal.isGroup) {
+        const gName = this.tableModal.groupName.trim();
+        this.svc.addTableToGroupInCode(name, gName);
+      }
+      this.closeTableModal(false);
+      this.svc.showToast(`Table "${name}" created successfully.`, 2500, 'success');
+    } else {
+      // Clean up old name from groups first
+      this.svc.removeTableFromGroupsInCode(oldName);
 
-    // Save table definition changes
-    this.svc.updateTableInCode(oldName, name, columns);
+      // Save table definition changes
+      this.svc.updateTableInCode(oldName, name, columns);
 
-    // Add to group if checked
-    if (this.tableModal.isGroup) {
-      const gName = this.tableModal.groupName.trim();
-      this.svc.addTableToGroupInCode(name, gName);
+      // Add to group if checked
+      if (this.tableModal.isGroup) {
+        const gName = this.tableModal.groupName.trim();
+        this.svc.addTableToGroupInCode(name, gName);
+      }
+
+      this.closeTableModal(false);
+      this.svc.showToast(`Table "${name}" updated successfully.`, 2500, 'success');
     }
-
-    this.closeTableModal(false);
-    this.svc.showToast(isNew ? `Table "${name}" created successfully.` : `Table "${name}" updated successfully.`, 2500, 'success');
   }
 
   /* ============ COLOR PICKER ============ */

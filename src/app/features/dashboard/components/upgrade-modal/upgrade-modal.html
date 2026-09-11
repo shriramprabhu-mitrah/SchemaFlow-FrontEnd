@@ -151,7 +151,7 @@
                   </span>
                 </div>
                 <span class="price-period">
-                  {{ (plan.plan_type === 'organization' || plan.is_per_seat) ? 'per seat / mo' : 'per month' }}
+                  {{ (plan.plan_type === 'organization' || plan.is_per_seat) ? 'per member / month' : 'per month' }}
                 </span>
                 <div class="annual-billed-label" *ngIf="isAnnual"
                   style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
@@ -176,18 +176,23 @@
 
             <div class="card-features">
               <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                <ng-container *ngFor="let ent of plan.entitlements">
-                  <li
-                    *ngIf="ent.value !== 'false' && ent.value !== false && isValidFeature(ent.display_text || ent.feature_name)"
-                    style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #cbd5e1;">
-                    <app-icons name="check-valid" size="16" [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-                    <span>{{ ent.display_text || ent.feature_name }}</span>
-                  </li>
-                </ng-container>
+                <li *ngFor="let ent of getVisibleEntitlements(plan)"
+                  style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #cbd5e1;">
+                  <app-icons name="check-valid" size="16" [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
+                  <span>{{ ent.display_text || ent.feature_name }}</span>
+                </li>
               </ul>
+              <button *ngIf="hasMoreFeatures(plan)" type="button" class="btn-show-features"
+                [style.color]="plan.highlight_color || '#3ec5c1'" (click)="togglePlanFeatures(plan)">
+                <span>{{ isPlanExpanded(plan) ? 'Show less' : 'Show more' }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isPlanExpanded(plan)">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
             </div>
 
-            <div class="card-action" style="margin-top: 24px;">
+            <div class="card-action" style="margin-top: 14px;">
               <app-button variant="none"
                 [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient'))))"
                 [disabled]="isCtaDisabled(plan)" (onClick)="selectPlan(plan)">

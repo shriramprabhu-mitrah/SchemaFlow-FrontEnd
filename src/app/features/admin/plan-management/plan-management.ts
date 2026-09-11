@@ -1,11 +1,12 @@
-import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { EntitlementService } from '../../../core/services/entitlement.service';
 
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, catchError } from 'rxjs/operators';
 import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
@@ -17,7 +18,10 @@ import { Icons } from '../../../core/component/icons/icons';
 export class PlanManagementComponent implements OnInit {
   private admin = inject(AdminService);
   private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
   public dashService = inject(DashboardService);
+  private entitlementService = inject(EntitlementService);
+  savingEntitlements = false;
 
   plans: any[] = [];
   features: any[] = [];
@@ -216,12 +220,16 @@ export class PlanManagementComponent implements OnInit {
   ngOnInit(): void {
     this.loadPlans();
     this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
-      this.page = 1;
-      this.loadPlans();
+      this.ngZone.run(() => {
+        this.page = 1;
+        this.loadPlans();
+      });
     });
     this.featureSearchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
-      this.featurePage = 1;
-      this.loadFeatures();
+      this.ngZone.run(() => {
+        this.featurePage = 1;
+        this.loadFeatures();
+      });
     });
   }
 
@@ -231,33 +239,43 @@ export class PlanManagementComponent implements OnInit {
 
   loadPlans(): void {
     this.loading = true;
+    this.cdr.detectChanges();
     this.admin.getPlans(this.page, this.limit, this.search, this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
-        this.plans = res?.data || [];
-        this._serverTotalCount = res?.meta?.total || this.plans.length;
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.plans = res?.data || [];
+          this._serverTotalCount = res?.meta?.total || this.plans.length;
+          this.loading = false;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.loading = false;
+          this.cdr.detectChanges();
+        });
       }
     });
   }
 
   loadFeatures(): void {
     this.loadingEntitlements = true;
+    this.cdr.detectChanges();
     this.admin.getFeatures(this.featurePage, this.featureLimit, this.featureSearch, this.featureSortColumn, this.featureSortAsc).subscribe({
       next: (res) => {
-        this.features = res?.data || [];
-        this.totalFeatureCount = res?.meta?.total || 0;
-        this.mapFeaturesToEntitlements();
-        this.loadingEntitlements = false;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.features = res?.data || [];
+          this.totalFeatureCount = res?.meta?.total || 0;
+          this.mapFeaturesToEntitlements();
+          this.loadingEntitlements = false;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.loadingEntitlements = false;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.loadingEntitlements = false;
+          this.cdr.detectChanges();
+        });
       }
     });
   }
@@ -354,12 +372,17 @@ export class PlanManagementComponent implements OnInit {
 
     obs.subscribe({
       next: () => {
-        this.dashService.showToast(this.editMode ? 'Plan updated successfully!' : 'Plan created successfully!', 3500, 'success');
-        this.closeModal();
-        this.loadPlans();
+        this.ngZone.run(() => {
+          this.dashService.showToast(this.editMode ? 'Plan updated successfully!' : 'Plan created successfully!', 3500, 'success');
+          this.closeModal();
+          this.loadPlans();
+        });
       },
       error: (err: any) => {
-        this.dashService.showToast(err?.error?.message || 'Error saving plan', 4000, 'error');
+        this.ngZone.run(() => {
+          this.dashService.showToast(err?.error?.message || 'Error saving plan', 4000, 'error');
+          this.cdr.detectChanges();
+        });
       }
     });
   }
@@ -392,11 +415,16 @@ export class PlanManagementComponent implements OnInit {
 
     this.admin.deletePlan(id).subscribe({
       next: () => {
-        this.dashService.showToast('Plan deactivated successfully!', 3500, 'success');
-        this.loadPlans();
+        this.ngZone.run(() => {
+          this.dashService.showToast('Plan deactivated successfully!', 3500, 'success');
+          this.loadPlans();
+        });
       },
       error: (err: any) => {
-        this.dashService.showToast(err?.error?.message || 'Error deactivating plan', 4000, 'error');
+        this.ngZone.run(() => {
+          this.dashService.showToast(err?.error?.message || 'Error deactivating plan', 4000, 'error');
+          this.cdr.detectChanges();
+        });
       }
     });
   }
@@ -409,14 +437,27 @@ export class PlanManagementComponent implements OnInit {
     this.featureSortColumn = 'name';
     this.featureSortAsc = true;
     this.featurePage = 1;
-    this.admin.getPlanEntitlements(plan.plan_id).subscribe({
+    this.cdr.detectChanges();
+
+    forkJoin({
+      entitlements: this.admin.getPlanEntitlements(plan.plan_id).pipe(catchError(() => of({ data: [] }))),
+      features: this.admin.getFeatures(this.featurePage, this.featureLimit, this.featureSearch, this.featureSortColumn, this.featureSortAsc).pipe(catchError(() => of({ data: [], meta: { total: 0 } })))
+    }).subscribe({
       next: (res) => {
-        this.rawPlanEntitlements = res?.data || [];
-        this.loadFeatures();
+        this.ngZone.run(() => {
+          this.rawPlanEntitlements = res.entitlements?.data || [];
+          this.features = res.features?.data || [];
+          this.totalFeatureCount = res.features?.meta?.total || 0;
+          this.mapFeaturesToEntitlements();
+          this.loadingEntitlements = false;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.loadingEntitlements = false;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.loadingEntitlements = false;
+          this.cdr.detectChanges();
+        });
       }
     });
   }
@@ -424,9 +465,14 @@ export class PlanManagementComponent implements OnInit {
   closeEntitlementsView(): void {
     this.showEntitlementsView = false;
     this.selectedPlan = {};
+    this.cdr.detectChanges();
   }
 
   saveEntitlements(): void {
+    if (this.savingEntitlements) return;
+    this.savingEntitlements = true;
+    this.cdr.detectChanges();
+
     const entitlements = this.planEntitlements.map(e => {
       const dt = (e.display_text || '').trim();
       return {
@@ -438,11 +484,28 @@ export class PlanManagementComponent implements OnInit {
     });
     this.admin.updatePlanEntitlements(this.selectedPlan.plan_id, entitlements).subscribe({
       next: () => {
-        this.dashService.showToast('Plan entitlements saved successfully!', 3500, 'success');
-        this.closeEntitlementsView();
+        this.ngZone.run(() => {
+          this.savingEntitlements = false;
+          entitlements.forEach(saved => {
+            const idx = this.rawPlanEntitlements.findIndex(r => r.feature_id === saved.feature_id);
+            if (idx >= 0) {
+              this.rawPlanEntitlements[idx] = { ...this.rawPlanEntitlements[idx], ...saved };
+            } else {
+              this.rawPlanEntitlements.push(saved);
+            }
+          });
+          this.dashService.showToast('Plan entitlements saved successfully!', 3500, 'success');
+          this.cdr.detectChanges();
+        });
+        this.entitlementService.loadPlans(true).subscribe();
+        this.entitlementService.loadEntitlements(true).subscribe();
       },
       error: (err: any) => {
-        this.dashService.showToast(err?.error?.message || 'Error saving entitlements', 4000, 'error');
+        this.ngZone.run(() => {
+          this.savingEntitlements = false;
+          this.dashService.showToast(err?.error?.message || 'Error saving entitlements', 4000, 'error');
+          this.cdr.detectChanges();
+        });
       }
     });
   }

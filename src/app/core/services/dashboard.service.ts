@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, EMPTY, Observable, Subject, catchError, debounceTime, finalize, map, switchMap, tap, throwError, of } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -45,6 +45,7 @@ export interface RefDef {
   fromCol: string;
   toTable: string;
   toCol: string;
+  relType?: string;
   waypoints?: PathPoint[];
   color?: string;
   lineNumber?: number;
@@ -68,6 +69,13 @@ export interface DiagramSummary {
   name: string;
   created_at?: string | Date | null;
   updated_at?: string | Date | null;
+}
+
+export interface EditorError {
+  line: number;
+  column?: number;
+  message: string;
+  token?: string;
 }
 
 export interface WorkspaceItem {
@@ -430,8 +438,8 @@ export class DashboardService {
 
   set code(value: string) {
     const normalizedValue = value ? value.replace(/\r\n|\r/g, '\n') : '';
-    if (normalizedValue === this._code) return;
     this._code = normalizedValue;
+    this.updateEditorErrors();
     this.code$.next(normalizedValue);
 
     // INSTANT REAL-TIME COLLAB: Bypass RxJS completely to guarantee emission
@@ -501,6 +509,7 @@ export class DashboardService {
   isPublicViewer: boolean = false;
   diagramPassword: string = '';
   readonly diagramNameSignal = signal<string>('');
+  readonly isDiagramNameEmpty = computed(() => !this.diagramNameSignal() || !this.diagramNameSignal().trim());
 
   get diagramName(): string {
     return this.diagramNameSignal();
@@ -604,6 +613,7 @@ export class DashboardService {
   readonly toastType = signal<'success' | 'error' | 'info'>('success');
   private toastTimeout: ReturnType<typeof setTimeout> | undefined;
   private invalidRefDeletionTimeout: any = null;
+  readonly editorErrors = signal<EditorError[]>([]);
 
   showDbdocsInstructions = false;
   showCanvasPlaceholder = true;
@@ -654,6 +664,10 @@ export class DashboardService {
 
   private originalCode = '';
   private originalName = '';
+
+  get originalDiagramName(): string {
+    return this.originalName;
+  }
   private originalTablePositions = '{}';
   private originalRefColors = '{}';
   private originalGroupColors = '{}';
@@ -662,6 +676,7 @@ export class DashboardService {
   readonly unsavedModalVisible = signal(false);
   readonly authModalVisible = signal(false);
   readonly showDiscardButton = signal(true);
+  readonly totalDiagrams = signal<number>(0);
   private pendingAction: (() => void) | null = null;
   private pendingCancel: (() => void) | null = null;
 
@@ -814,6 +829,8 @@ export class DashboardService {
           this.dbmlValidation = null;
           this.isValidatingDbml = false;
           this.scheduleDraw();
+          this.updateEditorErrors();
+          this.checkInvalidRefsTimeout();
           const errMsg = error?.error?.message || error?.message || 'DBML Validation Failed';
           this.showToast(errMsg, 4000, 'error');
 
@@ -826,36 +843,27 @@ export class DashboardService {
       this.scheduleDraw();
 
       const errors = response?.data?.errors ?? response?.errors;
-      if (Array.isArray(errors) && errors.length > 0) {
-        const firstErrMessage = typeof errors[0] === 'string' ? errors[0] : errors[0]?.message;
+      const errorList = Array.isArray(errors) ? errors : [];
+
+      this.updateEditorErrors();
+      this.checkInvalidRefsTimeout();
+
+      if (errorList.length > 0) {
+        const firstErrMessage = typeof errorList[0] === 'string' ? errorList[0] : errorList[0]?.message;
         if (firstErrMessage) {
           this.showToast(firstErrMessage, 5000, 'error');
         }
-
-        const invalidRefs = this.refs.filter(ref => this.isRefInvalid(ref));
-        if (invalidRefs.length > 0) {
-          if (this.invalidRefDeletionTimeout) {
-            clearTimeout(this.invalidRefDeletionTimeout);
-          }
-          this.invalidRefDeletionTimeout = setTimeout(() => {
-            const currentInvalidRefs = this.refs.filter(ref => this.isRefInvalid(ref));
-            if (currentInvalidRefs.length > 0) {
-              currentInvalidRefs.forEach((ref) => {
-                this.deleteConnectionInCode(ref);
-              });
-              this.updateGutter();
-              this.parseAndLayout();
-              this.showToast('Invalid relationship connection removed automatically after 5s.', 4000, 'error');
-            }
-          }, 5000);
-        }
       } else {
-        if (this.invalidRefDeletionTimeout) {
-          clearTimeout(this.invalidRefDeletionTimeout);
-          this.invalidRefDeletionTimeout = null;
-        }
         const currentMsg = this.toastMessage();
-        if (currentMsg && this.toastType() === 'error' && (currentMsg.startsWith('(') || currentMsg.includes('Foreign key reference'))) {
+        if (
+          currentMsg &&
+          this.toastType() === 'error' &&
+          (currentMsg.startsWith('(') ||
+            currentMsg.includes('Foreign key reference') ||
+            currentMsg.includes('Table') ||
+            currentMsg.includes('Syntax error') ||
+            currentMsg.includes('DBML'))
+        ) {
           this.toastMessage.set(null);
         }
       }
@@ -865,9 +873,10 @@ export class DashboardService {
       setInterval(() => {
         if (
           this.auth.isLoggedIn() &&
+          !this.isDiagramNameEmpty() &&
           this.hasUnsavedChanges() &&
-          this.canSaveDiagram() &&
-          this.validateDiagramName()
+          this.canSaveDiagram(false) &&
+          this.validateDiagramName(false)
         ) {
           // If connected to a Team diagram socket, use socket emit
           if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
@@ -886,7 +895,7 @@ export class DashboardService {
 
   emitCollabChange(): void {
     const id = this.diagramId();
-    if (id) {
+    if (id && !this.isDiagramNameEmpty()) {
       this.socketService.sendChange(id, this.code, this.diagramName, this.buildLayoutPayload());
       this.updateOriginalState();
     }
@@ -987,6 +996,213 @@ export class DashboardService {
     return Array.isArray(errors) ? errors : [];
   }
 
+  computeEditorErrors(): EditorError[] {
+    const code = this.code;
+    if (!code || !code.trim()) return [];
+
+    const errors: EditorError[] = [];
+    const lines = code.split('\n');
+
+    // 1. Check duplicate table definitions: Table <name>
+    const seenTables = new Map<string, number>();
+    const tableRegex = /^[ \t]*Table\s+(?:["']?([A-Za-z0-9_.]+)["']?)/i;
+
+    lines.forEach((lineText, idx) => {
+      const match = lineText.match(tableRegex);
+      if (match) {
+        const tableName = match[1];
+        if (seenTables.has(tableName)) {
+          errors.push({
+            line: idx + 1,
+            token: tableName,
+            message: `Table "${tableName}" existed`
+          });
+        } else {
+          seenTables.set(tableName, idx + 1);
+        }
+      }
+    });
+
+    // 2. Check standalone references: Ref: fromTable.fromCol > toTable.toCol
+    const parsed = this.parseDBML(code);
+    const tableColsMap = new Map<string, Set<string>>();
+    parsed.tables.forEach(t => {
+      tableColsMap.set(t.name, new Set(t.columns.map(c => c.name)));
+    });
+
+    const refLineRegex = /^[ \t]*Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(?:<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i;
+
+    lines.forEach((lineText, idx) => {
+      const match = lineText.match(refLineRegex);
+      if (match) {
+        const fromTab = match[1];
+        const fromCol = match[2];
+        const toTab = match[3];
+        const toCol = match[4];
+
+        if (!seenTables.has(fromTab)) {
+          errors.push({
+            line: idx + 1,
+            token: `${fromTab}.${fromCol}`,
+            message: `Can't find table "${fromTab}"`
+          });
+        } else if (!seenTables.has(toTab)) {
+          errors.push({
+            line: idx + 1,
+            token: `${toTab}.${toCol}`,
+            message: `Can't find table "${toTab}"`
+          });
+        } else {
+          const fromCols = tableColsMap.get(fromTab);
+          const toCols = tableColsMap.get(toTab);
+          if (fromCols && !fromCols.has(fromCol)) {
+            errors.push({
+              line: idx + 1,
+              token: fromCol,
+              message: `Field "${fromCol}" in table "${fromTab}" does not exist`
+            });
+          }
+          if (toCols && !toCols.has(toCol)) {
+            errors.push({
+              line: idx + 1,
+              token: toCol,
+              message: `Field "${toCol}" in table "${toTab}" does not exist`
+            });
+          }
+
+          const fromTabObj = parsed.tables.find(t => t.name === fromTab);
+          const toTabObj = parsed.tables.find(t => t.name === toTab);
+          const fromColObj = fromTabObj?.columns.find(c => c.name === fromCol);
+          const toColObj = toTabObj?.columns.find(c => c.name === toCol);
+
+          if (fromColObj && toColObj) {
+            const fromEligible = fromColObj.pk || fromColObj.unique;
+            const toEligible = toColObj.pk || toColObj.unique;
+
+            if (!fromEligible && !toEligible) {
+              errors.push({
+                line: idx + 1,
+                token: `${fromTab}.${fromCol}`,
+                message: `Foreign key reference must point to a primary key or unique field`
+              });
+            } else if (!this.areTypesCompatible(fromColObj.type, toColObj.type)) {
+              errors.push({
+                line: idx + 1,
+                token: `${fromTab}.${fromCol}`,
+                message: `Type mismatch in foreign key reference: '${fromTab}.${fromCol}' is '${fromColObj.type}' but '${toTab}.${toCol}' is '${toColObj.type}'.`
+              });
+            }
+          }
+        }
+      }
+    });
+
+    // Check parsed.refs directly for any additional invalid relationships (including inline refs)
+    parsed.refs.forEach((ref) => {
+      if (this.isRefInvalid(ref)) {
+        const lineNum = ref.lineNumber || (lines.findIndex(l => l.includes(`${ref.fromTable}.${ref.fromCol}`) && l.includes(`${ref.toTable}.${ref.toCol}`)) + 1);
+        if (lineNum > 0 && !errors.some(e => e.line === lineNum)) {
+          const fromTabObj = parsed.tables.find(t => t.name === ref.fromTable);
+          const toTabObj = parsed.tables.find(t => t.name === ref.toTable);
+          const fromColObj = fromTabObj?.columns.find(c => c.name === ref.fromCol);
+          const toColObj = toTabObj?.columns.find(c => c.name === ref.toCol);
+          let msg = `Invalid relationship between "${ref.fromTable}.${ref.fromCol}" and "${ref.toTable}.${ref.toCol}"`;
+          if (fromColObj && toColObj && !this.areTypesCompatible(fromColObj.type, toColObj.type)) {
+            msg = `Type mismatch in foreign key reference: '${ref.fromTable}.${ref.fromCol}' is '${fromColObj.type}' but '${ref.toTable}.${ref.toCol}' is '${toColObj.type}'.`;
+          } else if (fromColObj && toColObj && !(fromColObj.pk || fromColObj.unique) && !(toColObj.pk || toColObj.unique)) {
+            msg = `Foreign key reference must point to a primary key or unique field`;
+          }
+          errors.push({
+            line: lineNum,
+            token: `${ref.fromTable}.${ref.fromCol}`,
+            message: msg
+          });
+        }
+      }
+    });
+
+    // 3. Integrate backend validation errors
+    const backendErrors = this.getValidationErrors();
+    if (this.dbmlValidationError) {
+      const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
+      const errMsg = typeof errObj === 'string' ? errObj : errObj?.message || '';
+      if (errMsg && !backendErrors.includes(errMsg)) {
+        backendErrors.push(errMsg);
+      }
+    }
+
+    backendErrors.forEach((err) => {
+      const msg = typeof err === 'string' ? err : err?.message || '';
+      if (!msg) return;
+
+      const errLine = typeof err === 'object' && err?.line != null ? Number(err.line) : null;
+      const errCol = typeof err === 'object' && err?.column != null ? Number(err.column) : undefined;
+
+      if (errLine && errLine >= 1 && errLine <= lines.length) {
+        const existing = errors.find(e => e.line === errLine);
+        if (existing) {
+          existing.message = msg;
+        } else {
+          let token: string | undefined = undefined;
+          const tableMatch = msg.match(/Table\s+['"]([^'"]+)['"]/i);
+          if (tableMatch) token = tableMatch[1];
+          const fieldMatch = msg.match(/Field\s+['"]([^'"]+)['"]/i);
+          if (fieldMatch) token = fieldMatch[1];
+          errors.push({
+            line: errLine,
+            column: errCol,
+            token,
+            message: msg
+          });
+        }
+      } else {
+        // Fallback for backend errors without explicit line number
+        const dupMatch = msg.match(/Table\s+['"]([^'"]+)['"]\s+existed/i);
+        if (dupMatch) {
+          const tName = dupMatch[1];
+          let foundCount = 0;
+          lines.forEach((l, i) => {
+            if (new RegExp(`^[ \\t]*Table\\s+${tName}\\b`, 'i').test(l)) {
+              foundCount++;
+              if (foundCount > 1 && !errors.some(e => e.line === i + 1)) {
+                errors.push({
+                  line: i + 1,
+                  token: tName,
+                  message: msg
+                });
+              }
+            }
+          });
+        } else {
+          // Check for type mismatch: 'Table1.Col1' ... 'Table2.Col2'
+          const typeMatches = [...msg.matchAll(/['"]([^'"]+)\.([^'"]+)['"]/g)];
+          if (typeMatches.length >= 2) {
+            const t1 = typeMatches[0][1];
+            const c1 = typeMatches[0][2];
+            const t2 = typeMatches[1][1];
+            const c2 = typeMatches[1][2];
+            const refIdx = lines.findIndex(l =>
+              l.includes(t1) && l.includes(c1) && (l.includes(t2) || l.includes('Ref'))
+            );
+            if (refIdx !== -1 && !errors.some(e => e.line === refIdx + 1)) {
+              errors.push({
+                line: refIdx + 1,
+                token: `${t1}.${c1}`,
+                message: msg
+              });
+            }
+          }
+        }
+      }
+    });
+
+    return errors;
+  }
+
+  updateEditorErrors(): void {
+    this.editorErrors.set(this.computeEditorErrors());
+  }
+
   getValidationError(): string | null {
     const errors = this.getValidationErrors();
     if (Array.isArray(errors) && errors.length > 0) {
@@ -1020,11 +1236,12 @@ export class DashboardService {
   isRefInvalid(ref: RefDef): boolean {
     const fromTab = this.tables.find((t) => t.name === ref.fromTable);
     const toTab = this.tables.find((t) => t.name === ref.toTable);
-    if (!fromTab || !toTab) return true;
+    // Missing tables (e.g. during renaming, duplicate tables, or WIP) are not relationship errors
+    if (!fromTab || !toTab) return false;
 
     const fromColObj = fromTab.columns.find((c) => c.name === ref.fromCol);
     const toColObj = toTab.columns.find((c) => c.name === ref.toCol);
-    if (!fromColObj || !toColObj) return true;
+    if (!fromColObj || !toColObj) return false;
 
     const fromEligible = fromColObj.pk || fromColObj.unique;
     const toEligible = toColObj.pk || toColObj.unique;
@@ -1091,17 +1308,26 @@ export class DashboardService {
    */
   isSubscriptionExpired = signal(false);
 
-  canSaveDiagram(): boolean {
+  canSaveDiagram(showToast = true): boolean {
     if (this.isReadOnly) {
+      return false;
+    }
+
+    if (this.isDiagramNameEmpty()) {
+      if (showToast) {
+        this.showToast('Diagram name should not be empty', 4000, 'error');
+      }
       return false;
     }
 
     const errors = this.getValidationErrors();
     if (errors.length > 0) {
-      const firstMessage =
-        typeof errors[0] === 'string' ? errors[0] : errors[0]?.message ?? 'Invalid DBML syntax.';
-      const suffix = errors.length > 1 ? ` (+${errors.length - 1} more)` : '';
-      this.showToast(`Cannot save: ${firstMessage}${suffix}`, 4000, 'error');
+      if (showToast) {
+        const firstMessage =
+          typeof errors[0] === 'string' ? errors[0] : errors[0]?.message ?? 'Invalid DBML syntax.';
+        const suffix = errors.length > 1 ? ` (+${errors.length - 1} more)` : '';
+        this.showToast(`Cannot save: ${firstMessage}${suffix}`, 4000, 'error');
+      }
       return false;
     }
     return true;
@@ -1112,15 +1338,15 @@ export class DashboardService {
    * a name that collides with another diagram already owned by the user
    * (the diagram currently open is excluded from that check).
    */
-  validateDiagramName(): boolean {
+  validateDiagramName(showToast = true): boolean {
     const name = (this.diagramName || '').trim();
 
     if (!name) {
-      this.showToast('Please give your diagram a title before saving.', 4000, 'error');
+      if (showToast) {
+        this.showToast('Diagram name should not be empty', 4000, 'error');
+      }
       return false;
     }
-
-
 
     const currentId = this.diagramId();
     if (name.toLowerCase() !== 'untitled diagram') {
@@ -1128,7 +1354,9 @@ export class DashboardService {
         (d) => d.id !== currentId && d.name.trim().toLowerCase() === name.toLowerCase()
       );
       if (duplicate) {
-        this.showToast(`A diagram named "${name}" already exists. Please choose a different title.`, 4000, 'error');
+        if (showToast) {
+          this.showToast(`A diagram named "${name}" already exists. Please choose a different title.`, 4000, 'error');
+        }
         return false;
       }
     }
@@ -1256,6 +1484,7 @@ export class DashboardService {
         fromCol,
         toTable,
         toCol,
+        relType,
         lineNumber: lineNumber
       });
     }
@@ -1580,16 +1809,38 @@ export class DashboardService {
         { waypoints: r.waypoints, color: r.color }
       ])
     );
-    const fkMap = new Map<string, RefDef>();
+    const fkMap = new Map<string, { targetTable: string; targetCol: string }>();
     parsed.refs.forEach((r) => {
-      fkMap.set(`${r.fromTable}.${r.fromCol}`, r);
+      const fromTab = parsed.tables.find(t => t.name === r.fromTable);
+      const toTab = parsed.tables.find(t => t.name === r.toTable);
+      const fromCol = fromTab?.columns.find(c => c.name === r.fromCol);
+      const toCol = toTab?.columns.find(c => c.name === r.toCol);
+
+      const fromPk = fromCol?.pk;
+      const toPk = toCol?.pk;
+
+      if (r.relType === '-') {
+        // One-to-one: only mark FK if one side is not a PK
+        if (!fromPk && toPk) {
+          fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+        } else if (fromPk && !toPk) {
+          fkMap.set(`${r.toTable}.${r.toCol}`, { targetTable: r.fromTable, targetCol: r.fromCol });
+        }
+      } else if (r.relType === '<>' || r.relType === '<->') {
+        // Many-to-many: neither column is a direct FK
+      } else {
+        // In DBML, '>' means fromTable is child/FK referencing toTable.
+        // For '<', parseDBML already normalized fromTable to be the child/FK.
+        // Therefore, r.fromTable is always the foreign key.
+        fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+      }
     });
     this.tables.forEach((t) => {
       t.columns.forEach((c) => {
-        const ref = fkMap.get(`${t.name}.${c.name}`);
-        c.fk = !!ref;
-        c.fkTable = ref ? ref.toTable : undefined;
-        c.fkCol = ref ? ref.toCol : undefined;
+        const refInfo = fkMap.get(`${t.name}.${c.name}`);
+        c.fk = !!refInfo;
+        c.fkTable = refInfo ? refInfo.targetTable : undefined;
+        c.fkCol = refInfo ? refInfo.targetCol : undefined;
       });
     });
     this.refs = parsed.refs.map((r) => {
@@ -1611,6 +1862,8 @@ export class DashboardService {
     if (tablesChanged) {
       this.requestCanvasFit();
     }
+    this.updateEditorErrors();
+    this.checkInvalidRefsTimeout();
   }
 
   /* ============ ACTIONS ============ */
@@ -1847,7 +2100,7 @@ export class DashboardService {
     this.parseAndLayout();
   }
 
-  deleteConnectionInCode(ref: RefDef): void {
+  deleteConnectionInCode(ref: RefDef): boolean {
     const esc = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const fTab = esc(ref.fromTable);
     const fCol = esc(ref.fromCol);
@@ -1887,12 +2140,50 @@ export class DashboardService {
       }
     }
 
-    this.code = newCode;
+    const wasDeleted = newCode !== this.code;
+    if (wasDeleted) {
+      this.code = newCode;
+    }
 
     const key = `${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}`;
     delete this.refColors[key];
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('ref colors', this.deterministicStringify(this.refColors));
+    }
+
+    return wasDeleted;
+  }
+
+  checkInvalidRefsTimeout(): void {
+    const invalidRefs = this.refs.filter((ref) => this.isRefInvalid(ref));
+    if (invalidRefs.length > 0) {
+      if (!this.invalidRefDeletionTimeout) {
+        this.invalidRefDeletionTimeout = setTimeout(() => {
+          this.invalidRefDeletionTimeout = null;
+          const currentInvalidRefs = this.refs.filter((ref) => this.isRefInvalid(ref));
+          if (currentInvalidRefs.length === 0) return;
+
+          let anyDeleted = false;
+          currentInvalidRefs.forEach((ref) => {
+            if (this.deleteConnectionInCode(ref)) {
+              anyDeleted = true;
+            }
+          });
+
+          if (anyDeleted) {
+            this.selectedConnectionIndex = -1;
+            this.hoveredConnectionIndex = -1;
+            this.updateGutter();
+            this.parseAndLayout();
+            this.showToast('Invalid relationship connection removed automatically after 5s.', 4000, 'error');
+          }
+        }, 5000);
+      }
+    } else {
+      if (this.invalidRefDeletionTimeout) {
+        clearTimeout(this.invalidRefDeletionTimeout);
+        this.invalidRefDeletionTimeout = null;
+      }
     }
   }
 
@@ -2072,9 +2363,77 @@ export class DashboardService {
     this.scheduleDraw();
   }
 
+  generateNextTableName(): string {
+    const existing = new Set<string>();
+    if (Array.isArray(this.tables)) {
+      this.tables.forEach(t => {
+        if (t?.name) existing.add(t.name.toLowerCase());
+      });
+    }
+    const re = /Table\s+["']?([A-Za-z0-9_.]+)["']?/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(this.code || '')) !== null) {
+      if (m[1]) existing.add(m[1].toLowerCase());
+    }
+
+    let n = 1;
+    while (existing.has(`table_${n}`)) {
+      n++;
+    }
+    return `table_${n}`;
+  }
+
+  insertNewTableInCode(name: string, columns: Column[], x?: number, y?: number): void {
+    const attributes = (column: Column): string => {
+      const values: string[] = [];
+      if (column.pk) values.push('pk');
+      if (column.increment) values.push('increment');
+      if (column.notNull) values.push('not null');
+      if (column.unique) values.push('unique');
+      if (column.default && column.defaultVal !== undefined) {
+        const val = column.defaultVal.trim();
+        const needsQuotes = !(/^-?\d+(\.\d+)?$/i.test(val) || /^(true|false|null|now\(\)|current_timestamp)$/i.test(val) || (val.startsWith("'") && val.endsWith("'")) || (val.startsWith('"') && val.endsWith('"')));
+        values.push(`default: ${needsQuotes ? `'${val}'` : val}`);
+      }
+      if (column.check && column.checkVal !== undefined) {
+        const val = column.checkVal.trim();
+        const needsQuotes = !((val.startsWith("'") && val.endsWith("'")) || (val.startsWith('"') && val.endsWith('"')));
+        values.push(`check: ${needsQuotes ? `'${val}'` : val}`);
+      }
+      return values.length ? ` [${values.join(', ')}]` : '';
+    };
+
+    const tableBlock = `Table ${name} {\n${columns
+      .map((column) => `  ${column.name} ${column.type}${attributes(column)}`)
+      .join('\n')}\n}`;
+
+    const newRefs: string[] = [];
+    columns.forEach((col) => {
+      if (col.fk && col.fkTable && col.fkCol) {
+        newRefs.push(`Ref: ${name}.${col.name} > ${col.fkTable}.${col.fkCol}`);
+      }
+    });
+
+    const currentCode = (this.code || '').trimEnd();
+    if (newRefs.length > 0) {
+      this.code = currentCode ? `${currentCode}\n\n${tableBlock}\n\n${newRefs.join('\n')}\n` : `${tableBlock}\n\n${newRefs.join('\n')}\n`;
+    } else {
+      this.code = currentCode ? `${currentCode}\n\n${tableBlock}\n` : `${tableBlock}\n`;
+    }
+
+    if (x != null && y != null) {
+      this.tablePositions[name] = { x, y };
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
+      }
+    }
+
+    this.updateGutter();
+    this.parseAndLayout();
+  }
+
   addTableAt(x: number, y: number): void {
-    const tableNo = this.tables.length + 1;
-    const tableName = `table_${tableNo}`;
+    const tableName = this.generateNextTableName();
 
     const newTable: TableDef = {
       name: tableName,
@@ -2108,7 +2467,8 @@ export class DashboardService {
   }
 
   addTable(): void {
-    const tableNo = this.tables.length + 1;
+    const nextName = this.generateNextTableName();
+    const tableNo = parseInt(nextName.replace('table_', ''), 10) || (this.tables.length + 1);
     this.addTableAt(100 + tableNo * 30, 100 + tableNo * 30);
   }
 
@@ -2121,35 +2481,32 @@ export class DashboardService {
     const fromEligible = fromColObj ? (fromColObj.pk || fromColObj.unique) : false;
     const toEligible = toColObj ? (toColObj.pk || toColObj.unique) : false;
 
-    let actualFromTable = fromTable;
-    let actualFromCol = fromCol;
-    let actualToTable = toTable;
-    let actualToCol = toCol;
-
-    if (fromEligible && !toEligible) {
-      actualFromTable = toTable;
-      actualFromCol = toCol;
-      actualToTable = fromTable;
-      actualToCol = fromCol;
+    let operator = '<';
+    if (!fromEligible && toEligible) {
+      operator = '>';
+    } else if (!fromEligible && !toEligible) {
+      operator = '<>';
+    } else {
+      operator = '<';
     }
 
     const exists = this.parseDBML(this.code).refs.some(
       (ref) =>
-        (ref.fromTable === actualFromTable &&
-          ref.fromCol === actualFromCol &&
-          ref.toTable === actualToTable &&
-          ref.toCol === actualToCol) ||
-        (ref.fromTable === actualToTable &&
-          ref.fromCol === actualToCol &&
-          ref.toTable === actualFromTable &&
-          ref.toCol === actualFromCol)
+        (ref.fromTable === fromTable &&
+          ref.fromCol === fromCol &&
+          ref.toTable === toTable &&
+          ref.toCol === toCol) ||
+        (ref.fromTable === toTable &&
+          ref.fromCol === toCol &&
+          ref.toTable === fromTable &&
+          ref.toCol === fromCol)
     );
 
-    if (exists || (actualFromTable === actualToTable && actualFromCol === actualToCol)) {
+    if (exists || (fromTable === toTable && fromCol === toCol)) {
       return false;
     }
 
-    const refLine = `Ref: ${actualFromTable}.${actualFromCol} > ${actualToTable}.${actualToCol}`;
+    const refLine = `Ref: ${fromTable}.${fromCol} ${operator} ${toTable}.${toCol}`;
     this.code = this.code.trimEnd()
       ? `${this.code.trimEnd()}\n${refLine}`
       : refLine;
@@ -2301,6 +2658,7 @@ export class DashboardService {
       }),
       tap((res) => {
         this.diagrams.set(res.data);
+        this.totalDiagrams.set(res.total);
       }),
       catchError((error) => {
         return throwError(() => error);
@@ -2318,6 +2676,55 @@ export class DashboardService {
       tap(() => {
         const currentList = this.diagrams().filter((d) => d.id !== id);
         this.diagrams.set(currentList);
+        this.totalDiagrams.update(n => Math.max(0, n > 0 ? n - 1 : currentList.length));
+        this.entitlementService.decrementUsage('create_diagrams');
+
+        if (Number(this.diagramId()) === Number(id)) {
+          const currentWsId = this.activeWorkspaceId();
+          const currentWsName = this.activeWorkspaceName;
+          const currentWsType = this.diagramWorkspaceType();
+
+          if (this.invalidRefDeletionTimeout) {
+            clearTimeout(this.invalidRefDeletionTimeout);
+            this.invalidRefDeletionTimeout = null;
+          }
+          this.editorErrors.set([]);
+          this.socketService.disconnect();
+          this.activeRoomUsers.set([]);
+          this.remoteCursors.set({});
+
+          this.diagramId.set(null);
+          this.diagramName = 'Untitled Diagram';
+          this.code = '';
+          this.tables = [];
+          this.refs = [];
+          this.groups = [];
+          this.notes = [];
+          this.tablePositions = {};
+          this.refColors = {};
+          this.groupColors = {};
+          this.groupIds = {};
+          this.noteIds = {};
+          this.tableColorsMap = {};
+          this.showCanvasPlaceholder = true;
+          this.hoveredConnectionIndex = -1;
+          this.selectedConnectionIndex = -1;
+          this.updateGutter();
+          this.parseAndLayout();
+          this.scheduleDraw();
+          this.updateOriginalState();
+
+          if (currentWsId != null) {
+            this.setActiveWorkspace(currentWsId, currentWsName);
+            this.diagramWorkspaceType.set(currentWsType);
+          } else {
+            this.setActiveWorkspace(null);
+          }
+
+          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            localStorage.removeItem('active_diagram_id');
+          }
+        }
       })
     );
   }
@@ -2691,13 +3098,22 @@ export class DashboardService {
       ?? null;
     this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, fallbackWorkspace?.name);
 
-    const wsType = diagram?.workspacetype ?? diagram?.workspaceType ?? diagram?.workspace_type ?? diagram?.workspace?.workspacetype
-      ?? this.extractWorkspaceType(response)
-      ?? 'Personal';
-    this.diagramWorkspaceType.set(wsType);
+    let wsType = diagram?.workspacetype ?? diagram?.workspaceType ?? diagram?.workspace_type ?? diagram?.workspace?.workspacetype
+      ?? this.extractWorkspaceType(response);
+
+    if (!wsType) {
+      if (rawWsId != null) {
+        const foundWs = this.workspaces().find(w => w.id === Number(rawWsId));
+        wsType = foundWs?.type || 'Team';
+      } else {
+        wsType = 'Personal';
+      }
+    }
+    const normalizedWsType = wsType.toString().trim().toLowerCase() === 'team' ? 'Team' : 'Personal';
+    this.diagramWorkspaceType.set(normalizedWsType);
 
     const permission = diagram?.permission ?? diagram?.workspace?.permission ?? diagram?.shared_permission ?? response?.data?.permission ?? 'Editor';
-    if (wsType === 'Team' && permission === 'Viewer') {
+    if (normalizedWsType === 'Team' && permission === 'Viewer') {
       this.isReadOnly = true;
     } else {
       this.isReadOnly = false;
@@ -2941,14 +3357,24 @@ export class DashboardService {
     const payload = { name: name || 'Untitled Diagram' };
     const url = this.appConfig.environment?.diagramApiUrls?.diagrams ?? "";
     return this.http.post<any>(url, payload, { headers }).pipe(
-      tap((res) => {
-        const id = res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
-          ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
-        this.setActiveWorkspace(null);
-        if (id != null) {
-          this.diagramId.set(id);
-          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-            localStorage.setItem('active_diagram_id', String(id));
+      tap({
+        next: (res) => {
+          const id = res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
+            ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
+          this.setActiveWorkspace(null);
+          this.diagramWorkspaceType.set('Personal');
+          if (id != null) {
+            this.diagramId.set(id);
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+              localStorage.setItem('active_diagram_id', String(id));
+            }
+          }
+          this.totalDiagrams.update(n => n + 1);
+          this.entitlementService.incrementUsage('create_diagrams');
+        },
+        error: (err) => {
+          if (err?.status === 403) {
+            this.showUpgradeModal('create_diagrams');
           }
         }
       })
@@ -2963,14 +3389,32 @@ export class DashboardService {
     };
     const url = this.appConfig.environment?.diagramApiUrls?.diagrams ?? "";
     return this.http.post<any>(url, payload, { headers }).pipe(
-      tap((res) => {
-        const id = this.extractDiagramId(res) ?? res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
-          ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
-        this.setActiveWorkspace(Number(workspaceId), workspaceName);
-        if (id != null) {
-          this.diagramId.set(Number(id));
-          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-            localStorage.setItem('active_diagram_id', String(id));
+      tap({
+        next: (res) => {
+          const id = this.extractDiagramId(res) ?? res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
+            ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
+          this.setActiveWorkspace(Number(workspaceId), workspaceName);
+          this.diagramWorkspaceType.set('Team');
+          if (id != null) {
+            this.diagramId.set(Number(id));
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+              localStorage.setItem('active_diagram_id', String(id));
+            }
+          }
+          this.totalDiagrams.update(n => n + 1);
+          this.entitlementService.incrementUsage('create_diagrams');
+
+          // Connect to socket if newly created in a team workspace
+          const dId = this.diagramId();
+          if (dId) {
+            this.socketService.connect();
+            this.socketService.joinDiagram(dId);
+            this.setupSocketListeners();
+          }
+        },
+        error: (err) => {
+          if (err?.status === 403) {
+            this.showUpgradeModal('create_diagrams');
           }
         }
       })
@@ -2985,6 +3429,7 @@ export class DashboardService {
         const id = res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
           ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
         this.setActiveWorkspace(null);
+        this.diagramWorkspaceType.set('Personal');
         if (id != null) {
           this.diagramId.set(id);
           if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -3004,6 +3449,11 @@ export class DashboardService {
   }
 
   saveDiagram(): Observable<any> {
+    if (this.isDiagramNameEmpty()) {
+      this.showToast('Diagram name should not be empty', 4000, 'error');
+      return throwError(() => new Error('Diagram name should not be empty'));
+    }
+
     const headers = this.getAuthHeaders();
     const currentId = this.diagramId();
 
@@ -3021,32 +3471,48 @@ export class DashboardService {
       );
     }
 
-    const payload = {
+    const currentWsId = this.activeWorkspaceId();
+    const payload: any = {
       name: this.diagramName,
       diagramDbml: this.code,
       layout: this.buildLayoutPayload()
     };
+    if (currentWsId != null) {
+      payload.workspaceId = currentWsId;
+    }
     const url = this.appConfig.environment?.diagramApiUrls?.diagrams ?? "";
     return this.http.post<any>(url, payload, { headers }).pipe(
-      tap((res) => {
-        const ids = this.extractDiagramId(res);
-        if (ids != null) {
-          this.diagramId.set(ids);
-          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-            localStorage.setItem('active_diagram_id', String(ids));
+      tap({
+        next: (res) => {
+          const ids = this.extractDiagramId(res);
+          if (ids != null) {
+            this.diagramId.set(ids);
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+              localStorage.setItem('active_diagram_id', String(ids));
+            }
+          } else {
           }
-        } else {
-        }
-        this.updateOriginalState();
-        this.extractIdsFromResponse(res);
-        
-        // Connect to socket if newly created in a team workspace
-        if (this.diagramWorkspaceType() === 'Team') {
-          const dId = this.diagramId();
-          if (dId) {
-            this.socketService.connect();
-            this.socketService.joinDiagram(dId);
-            this.setupSocketListeners();
+          if (currentWsId != null) {
+            this.diagramWorkspaceType.set('Team');
+          }
+          this.updateOriginalState();
+          this.extractIdsFromResponse(res);
+          this.totalDiagrams.update(n => n + 1);
+          this.entitlementService.incrementUsage('create_diagrams');
+          
+          // Connect to socket if newly created in a team workspace
+          if (this.diagramWorkspaceType() === 'Team') {
+            const dId = this.diagramId();
+            if (dId) {
+              this.socketService.connect();
+              this.socketService.joinDiagram(dId);
+              this.setupSocketListeners();
+            }
+          }
+        },
+        error: (err) => {
+          if (err?.status === 403) {
+            this.showUpgradeModal('create_diagrams');
           }
         }
       }),
@@ -3176,19 +3642,25 @@ export class DashboardService {
   }
 
   clearDiagram(preserveDiagramId = false): void {
+    if (this.invalidRefDeletionTimeout) {
+      clearTimeout(this.invalidRefDeletionTimeout);
+      this.invalidRefDeletionTimeout = null;
+    }
+    this.editorErrors.set([]);
     this.socketService.disconnect();
     this.activeRoomUsers.set([]);
     this.remoteCursors.set({});
     this.code = '';
     this.tables = [];
     this.refs = [];
+    this.groups = [];
+    this.notes = [];
     this.tablePositions = {};
     this.refColors = {};
     this.groupColors = {};
     this.groupIds = {};
     this.noteIds = {};
     this.tableColorsMap = {};
-    this.diagramWorkspaceType.set('Personal');
     this.diagramName = '';
     this.showDocs = false;
     this.showCanvasPlaceholder = false;
@@ -3198,12 +3670,16 @@ export class DashboardService {
     this.isStraightLine = false;
     this.isSmoothLine = true;
     if (!preserveDiagramId) {
+      this.diagramWorkspaceType.set('Personal');
       this.setActiveWorkspace(null);
       this.diagramId.set(null);
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         localStorage.removeItem('active_diagram_id');
       }
     } else {
+      if (this.activeWorkspaceId() != null) {
+        this.diagramWorkspaceType.set('Team');
+      }
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         localStorage.setItem('active_diagram_id', String(this.diagramId()));
       }
@@ -3310,16 +3786,10 @@ export class DashboardService {
   }
 
   shouldReverseFlow(ref: RefDef): boolean {
-    const fromPk = this.isPrimaryKey(ref.fromTable, ref.fromCol);
-    const toPk = this.isPrimaryKey(ref.toTable, ref.toCol);
-
-    if (fromPk && !toPk) {
+    if (ref.relType === '-') {
       return true;
     }
-    if (!fromPk && toPk) {
-      return false;
-    }
-    return true;
+    return false;
   }
 
   anchorOffset(table: string, col: string, refIndex: number, usage: Record<string, number[]>): number {
@@ -3550,6 +4020,11 @@ export class DashboardService {
           }
         },
         error: (err) => {
+          if (err?.status === 403) {
+            this.showUpgradeModal('create_diagrams');
+            this.unsavedModalVisible.set(false);
+            return;
+          }
           this.showToast('Failed to save diagram.', 4000, 'error');
         }
       });

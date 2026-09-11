@@ -1,4 +1,5 @@
-import { Component, ElementRef, HostListener, ViewChild, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject, ChangeDetectorRef } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject, ChangeDetectorRef, effect } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -57,9 +58,19 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     public auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
-    public entitlementService: EntitlementService
+    public entitlementService: EntitlementService,
+    private titleService: Title
   ) {
     this.splitViewSubscription = this.svc.splitViewRequested$.subscribe(() => this.restoreSplitView());
+
+    effect(() => {
+      const name = this.svc.diagramNameSignal()?.trim();
+      if (name) {
+        this.titleService.setTitle(`${name} - DBNexus`);
+      } else {
+        this.titleService.setTitle('Dashboard - DBNexus');
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -135,6 +146,13 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
                     createReq$.subscribe({
                       next: (newDiag: any) => {
                         this.svc.clearDiagram(true);
+                        if (activeWsId) {
+                          this.svc.setActiveWorkspace(activeWsId, this.svc.activeWorkspaceName);
+                          this.svc.diagramWorkspaceType.set('Team');
+                        } else {
+                          this.svc.setActiveWorkspace(null);
+                          this.svc.diagramWorkspaceType.set('Personal');
+                        }
                         this.svc.code = '';
                         this.svc.diagramName = 'Untitled Diagram';
                         this.svc.diagramId.set(newDiag.id || newDiag.diagram_id || newDiag.diagramid);

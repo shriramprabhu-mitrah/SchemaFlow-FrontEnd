@@ -216,6 +216,41 @@ export class PricingComponent implements OnInit {
     return '';
   }
 
+  expandedCards = new Set<string | number>();
+
+  isPlanExpanded(plan: any): boolean {
+    const key = plan?.id ?? plan?.slug;
+    return this.expandedCards.has(key);
+  }
+
+  togglePlanFeatures(plan: any): void {
+    const key = plan?.id ?? plan?.slug;
+    if (this.expandedCards.has(key)) {
+      this.expandedCards.delete(key);
+    } else {
+      this.expandedCards.add(key);
+    }
+  }
+
+  getValidEntitlements(plan: any): any[] {
+    if (!plan || !plan.entitlements) return [];
+    return plan.entitlements.filter((ent: any) =>
+      ent.value !== 'false' && ent.value !== false && ent.display_text !== '-' && ent.display_text !== '—'
+    );
+  }
+
+  getVisibleEntitlements(plan: any): any[] {
+    const valid = this.getValidEntitlements(plan);
+    if (this.isPlanExpanded(plan)) {
+      return valid;
+    }
+    return valid.slice(0, 5);
+  }
+
+  hasMoreFeatures(plan: any): boolean {
+    return this.getValidEntitlements(plan).length > 5;
+  }
+
   getFeatureValue(plan: any, featureKey: string): string {
     const ent = (plan.entitlements || []).find((e: any) => e.feature_key === featureKey);
     if (!ent) return '—';

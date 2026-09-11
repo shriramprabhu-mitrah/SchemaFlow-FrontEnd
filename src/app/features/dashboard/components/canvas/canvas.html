@@ -339,7 +339,7 @@
         <div class="table-column-labels" aria-hidden="true">
           <span>#</span><span>Column name</span><span>Type</span><span>Constraints</span><span></span>
         </div>
-        <div class="table-columns-list" (scroll)="closeAllDropdowns()">
+        <div class="table-columns-list" #tableColumnsList (scroll)="closeAllDropdowns()">
           <div class="table-column" *ngFor="let column of tableModal.columns; let i = index">
             <span class="column-number">{{ i + 1 }}</span>
             <input aria-label="Column name" placeholder="column_name" [(ngModel)]="column.name"
