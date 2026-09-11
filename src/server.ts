@@ -11,7 +11,7 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine({
-  allowedHosts: ['*.railway.app', 'localhost'],
+  allowedHosts: ['*.railway.app', 'localhost', 'www.dbnexus.io', 'dbnexus.io'],
   trustProxyHeaders: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto'],
 });
 

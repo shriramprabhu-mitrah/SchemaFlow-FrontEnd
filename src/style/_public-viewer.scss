@@ -43,7 +43,7 @@ app-public-viewer {
 .diagram-name {
   font-weight: 500;
   font-size: 0.95rem;
-  color: #f8fafc;
+  color: var(--text);
 }
 
 .read-only-badge {
@@ -56,7 +56,7 @@ app-public-viewer {
   text-transform: uppercase;
 }
 
-:host(.light) .read-only-badge {
+&.light .read-only-badge {
   background-color: #e2e8f0;
   color: #334155;
 }
@@ -72,7 +72,7 @@ app-public-viewer {
   color: #94a3b8;
 }
 
-:host(.light) .theme-label {
+&.light .theme-label {
   color: #94a3b8;
   font-weight: 500;
 }
@@ -99,7 +99,7 @@ app-public-viewer {
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--bg-color);
+  background: var(--canvas-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,7 +139,7 @@ app-public-viewer {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 600;
-  color: #f8fafc;
+  color: var(--text);
 }
 
 .password-box p,
@@ -150,34 +150,34 @@ app-public-viewer {
   line-height: 1.5;
 }
 
-:host(.light) .dedicated-screen {
+&.light .dedicated-screen {
   background: #f8fafc;
 }
 
-:host(.light) .password-box,
-:host(.light) .error-box {
+&.light .password-box,
+&.light .error-box {
   background-color: #ffffff;
   border-color: #e2e8f0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-:host(.light) .password-box h3,
-:host(.light) .error-box h3 {
+&.light .password-box h3,
+&.light .error-box h3 {
   color: #1e293b;
 }
 
-:host(.light) .password-box p,
-:host(.light) .error-box p {
+&.light .password-box p,
+&.light .error-box p {
   color: #64748b;
 }
 
-:host(.light) .db-input.password-input {
+&.light .db-input.password-input {
   background: #ffffff;
   border: 1px solid #cbd5e1;
   color: #334155;
 }
 
-:host(.light) .db-input.password-input:focus {
+&.light .db-input.password-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(62, 197, 193, 0.2);
 }
