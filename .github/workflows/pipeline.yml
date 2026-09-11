@@ -81,9 +81,7 @@ jobs:
           echo "Deploying frontend to Railway DEV..."
 
           railway up \
-            --project "$RAILWAY_PROJECT_ID" \
             --service "DB Nexus-frontend" \
-            --environment "Dev" \
             --ci
 
 
@@ -112,9 +110,7 @@ jobs:
           echo "Deploying frontend to Railway UAT..."
 
           railway up \
-            --project "$RAILWAY_PROJECT_ID" \
             --service "DB Nexus-frontend" \
-            --environment "UAT" \
             --ci
 
 
@@ -143,7 +139,5 @@ jobs:
           echo "Deploying frontend to Railway PRODUCTION..."
 
           railway up \
-            --project "$RAILWAY_PROJECT_ID" \
             --service "DB Nexus-frontend" \
-            --environment "Prod" \
             --ci
