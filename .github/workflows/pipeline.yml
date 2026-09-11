@@ -83,7 +83,7 @@ jobs:
           railway up \
             --project "$RAILWAY_PROJECT_ID" \
             --service "DB Nexus-frontend" \
-            --environment "dev" \
+            --environment "Dev" \
             --ci
 
 
@@ -114,7 +114,7 @@ jobs:
           railway up \
             --project "$RAILWAY_PROJECT_ID" \
             --service "DB Nexus-frontend" \
-            --environment "uat" \
+            --environment "UAT" \
             --ci
 
 
@@ -145,5 +145,5 @@ jobs:
           railway up \
             --project "$RAILWAY_PROJECT_ID" \
             --service "DB Nexus-frontend" \
-            --environment "production" \
+            --environment "Prod" \
             --ci
