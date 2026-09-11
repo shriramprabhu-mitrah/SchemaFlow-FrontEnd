@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, map, of, tap, shareReplay } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, map, of, tap, shareReplay, catchError } from 'rxjs';
 import { OrganizationService } from '../../features/organization/services/organization.service';
 import { AuthService } from './auth.service';
+import { AppConfigService } from './app-config.service';
 
 export interface EffectiveEntitlement {
     feature_key: string;
@@ -20,6 +22,8 @@ export interface EffectiveEntitlement {
 export class EntitlementService {
   private orgService = inject(OrganizationService);
   private auth = inject(AuthService);
+  private http = inject(HttpClient);
+  private appConfig = inject(AppConfigService);
 
   private entitlementsSubject = new BehaviorSubject<EffectiveEntitlement[]>([]);
   public entitlements$ = this.entitlementsSubject.asObservable();
@@ -27,12 +31,18 @@ export class EntitlementService {
   private orgEntitlementsSubject = new BehaviorSubject<EffectiveEntitlement[]>([]);
   public orgEntitlements$ = this.orgEntitlementsSubject.asObservable();
 
+  private plansSubject = new BehaviorSubject<any[]>([]);
+  public plans$ = this.plansSubject.asObservable();
+  private plansLoaded = false;
+
   private loadedOrgId: number | null = null;
   private inflightRequest$: Observable<EffectiveEntitlement[]> | null = null;
   public memberFeatureAccess: string[] | null = null;
   public hasUsedTrial: boolean = false;
 
   loadEntitlements(force = false): Observable<EffectiveEntitlement[]> {
+    this.loadPlans(force).subscribe();
+
     if (this.inflightRequest$ && !force) {
       return this.inflightRequest$;
     }
@@ -86,7 +96,78 @@ export class EntitlementService {
   }
 
   getEntitlement(featureKey: string): any | undefined {
-    return this.entitlementsSubject.value.find(e => e.feature_key === featureKey);
+    let ent = this.entitlementsSubject.value.find(e => e.feature_key === featureKey);
+    if (!ent) {
+      if (featureKey === 'create_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'max_diagrams');
+      else if (featureKey === 'max_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'create_diagrams');
+    }
+    return ent;
+  }
+
+  decrementUsage(featureKey: string, amount: number = 1): void {
+    const isTarget = (k: string) =>
+      k === featureKey ||
+      (featureKey === 'create_diagrams' && k === 'max_diagrams') ||
+      (featureKey === 'max_diagrams' && k === 'create_diagrams');
+
+    const updateList = (list: any[]) => {
+      return (list || []).map((e: any) => {
+        if (isTarget(e.feature_key)) {
+          const copy = { ...e };
+          if (copy.used !== undefined && copy.used !== null) {
+            copy.used = Math.max(0, Number(copy.used) - amount);
+          }
+          if (copy.remaining !== undefined && copy.remaining !== null) {
+            copy.remaining = Number(copy.remaining) + amount;
+          }
+          return copy;
+        }
+        return e;
+      });
+    };
+
+    const updated = updateList(this.entitlementsSubject.value);
+    this.entitlementsSubject.next(updated);
+    this.orgEntitlementsSubject.next(updated);
+
+    const cached = updateList(this.auth.getEntitlements());
+    this.auth.setEntitlements(cached);
+
+    // Sync with backend asynchronously
+    this.loadEntitlements(true).subscribe();
+  }
+
+  incrementUsage(featureKey: string, amount: number = 1): void {
+    const isTarget = (k: string) =>
+      k === featureKey ||
+      (featureKey === 'create_diagrams' && k === 'max_diagrams') ||
+      (featureKey === 'max_diagrams' && k === 'create_diagrams');
+
+    const updateList = (list: any[]) => {
+      return (list || []).map((e: any) => {
+        if (isTarget(e.feature_key)) {
+          const copy = { ...e };
+          if (copy.used !== undefined && copy.used !== null) {
+            copy.used = Number(copy.used) + amount;
+          }
+          if (copy.remaining !== undefined && copy.remaining !== null) {
+            copy.remaining = Math.max(0, Number(copy.remaining) - amount);
+          }
+          return copy;
+        }
+        return e;
+      });
+    };
+
+    const updated = updateList(this.entitlementsSubject.value);
+    this.entitlementsSubject.next(updated);
+    this.orgEntitlementsSubject.next(updated);
+
+    const cached = updateList(this.auth.getEntitlements());
+    this.auth.setEntitlements(cached);
+
+    // Sync with backend asynchronously
+    this.loadEntitlements(true).subscribe();
   }
 
   isMember(): boolean {
@@ -101,8 +182,9 @@ export class EntitlementService {
       if (this.memberFeatureAccess.includes(featureKey)) return true;
       
       // Handle aliases/plurals that might have been saved inconsistently in the past
-      if (featureKey === 'create_diagrams' && (this.memberFeatureAccess.includes('create_diagram') || this.memberFeatureAccess.includes('diagram_creation'))) return true;
-      if (featureKey === 'create_diagram' && this.memberFeatureAccess.includes('create_diagrams')) return true;
+      if ((featureKey === 'create_diagrams' || featureKey === 'max_diagrams') && 
+          (this.memberFeatureAccess.includes('create_diagram') || this.memberFeatureAccess.includes('create_diagrams') || this.memberFeatureAccess.includes('max_diagrams') || this.memberFeatureAccess.includes('diagram_creation'))) return true;
+      if (featureKey === 'create_diagram' && (this.memberFeatureAccess.includes('create_diagrams') || this.memberFeatureAccess.includes('max_diagrams'))) return true;
       if (featureKey === 'create_workspaces' && this.memberFeatureAccess.includes('create_workspace')) return true;
       if (featureKey === 'create_workspace' && this.memberFeatureAccess.includes('create_workspaces')) return true;
       
@@ -126,7 +208,11 @@ export class EntitlementService {
     // Check org entitlements if available
     const orgEnts = this.orgEntitlementsSubject.value;
     if (orgEnts && orgEnts.length > 0) {
-        const orgEnt = orgEnts.find(e => e.feature_key === featureKey);
+        let orgEnt = orgEnts.find(e => e.feature_key === featureKey);
+        if (!orgEnt) {
+          if (featureKey === 'create_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'max_diagrams');
+          else if (featureKey === 'max_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'create_diagrams');
+        }
         if (orgEnt) {
             return orgEnt.enabled === true || (orgEnt as any).value === 'true' || (orgEnt as any).value === true;
         }
@@ -159,6 +245,9 @@ export class EntitlementService {
           if (ent.remaining !== undefined && ent.remaining <= 0) {
             return false;
           }
+          if (ent.used !== undefined && ent.used >= limit) {
+            return false;
+          }
         }
         return true;
       }
@@ -167,7 +256,11 @@ export class EntitlementService {
     // 2. Fallback: retrieve user entitlements cached in local storage directly
     const cachedEnts = this.auth.getEntitlements();
     if (cachedEnts && cachedEnts.length > 0) {
-      const userEnt = cachedEnts.find((e: any) => e.feature_key === featureKey);
+      let userEnt = cachedEnts.find((e: any) => e.feature_key === featureKey);
+      if (!userEnt) {
+        if (featureKey === 'create_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'max_diagrams');
+        else if (featureKey === 'max_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'create_diagrams');
+      }
       if (userEnt) {
         const isTrue = userEnt.enabled === true || userEnt.value === 'true' || userEnt.value === true;
         const isFalse = userEnt.enabled === false || userEnt.value === 'false' || userEnt.value === false;
@@ -179,164 +272,97 @@ export class EntitlementService {
             if (userEnt.remaining !== undefined && userEnt.remaining <= 0) {
               return false;
             }
+            if (userEnt.used !== undefined && userEnt.used >= limit) {
+              return false;
+            }
           }
           return true;
         }
       }
     }
 
-    // 3. Fallback: check fallback plans based on current plan slug
+    // 3. Fallback: check plans loaded dynamically from API response
     const planSlug = this.auth.getCurrentPlanSlug() || 'free';
-    const plan = FALLBACK_PLANS.find(p => p.slug === planSlug) || FALLBACK_PLANS[0];
-    const fallbackEnt = plan.entitlements.find((e: any) => e.feature_key === featureKey);
-    if (fallbackEnt) {
-      return fallbackEnt.value !== 'false' && (fallbackEnt.value as any) !== false;
+    const plans = this.getPlans();
+    const plan = plans.find((p: any) => p.slug === planSlug) || plans.find((p: any) => p.slug === 'free') || plans[0];
+    if (plan && plan.entitlements) {
+      const fallbackEnt = plan.entitlements.find((e: any) => 
+        e.feature_key === featureKey || 
+        (featureKey === 'create_diagrams' && e.feature_key === 'max_diagrams') ||
+        (featureKey === 'max_diagrams' && e.feature_key === 'create_diagrams')
+      );
+      if (fallbackEnt) {
+        const isValTrue = fallbackEnt.value !== 'false' && (fallbackEnt.value as any) !== false;
+        if (!isValTrue) return false;
+        const limit = (fallbackEnt as any).limit_value;
+        if (limit !== undefined && limit !== null && limit !== -1) {
+          if ((fallbackEnt as any).remaining !== undefined && (fallbackEnt as any).remaining <= 0) {
+            return false;
+          }
+          if ((fallbackEnt as any).used !== undefined && (fallbackEnt as any).used >= limit) {
+            return false;
+          }
+        }
+        return true;
+      }
     }
 
     return true; // default to true if the feature is unknown
   }
-}
 
-export const FALLBACK_PLANS = [
-  {
-    slug: 'free',
-    name: 'Free',
-    description: 'For developers drafting personal schemas and single diagrams.',
-    price_monthly: 0,
-    price_annual: 0,
-    plan_type: 'individual',
-    highlight_color: '#3ec5c1',
-    entitlements: [
-      { feature_key: 'digram_view', value: 'false' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: 5, display_text: 'Upto 5 Diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'false' },
-      { feature_key: 'table_color_and_connection_color', value: 'false' },
-      { feature_key: 'import_sql', value: 'false' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'false' },
-      { feature_key: 'document_view', value: 'false' },
-      { feature_key: 'version_history', value: 'false' },
-      { feature_key: 'create_workspaces', value: 'false' },
-      { feature_key: 'workspace_members', value: 'false' },
-      { feature_key: 'workspace_types', value: 'personal' },
-      { feature_key: 'realtime_collab', value: 'false' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'false' },
-      { feature_key: 'diagram_notes', value: 'false' },
-      { feature_key: 'max_workspace_members', value: 'false', limit_value: 5 },
-      { feature_key: 'diagram_detailing', value: 'false' }
-    ]
-  },
-  {
-    slug: 'premium',
-    name: 'Premium Schema',
-    description: 'For individual freelancers and consultants managing relational setups.',
-    price_monthly: 399,
-    price_annual: 299,
-    plan_type: 'individual',
-    highlight_color: '#3b82f6',
-    entitlements: [
-      { feature_key: 'digram_view', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'false' },
-      { feature_key: 'create_workspaces', value: 'false' },
-      { feature_key: 'workspace_members', value: 'false', limit_value: 0 },
-      { feature_key: 'workspace_types', value: 'personal' },
-      { feature_key: 'realtime_collab', value: 'false' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'false' },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  },
-  {
-    slug: 'team',
-    name: 'Team',
-    description: 'For collaborative product squads syncing database schema blueprints.',
-    price_monthly: 1999,
-    price_annual: 1599,
-    plan_type: 'organization',
-    highlight_color: '#10b981',
-    badge_text: 'POPULAR COLLABORATION',
-    entitlements: [
-      { feature_key: 'digram_view', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'true' },
-      { feature_key: 'create_workspaces', value: 'true', limit_value: -1, display_text: 'Unlimited' },
-      { feature_key: 'workspace_members', value: 'true', limit_value: 5, display_text: 'Max 5 members' },
-      { feature_key: 'workspace_types', value: 'all', display_text: 'Personal & Shared' },
-      { feature_key: 'realtime_collab', value: 'true' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'false' },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  },
-  {
-    slug: 'enterprise',
-    name: 'Enterprise Shield',
-    description: 'For organizations requiring custom hostings, SLAs, and SAML SSO.',
-    price_monthly: 0,
-    price_annual: 0,
-    plan_type: 'organization',
-    highlight_color: '#f59e0b',
-    entitlements: [
-      { feature_key: 'digram_view', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'true' },
-      { feature_key: 'create_workspaces', value: 'true', limit_value: -1, display_text: 'Unlimited' },
-      { feature_key: 'workspace_members', value: 'true', limit_value: -1, display_text: 'Unlimited members' },
-      { feature_key: 'workspace_types', value: 'all', display_text: 'Personal & Shared' },
-      { feature_key: 'realtime_collab', value: 'true' },
-      { feature_key: 'sso', value: 'true' },
-      { feature_key: 'audit_logs', value: 'true' },
-      { feature_key: 'custom_hosting', value: 'true' },
-      { feature_key: 'api_access', value: 'true' },
-      { feature_key: 'advanced_iam', value: 'true' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'true', limit_value: -1 },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
+  loadPlans(force = false): Observable<any[]> {
+    if (this.plansLoaded && !force && this.plansSubject.value.length > 0) {
+      return of(this.plansSubject.value);
+    }
+    const cachedPlans = this.getCachedPlans();
+    if (cachedPlans.length > 0 && !force) {
+      this.plansSubject.next(cachedPlans);
+    }
+
+    const url = this.appConfig.environment?.pricingApiUrls?.plans;
+    if (!url) {
+      return of(this.plansSubject.value);
+    }
+
+    return this.http.get<any>(url).pipe(
+      map(res => res?.data || res || []),
+      tap(plans => {
+        if (Array.isArray(plans) && plans.length > 0) {
+          this.plansLoaded = true;
+          this.setCachedPlans(plans);
+          this.plansSubject.next(plans);
+        }
+      }),
+      catchError(err => {
+        console.error('Failed to load plans from response:', err);
+        return of(this.plansSubject.value);
+      }),
+      shareReplay(1)
+    );
   }
-];
+
+  getPlans(): any[] {
+    if (this.plansSubject.value.length > 0) {
+      return this.plansSubject.value;
+    }
+    return this.getCachedPlans();
+  }
+
+  private getCachedPlans(): any[] {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const stored = localStorage.getItem('schemaflow_plans');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return [];
+  }
+
+  private setCachedPlans(plans: any[]): void {
+    if (typeof window !== 'undefined' && window.localStorage && plans) {
+      try {
+        localStorage.setItem('schemaflow_plans', JSON.stringify(plans));
+      } catch (e) {}
+    }
+  }
+}

@@ -208,10 +208,12 @@ export class HeaderComponent implements OnInit {
   }
 
   createDiagram(): void {
-    if (!this.entitlementService.canUseFeature('create_diagrams')) {
-      if (!this.entitlementService.orgHasFeature('create_diagrams')) {
-        this.svc.showUpgradeModal('create_diagrams');
-      }
+    const isFreePlan = (this.auth.getCurrentPlanSlug() || 'free') === 'free';
+    const diagramCount = this.svc.totalDiagrams() > 0 ? this.svc.totalDiagrams() : this.svc.diagrams().length;
+    const isAtLimit = (isFreePlan && diagramCount >= 5) || !this.entitlementService.canUseFeature('create_diagrams');
+
+    if (isAtLimit) {
+      this.svc.showUpgradeModal('create_diagrams');
       return;
     }
 
@@ -230,6 +232,13 @@ export class HeaderComponent implements OnInit {
       createReq$.subscribe({
         next: () => {
           this.svc.clearDiagram(true);
+          if (activeWsId) {
+            this.svc.setActiveWorkspace(activeWsId, this.svc.activeWorkspaceName);
+            this.svc.diagramWorkspaceType.set('Team');
+          } else {
+            this.svc.setActiveWorkspace(null);
+            this.svc.diagramWorkspaceType.set('Personal');
+          }
           this.svc.diagramName = 'Untitled Diagram';
           const id = this.svc.diagramId();
           this.svc.showToast('Diagram created successfully.', 3000, 'success');
@@ -287,14 +296,82 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  onDiagramNameInput(e: InputEvent): void {
+  private diagramNameDebounce: any;
+
+  private getDiagramNameFromEl(el: HTMLElement): string {
+    if (!el) return '';
+    return (el.textContent || '').replace(/[\u200B\u00A0\r\n\t]/g, ' ').trim();
+  }
+
+  onDiagramNameInput(e: Event): void {
     const el = e.target as HTMLDivElement;
-    this.svc.diagramName = el.innerText.trim();
+    const name = this.getDiagramNameFromEl(el);
+    this.svc.diagramName = name;
+
+    if (this.diagramNameDebounce) {
+      clearTimeout(this.diagramNameDebounce);
+      this.diagramNameDebounce = null;
+    }
+
+    if (name && name !== this.svc.originalDiagramName) {
+      this.diagramNameDebounce = setTimeout(() => {
+        if (
+          this.svc.diagramName &&
+          !this.svc.isDiagramNameEmpty() &&
+          this.svc.canSaveDiagram(false) &&
+          this.svc.validateDiagramName(false)
+        ) {
+          if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
+            this.svc.emitCollabChange();
+          } else {
+            this.svc.saveDiagram().subscribe({ error: () => {} });
+          }
+        }
+      }, 1000);
+    }
   }
 
   onDiagramNameBlur(e: FocusEvent): void {
+    if (this.diagramNameDebounce) {
+      clearTimeout(this.diagramNameDebounce);
+      this.diagramNameDebounce = null;
+    }
+
     const el = e.target as HTMLDivElement;
-    this.svc.diagramName = el.innerText.trim();
+    const name = this.getDiagramNameFromEl(el);
+    this.svc.diagramName = name;
+    if (!name) {
+      el.textContent = '';
+      this.svc.showToast('Diagram name should not be empty', 4000, 'error');
+      return;
+    }
+
+    if (
+      name !== this.svc.originalDiagramName &&
+      this.svc.canSaveDiagram(false) &&
+      this.svc.validateDiagramName(false)
+    ) {
+      if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
+        this.svc.emitCollabChange();
+      } else {
+        this.svc.saveDiagram().subscribe({
+          error: () => {}
+        });
+      }
+    }
+  }
+
+  onDiagramNameKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      (e.target as HTMLElement).blur();
+    }
+  }
+
+  onStatusIconClick(): void {
+    if (this.svc.isDiagramNameEmpty()) {
+      this.svc.showToast('Diagram name should not be empty', 4000, 'error');
+    }
   }
 
   toggleDocs(): void {

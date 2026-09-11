@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
@@ -16,6 +16,7 @@ import { Icons } from '../../../core/component/icons/icons';
 export class FeatureManagementComponent implements OnInit {
   private admin = inject(AdminService);
   private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
   public dashService = inject(DashboardService);
 
   allFeatures: any[] = [];
@@ -95,23 +96,30 @@ export class FeatureManagementComponent implements OnInit {
       debounceTime(300),
       distinctUntilChanged()
     ).subscribe(() => {
-      this.page = 1;
-      this.load();
+      this.ngZone.run(() => {
+        this.page = 1;
+        this.load();
+      });
     });
   }
 
   load(): void {
     this.loading = true;
+    this.cdr.detectChanges();
     this.admin.getFeatures(this.page, this.limit, this.search, this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
-        this.allFeatures = res?.data || res || [];
-        this.totalFilteredCount = res?.meta?.total || this.allFeatures.length;
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.allFeatures = res?.data || res || [];
+          this.totalFilteredCount = res?.meta?.total || this.allFeatures.length;
+          this.loading = false;
+          this.cdr.detectChanges();
+        });
       },
       error: () => {
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.loading = false;
+          this.cdr.detectChanges();
+        });
       }
     });
   }
@@ -184,12 +192,17 @@ export class FeatureManagementComponent implements OnInit {
       : this.admin.createFeature(this.form);
     obs.subscribe({
       next: () => {
-        this.dashService.showToast(this.editMode ? 'Feature updated successfully!' : 'Feature created successfully!', 3500, 'success');
-        this.closeModal();
-        this.load();
+        this.ngZone.run(() => {
+          this.dashService.showToast(this.editMode ? 'Feature updated successfully!' : 'Feature created successfully!', 3500, 'success');
+          this.closeModal();
+          this.load();
+        });
       },
       error: (err: any) => {
-        this.dashService.showToast(err?.error?.message || 'Error saving feature', 4000, 'error');
+        this.ngZone.run(() => {
+          this.dashService.showToast(err?.error?.message || 'Error saving feature', 4000, 'error');
+          this.cdr.detectChanges();
+        });
       }
     });
   }
@@ -232,21 +245,31 @@ export class FeatureManagementComponent implements OnInit {
     if (type === 'deactivate') {
       this.admin.deleteFeature(id).subscribe({
         next: () => {
-          this.dashService.showToast('Feature deactivated!', 3500, 'success');
-          this.load();
+          this.ngZone.run(() => {
+            this.dashService.showToast('Feature deactivated!', 3500, 'success');
+            this.load();
+          });
         },
         error: (err: any) => {
-          this.dashService.showToast(err?.error?.message || 'Error deactivating feature', 4000, 'error');
+          this.ngZone.run(() => {
+            this.dashService.showToast(err?.error?.message || 'Error deactivating feature', 4000, 'error');
+            this.cdr.detectChanges();
+          });
         }
       });
     } else {
       this.admin.updateFeature(id, { is_active: true }).subscribe({
         next: () => {
-          this.dashService.showToast('Feature activated!', 3500, 'success');
-          this.load();
+          this.ngZone.run(() => {
+            this.dashService.showToast('Feature activated!', 3500, 'success');
+            this.load();
+          });
         },
         error: (err: any) => {
-          this.dashService.showToast(err?.error?.message || 'Error activating feature', 4000, 'error');
+          this.ngZone.run(() => {
+            this.dashService.showToast(err?.error?.message || 'Error activating feature', 4000, 'error');
+            this.cdr.detectChanges();
+          });
         }
       });
     }

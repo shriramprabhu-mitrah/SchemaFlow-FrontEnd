@@ -10,6 +10,7 @@ import { DashboardService } from '../../../../core/services/dashboard.service';
 import { OrganizationService } from '../../../organization/services/organization.service';
 import { timeout } from 'rxjs';
 import { ContactSalesModalComponent } from '../../../../shared/components/modals/contact-sales-modal/contact-sales-modal';
+import { EntitlementService } from '../../../../core/services/entitlement.service';
 
 @Component({
   selector: 'app-upgrade-modal',
@@ -37,7 +38,7 @@ export class UpgradeModalComponent implements OnInit {
         });
       }
 
-      if (this._featureKey === 'create_diagrams') {
+      if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams') {
         this.showLimitWarning = true;
       } else {
         this.showLimitWarning = false;
@@ -58,7 +59,7 @@ export class UpgradeModalComponent implements OnInit {
   @Input()
   set featureKey(val: string) {
     this._featureKey = val || '';
-    if (this._featureKey === 'create_diagrams') {
+    if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams') {
       this.showLimitWarning = true;
     } else {
       this.showLimitWarning = false;
@@ -88,6 +89,7 @@ export class UpgradeModalComponent implements OnInit {
   private appConfig = inject(AppConfigService);
   private cdr = inject(ChangeDetectorRef);
   private orgService = inject(OrganizationService);
+  private entitlementService = inject(EntitlementService);
 
   constructor(
     private auth: AuthService,
@@ -97,7 +99,8 @@ export class UpgradeModalComponent implements OnInit {
 
   get limitEntityName(): string {
     switch (this.featureKey) {
-      case 'create_diagrams': return 'diagram';
+      case 'create_diagrams':
+      case 'max_diagrams': return 'diagram';
       case 'create_workspaces': return 'workspace';
       case 'workspace_members': return 'team member';
       default: return 'feature';
@@ -126,25 +129,39 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   loadPlans(): void {
+    const cached = this.entitlementService.getPlans();
+    if (cached && cached.length > 0) {
+      this.allPlans = cached;
+      this.applyFeatureFilter();
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
+
     const url = this.appConfig.environment?.pricingApiUrls?.plans;
     if (url) {
-      this.http.get<any>(url).pipe(timeout(2500)).subscribe({
+      this.http.get<any>(url).pipe(timeout(3500)).subscribe({
         next: (res) => {
-          this.allPlans = res?.data && res.data.length > 0 ? res.data : FALLBACK_PLANS;
+          const plans = res?.data && res.data.length > 0 ? res.data : (Array.isArray(res) ? res : []);
+          if (plans.length > 0) {
+            this.allPlans = plans;
+            this.entitlementService.loadPlans(true).subscribe();
+          }
           this.applyFeatureFilter();
           this.loading = false;
           this.cdr.detectChanges();
         },
         error: (err) => {
-          console.warn('Upgrade plans API load failed, using local fallback:', err);
-          this.allPlans = FALLBACK_PLANS;
+          console.warn('Upgrade plans API load error:', err);
+          if (this.allPlans.length === 0) {
+            this.allPlans = this.entitlementService.getPlans();
+          }
           this.applyFeatureFilter();
           this.loading = false;
           this.cdr.detectChanges();
         }
       });
     } else {
-      this.allPlans = FALLBACK_PLANS;
+      this.allPlans = this.entitlementService.getPlans();
       this.applyFeatureFilter();
       this.loading = false;
       this.cdr.detectChanges();
@@ -213,6 +230,41 @@ export class UpgradeModalComponent implements OnInit {
     if (!text) return false;
     const trimmed = text.trim();
     return trimmed !== '' && trimmed !== '—' && trimmed !== '-' && trimmed !== '0';
+  }
+
+  expandedCards = new Set<string | number>();
+
+  isPlanExpanded(plan: any): boolean {
+    const key = plan?.id ?? plan?.slug;
+    return this.expandedCards.has(key);
+  }
+
+  togglePlanFeatures(plan: any): void {
+    const key = plan?.id ?? plan?.slug;
+    if (this.expandedCards.has(key)) {
+      this.expandedCards.delete(key);
+    } else {
+      this.expandedCards.add(key);
+    }
+  }
+
+  getValidEntitlements(plan: any): any[] {
+    if (!plan || !plan.entitlements) return [];
+    return plan.entitlements.filter((ent: any) =>
+      ent.value !== 'false' && ent.value !== false && this.isValidFeature(ent.display_text || ent.feature_name)
+    );
+  }
+
+  getVisibleEntitlements(plan: any): any[] {
+    const valid = this.getValidEntitlements(plan);
+    if (this.isPlanExpanded(plan)) {
+      return valid;
+    }
+    return valid.slice(0, 5);
+  }
+
+  hasMoreFeatures(plan: any): boolean {
+    return this.getValidEntitlements(plan).length > 5;
   }
 
   getCtaLabel(plan: any): string {
@@ -363,147 +415,3 @@ export class UpgradeModalComponent implements OnInit {
     }
   }
 }
-
-const FALLBACK_PLANS = [
-  {
-    slug: 'free',
-    name: 'Free',
-    description: 'For developers drafting personal schemas and single diagrams.',
-    price_monthly: '0.00',
-    price_annual: '0.00',
-    plan_type: 'individual',
-    highlight_color: '#3ec5c1',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'false' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: 5, display_text: 'Upto 5 Diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'false' },
-      { feature_key: 'table_color_and_connection_color', value: 'false' },
-      { feature_key: 'import_sql', value: 'false' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'false' },
-      { feature_key: 'document_view', value: 'false' },
-      { feature_key: 'version_history', value: 'false' },
-      { feature_key: 'create_workspaces', value: 'false' },
-      { feature_key: 'workspace_members', value: 'false' },
-      { feature_key: 'workspace_types', value: 'personal' },
-      { feature_key: 'realtime_collab', value: 'false' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'false' },
-      { feature_key: 'diagram_notes', value: 'false' },
-      { feature_key: 'max_workspace_members', value: 'false', limit_value: 5 },
-      { feature_key: 'diagram_detailing', value: 'false' }
-    ]
-  },
-  {
-    slug: 'premium',
-    name: 'Premium Schema',
-    description: 'For individual freelancers and consultants managing relational setups.',
-    price_monthly: '399.00',
-    price_annual: '299.00',
-    plan_type: 'individual',
-    highlight_color: '#3b82f6',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'false' },
-      { feature_key: 'create_workspaces', value: 'false' },
-      { feature_key: 'workspace_members', value: 'false', limit_value: 0 },
-      { feature_key: 'workspace_types', value: 'personal' },
-      { feature_key: 'realtime_collab', value: 'false' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'false' },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  },
-  {
-    slug: 'team',
-    name: 'Team',
-    description: 'For collaborative product squads syncing database schema blueprints.',
-    price_monthly: '1999.00',
-    price_annual: '1599.00',
-    plan_type: 'organization',
-    highlight_color: '#10b981',
-    badge_text: 'POPULAR COLLABORATION',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'true' },
-      { feature_key: 'create_workspaces', value: 'true', limit_value: -1, display_text: 'Unlimited' },
-      { feature_key: 'workspace_members', value: 'true', limit_value: 5, display_text: 'Max 5 members' },
-      { feature_key: 'workspace_types', value: 'all', display_text: 'Personal & Shared' },
-      { feature_key: 'realtime_collab', value: 'true' },
-      { feature_key: 'sso', value: 'false' },
-      { feature_key: 'audit_logs', value: 'false' },
-      { feature_key: 'custom_hosting', value: 'false' },
-      { feature_key: 'api_access', value: 'false' },
-      { feature_key: 'advanced_iam', value: 'false' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'false' },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  },
-  {
-    slug: 'enterprise',
-    name: 'Enterprise Shield',
-    description: 'For organizations requiring custom hostings, SLAs, and SAML SSO.',
-    price_monthly: '0.00',
-    price_annual: '0.00',
-    plan_type: 'organization',
-    highlight_color: '#f59e0b',
-    entitlements: [
-      { feature_key: 'digram_hide', value: 'true' },
-      { feature_key: 'create_diagrams', value: 'true', limit_value: -1, display_text: 'Unlimited diagrams' },
-      { feature_key: 'edit_diagram', value: 'true' },
-      { feature_key: 'customize_canvas', value: 'true' },
-      { feature_key: 'table_group', value: 'true' },
-      { feature_key: 'table_color_and_connection_color', value: 'true' },
-      { feature_key: 'import_sql', value: 'true' },
-      { feature_key: 'export_image', value: 'true' },
-      { feature_key: 'export_sql', value: 'true' },
-      { feature_key: 'document_view', value: 'true' },
-      { feature_key: 'version_history', value: 'true' },
-      { feature_key: 'create_workspaces', value: 'true', limit_value: -1, display_text: 'Unlimited' },
-      { feature_key: 'workspace_members', value: 'true', limit_value: -1, display_text: 'Unlimited members' },
-      { feature_key: 'workspace_types', value: 'all', display_text: 'Personal & Shared' },
-      { feature_key: 'realtime_collab', value: 'true' },
-      { feature_key: 'sso', value: 'true' },
-      { feature_key: 'audit_logs', value: 'true' },
-      { feature_key: 'custom_hosting', value: 'true' },
-      { feature_key: 'api_access', value: 'true' },
-      { feature_key: 'advanced_iam', value: 'true' },
-      { feature_key: 'share_diagram', value: 'true' },
-      { feature_key: 'diagram_notes', value: 'true' },
-      { feature_key: 'max_workspace_members', value: 'true', limit_value: -1 },
-      { feature_key: 'diagram_detailing', value: 'true' }
-    ]
-  }
-];

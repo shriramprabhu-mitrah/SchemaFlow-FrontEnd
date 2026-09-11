@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef,
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { DashboardService } from '../../../../core/services/dashboard.service';
+import { DashboardService, EditorError } from '../../../../core/services/dashboard.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Router } from '@angular/router';
 
@@ -23,6 +23,9 @@ export class EditorComponent implements OnInit, OnDestroy {
   displayCode = '';
   highlightedHtml = '';
   backdropTransform = 'translate(0px, 0px)';
+  editorScrollTop = 0;
+  hoveredError: EditorError | null = null;
+  hoverPos = { x: 0, y: 0 };
 
   private codeSub?: Subscription;
 
@@ -32,9 +35,10 @@ export class EditorComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly cdr: ChangeDetectorRef
   ) {
-    // Re-render cursors whenever the remoteCursors signal changes
+    // Re-render cursors and error squiggles whenever remoteCursors or editorErrors signal changes
     effect(() => {
-      const cursors = this.svc.remoteCursors();
+      this.svc.remoteCursors();
+      this.svc.editorErrors();
       if (this.highlight?.nativeElement) {
         this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
       }
@@ -143,16 +147,61 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.svc.updateGutter();
     this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
     clearTimeout(this.renderTimer);
-    this.renderTimer = setTimeout(() => this.svc.parseAndLayout(), 150);
+    this.renderTimer = setTimeout(() => {
+      this.svc.parseAndLayout();
+      this.svc.updateEditorErrors();
+      this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+    }, 150);
   }
 
   onEditorScroll(e: Event): void {
     const ta = e.target as HTMLTextAreaElement;
+    this.editorScrollTop = ta.scrollTop;
     this.svc.gutterTransform = `translateY(-${ta.scrollTop}px)`;
     this.backdropTransform = `translate(-${ta.scrollLeft}px, -${ta.scrollTop}px)`;
     this.highlight.nativeElement.scrollTop = ta.scrollTop;
     this.highlight.nativeElement.scrollLeft = ta.scrollLeft;
   }
+
+  onCodeAreaMouseMove(e: MouseEvent): void {
+    const ta = e.target as HTMLTextAreaElement;
+    const rect = ta.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const x = e.clientX - rect.left;
+    const line = Math.floor((y - 16 + ta.scrollTop) / 24.3) + 1;
+    const err = this.svc.editorErrors().find(err => err.line === line);
+    if (err) {
+      this.hoveredError = err;
+      this.hoverPos = {
+        x: Math.min(x + 12, rect.width - 280),
+        y: Math.min(y + 18, rect.height - 40)
+      };
+    } else {
+      this.hoveredError = null;
+    }
+  }
+
+  onCodeAreaMouseLeave(): void {
+    this.hoveredError = null;
+  }
+
+  getRulerTop(line: number): number {
+    return 16 + (line - 1) * 24.3 + 4 - this.editorScrollTop;
+  }
+
+  jumpToLine(line: number): void {
+    const ta = document.getElementById('codearea') as HTMLTextAreaElement;
+    if (!ta) return;
+    const lines = this.displayCode.split('\n');
+    let pos = 0;
+    for (let i = 0; i < line - 1 && i < lines.length; i++) {
+      pos += lines[i].length + 1;
+    }
+    ta.focus();
+    ta.setSelectionRange(pos, pos + (lines[line - 1]?.length || 0));
+    ta.scrollTop = Math.max(0, (line - 3) * 24.3);
+  }
+
   escapeHtmlBasic(str: string): string {
     return str
       .replace(/&/g, '&amp;')
@@ -197,6 +246,29 @@ export class EditorComponent implements OnInit, OnDestroy {
       '<span class="attribute">[$1]</span>'
     );
 
+    // Apply error squiggly underlines on lines that have errors (as in Image 2)
+    const errors = this.svc.editorErrors();
+    if (errors.length > 0) {
+      const errorsByLine = new Map<number, EditorError[]>();
+      errors.forEach(err => {
+        const list = errorsByLine.get(err.line) || [];
+        list.push(err);
+        errorsByLine.set(err.line, list);
+      });
+
+      const lines = text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const lineNum = i + 1;
+        const lineErrors = errorsByLine.get(lineNum);
+        if (lineErrors && lineErrors.length > 0) {
+          lineErrors.forEach(err => {
+            lines[i] = this.applySquiggleToLine(lines[i], err);
+          });
+        }
+      }
+      text = lines.join('\n');
+    }
+
     if (text.endsWith('\n')) {
       text += ' ';
     }
@@ -231,5 +303,42 @@ export class EditorComponent implements OnInit, OnDestroy {
     }
 
     return text;
+  }
+
+  private applySquiggleToLine(lineHtml: string, error: EditorError): string {
+    const titleAttr = this.escapeHtml(error.message);
+    const token = error.token;
+
+    if (token) {
+      const cleanToken = token.replace(/^["']|["']$/g, '');
+      const escToken = cleanToken.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      // Split by HTML tags so we only replace inside pure text nodes
+      const parts = lineHtml.split(/(<[^>]+>)/g);
+      let replaced = false;
+      const re = new RegExp(`(^|\\s|\\b|["'])(${escToken})(["']|\\s|\\b|$|&gt;|&lt;)`, 'i');
+
+      for (let i = 0; i < parts.length; i++) {
+        // Even indices are text nodes outside tags
+        if (i % 2 === 0 && !replaced) {
+          if (re.test(parts[i])) {
+            parts[i] = parts[i].replace(re, `$1<span class="editor-error-squiggle" title="${titleAttr}">$2</span>$3`);
+            replaced = true;
+          }
+        }
+      }
+      if (replaced) {
+        return parts.join('');
+      }
+    }
+
+    // Fallback: underline the visible text on the line (excluding leading indentation)
+    if (!lineHtml.includes('editor-error-squiggle')) {
+      const match = lineHtml.match(/^(\s*)([\s\S]+?)(\s*)$/);
+      if (match && match[2]) {
+        return `${match[1]}<span class="editor-error-squiggle" title="${titleAttr}">${match[2]}</span>${match[3]}`;
+      }
+    }
+
+    return lineHtml;
   }
 }

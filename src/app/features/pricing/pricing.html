@@ -14,7 +14,7 @@
       <nav class="header-nav">
         <a routerLink="/" class="nav-link">Features</a>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
-        <a routerLink="/dashboard" class="nav-link">Docs</a>
+        <a routerLink="/docs" target="_blank" class="nav-link">Docs</a>
       </nav>
       <div class="header-actions">
         <app-button variant="none" customClass="btn-goto" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
@@ -24,8 +24,17 @@
         <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin" (onClick)="logout()">Sign
           Out</app-button>
         <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
-          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
     </div>
@@ -35,13 +44,15 @@
   <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
     <nav class="mobile-nav">
       <a routerLink="/" class="mobile-nav-link" (click)="toggleMobileMenu()">Features</a>
-      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
-      <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
-      
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/docs" target="_blank" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
+
       <div class="mobile-nav-bottom">
         <div class="mobile-nav-divider"></div>
         <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
-        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link"
+          (click)="toggleMobileMenu()">Sign In</a>
         <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
       </div>
     </nav>
@@ -51,7 +62,8 @@
   <section class="pricing-hero">
     <span class="accent-title">PRICING BLUEPRINTS</span>
     <h1 class="hero-headline">Choose the right plan for your database designs</h1>
-    <p class="hero-subtext">Scale up as you need more diagram capacity, team workspaces, or version history.</p>    <!-- BILLING TOGGLE -->
+    <p class="hero-subtext">Scale up as you need more diagram capacity, team workspaces, or version history.</p>
+    <!-- BILLING TOGGLE -->
     <div class="billing-toggle-wrapper">
       <div class="billing-toggle-container">
         <button id="btn-toggle-monthly" class="toggle-btn" [class.active]="!isAnnual" (click)="toggleBilling(false)">
@@ -140,7 +152,8 @@
                 </ng-container>
                 <ng-container *ngIf="!isEligibleForTrial()">
                   <span class="currency">₹</span>
-                  <span class="price-amount">{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) : plan.price_monthly }}</span>
+                  <span class="price-amount">{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) :
+                    plan.price_monthly }}</span>
                 </ng-container>
               </div>
               <span class="price-period" style="font-size: 14px; opacity: 0.7;">
@@ -149,7 +162,7 @@
             </div>
             <div class="annual-billed-label" [style.visibility]="isAnnual ? 'visible' : 'hidden'">
               Billed annually (₹{{ (plan.price_annual || plan.price_monthly * 10) * 12 }}/yr{{ (plan.plan_type ===
-              'organization' || plan.is_per_seat) ? ' per seat' : '' }})
+              'organization' || plan.is_per_seat) ? ' per member' : '' }})
             </div>
           </ng-container>
 
@@ -183,13 +196,19 @@
 
         <div class="card-features">
           <ul>
-            <ng-container *ngFor="let ent of plan.entitlements">
-              <li *ngIf="ent.value !== 'false' && ent.display_text !== '-' && ent.display_text !== '—'">
-                <app-icons name="check-valid" size="16" [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-                <span>{{ getFeatureName(ent) }}</span>
-              </li>
-            </ng-container>
+            <li *ngFor="let ent of getVisibleEntitlements(plan)">
+              <app-icons name="check-valid" size="16" [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
+              <span>{{ getFeatureName(ent) }}</span>
+            </li>
           </ul>
+          <button *ngIf="hasMoreFeatures(plan)" type="button" class="btn-show-features"
+            [style.color]="plan.highlight_color || '#3ec5c1'" (click)="togglePlanFeatures(plan)">
+            <span>{{ isPlanExpanded(plan) ? 'Show less' : 'Show more' }}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isPlanExpanded(plan)">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -362,9 +381,9 @@
 
       <div class="footer-col">
         <h4>Resources</h4>
-        <a routerLink="/dashboard">Documentation</a>
-        <a routerLink="/dashboard">DBML Language Guide</a>
-        <a routerLink="/dashboard">SQL Import/Export API</a>
+        <a routerLink="/docs" target="_blank">Documentation</a>
+        <a routerLink="/docs/dbml-editor" target="_blank">DBML Language Guide</a>
+        <a routerLink="/docs/create-your-first-diagram" target="_blank">SQL Import/Export API</a>
       </div>
 
       <div class="footer-col">

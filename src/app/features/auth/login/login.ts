@@ -39,16 +39,23 @@ export class LoginComponent {
     private entitlementService: EntitlementService,
     private seoService: SeoService
   ) {
+    // If already logged in, redirect directly according to user role
+    if (this.auth.isLoggedIn()) {
+      if (this.auth.isSuperAdmin()) {
+        this.router.navigate(['/admin']);
+      } else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+        this.router.navigate(['/organization']);
+      } else {
+        this.router.navigate(['/dashboard']);
+      }
+      return;
+    }
+
     this.seoService.updateTags({
       title: 'Login - DBNexus',
       description: 'Log in to your DBNexus account to access your database schemas, collaborate with your team, and manage your diagrams.',
       url: 'https://dbnexus.up.railway.app/login'
     });
-
-    // If already logged in, redirect directly to dashboard
-    if (this.auth.isLoggedIn()) {
-      this.router.navigate(['/dashboard']);
-    }
   }
 
   togglePasswordVisibility(): void {

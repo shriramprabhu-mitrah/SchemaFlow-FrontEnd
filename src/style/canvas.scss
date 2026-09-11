@@ -934,6 +934,7 @@ app-version-history {
   max-height: 240px;
   overflow-y: auto;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 .table-columns-list::-webkit-scrollbar {
