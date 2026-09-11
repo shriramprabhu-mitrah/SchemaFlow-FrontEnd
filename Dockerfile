@@ -14,20 +14,13 @@ COPY . .
 # Build the Angular application
 RUN npm run build
 
-# Inject API_URL into the production config at build time
-# Railway passes service variables as build args when using Dockerfile builder
-ARG API_URL
-ARG ENV_NAME=production
-RUN if [ -n "$API_URL" ]; then \
-      API_URL=$API_URL ENV_NAME=$ENV_NAME node scripts/inject-env.js; \
-    else \
-      echo "API_URL not set during build — will inject at runtime"; \
-    fi
+# We inject API_URL at runtime so the exact same image can be promoted across environments
+RUN echo "API_URL will be injected at runtime before starting the server"
 
 # Ensure the Express server always starts in this container
 ENV PORT=4000
 ENV RAILWAY_ENVIRONMENT=production
 EXPOSE 4000
 
-# Start the SSR server
-CMD ["node", "dist/db-diagram/server/server.mjs"]
+# Start the SSR server, but run injection script first to replace API_URL
+CMD node scripts/inject-env.js && node dist/db-diagram/server/server.mjs
