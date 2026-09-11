@@ -79,7 +79,13 @@ jobs:
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           echo "Deploying frontend to Railway DEV..."
-
+          echo "Railway CLI version:"
+          railway version
+          echo "Whoami:"
+          railway whoami || true
+          echo "Environment:"
+          railway environment || true
+          echo "Starting deploy..."
           railway up \
             --service "DB Nexus-frontend" \
             --ci
