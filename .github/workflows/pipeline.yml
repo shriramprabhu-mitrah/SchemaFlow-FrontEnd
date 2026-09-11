@@ -79,12 +79,8 @@ jobs:
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           echo "Deploying frontend to Railway DEV..."
-          railway --version || true
-          railway whoami || true
-          railway status || true
-          echo "Starting deploy..."
           railway up \
-            --service "DB Nexus-frontend" \
+            --service "DB Nexus-Frontend-Development" \
             --ci
 
 
@@ -113,7 +109,7 @@ jobs:
           echo "Deploying frontend to Railway UAT..."
 
           railway up \
-            --service "DB Nexus-frontend" \
+            --service "DB Nexus-Frontend-QA" \
             --ci
 
 
@@ -142,5 +138,5 @@ jobs:
           echo "Deploying frontend to Railway PRODUCTION..."
 
           railway up \
-            --service "DB Nexus-frontend" \
+            --service "DB Nexus-Frontend" \
             --ci
