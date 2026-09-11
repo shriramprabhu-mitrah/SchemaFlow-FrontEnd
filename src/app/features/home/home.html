@@ -1,32 +1,24 @@
-<div class="landing-container">
-  <!-- Neon Glow Overlays -->
-  <div class="glow-node glow-primary"></div>
-  <div class="glow-node glow-secondary"></div>
-  <div class="glow-node glow-accent"></div>
-
+<div class="landing-container light-mode-enforced">
   <!-- NAVIGATION HEADER -->
-  <header class="landing-header">
+  <header class="landing-header clean-header">
     <div class="header-inner">
       <div class="header-brand" routerLink="/" style="cursor: pointer;">
-        <app-icons name="db-diagram-logo" size="36"></app-icons>
-        <span>DB Nexus</span>
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text">DB Nexus</span>
       </div>
       <nav class="header-nav">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Features</a>
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+          class="nav-link">Features</a>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
         <a routerLink="/docs" target="_blank" routerLinkActive="active" class="nav-link">Docs</a>
       </nav>
       <div class="header-actions">
-        <app-button variant="none" customClass="btn-goto" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
         <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" style="text-decoration: none;">
-          <app-button variant="none" customClass="btn-signin">Sign In</app-button>
+          <app-button variant="none" customClass="btn-signin-light">Sign In</app-button>
         </a>
-        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin" (onClick)="logout()">Sign
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign
           Out</app-button>
-        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
-          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
       </div>
     </div>
   </header>
@@ -34,407 +26,389 @@
   <!-- MOBILE MENU OVERLAY -->
   <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
     <nav class="mobile-nav">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link" (click)="toggleMobileMenu()">Features</a>
-      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
-      <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
-      
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Features</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Docs</a>
+
       <div class="mobile-nav-bottom">
         <div class="mobile-nav-divider"></div>
         <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
-        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link"
+          (click)="toggleMobileMenu()">Sign In</a>
         <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
       </div>
     </nav>
   </div>
+  <!-- HERO SECTION RE-IMAGINED -->
+  <section class="hero-section-reimagined">
+    <div class="hero-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
 
-  <!-- HERO SECTION -->
-  <section class="hero-section">
-    <div class="hero-text-wrap">
-      <div class="feature-tag">
-        <span class="pulse-dot"></span>
-        <span>Visual Table Groups & Workspace Sync</span>
-      </div>
-      <h1 class="hero-headline">
-        Collaborative Database <br>
-        <span class="gradient-text">Blueprints for Teams.</span>
-      </h1>
-      <p class="hero-subtext">
-        The modern database diagramming platform. Write DBML code, arrange visual table groups, manage team workspaces,
-        and import/export SQL schemas instantly.
-      </p>
+    <div class="hero-container">
+      <div class="hero-text-content">
+        <h1 class="hero-title-mega">
+          Architect Databases <br />
+          <span class="text-gradient-primary">Seamlessly.</span>
+        </h1>
 
-      <!-- HERO ACTION BUTTONS -->
-      <div class="hero-actions">
-        <app-button variant="none" customClass="btn-hero-primary" (onClick)="onCreateDiagram()">
-          <app-icons name="cta-create" size="18" color="#ffffff"></app-icons>
-          <span>Start Drawing Free</span>
-        </app-button>
-        <a routerLink="/login" style="text-decoration: none;">
-          <app-button variant="none" customClass="btn-hero-secondary">
-            <span>Explore Workspaces</span>
+        <p class="hero-subtitle">
+          Visualize your schema, write DBML instantly, and collaborate in real-time.
+          The ultimate source of truth for modern engineering teams.
+        </p>
+
+        <div class="hero-cta-group">
+          <app-button variant="none" customClass="btn-primary-glow" (onClick)="onCreateDiagram()">
+            <span>Start Designing Free</span>
+            <app-icons name="cta-create" size="18" color="#ffffff" style="margin-left: 8px;"></app-icons>
           </app-button>
-        </a>
-      </div>
 
-      <!-- TRUSTED METRIC BADGES -->
-      <div class="hero-metrics">
-        <div class="metric-item">
-          <span class="metric-num">Workspaces</span>
-          <span class="metric-label">Personal & Teams</span>
-        </div>
-        <div class="metric-divider"></div>
-        <div class="metric-item">
-          <span class="metric-num">Table Groups</span>
-          <span class="metric-label">Color-coded partitions</span>
-        </div>
-        <div class="metric-divider"></div>
-        <div class="metric-item">
-          <span class="metric-num">Imports</span>
-          <span class="metric-label">SQL DDL to DBML</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- FLOATING SCHEMA WORKSPACE SHOWCASE (Showing Table Groups & Workspaces) -->
-    <div class="showcase-container">
-      <div class="showcase-window">
-        <!-- Window Controls -->
-        <div class="window-chrome">
-          <div class="chrome-dots">
-            <span class="c-dot red"></span>
-            <span class="c-dot yellow"></span>
-            <span class="c-dot green"></span>
-          </div>
-          <!-- Workspace Indicator -->
-          <div class="chrome-search">workspace://dbnexus-team/schema.dbml</div>
-          <div class="chrome-status">
-            <span class="status-indicator"></span>
-            <span>Live Syncing</span>
-          </div>
-        </div>
-
-        <div class="window-workspace">
-          <!-- Live Code Panel -->
-          <div class="code-panel">
-            <div class="panel-header">
-              <span class="tab active">schema.dbml</span>
-              <span class="tab">Export SQL</span>
-            </div>
-            <div class="code-body">
-              <pre><code><span class="c-keyword">TableGroup</span> <span class="c-name">Billing</span> {{ '{' }}
-  invoices
-  payments
-{{ '}' }}
-
-<span class="c-keyword">Table</span> <span class="c-name">invoices</span> {{ '{' }}
-  <span class="c-field">id</span> <span class="c-type">uuid</span> <span class="c-meta">[pk]</span>
-  <span class="c-field">amount</span> <span class="c-type">numeric</span>
-{{ '}' }}
-
-<span class="c-keyword">Table</span> <span class="c-name">payments</span> {{ '{' }}
-  <span class="c-field">id</span> <span class="c-type">uuid</span> <span class="c-meta">[pk]</span>
-  <span class="c-field">invoice_id</span> <span class="c-type">uuid</span>
-{{ '}' }}
-
-<span class="c-keyword">Ref</span>: payments.invoice_id > invoices.id</code></pre>
-            </div>
-          </div>
-
-          <!-- Glassmorphic Visual Canvas Mockup showing Table Group -->
-          <div class="canvas-panel">
-            <div class="canvas-grid"></div>
-
-            <!-- Table Group Container Box -->
-            <div class="canvas-table-group" style="top: 15px; left: 15px; width: 220px; height: 320px;">
-              <div class="table-group-header">
-                <span class="group-tag">TableGroup</span>
-                <span class="group-name">Billing</span>
-              </div>
-
-              <!-- Invoices Card inside Group -->
-              <div class="schema-card card-invoices" style="top: 40px; left: 20px; width: 140px;">
-                <div class="card-title-bar invoices-header">
-                  <span class="card-icon"></span>
-                  <span>invoices</span>
-                </div>
-                <div class="card-rows">
-                  <div class="c-row pk">id <span class="type-badge">uuid</span></div>
-                  <div class="c-row">amount <span class="type-badge">numeric</span></div>
-                </div>
-              </div>
-
-              <!-- Payments Card inside Group -->
-              <div class="schema-card card-payments" style="bottom: 25px; left: 20px; width: 140px;">
-                <div class="card-title-bar payments-header">
-                  <span class="card-icon"></span>
-                  <span>payments</span>
-                </div>
-                <div class="card-rows">
-                  <div class="c-row pk">id <span class="type-badge">uuid</span></div>
-                  <div class="c-row fk">invoice_id <span class="type-badge">uuid</span></div>
-                </div>
-              </div>
-
-              <!-- SVG Relationship Link INSIDE Table Group -->
-              <svg class="canvas-svg-overlay">
-                <defs>
-                  <linearGradient id="grad-line" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#3ec5c1" stop-opacity="0.8" />
-                    <stop offset="100%" stop-color="#818cf8" stop-opacity="0.8" />
-                  </linearGradient>
-                </defs>
-                <!-- Spline from payments.invoice_id to invoices.id -->
-                <path d="M 160 255 C 195 255, 195 95, 160 95" stroke="url(#grad-line)" stroke-width="2.5" fill="none" class="glowing-link" />
-                <circle cx="160" cy="255" r="4" fill="#818cf8" />
-                <circle cx="160" cy="95" r="4" fill="#3ec5c1" />
-              </svg>
-            </div>
-          </div>
+          <app-button variant="none" customClass="btn-outline-dynamic" (onClick)="onCreateDiagram()">
+            <span>See how it works</span>
+          </app-button>
         </div>
       </div>
 
-      <p class="illustration-caption">Your DBML updates the canvas the moment you save.</p>
-    </div>
-  </section>
-
-  <!-- CAPABILITIES / DETAILED FEATURES SHOWCASE (Alternating Layout) -->
-  <section class="capabilities-section">
-    <div class="section-header">
-      <span class="accent-title">APPLICATION CAPABILITIES</span>
-      <h2>Engineered for High-Performance Workflows</h2>
-      <p>Organize tables logically, collaborate with workspaces, and import/export legacy code in a single platform.</p>
-    </div>
-
-    <div class="showcase-rows">
-      <!-- Row 1: Workspaces (Text Left, Mockup Right) -->
-      <div class="showcase-row">
-        <div class="showcase-text">
-          <div class="row-icon-wrap blue">
-            <app-icons name="feature-sync" size="24" color="#3b82f6"></app-icons>
-          </div>
-          <h3>Isolate & Sync with Collaborative Workspaces</h3>
-          <p>Maintain separate environments for personal draft drawings and shared team blueprints. Accept email
-            workspace keys to join shared environments, coordinate updates in real-time, and securely store assets on a
-            synced developer cloud.</p>
-          <div class="showcase-features-list">
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#3b82f6"></app-icons> Switch between
-              personal & team workspaces</div>
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#3b82f6"></app-icons> Accept
-              invitations securely via routing keys</div>
-          </div>
-        </div>
-        <div class="showcase-visual">
-          <div class="workspace-list-mockup">
-            <div class="mockup-header-bar">
-              <span class="dot-win"></span>
-              <span>Workspace Directory</span>
-            </div>
-            <div class="mockup-list-body">
-              <div class="workspace-item active">
-                <span class="indicator"></span>
-                <span class="ws-name">👥 DB Nexus Team</span>
-                <span class="ws-badge">ACTIVE</span>
-              </div>
-              <div class="workspace-item">
-                <span class="indicator empty"></span>
-                <span class="ws-name">🚀 E-Commerce Architecture</span>
-              </div>
-              <div class="workspace-item">
-                <span class="indicator empty"></span>
-                <span class="ws-name">🧪 Personal Sandbox Drafts</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 2: Table Groups (Visual Left, Text Right) -->
-      <div class="showcase-row alternate">
-        <div class="showcase-visual">
-          <div class="group-canvas-mockup">
-            <!-- Orange Table Group container -->
-            <div class="group-container orange" style="top: 15px; left: 15px; width: 170px; height: 180px;">
-              <div class="group-title">TableGroup Auth</div>
-              <!-- Users table -->
-              <div class="mock-table-mini" style="top: 40px; left: 15px; width: 140px;">
-                <div class="table-name-mini orange">users</div>
-                <div class="table-row-mini">id</div>
-                <div class="table-row-mini">email</div>
-              </div>
-            </div>
-            <!-- Blue Table Group container -->
-            <div class="group-container blue" style="top: 15px; right: 15px; width: 170px; height: 180px;">
-              <div class="group-title">TableGroup Billing</div>
-              <!-- Payments table -->
-              <div class="mock-table-mini" style="top: 40px; left: 15px; width: 140px;">
-                <div class="table-name-mini blue">payments</div>
-                <div class="table-row-mini">id</div>
-                <div class="table-row-mini">amount</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="showcase-text">
-          <div class="row-icon-wrap indigo">
-            <app-icons name="feature-canvas" size="24" color="#818cf8"></app-icons>
-          </div>
-          <h3>Partition Structures with Visual Table Groups</h3>
-          <p>Organize large database diagrams by partitioning related entity tables into custom Table Groups. Color-code containers to mark schema sub-modules like authentication, payments, inventory, or log analytics, keeping complex schemas structured.</p>
-          <div class="showcase-features-list">
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Group tables visually with custom dashed outlines</div>
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Color-code groups for rapid domain recognition</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Row 3: Import/Export (Text Left, Mockup Right) -->
-      <div class="showcase-row">
-        <div class="showcase-text">
-          <div class="row-icon-wrap teal">
-            <app-icons name="feature-editor" size="24" color="#3ec5c1"></app-icons>
-          </div>
-          <h3>Compile & Deploy with Import & Export Engine</h3>
-          <p>Import legacy database dumps directly to generate visual designs in one click. Export finished designs into clean DDL scripts optimized for PostgreSQL, MySQL, SQL Server, and SQLite, or share diagram links with teammates.</p>
-          <div class="showcase-features-list">
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Import raw SQL DDL directly into visual blocks</div>
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Export clean schemas, vector SVGs, and high-res PDFs</div>
-          </div>
-        </div>
-        <div class="showcase-visual">
-          <div class="importer-exporter-mockup">
-            <div class="import-source-box">
-              <span class="file-label">dump.sql</span>
-              <pre><code>CREATE TABLE users...</code></pre>
-            </div>
-            <div class="arrow-indicator">
-              <span class="arrow-line"></span>
-              <span class="arrow-head">▶</span>
-            </div>
-            <div class="export-target-box">
-              <span class="file-label">schema.dbml</span>
-              <pre><code>Table users {{ '{' }} ... {{ '}' }}</code></pre>
-            </div>
-          </div>
+      <div class="hero-visual-content">
+        <div class="hero-animation-wrapper">
+          <img src="assets/nexus_animation.gif" alt="SchemaFlow Features Animation" class="hero-animation-img" />
         </div>
       </div>
     </div>
   </section>
 
-  <!-- LIVE DDL EXPORT SANDBOX PREVIEW -->
-  <section class="sandbox-preview-section">
-    <div class="sandbox-layout">
-      <div class="sandbox-desc">
-        <span class="accent-title">SCHEMA INTEGRATION</span>
-        <h2>Compile DBML to Multi-dialect DDL</h2>
-        <p>Whether you deploy to cloud databases or local servers, DB Nexus generates optimized schemas instantly. Switch target dialects and export clean DDL scripts with one click.</p>
-
-        <div class="dialect-pills">
-          <span class="pill active">PostgreSQL</span>
-          <span class="pill">MySQL</span>
-          <span class="pill">Microsoft SQL Server</span>
-          <span class="pill">SQLite</span>
-        </div>
+  <!-- THE PROBLEM SECTION (Pain of the Past) -->
+  <section class="problem-section-solid">
+    <div class="problem-container">
+      <div class="problem-header text-center-override">
+        <span class="danger-title-solid">THE PAIN OF THE PAST</span>
+        <h2>What Happens Without DB Nexus?</h2>
+        <p>If you aren't using a visual, collaborative tool, your team is suffering from the following chaos:</p>
       </div>
 
-      <div class="sandbox-code-preview">
-        <div class="preview-header">
-          <span class="circle-dot"></span>
-          <span>PostgreSQL Export Output</span>
+      <div class="problem-grid-solid">
+        <div class="problem-card">
+          <div class="icon-danger-solid">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <h3>Lost Schemas & Outdated Docs</h3>
+          <p>Developers relying on memory or outdated PDFs. New hires take weeks to understand the relationships between
+            tables.</p>
         </div>
-        <div class="preview-body">
-          <pre><code><span class="sql-key">CREATE TABLE</span> "invoices" (
-  "id" uuid <span class="sql-key">PRIMARY KEY</span>,
-  "amount" numeric
-);
 
-<span class="sql-key">CREATE TABLE</span> "payments" (
-  "id" uuid <span class="sql-key">PRIMARY KEY</span>,
-  "invoice_id" uuid
-);
+        <div class="problem-card">
+          <div class="icon-danger-solid">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+          </div>
+          <h3>Manual SQL Errors</h3>
+          <p>Writing raw DDL scripts by hand leads to typos, broken foreign keys, and deployment failures that cost you
+            hours of debugging.</p>
+        </div>
 
-<span class="sql-key">ALTER TABLE</span> "payments" 
-<span class="sql-key">ADD FOREIGN KEY</span> ("invoice_id") 
-<span class="sql-key">REFERENCES</span> "invoices" ("id");</code></pre>
+        <div class="problem-card">
+          <div class="icon-danger-solid">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <h3>Team Misalignment</h3>
+          <p>Frontend expects one schema, backend builds another. Without a single source of truth, communication breaks
+            down entirely.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- WORKFLOW STEPS SHOWCASE -->
-  <section class="workflow-section">
-    <div class="section-header">
-      <span class="accent-title">DEVELOPMENT LIFECYCLE</span>
-      <h2>Build Relational Diagrams in Minutes</h2>
-      <p>A structured, developer-centric workflow to model, organize, sync, and export your database blueprints.</p>
+  <!-- CLASSIC ZIG-ZAG FEATURE LAYOUT WITH CONNECTED CARDS -->
+  <section class="zigzag-features-section">
+    <div class="section-header text-center-override">
+      <span class="blue-title-solid">CORE FEATURES</span>
+      <h2>The Tools You Need to Build Faster</h2>
     </div>
 
-    <div class="workflow-steps">
-      <!-- Step 1 -->
-      <div class="step-card">
-        <div class="step-icon-wrap">
-          <app-icons name="import" size="24" color="#3ec5c1"></app-icons>
-        </div>
-        <div class="step-badge-number">01</div>
-        <h3>Import or Code</h3>
-        <p>Type declarative DBML code in our high-speed editor, or import existing SQL DDL dump scripts (Postgres, MySQL, Oracle) to instantly generate visual table boxes.</p>
-      </div>
+    <!-- CARD 1: Visual Table Groups -->
+    <div class="feature-card-wrapper">
+      <div class="zigzag-row">
+        <div class="zigzag-content left-text">
+          <div class="feature-meta">
+            <span class="meta-dot blue"></span>
+            <span class="meta-text">VISUAL ARCHITECTURE</span>
+          </div>
+          <h2>Partition with Visual Table Groups</h2>
+          <p>Organize massive diagrams by partitioning related tables into custom Table Groups. Keep complex schemas
+            perfectly structured and color-coded.</p>
 
-      <!-- Step 2 -->
-      <div class="step-card">
-        <div class="step-icon-wrap">
-          <app-icons name="feature-canvas" size="24" color="#818cf8"></app-icons>
+          <div class="feature-detail-cards">
+            <div class="detail-card blue">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <path d="M3 9h18"></path>
+                </svg>
+              </div>
+              <h4>Domain Driven Design</h4>
+              <p>Group tables by microservice boundaries for massive clarity.</p>
+            </div>
+            <div class="detail-card blue">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 12h20M12 2v20"></path>
+                </svg>
+              </div>
+              <h4>Collapse & Expand</h4>
+              <p>Hide complex details and view only the high-level architecture.</p>
+            </div>
+          </div>
         </div>
-        <div class="step-badge-number">02</div>
-        <h3>Group Visually</h3>
-        <p>Arrange your entity tables inside color-coded, named <strong>Table Groups</strong>. Partition catalog items, logs, billing, or user auth domains to keep diagrams readable.</p>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="step-card">
-        <div class="step-icon-wrap">
-          <app-icons name="feature-sync" size="24" color="#3b82f6"></app-icons>
+        <div class="zigzag-image right-image">
+          <div class="browser-mockup-solid">
+            <div class="browser-header">
+              <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+            </div>
+            <img src="assets/table_group.png" alt="Visual Table Groups" class="feature-img">
+          </div>
         </div>
-        <div class="step-badge-number">03</div>
-        <h3>Sync & Collaborate</h3>
-        <p>Save diagrams to secure cloud <strong>Workspaces</strong>. Switch dynamically between personal drafts and shared team folders. Invite colleagues and accept keys to edit together.</p>
-      </div>
-
-      <!-- Step 4 -->
-      <div class="step-card">
-        <div class="step-icon-wrap">
-          <app-icons name="export" size="24" color="#10b981"></app-icons>
-        </div>
-        <div class="step-badge-number">04</div>
-        <h3>Export & Integrate</h3>
-        <p>Compile visual schemas back into optimized SQL scripts, or download vector SVG and PDF graphics directly to integrate into your documentation or github READMEs.</p>
       </div>
     </div>
 
-    <div class="workflow-cta">
-      <app-button variant="none" customClass="btn-hero-primary" (onClick)="onCreateDiagram()">
-        <span>Open Visual Canvas & Start Designing</span>
-      </app-button>
+    <!-- CONNECTOR 1→2 (bracket right-to-left) -->
+    <div class="connector-bracket rtl blue-bracket">
+      <span class="bracket-node top-right"></span>
+      <span class="bracket-node bottom-left"></span>
+    </div>
+
+    <!-- CARD 2: Live Collaboration -->
+    <div class="feature-card-wrapper">
+      <div class="zigzag-row reverse-row">
+        <div class="zigzag-image left-image">
+          <img src="assets/live_collabration.png" alt="Live Collaborative Workspaces" class="feature-img-clean">
+        </div>
+        <div class="zigzag-content right-text">
+          <div class="feature-meta">
+            <span class="meta-dot green"></span>
+            <span class="meta-text">REAL-TIME SYNC</span>
+          </div>
+          <h2>Live Collaborative Workspaces</h2>
+          <p>Invite your team members via secure links and watch changes sync in real-time. Never step on each other's
+            toes again.</p>
+
+          <div class="feature-detail-cards">
+            <div class="detail-card green">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+                </svg>
+              </div>
+              <h4>Multiplayer Cursors</h4>
+              <p>See who is viewing and editing specific tables instantly.</p>
+            </div>
+            <div class="detail-card green">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </div>
+              <h4>Conflict Resolution</h4>
+              <p>Advanced sync ensures data integrity even during network drops.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR 2→3 (bracket left-to-right) -->
+    <div class="connector-bracket ltr green-bracket">
+      <span class="bracket-node top-left"></span>
+      <span class="bracket-node bottom-right"></span>
+    </div>
+
+    <!-- CARD 3: Version History -->
+    <div class="feature-card-wrapper">
+      <div class="zigzag-row">
+        <div class="zigzag-content left-text">
+          <div class="feature-meta">
+            <span class="meta-dot purple"></span>
+            <span class="meta-text">VERSION CONTROL</span>
+          </div>
+          <h2>Track Schema History</h2>
+          <p>Every change is tracked in your workspace's version history. Revert to previous states effortlessly. Never
+            lose your architecture history again.</p>
+
+          <div class="feature-detail-cards">
+            <div class="detail-card purple">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <h4>Time-Travel Revert</h4>
+              <p>Mistakes happen. Instantly rollback your schema to any previous timestamp.</p>
+            </div>
+            <div class="detail-card purple">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <h4>Change Auditing</h4>
+              <p>A detailed audit log of exactly who modified which table and when.</p>
+            </div>
+          </div>
+        </div>
+        <div class="zigzag-image right-image">
+          <img src="assets/version_history.png" alt="Version History" class="feature-img-clean">
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR 3→4 (bracket right-to-left) -->
+    <div class="connector-bracket rtl purple-bracket">
+      <span class="bracket-node top-right"></span>
+      <span class="bracket-node bottom-left"></span>
+    </div>
+
+    <!-- CARD 4: Secure Sharing -->
+    <div class="feature-card-wrapper">
+      <div class="zigzag-row reverse-row">
+        <div class="zigzag-image left-image">
+          <img src="assets/share.png" alt="Secure Sharing" class="feature-img-clean">
+        </div>
+        <div class="zigzag-content right-text">
+          <div class="feature-meta">
+            <span class="meta-dot cyan"></span>
+            <span class="meta-text">SECURE SHARING</span>
+          </div>
+          <h2>Share Diagrams Securely</h2>
+          <p>Generate secure links so stakeholders can view the diagram without an account. Password-protect your
+            schemas for external clients.</p>
+
+          <div class="feature-detail-cards">
+            <div class="detail-card cyan">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+              </div>
+              <h4>Public Links</h4>
+              <p>Generate view-only links to share architectures instantly.</p>
+            </div>
+            <div class="detail-card cyan">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <h4>Password Protection</h4>
+              <p>Lock your shared diagrams behind strong custom passwords.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR 4→5 (bracket left-to-right) -->
+    <div class="connector-bracket ltr cyan-bracket">
+      <span class="bracket-node top-left"></span>
+      <span class="bracket-node bottom-right"></span>
+    </div>
+
+    <!-- CARD 5: Team Workspaces -->
+    <div class="feature-card-wrapper">
+      <div class="zigzag-row">
+        <div class="zigzag-content left-text">
+          <div class="feature-meta">
+            <span class="meta-dot orange"></span>
+            <span class="meta-text">TEAM WORKSPACES</span>
+          </div>
+          <h2>Enterprise Access Control</h2>
+          <p>Maintain separate environments for personal drafts and shared team blueprints. Onboard your whole company
+            with specific granular permissions.</p>
+
+          <div class="feature-detail-cards">
+            <div class="detail-card orange">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+              <h4>Role-based Access</h4>
+              <p>Assign Viewer, Editor, or Admin roles to enforce the principle of least privilege.</p>
+            </div>
+            <div class="detail-card orange">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <h4>Workspace Isolation</h4>
+              <p>Separate client projects or microservices into completely isolated workspaces.</p>
+            </div>
+          </div>
+        </div>
+        <div class="zigzag-image right-image">
+          <img src="assets/team_workspace.png" alt="Team Workspaces" class="feature-img-clean">
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- BOTTOM CTA SECTION -->
+  <section class="bottom-cta-clean">
+    <div class="cta-content-clean premium-shadow">
+      <h2>Ready to Build Better Databases?</h2>
+      <p>Join developers worldwide who have revolutionized their schema design workflow.</p>
+      <div style="display: flex; justify-content: center;">
+        <app-button variant="none" customClass="btn-hero-primary shadow-btn mt-4" (onClick)="onCreateDiagram()">
+          <span>Open Visual Canvas & Start Designing</span>
+        </app-button>
+      </div>
     </div>
   </section>
 
   <!-- FOOTER -->
-  <footer class="landing-footer">
+  <footer class="landing-footer-clean">
     <div class="footer-cols">
       <div class="footer-brand-col">
-        <div class="footer-logo">
-          <app-icons name="db-diagram-logo" size="32"></app-icons>
-          <span>DB Nexus</span>
+        <div class="footer-logo dark-text">
+          <app-icons name="db-diagram-logo" size="32" color="#2563eb"></app-icons>
+          <span style="color: #0f172a; font-weight: 800; font-size: 20px;">DB Nexus</span>
         </div>
-        <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers.</p>
+        <p class="footer-slogan crisp-subtext">Sleek, collaborative database blueprinting platforms for developers.</p>
         <p class="footer-copyright">&copy; 2026 DB Nexus. Built for collaborative database engineering.</p>
       </div>
 
       <div class="footer-col">
-        <h4>Builder App</h4>
-        <a (click)="onCreateDiagram()">Visual Canvas</a>
-        <a routerLink="/pricing">Pricing Plans</a>
-        <a routerLink="/dashboard">Active Diagrams</a>
-        <a routerLink="/dashboard">Workspace Settings</a>
+        <h4 class="dark-text">Builder App</h4>
+        <a class="dark-link" (click)="onCreateDiagram()">Visual Canvas</a>
+        <a class="dark-link" routerLink="/pricing">Pricing Plans</a>
+        <a class="dark-link" routerLink="/dashboard">Active Diagrams</a>
       </div>
 
       <div class="footer-col">
@@ -445,10 +419,9 @@
       </div>
 
       <div class="footer-col">
-        <h4>Legal & Policy</h4>
-        <a routerLink="/dashboard">Privacy Terms</a>
-        <a routerLink="/dashboard">Terms of Service</a>
-        <a routerLink="/dashboard">License Info</a>
+        <h4 class="dark-text">Legal & Policy</h4>
+        <a class="dark-link" routerLink="/dashboard">Privacy Terms</a>
+        <a class="dark-link" routerLink="/dashboard">Terms of Service</a>
       </div>
     </div>
   </footer>

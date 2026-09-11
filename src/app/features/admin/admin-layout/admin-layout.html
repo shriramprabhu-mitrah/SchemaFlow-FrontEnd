@@ -6,13 +6,15 @@
   <aside class="admin-sidebar" [class.mobile-open]="mobileSidebarOpen">
     <div class="sidebar-header sidebar-header-flex">
       <!-- Logo and brand text always centered inside header -->
-      <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed" [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
-        <app-icons name="db-diagram-logo" size="32" class="brand-icon-wrap"></app-icons>
+      <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
+        <app-icons name="db-diagram-logo" size="48" class="brand-icon-wrap"></app-icons>
         <span class="brand-text brand-text-flex" *ngIf="!sidebarCollapsed || mobileSidebarOpen">DB Nexus</span>
       </a>
       <!-- Mobile Close Button -->
       <button class="mobile-close-btn" (click)="closeMobileSidebar()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -72,13 +74,14 @@
           <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
         <!-- Enquiries -->
-        <svg *ngIf="item.icon === 'enquiries'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <svg *ngIf="item.icon === 'enquiries'" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
           <polyline points="22,6 12,13 2,6" />
         </svg>
         <!-- Documentation -->
-        <svg *ngIf="item.icon === 'documentation'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="1.8" stroke-linecap="round">
+        <svg *ngIf="item.icon === 'documentation'" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
           <line x1="9" y1="7" x2="15" y2="7" />
@@ -89,9 +92,8 @@
     </nav>
 
     <div class="sidebar-footer">
-      <button class="nav-item footer-action" (click)="goToDashboard()"
-        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
-        [attr.data-tt]="sidebarCollapsed ? 'Go to Application' : null">
+      <button class="nav-item footer-action" (click)="goToDashboard()" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Go to Application' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -100,9 +102,8 @@
         </svg>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Go to Application</span>
       </button>
-      <button class="nav-item footer-action logout" (click)="logout()"
-        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
-        [attr.data-tt]="sidebarCollapsed ? 'Logout' : null">
+      <button class="nav-item footer-action logout" (click)="logout()" [class.tt]="sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Logout' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -118,7 +119,8 @@
   <main class="admin-main">
     <header class="admin-header">
       <div class="header-left header-left-flex">
-        <button class="theme-toggle-btn tt tt-bottom toggle-sidebar-btn" (click)="toggleSidebar()" data-tt="Toggle Sidebar">
+        <button class="theme-toggle-btn tt tt-bottom toggle-sidebar-btn" (click)="toggleSidebar()"
+          data-tt="Toggle Sidebar">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round">
             <line x1="3" y1="12" x2="21" y2="12" />
