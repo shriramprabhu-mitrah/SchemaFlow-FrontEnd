@@ -9,9 +9,13 @@ import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
+// Default hosts + any extra hosts from ALLOWED_HOSTS env var (comma-separated)
+const extraHosts = process.env['ALLOWED_HOSTS']?.split(',').map(h => h.trim()).filter(Boolean) ?? [];
+const allowedHosts = ['*.railway.app', 'localhost', ...extraHosts];
+
 const app = express();
 const angularApp = new AngularNodeAppEngine({
-  allowedHosts: ['*.railway.app', 'localhost', 'www.dbnexus.io', 'dbnexus.io'],
+  allowedHosts,
   trustProxyHeaders: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto'],
 });
 
