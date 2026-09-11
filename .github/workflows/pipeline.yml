@@ -64,7 +64,7 @@ jobs:
     needs: build
 
     environment:
-      name: dev
+      name: DEV
 
     steps:
       - name: Checkout code
@@ -95,7 +95,7 @@ jobs:
     needs: deploy-dev
 
     environment:
-      name: uat
+      name: UAT
 
     steps:
       - name: Checkout code
@@ -126,7 +126,7 @@ jobs:
     needs: deploy-uat
 
     environment:
-      name: production
+      name: PRODUCTION
 
     steps:
       - name: Checkout code
