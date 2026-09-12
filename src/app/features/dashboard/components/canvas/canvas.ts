@@ -1206,14 +1206,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const gColorY = y + headerH / 2;
       const isGroupColorHovered = this.hoveredGroupColorIcon === g.name;
 
-      if (!this.svc.isReadOnly) {
+      if (!this.svc.isReadOnly && this.auth.isLoggedIn()) {
         this.drawSettingIcon(ctx, gColorX, gColorY, isGroupColorHovered);
         if (isGroupColorHovered) {
           this.activeTooltip = { x: gColorX, y: gColorY, label: 'Settings' };
         }
+        this.groupColorIcons.push({ groupName: g.name, x: gColorX, y: gColorY });
       }
-
-      this.groupColorIcons.push({ groupName: g.name, x: gColorX, y: gColorY });
 
       ctx.save();
       this.roundRectPath(ctx, x, y, w, h, 8);
@@ -1420,7 +1419,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const isSettingsHovered = this.hoveredTableHeaderIcon?.tableName === t.name && this.hoveredTableHeaderIcon.type === 'settings';
 
-    if (!this.svc.isReadOnly) {
+    if (!this.svc.isReadOnly && this.auth.isLoggedIn()) {
       // Draw Settings Icon
       this.drawSettingIcon(ctx, settingX, editY, isSettingsHovered);
 
@@ -2540,6 +2539,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const groupColorIcon = this.findGroupColorIconAt(wp.x, wp.y);
     if (groupColorIcon) {
+      if (!this.auth.isLoggedIn()) {
+        this.svc.authModalVisible.set(true);
+        return;
+      }
       const sx = groupColorIcon.x * this.svc.view.scale + this.svc.view.x;
       const sy = groupColorIcon.y * this.svc.view.scale + this.svc.view.y;
       this.openContextMenu(sx, sy, 'groupHeader', null, null, -1, groupColorIcon.groupName);
@@ -2606,6 +2609,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (tableHeaderIcon) {
       const table = this.svc.tables.find((item) => item.name === tableHeaderIcon.tableName);
       if (tableHeaderIcon.type === 'settings' && table) {
+        if (!this.auth.isLoggedIn()) {
+          this.svc.authModalVisible.set(true);
+          return;
+        }
         const sx = tableHeaderIcon.x * this.svc.view.scale + this.svc.view.x;
         const sy = tableHeaderIcon.y * this.svc.view.scale + this.svc.view.y;
         this.openContextMenu(sx, sy, 'tableHeader', table, null, -1);
@@ -3236,6 +3243,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     e.preventDefault();
+    if (!this.auth.isLoggedIn()) {
+      this.svc.authModalVisible.set(true);
+      return;
+    }
 
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     const sx = e.clientX - rect.left;
@@ -3623,6 +3634,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openTableModal(table: TableDef, isNew = false): void {
+    if (!this.auth.isLoggedIn()) {
+      this.svc.authModalVisible.set(true);
+      return;
+    }
     this.constraintDropdownIndex = null;
     this.typeDropdownIndex = null;
     this.groupDropdownVisible = false;
@@ -4235,6 +4250,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     groupName: string | null = null
   ): void {
     if (this.svc.isReadOnly) return;
+    if (!this.auth.isLoggedIn()) {
+      this.svc.authModalVisible.set(true);
+      return;
+    }
     this.contextMenu.visible = true;
     this.contextMenu.targetType = targetType;
     this.contextMenu.table = table;
