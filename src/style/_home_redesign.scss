@@ -630,11 +630,13 @@
     flex-direction: column;
     gap: 40px;
   }
+
   .footer-links-container {
     justify-content: flex-start;
     flex-wrap: wrap;
     gap: 40px;
   }
+
   .footer-bottom {
     flex-direction: column;
     gap: 16px;
@@ -1015,7 +1017,7 @@
   top: 0;
   right: 0;
   width: 50%;
-  height: 50%;
+  height: calc(50% + 1px);
   border-right: 2px dashed currentColor;
   border-bottom: 2px dashed currentColor;
   border-radius: 0 0 16px 0;
@@ -1024,10 +1026,10 @@
 .connector-bracket.rtl::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
+  bottom: -4px;
+  left: 2px;
   width: 50%;
-  height: 50%;
+  height: calc(50% + 1px);
   border-left: 2px dashed currentColor;
   border-top: 2px dashed currentColor;
   border-radius: 16px 0 0 0;
@@ -1040,7 +1042,7 @@
   top: 0;
   left: 0;
   width: 50%;
-  height: 50%;
+  height: calc(50% + 1px);
   border-left: 2px dashed currentColor;
   border-bottom: 2px dashed currentColor;
   border-radius: 0 0 0 16px;
@@ -1049,10 +1051,10 @@
 .connector-bracket.ltr::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: -4px;
+  right: 2px;
   width: 50%;
-  height: 50%;
+  height: calc(50% + 1px);
   border-right: 2px dashed currentColor;
   border-top: 2px dashed currentColor;
   border-radius: 0 16px 0 0;

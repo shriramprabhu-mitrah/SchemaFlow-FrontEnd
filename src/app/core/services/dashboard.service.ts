@@ -416,7 +416,7 @@ export class DashboardService {
   getTableHeight(columns: Column[]): number {
     let visibleCount = columns.length;
     if (this.isKeyOnly) {
-      visibleCount = columns.filter(c => c.pk || c.fk).length;
+      visibleCount = columns.filter(c => c.pk || c.fk || (c as any).isRelTarget).length;
     } else if (this.isColumnNameOnly) {
       visibleCount = 0;
     }
@@ -1838,9 +1838,26 @@ export class DashboardService {
     this.tables.forEach((t) => {
       t.columns.forEach((c) => {
         const refInfo = fkMap.get(`${t.name}.${c.name}`);
-        c.fk = !!refInfo;
-        c.fkTable = refInfo ? refInfo.targetTable : undefined;
-        c.fkCol = refInfo ? refInfo.targetCol : undefined;
+        
+        // Also ensure any column involved in a relation is considered a foreign key for visibility purposes
+        const isSource = parsed.refs.some(r => r.fromTable === t.name && r.fromCol === c.name);
+        
+        c.fk = !!refInfo || isSource;
+        
+        if (refInfo) {
+          c.fkTable = refInfo.targetTable;
+          c.fkCol = refInfo.targetCol;
+        } else if (isSource) {
+          const ref = parsed.refs.find(r => r.fromTable === t.name && r.fromCol === c.name);
+          c.fkTable = ref?.toTable;
+          c.fkCol = ref?.toCol;
+        } else {
+          c.fkTable = undefined;
+          c.fkCol = undefined;
+        }
+        
+        // Track if it's a target so we can include it in Keys Only view even if not a PK/FK
+        (c as any).isRelTarget = parsed.refs.some(r => r.toTable === t.name && r.toCol === c.name);
       });
     });
     this.refs = parsed.refs.map((r) => {
