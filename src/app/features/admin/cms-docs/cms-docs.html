@@ -42,18 +42,18 @@
         <span *ngIf="isWorkspaceExpanded">🗗 Contract Workspace</span>
       </button>
 
-      <!-- Public Live View Button -->
-      <button type="button" class="cms-btn btn-secondary" (click)="viewPublicDocs()">
+      <!-- Public Live View Button (Opens in New Tab) -->
+      <a [href]="getPublicDocsUrl()" target="_blank" class="cms-btn btn-secondary">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
           <polyline points="15 3 21 3 21 9"></polyline>
           <line x1="10" y1="14" x2="21" y2="3"></line>
         </svg>
-        Public Documentation Page
-      </button>
+        Public Documentation Page ↗
+      </a>
 
       <!-- Save & Publish Controls -->
-      <button type="button" class="cms-btn btn-primary" (click)="savePageChanges()" [disabled]="!selectedPage">
+      <button type="button" class="cms-btn btn-primary" (click)="savePageChanges()" [disabled]="!selectedPage || !editForm.title || !editForm.title.trim() || !editForm.slug || !editForm.slug.trim() || editForm.sortOrder === null || editForm.sortOrder === undefined">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
           <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -119,7 +119,7 @@
       </div>
 
       <div class="sidebar-footer-actions">
-        <button type="button" class="btn-block-action" (click)="showNewSectionModal = true">+ Add New Section</button>
+        <button type="button" class="btn-block-action" (click)="openNewSectionModal()">+ Add New Section</button>
       </div>
     </aside>
 
@@ -148,13 +148,15 @@
         <!-- Page Attributes Row -->
         <div class="fields-grid">
           <div class="form-group">
-            <label>Title *</label>
-            <input type="text" [(ngModel)]="editForm.title" (ngModelChange)="updatePreview()" class="form-input" />
+            <label>Title <span style="color: #ef4444; font-weight: 700;">*</span></label>
+            <input type="text" [(ngModel)]="editForm.title" (ngModelChange)="updatePreview()" (input)="titleTouched = true" (blur)="titleTouched = true" class="form-input" [class.input-error]="(titleTouched || formSubmitted) && (!editForm.title || !editForm.title.trim())" />
+            <span class="field-error-text" *ngIf="(titleTouched || formSubmitted) && (!editForm.title || !editForm.title.trim())">Page title is required</span>
           </div>
 
           <div class="form-group">
-            <label>Slug *</label>
-            <input type="text" [(ngModel)]="editForm.slug" class="form-input" />
+            <label>Slug <span style="color: #ef4444; font-weight: 700;">*</span></label>
+            <input type="text" [(ngModel)]="editForm.slug" (input)="slugTouched = true" (blur)="slugTouched = true" class="form-input" [class.input-error]="(slugTouched || formSubmitted) && (!editForm.slug || !editForm.slug.trim())" />
+            <span class="field-error-text" *ngIf="(slugTouched || formSubmitted) && (!editForm.slug || !editForm.slug.trim())">Page slug is required</span>
           </div>
 
           <div class="form-group">
@@ -184,11 +186,10 @@
             </div>
           </div>
 
-
-
           <div class="form-group">
-            <label>Order</label>
-            <input type="number" [(ngModel)]="editForm.sortOrder" class="form-input" />
+            <label>Order <span style="color: #ef4444; font-weight: 700;">*</span></label>
+            <input type="number" [(ngModel)]="editForm.sortOrder" (input)="sortOrderTouched = true" (blur)="sortOrderTouched = true" class="form-input" [class.input-error]="(sortOrderTouched || formSubmitted) && (editForm.sortOrder === null || editForm.sortOrder === undefined)" />
+            <span class="field-error-text" *ngIf="(sortOrderTouched || formSubmitted) && (editForm.sortOrder === null || editForm.sortOrder === undefined)">Order number is required</span>
           </div>
         </div>
 
@@ -430,7 +431,7 @@
               </button>
             </div>
 
-            <div class="rendered-preview-body" [innerHTML]="previewHtml"></div>
+            <div class="rendered-preview-body" #previewBody [innerHTML]="previewHtml"></div>
           </div>
 
         </div>
@@ -560,7 +561,7 @@
           sections.</p>
       </div>
 
-      <button type="button" class="cms-btn btn-primary" (click)="showNewSectionModal = true">
+      <button type="button" class="cms-btn btn-primary" (click)="openNewSectionModal()">
         + Add New Section
       </button>
     </div>
@@ -633,7 +634,7 @@
   <div class="cms-modal-backdrop" *ngIf="showMediaModal">
     <div class="cms-media-modal">
       <div class="media-modal-header">
-        <h3>Insert {{ mediaModalType === 'video' ? 'video' : 'image' }}</h3>
+        <h3>Insert {{ mediaModalType === 'video' ? 'Video' : 'Image' }}</h3>
         <button type="button" class="btn-close" (click)="showMediaModal = false">✕</button>
       </div>
 
@@ -643,7 +644,7 @@
             <input #fileInput type="file" (change)="onMediaFileSelected($event)"
               [accept]="mediaModalType === 'video' ? 'video/*' : 'image/*'" hidden />
 
-            <div class="upload-icon">
+            <div class="upload-icon" *ngIf="!isProcessingMedia">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
@@ -651,14 +652,20 @@
               </svg>
             </div>
 
-            <div class="upload-title">Drag file here, or click to browse</div>
-            <div class="upload-sub">MP4, MOV, PNG, JPG, WEBP up to 500 MB</div>
-            <div *ngIf="mediaUrl" class="upload-preview-tag">✓ File Selected: {{ mediaCaption }}</div>
+            <div class="upload-title" *ngIf="!isProcessingMedia">Drag file here, or click to browse</div>
+            <div class="upload-sub" *ngIf="!isProcessingMedia">MP4, MOV, PNG, JPG, WEBP</div>
+            
+            <div class="upload-processing" *ngIf="isProcessingMedia" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+              <span style="font-size: 13px; color: #3b82f6;">Processing media file...</span>
+            </div>
+
+            <div *ngIf="!isProcessingMedia && mediaUrl" class="upload-preview-tag">✓ File Ready: {{ mediaCaption }}</div>
           </div>
         </div>
 
-        <div class="form-group-block caption-group">
-          <label>Caption</label>
+        <!-- Caption / Alt Text -->
+        <div class="form-group-block caption-group" style="margin-top: 16px;">
+          <label>Caption / Title</label>
           <input type="text" [(ngModel)]="mediaCaption" placeholder="e.g. Walkthrough Video" class="form-input" />
         </div>
       </div>
@@ -666,7 +673,7 @@
       <div class="media-modal-footer">
         <button type="button" class="cms-btn btn-secondary" (click)="showMediaModal = false">Cancel</button>
         <button type="button" class="cms-btn btn-primary" (click)="insertMediaFromModal()"
-          [disabled]="!mediaUrl">Insert</button>
+          [disabled]="isProcessingMedia || !mediaUrl">Insert {{ mediaModalType === 'video' ? 'Video' : 'Image' }}</button>
       </div>
     </div>
   </div>
@@ -676,8 +683,9 @@
     <div class="cms-modal">
       <h3>Create Documentation Page</h3>
       <div class="form-group">
-        <label>Page Title</label>
-        <input type="text" [(ngModel)]="newPageTitle" placeholder="e.g. Exporting Schemas to SQL" class="form-input" />
+        <label>Page Title <span style="color: #ef4444; font-weight: 700;">*</span></label>
+        <input type="text" [(ngModel)]="newPageTitle" (input)="newPageTitleTouched = true" (blur)="newPageTitleTouched = true" placeholder="e.g. Exporting Schemas to SQL" class="form-input" [class.input-error]="(newPageTitleTouched || newPageSubmitted) && (!newPageTitle || !newPageTitle.trim())" />
+        <span class="field-error-text" *ngIf="(newPageTitleTouched || newPageSubmitted) && (!newPageTitle || !newPageTitle.trim())">Page title is required</span>
       </div>
       <div class="form-group">
         <label>Section</label>
@@ -703,8 +711,9 @@
     <div class="cms-modal">
       <h3>Create Navigation Section</h3>
       <div class="form-group">
-        <label>Section Title</label>
-        <input type="text" [(ngModel)]="newSectionTitle" placeholder="e.g. API Reference" class="form-input" />
+        <label>Section Title <span style="color: #ef4444; font-weight: 700;">*</span></label>
+        <input type="text" [(ngModel)]="newSectionTitle" (input)="newSectionTitleTouched = true" (blur)="newSectionTitleTouched = true" placeholder="e.g. API Reference" class="form-input" [class.input-error]="(newSectionTitleTouched || newSectionSubmitted) && (!newSectionTitle || !newSectionTitle.trim())" />
+        <span class="field-error-text" *ngIf="(newSectionTitleTouched || newSectionSubmitted) && (!newSectionTitle || !newSectionTitle.trim())">Section title is required</span>
       </div>
       <div class="modal-actions">
         <button type="button" class="cms-btn btn-secondary" (click)="showNewSectionModal = false">Cancel</button>

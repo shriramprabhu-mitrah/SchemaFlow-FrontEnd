@@ -3,6 +3,18 @@
   <!-- Top Header Navigation -->
   <header class="public-docs-header">
     <div class="header-left">
+      <button type="button" class="mobile-menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle Navigation Menu">
+        <svg *ngIf="!isMobileMenuOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+        <svg *ngIf="isMobileMenuOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
       <a routerLink="/" class="brand-link">
         <app-icons name="db-diagram-logo" size="28"></app-icons>
         <span class="brand-title">DB Nexus <span class="docs-tag">Docs</span></span>
@@ -39,9 +51,9 @@
       </div>
 
       <!-- Admin CMS Shortcut -->
-      <button type="button" class="hdr-btn btn-admin" *ngIf="isSuperAdmin()" (click)="goToAdminCms()">
-        ⚙️ Admin CMS Editor
-      </button>
+      <a href="/admin/docs" target="_blank" class="hdr-btn btn-admin" *ngIf="isSuperAdmin()">
+        <span class="btn-text">⚙️ Admin CMS</span>
+      </a>
 
       <!-- Theme Switcher -->
       <button type="button" class="hdr-btn btn-theme" (click)="toggleTheme()"
@@ -63,17 +75,21 @@
       </button>
 
       <!-- Go To App -->
-      <button type="button" class="hdr-btn btn-app" (click)="goToApplication()">
-        Go To Application ↗
-      </button>
+      <a href="/dashboard" target="_blank" class="hdr-btn btn-app">
+        <span class="btn-text">Go To Application ↗</span>
+        <span class="btn-icon-only">↗</span>
+      </a>
     </div>
   </header>
+
+  <!-- Mobile Backdrop Overlay -->
+  <div class="docs-sidebar-backdrop" *ngIf="isMobileMenuOpen" (click)="closeMobileMenu()"></div>
 
   <!-- Main Body Layout -->
   <div class="public-docs-layout">
 
     <!-- Left Navigation Sidebar -->
-    <aside class="docs-sidebar">
+    <aside class="docs-sidebar" [class.mobile-open]="isMobileMenuOpen">
       <nav class="sidebar-nav">
         <div *ngFor="let sec of sections" class="nav-section" [class.expanded]="isSectionExpanded(sec.id)">
           <div class="section-title-bar" (click)="toggleSection(sec.id)">
@@ -110,9 +126,9 @@
             <span class="current">{{ currentPage.title }}</span>
           </div>
 
-          <button type="button" class="btn-edit-shortcut" *ngIf="isSuperAdmin()" (click)="goToAdminCms()">
+          <a href="/admin/docs" target="_blank" class="btn-edit-shortcut" *ngIf="isSuperAdmin()">
             ✏️ Edit Page in CMS
-          </button>
+          </a>
         </div>
 
         <!-- Featured Image Banner -->

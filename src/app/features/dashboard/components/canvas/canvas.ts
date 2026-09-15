@@ -628,13 +628,14 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
 
       // Draw endpoints markers
-      const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
-      const isEndPk = this.svc.isPrimaryKey(ref.toTable, ref.toCol);
+      // Start of line (ortho[0]) is ALWAYS Primary Key (PK -> label '1', circle marker)
+      // End of line (ortho[last]) is ALWAYS Foreign Key (FK -> label '*' or '1', chevron marker)
+      const is1to1 = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol) && this.svc.isPrimaryKey(ref.toTable, ref.toCol);
 
-      const drawStartCircle = isStartPk;
-      const drawEndCircle = isEndPk;
-      const drawStartChevron = !isStartPk;
-      const drawEndChevron = !isEndPk;
+      const drawStartCircle = true;
+      const drawEndCircle = is1to1;
+      const drawStartChevron = false;
+      const drawEndChevron = !is1to1;
 
       const drawCircle = (pt: PathPoint) => {
         svgContent += `<circle cx="${pt.x}" cy="${pt.y}" r="3.5" fill="${isLight ? '#ffffff' : '#161f33'}" stroke="${color}" stroke-width="1.8"/>`;
@@ -677,8 +678,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         drawChevron(ortho[ortho.length - 1], ortho[ortho.length - 2]);
       }
       if (ortho.length >= 2 && !this.svc.isColumnNameOnly) {
-        drawLabel(ortho[0], ortho[1], isStartPk ? '1' : '*');
-        drawLabel(ortho[ortho.length - 1], ortho[ortho.length - 2], isEndPk ? '1' : '*');
+        drawLabel(ortho[0], ortho[1], '1');
+        drawLabel(ortho[ortho.length - 1], ortho[ortho.length - 2], is1to1 ? '1' : '*');
       }
     });
 
@@ -1643,21 +1644,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       ctx.fillStyle = isActive ? activeColor : baseColor;
 
-      const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
-      const isEndPk = this.svc.isPrimaryKey(ref.toTable, ref.toCol);
-
       // Determine drawing configuration:
-      // - One-to-One (both PK): circles on both ends
-      // - Many-to-Many (neither PK): chevrons on both ends
-      // - One-to-Many/Many-to-One: circle on PK end, chevron on non-PK end
-      const drawStartCircle = isStartPk;
-      const drawEndCircle = isEndPk;
-      const drawStartChevron = !isStartPk;
-      const drawEndChevron = !isEndPk;
+      // Start of line (ortho[0]) is ALWAYS Primary Key (PK -> label '1', circle marker)
+      // End of line (ortho[last]) is ALWAYS Foreign Key (FK -> label '*' or '1', chevron marker)
+      const is1to1 = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol) && this.svc.isPrimaryKey(ref.toTable, ref.toCol);
+
+      const drawStartCircle = true;
+      const drawEndCircle = is1to1;
+      const drawStartChevron = false;
+      const drawEndChevron = !is1to1;
 
       const drawCircle = (pt: PathPoint) => {
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
         ctx.fillStyle = isLight ? '#ffffff' : '#161f33';
         ctx.fill();
         ctx.strokeStyle = isActive ? activeColor : baseColor;
@@ -1708,7 +1707,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         const fontSize = isStar ? '20px' : '14px';
         ctx.font = `bold ${fontSize} -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
         ctx.fillStyle = isLight ? '#475569' : '#a0aec0';
-        ctx.textBaseline = 'bottom';
+        ctx.textBaseline = 'middle';
         const isHeadingRight = adjacent.x > pt.x;
         ctx.textAlign = isHeadingRight ? 'left' : 'right';
         const offsetX = isHeadingRight ? 8 : -8;
@@ -1719,8 +1718,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       };
 
       if (ortho.length >= 2 && !this.svc.isColumnNameOnly) {
-        drawLabel(ortho[0], ortho[1], isStartPk ? '1' : '*');
-        drawLabel(ortho[ortho.length - 1], ortho[ortho.length - 2], isEndPk ? '1' : '*');
+        drawLabel(ortho[0], ortho[1], '1');
+        drawLabel(ortho[ortho.length - 1], ortho[ortho.length - 2], is1to1 ? '1' : '*');
       }
 
       if (isInvalid && ortho.length >= 2) {
@@ -2078,8 +2077,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     refIndex?: number,
     anchorUsage?: Record<string, number[]>
   ): PathPoint[] | null {
-    let a = geometry[ref.fromTable];
-    let b = geometry[ref.toTable];
+    // Start point (a / ortho[0]) is ALWAYS Primary Key (toTable / toCol)
+    // End point (b / ortho[last]) is ALWAYS Foreign Key (fromTable / fromCol)
+    let a = geometry[ref.toTable];
+    let b = geometry[ref.fromTable];
     if (!a || !b) return null;
 
     // Check if both tables belong to the same collapsed table group
@@ -2104,25 +2105,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     let aGeom = { ...a };
     let bGeom = { ...b };
 
-    if (fromGroup && this.svc.collapsedGroups.has(fromGroup.name)) {
-      const bounds = this.getGroupBounds(fromGroup, geometry);
-      if (bounds) {
-        aGeom = {
-          ...aGeom,
-          x: bounds.x,
-          y: bounds.y,
-          width: bounds.w,
-          height: bounds.h,
-          colY: { [ref.fromCol]: 13 }
-        };
-      }
-    }
-
     if (toGroup && this.svc.collapsedGroups.has(toGroup.name)) {
       const bounds = this.getGroupBounds(toGroup, geometry);
       if (bounds) {
-        bGeom = {
-          ...bGeom,
+        aGeom = {
+          ...aGeom,
           x: bounds.x,
           y: bounds.y,
           width: bounds.w,
@@ -2132,15 +2119,29 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
+    if (fromGroup && this.svc.collapsedGroups.has(fromGroup.name)) {
+      const bounds = this.getGroupBounds(fromGroup, geometry);
+      if (bounds) {
+        bGeom = {
+          ...bGeom,
+          x: bounds.x,
+          y: bounds.y,
+          width: bounds.w,
+          height: bounds.h,
+          colY: { [ref.fromCol]: 13 }
+        };
+      }
+    }
+
     a = aGeom;
     b = bGeom;
 
-    let ay = a.y + (a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
-    let by = b.y + (b.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+    let ay = a.y + (a.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+    let by = b.y + (b.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
 
     if (refIndex !== undefined && anchorUsage) {
-      ay += this.svc.anchorOffset(ref.fromTable, ref.fromCol, refIndex, anchorUsage);
-      by += this.svc.anchorOffset(ref.toTable, ref.toCol, refIndex, anchorUsage);
+      ay += this.svc.anchorOffset(ref.toTable, ref.toCol, refIndex, anchorUsage);
+      by += this.svc.anchorOffset(ref.fromTable, ref.fromCol, refIndex, anchorUsage);
     }
     const fromRight = a.x < b.x;
     const ax = fromRight ? a.x + a.width : a.x;
@@ -2148,7 +2149,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     let waypoints = ref.waypoints;
     if (!waypoints) {
-      const anchorKey = ref.fromTable + '.' + ref.fromCol + '|' + (fromRight ? 'R' : 'L');
+      const anchorKey = ref.toTable + '.' + ref.toCol + '|' + (fromRight ? 'R' : 'L');
       let midX: number;
       if (trunkXByAnchor && trunkXByAnchor[anchorKey] !== undefined) {
         midX = trunkXByAnchor[anchorKey];

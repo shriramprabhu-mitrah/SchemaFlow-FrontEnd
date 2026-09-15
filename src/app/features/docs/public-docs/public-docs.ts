@@ -1,13 +1,14 @@
-import { Component, OnInit, OnDestroy, inject, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml, Title } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { CmsDocsService } from '../../../core/services/cms-docs.service';
 import { MarkdownRendererService } from '../../../core/services/markdown-renderer.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { SeoService } from '../../../core/services/seo.service';
 import { DocPage, DocSection, TocItem } from '../../../core/models/cms-docs.model';
 import { Icons } from '../../../core/component/icons/icons';
 
@@ -24,16 +25,40 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
   mdRenderer = inject(MarkdownRendererService);
   dashService = inject(DashboardService);
   auth = inject(AuthService);
+  private titleService = inject(Title);
+  private seoService = inject(SeoService);
   private sanitizer = inject(DomSanitizer);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private sub = new Subscription();
+
+  constructor() {
+    effect(() => {
+      const _loaded = this.cmsService.mediaLoaded();
+      if (_loaded > 0) {
+        if (this.currentPage) {
+          this.loadDocBySlug(this.currentPage.slug);
+        } else {
+          this.loadDocBySlug();
+        }
+      }
+    }, { allowSignalWrites: true });
+  }
 
   searchQuery = '';
   currentPage: DocPage | null = null;
   renderedHtml: SafeHtml = '';
   tocItems: TocItem[] = [];
   activeTocId: string | null = null;
+  isMobileMenuOpen = false;
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
+  }
 
   // Collapsible Sidebar Section Accordions
   collapsedSections = new Set<string>();
@@ -124,8 +149,17 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
     }
 
     this.currentPage = target;
-    if (target && target.sectionId) {
-      this.collapsedSections.delete(target.sectionId);
+    if (target) {
+      if (target.sectionId) {
+        this.collapsedSections.delete(target.sectionId);
+      }
+      const pageTitle = `${target.title} | DB Nexus Docs`;
+      this.titleService.setTitle(pageTitle);
+      this.seoService.updateTags({
+        title: pageTitle,
+        description: target.description || target.seoDescription || `Documentation for ${target.title} in DB Nexus.`,
+        url: typeof window !== 'undefined' ? window.location.href : undefined
+      });
     }
     const res = this.mdRenderer.render(target.content);
     this.renderedHtml = this.sanitizer.bypassSecurityTrustHtml(res.html);
@@ -136,7 +170,43 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => this.initCanvasEngines(), 50);
       setTimeout(() => this.initCanvasEngines(), 250);
+      setTimeout(() => this.sanitizeAndPlayMedia(), 100);
+      setTimeout(() => this.sanitizeAndPlayMedia(), 400);
     }
+  }
+
+  private sanitizeAndPlayMedia(): void {
+    if (typeof document === 'undefined') return;
+    const mediaContainer = document.querySelector('.article-rendered-body');
+    if (!mediaContainer) return;
+
+    const videos = mediaContainer.querySelectorAll<HTMLVideoElement>('video');
+    videos.forEach(v => {
+      let src = v.getAttribute('src') || v.src || '';
+      if (src.startsWith('unsafe:')) {
+        src = src.replace(/^unsafe:/, '');
+        v.setAttribute('src', src);
+      }
+      v.muted = true;
+      v.playsInline = true;
+      v.autoplay = true;
+      v.controls = true;
+      if (src) {
+        try {
+          v.load();
+          v.play().catch(() => {});
+        } catch {}
+      }
+    });
+
+    const imgs = mediaContainer.querySelectorAll<HTMLImageElement>('img');
+    imgs.forEach(img => {
+      let src = img.getAttribute('src') || img.src || '';
+      if (src.startsWith('unsafe:')) {
+        src = src.replace(/^unsafe:/, '');
+        img.setAttribute('src', src);
+      }
+    });
   }
 
   private initCanvasEngines(): void {
@@ -151,7 +221,9 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
   }
 
   selectDoc(page: DocPage): void {
+    this.closeMobileMenu();
     this.router.navigate(['/docs', page.slug]);
+    this.loadDocBySlug(page.slug);
   }
 
   scrollToToc(tocId: string, event?: Event): void {

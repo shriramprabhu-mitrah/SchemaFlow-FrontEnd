@@ -12,9 +12,10 @@
         <span>DB Nexus</span>
       </div>
       <nav class="header-nav">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Features</a>
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+          class="nav-link">Features</a>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
-        <a routerLink="/docs" routerLinkActive="active" class="nav-link">Docs</a>
+        <a href="/docs" target="_blank" class="nav-link">Docs</a>
       </nav>
       <div class="header-actions">
         <app-button variant="none" customClass="btn-goto" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
@@ -24,8 +25,17 @@
         <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin" (onClick)="logout()">Sign
           Out</app-button>
         <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
-          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
     </div>
@@ -34,14 +44,17 @@
   <!-- MOBILE MENU OVERLAY -->
   <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
     <nav class="mobile-nav">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link" (click)="toggleMobileMenu()">Features</a>
-      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Features</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Pricing</a>
       <a routerLink="/docs" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
-      
+
       <div class="mobile-nav-bottom">
         <div class="mobile-nav-divider"></div>
         <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
-        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link"
+          (click)="toggleMobileMenu()">Sign In</a>
         <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
       </div>
     </nav>
@@ -184,7 +197,8 @@
                   </linearGradient>
                 </defs>
                 <!-- Spline from payments.invoice_id to invoices.id -->
-                <path d="M 160 255 C 195 255, 195 95, 160 95" stroke="url(#grad-line)" stroke-width="2.5" fill="none" class="glowing-link" />
+                <path d="M 160 255 C 195 255, 195 95, 160 95" stroke="url(#grad-line)" stroke-width="2.5" fill="none"
+                  class="glowing-link" />
                 <circle cx="160" cy="255" r="4" fill="#818cf8" />
                 <circle cx="160" cy="95" r="4" fill="#3ec5c1" />
               </svg>
@@ -279,10 +293,14 @@
             <app-icons name="feature-canvas" size="24" color="#818cf8"></app-icons>
           </div>
           <h3>Partition Structures with Visual Table Groups</h3>
-          <p>Organize large database diagrams by partitioning related entity tables into custom Table Groups. Color-code containers to mark schema sub-modules like authentication, payments, inventory, or log analytics, keeping complex schemas structured.</p>
+          <p>Organize large database diagrams by partitioning related entity tables into custom Table Groups. Color-code
+            containers to mark schema sub-modules like authentication, payments, inventory, or log analytics, keeping
+            complex schemas structured.</p>
           <div class="showcase-features-list">
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Group tables visually with custom dashed outlines</div>
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Color-code groups for rapid domain recognition</div>
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Group tables
+              visually with custom dashed outlines</div>
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#818cf8"></app-icons> Color-code
+              groups for rapid domain recognition</div>
           </div>
         </div>
       </div>
@@ -294,10 +312,14 @@
             <app-icons name="feature-editor" size="24" color="#3ec5c1"></app-icons>
           </div>
           <h3>Compile & Deploy with Import & Export Engine</h3>
-          <p>Import legacy database dumps directly to generate visual designs in one click. Export finished designs into clean DDL scripts optimized for PostgreSQL, MySQL, SQL Server, and SQLite, or share diagram links with teammates.</p>
+          <p>Import legacy database dumps directly to generate visual designs in one click. Export finished designs into
+            clean DDL scripts optimized for PostgreSQL, MySQL, SQL Server, and SQLite, or share diagram links with
+            teammates.</p>
           <div class="showcase-features-list">
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Import raw SQL DDL directly into visual blocks</div>
-            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Export clean schemas, vector SVGs, and high-res PDFs</div>
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Import raw SQL
+              DDL directly into visual blocks</div>
+            <div class="list-item"><app-icons name="check-valid" size="14" color="#3ec5c1"></app-icons> Export clean
+              schemas, vector SVGs, and high-res PDFs</div>
           </div>
         </div>
         <div class="showcase-visual">
@@ -326,7 +348,8 @@
       <div class="sandbox-desc">
         <span class="accent-title">SCHEMA INTEGRATION</span>
         <h2>Compile DBML to Multi-dialect DDL</h2>
-        <p>Whether you deploy to cloud databases or local servers, DB Nexus generates optimized schemas instantly. Switch target dialects and export clean DDL scripts with one click.</p>
+        <p>Whether you deploy to cloud databases or local servers, DB Nexus generates optimized schemas instantly.
+          Switch target dialects and export clean DDL scripts with one click.</p>
 
         <div class="dialect-pills">
           <span class="pill active">PostgreSQL</span>
@@ -376,7 +399,8 @@
         </div>
         <div class="step-badge-number">01</div>
         <h3>Import or Code</h3>
-        <p>Type declarative DBML code in our high-speed editor, or import existing SQL DDL dump scripts (Postgres, MySQL, Oracle) to instantly generate visual table boxes.</p>
+        <p>Type declarative DBML code in our high-speed editor, or import existing SQL DDL dump scripts (Postgres,
+          MySQL, Oracle) to instantly generate visual table boxes.</p>
       </div>
 
       <!-- Step 2 -->
@@ -386,7 +410,8 @@
         </div>
         <div class="step-badge-number">02</div>
         <h3>Group Visually</h3>
-        <p>Arrange your entity tables inside color-coded, named <strong>Table Groups</strong>. Partition catalog items, logs, billing, or user auth domains to keep diagrams readable.</p>
+        <p>Arrange your entity tables inside color-coded, named <strong>Table Groups</strong>. Partition catalog items,
+          logs, billing, or user auth domains to keep diagrams readable.</p>
       </div>
 
       <!-- Step 3 -->
@@ -396,7 +421,8 @@
         </div>
         <div class="step-badge-number">03</div>
         <h3>Sync & Collaborate</h3>
-        <p>Save diagrams to secure cloud <strong>Workspaces</strong>. Switch dynamically between personal drafts and shared team folders. Invite colleagues and accept keys to edit together.</p>
+        <p>Save diagrams to secure cloud <strong>Workspaces</strong>. Switch dynamically between personal drafts and
+          shared team folders. Invite colleagues and accept keys to edit together.</p>
       </div>
 
       <!-- Step 4 -->
@@ -406,7 +432,8 @@
         </div>
         <div class="step-badge-number">04</div>
         <h3>Export & Integrate</h3>
-        <p>Compile visual schemas back into optimized SQL scripts, or download vector SVG and PDF graphics directly to integrate into your documentation or github READMEs.</p>
+        <p>Compile visual schemas back into optimized SQL scripts, or download vector SVG and PDF graphics directly to
+          integrate into your documentation or github READMEs.</p>
       </div>
     </div>
 
@@ -439,9 +466,9 @@
 
       <div class="footer-col">
         <h4>Resources</h4>
-        <a routerLink="/docs">Documentation</a>
-        <a routerLink="/docs/dbml-editor">DBML Language Guide</a>
-        <a routerLink="/docs/create-your-first-diagram">SQL Import/Export API</a>
+        <a href="/docs" target="_blank">Documentation</a>
+        <a href="/docs/dbml-editor" target="_blank">DBML Language Guide</a>
+        <a href="/docs/create-your-first-diagram" target="_blank">SQL Import/Export API</a>
       </div>
 
       <div class="footer-col">

@@ -2121,16 +2121,18 @@ export class DashboardService {
     const fromEligible = fromColObj ? (fromColObj.pk || fromColObj.unique) : false;
     const toEligible = toColObj ? (toColObj.pk || toColObj.unique) : false;
 
-    let actualFromTable = fromTable;
-    let actualFromCol = fromCol;
-    let actualToTable = toTable;
-    let actualToCol = toCol;
+      let actualFromTable = toTable;   // FK table
+    let actualFromCol = toCol;     // FK col
+    let actualToTable = fromTable;   // PK table
+    let actualToCol = fromCol;     // PK col
 
-    if (fromEligible && !toEligible) {
-      actualFromTable = toTable;
-      actualFromCol = toCol;
-      actualToTable = fromTable;
-      actualToCol = fromCol;
+    if (!fromEligible && toEligible) {
+      // If drag origin is NOT PK/unique, but drag target IS PK/unique:
+      // then drag origin is FK and drag target is PK.
+      actualFromTable = fromTable;
+      actualFromCol = fromCol;
+      actualToTable = toTable;
+      actualToCol = toCol;
     }
 
     const exists = this.parseDBML(this.code).refs.some(

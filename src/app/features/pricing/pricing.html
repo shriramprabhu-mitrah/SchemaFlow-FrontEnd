@@ -14,7 +14,7 @@
       <nav class="header-nav">
         <a routerLink="/" class="nav-link">Features</a>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
-        <a routerLink="/dashboard" class="nav-link">Docs</a>
+        <a href="/docs" target="_blank" class="nav-link">Docs</a>
       </nav>
       <div class="header-actions">
         <app-button variant="none" customClass="btn-goto" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
@@ -24,8 +24,17 @@
         <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin" (onClick)="logout()">Sign
           Out</app-button>
         <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
-          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
     </div>
@@ -35,13 +44,15 @@
   <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
     <nav class="mobile-nav">
       <a routerLink="/" class="mobile-nav-link" (click)="toggleMobileMenu()">Features</a>
-      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Pricing</a>
       <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
-      
+
       <div class="mobile-nav-bottom">
         <div class="mobile-nav-divider"></div>
         <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
-        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link"
+          (click)="toggleMobileMenu()">Sign In</a>
         <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
       </div>
     </nav>
@@ -51,7 +62,8 @@
   <section class="pricing-hero">
     <span class="accent-title">PRICING BLUEPRINTS</span>
     <h1 class="hero-headline">Choose the right plan for your database designs</h1>
-    <p class="hero-subtext">Scale up as you need more diagram capacity, team workspaces, or version history.</p>    <!-- BILLING TOGGLE -->
+    <p class="hero-subtext">Scale up as you need more diagram capacity, team workspaces, or version history.</p>
+    <!-- BILLING TOGGLE -->
     <div class="billing-toggle-wrapper">
       <div class="billing-toggle-container">
         <button id="btn-toggle-monthly" class="toggle-btn" [class.active]="!isAnnual" (click)="toggleBilling(false)">
@@ -140,7 +152,8 @@
                 </ng-container>
                 <ng-container *ngIf="!isEligibleForTrial()">
                   <span class="currency">₹</span>
-                  <span class="price-amount">{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) : plan.price_monthly }}</span>
+                  <span class="price-amount">{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) :
+                    plan.price_monthly }}</span>
                 </ng-container>
               </div>
               <span class="price-period" style="font-size: 14px; opacity: 0.7;">

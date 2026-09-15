@@ -1,9 +1,14 @@
 import { Injectable, signal } from '@angular/core';
 import { DocPage, DocRevision, DocSection, DocStatus } from '../models/cms-docs.model';
 
-const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v38_sections';
-const STORAGE_KEY_PAGES = 'dbnexus_cms_v38_pages';
-const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v38_revisions';
+const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v111_sections';
+const STORAGE_KEY_PAGES = 'dbnexus_cms_v111_pages';
+const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v111_revisions';
+const STORAGE_KEY_MEDIA = 'dbnexus_cms_app_v100_media_registry';
+
+const DB_NAME = 'dbnexus_cms_media_db_v1';
+const DB_VERSION = 1;
+const STORE_NAME = 'media_files';
 
 @Injectable({
   providedIn: 'root'
@@ -11,10 +16,238 @@ const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v38_revisions';
 export class CmsDocsService {
   sections = signal<DocSection[]>([]);
   pages = signal<DocPage[]>([]);
+  mediaLoaded = signal<number>(0);
   lastBackendPayload = signal<{ method: string; url: string; payload: any; timestamp: string } | null>(null);
 
+  private db: IDBDatabase | null = null;
+  private mediaRegistry: Record<string, string> = {};
+  private mediaBlobUrlMap = new Map<string, string>();
+
   constructor() {
+    this.loadMediaRegistryFromStorage();
+    this.initIndexedDB();
     this.initStorage();
+  }
+
+  private loadMediaRegistryFromStorage(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_MEDIA);
+      if (stored) {
+        this.mediaRegistry = JSON.parse(stored) || {};
+      }
+    } catch (e) {
+      console.warn('Failed to load media registry from localStorage', e);
+    }
+  }
+
+  private initIndexedDB(): void {
+    if (typeof window === 'undefined' || !window.indexedDB) return;
+
+    try {
+      const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = (e: IDBVersionChangeEvent) => {
+        const db = (e.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+
+      request.onsuccess = (e: Event) => {
+        this.db = (e.target as IDBOpenDBRequest).result;
+        this.loadAllMediaFromDB();
+      };
+
+      request.onerror = (err) => {
+        console.warn('IndexedDB failed to open', err);
+      };
+    } catch (err) {
+      console.warn('IndexedDB error', err);
+    }
+  }
+
+  private getMimeTypeFromFilename(filename: string): string {
+    if (!filename) return 'application/octet-stream';
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    switch (ext) {
+      case 'mp4': return 'video/mp4';
+      case 'webm': return 'video/webm';
+      case 'ogg': return 'video/ogg';
+      case 'mov': return 'video/quicktime';
+      case 'png': return 'image/png';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'webp': return 'image/webp';
+      case 'gif': return 'image/gif';
+      case 'svg': return 'image/svg+xml';
+      default: return 'application/octet-stream';
+    }
+  }
+
+  private loadAllMediaFromDB(): void {
+    if (!this.db) return;
+    try {
+      const tx = this.db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.openCursor();
+
+      req.onsuccess = (e: Event) => {
+        const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const key = cursor.key as string;
+          const blob = cursor.value as Blob;
+          if (blob) {
+            const cleanKey = key.trim();
+            const noSlash = cleanKey.replace(/^\//, '');
+            const withSlash = '/' + noSlash;
+            const mime = this.getMimeTypeFromFilename(cleanKey);
+            const typedBlob = (blob.type && blob.type !== 'application/octet-stream') ? blob : new Blob([blob], { type: mime });
+            const blobUrl = URL.createObjectURL(typedBlob);
+
+            this.mediaBlobUrlMap.set(cleanKey, blobUrl);
+            this.mediaBlobUrlMap.set(noSlash, blobUrl);
+            this.mediaBlobUrlMap.set(withSlash, blobUrl);
+            try {
+              this.mediaBlobUrlMap.set(decodeURIComponent(cleanKey), blobUrl);
+              this.mediaBlobUrlMap.set(decodeURIComponent(withSlash), blobUrl);
+            } catch { }
+
+            if (typedBlob.size < 50 * 1024 * 1024) {
+              const reader = new FileReader();
+              reader.onload = (re) => {
+                const dataUrl = (re.target?.result as string) || '';
+                if (dataUrl) {
+                  this.saveMedia(cleanKey, dataUrl);
+                  this.saveMedia(noSlash, dataUrl);
+                  this.saveMedia(withSlash, dataUrl);
+                }
+              };
+              reader.readAsDataURL(typedBlob);
+            }
+          }
+          cursor.continue();
+        } else {
+          // IndexedDB media cursor finished loading all files into Blob URLs!
+          this.mediaLoaded.update(n => n + 1);
+        }
+      };
+    } catch (e) {
+      console.warn('Error loading media from IndexedDB', e);
+    }
+  }
+
+  saveMediaFile(key: string, fileOrBlob: Blob): string {
+    if (!key || !fileOrBlob) return '';
+    const cleanKey = key.trim();
+    const noSlash = cleanKey.replace(/^\//, '');
+    const withSlash = '/' + noSlash;
+    const mime = this.getMimeTypeFromFilename(cleanKey);
+    const typedBlob = (fileOrBlob.type && fileOrBlob.type !== 'application/octet-stream') ? fileOrBlob : new Blob([fileOrBlob], { type: mime });
+
+    const blobUrl = URL.createObjectURL(typedBlob);
+    this.mediaBlobUrlMap.set(cleanKey, blobUrl);
+    this.mediaBlobUrlMap.set(noSlash, blobUrl);
+    this.mediaBlobUrlMap.set(withSlash, blobUrl);
+    this.mediaLoaded.update(n => n + 1);
+
+    if (this.db) {
+      try {
+        const tx = this.db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.put(typedBlob, cleanKey);
+      } catch (e) {
+        console.warn('Failed to save file to IndexedDB', e);
+      }
+    }
+
+    if (typedBlob.size < 50 * 1024 * 1024) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = (e.target?.result as string) || '';
+        if (dataUrl) {
+          this.saveMedia(cleanKey, dataUrl);
+          this.saveMedia(noSlash, dataUrl);
+          this.saveMedia(withSlash, dataUrl);
+        }
+      };
+      reader.readAsDataURL(typedBlob);
+    }
+
+    return blobUrl;
+  }
+
+  saveMedia(key: string, dataUrl: string): void {
+    if (!key || !dataUrl) return;
+    const cleanKey = key.trim();
+    const noSlash = cleanKey.replace(/^\//, '');
+    const withSlash = '/' + noSlash;
+    this.mediaRegistry[cleanKey] = dataUrl;
+    this.mediaRegistry[noSlash] = dataUrl;
+    this.mediaRegistry[withSlash] = dataUrl;
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY_MEDIA, JSON.stringify(this.mediaRegistry));
+      } catch (e) {
+        console.warn('LocalStorage quota reached for media registry', e);
+      }
+    }
+  }
+
+  getMedia(key: string): string | null {
+    if (!key) return null;
+    let cleanKey = key.trim();
+    try {
+      cleanKey = decodeURIComponent(cleanKey);
+    } catch { }
+
+    const noSlash = cleanKey.replace(/^\//, '');
+    const withSlash = '/' + noSlash;
+
+    if (this.mediaBlobUrlMap.has(cleanKey)) {
+      return this.mediaBlobUrlMap.get(cleanKey)!;
+    }
+    if (this.mediaBlobUrlMap.has(noSlash)) {
+      return this.mediaBlobUrlMap.get(noSlash)!;
+    }
+    if (this.mediaBlobUrlMap.has(withSlash)) {
+      return this.mediaBlobUrlMap.get(withSlash)!;
+    }
+
+    const filename = cleanKey.split('/').pop() || '';
+    if (filename) {
+      for (const [k, url] of this.mediaBlobUrlMap.entries()) {
+        if (k.endsWith(filename) || k.includes(filename)) {
+          return url;
+        }
+      }
+    }
+
+    if (this.mediaRegistry[cleanKey]) {
+      return this.mediaRegistry[cleanKey];
+    }
+    if (this.mediaRegistry[noSlash]) {
+      return this.mediaRegistry[noSlash];
+    }
+    if (this.mediaRegistry[withSlash]) {
+      return this.mediaRegistry[withSlash];
+    }
+    if (filename) {
+      for (const k of Object.keys(this.mediaRegistry)) {
+        if (k.endsWith(filename) || k.includes(filename)) {
+          return this.mediaRegistry[k];
+        }
+      }
+    }
+
+    if (cleanKey.startsWith('assets/')) {
+      return '/' + cleanKey;
+    }
+    if (cleanKey.startsWith('/assets/')) {
+      return cleanKey;
+    }
+
+    return null;
   }
 
   private initStorage(): void {
@@ -24,12 +257,14 @@ export class CmsDocsService {
 
     // Clean up all legacy storage keys
     const legacyKeys: string[] = [];
-    for (let i = 1; i <= 37; i++) {
+    for (let i = 1; i <= 111; i++) {
       legacyKeys.push(`dbnexus_cms_v${i}_sections`, `dbnexus_cms_v${i}_pages`, `dbnexus_cms_v${i}_revisions`);
       legacyKeys.push(`dbnexus_cms_sections_v${i}`, `dbnexus_cms_pages_v${i}`, `dbnexus_cms_revisions_v${i}`);
     }
     legacyKeys.push('msdb_cms_sections_v1', 'msdb_cms_pages_v1', 'msdb_cms_revisions_v1');
-    legacyKeys.forEach(key => localStorage.removeItem(key));
+    legacyKeys.forEach(key => {
+      try { localStorage.removeItem(key); } catch (e) { }
+    });
 
     const storedSections = localStorage.getItem(STORAGE_KEY_SECTIONS);
     const storedPages = localStorage.getItem(STORAGE_KEY_PAGES);
@@ -39,7 +274,14 @@ export class CmsDocsService {
       try {
         const parsedSec = JSON.parse(storedSections);
         const parsedPg = JSON.parse(storedPages);
-        if (parsedSec.length < 5 || parsedPg.some((p: any) => p.slug === 'cms-documentation-management' || p.id === '124' || p.id === '102' || p.id === '125' || p.id === '127' || p.slug === 'release-notes-and-changelog')) {
+        const page103 = parsedPg.find((p: any) => p.id === '103');
+        if (
+          parsedSec.length < 5 ||
+          !page103 ||
+          !page103.content ||
+          !page103.content.includes('sample_diagram_workspace.png') ||
+          parsedPg.some((p: any) => p.slug === 'cms-documentation-management' || p.id === '124' || p.id === '102' || p.id === '125' || p.id === '127' || p.slug === 'release-notes-and-changelog')
+        ) {
           needsReseed = true;
         }
       } catch {
@@ -73,14 +315,26 @@ export class CmsDocsService {
           p.slug !== 'branching-and-pull-requests'
         );
 
-        // Sanitize any legacy text references, YouTube videos, and image URLs inside stored pages
+        // Guarantee that Workspaces section exists and page 105b is moved out of Getting Started into Workspaces
+        const hasWorkspacesSec = parsedSections.some(s => s.id === 'sec-workspaces');
+        if (!hasWorkspacesSec || parsedPages.some(p => p.id === '105b' && p.sectionId === 'sec-getting-started')) {
+          const seedSections = this.getSeedSections();
+          const seedPages = this.getSeedPages();
+          this.saveSectionsToStorage(seedSections);
+          this.savePagesToStorage(seedPages);
+          this.initSeedRevisions(seedPages);
+          this.sections.set(seedSections);
+          this.pages.set(seedPages);
+          return;
+        }
+
+        // Sanitize any legacy text references, YouTube videos, headercolor tags, and inline column refs inside stored pages
         parsedPages = parsedPages.map(p => {
           let updatedContent = p.content ? p.content.replace(/MSDBDiagram/gi, 'DB Nexus') : p.content;
           if (updatedContent) {
             updatedContent = updatedContent
-              .replace(/!\[[^\]]*\]\(assets\/images\/[^\)]+\)/gi, '')
-              .replace(/assets\/images\/[a-zA-Z0-9_-]+\.(png|jpg|jpeg|webp|gif)/gi, '')
-              .replace(/!\[(?:canvas:)?[^\]]*\]\((?:assets\/images\/|url)[^\)]*\)/gi, '')
+              .replace(/\s*\[headercolor:\s*(?:"[^"]*"|'[^']*'|#[a-fA-F0-9]{3,6}|[^\]]+)\]/gi, '')
+              .replace(/,\s*ref:\s*>\s*[a-zA-Z0-9_.]+/gi, '')
               .replace(/## Video Walkthrough & Platform Overview\s*Watch the 3-minute video overview below to see DB Nexus in action:\s*!\[video:[^\]]*\]\(https:\/\/www\.youtube\.com\/[^\)]+\)/g, '')
               .replace(/## Video Tutorial\s*Watch this quick 2-minute video walkthrough:\s*!\[video:[^\]]*\]\(https:\/\/www\.youtube\.com\/[^\)]+\)/g, '')
               .replace(/!\[video:[^\]]*\]\(https:\/\/www\.youtube\.com\/[^\)]+\)/g, '');
@@ -159,7 +413,20 @@ export class CmsDocsService {
   }
 
   getPublishedPages(): DocPage[] {
-    return this.pages().filter(p => p.status === 'published');
+    const sections = this.getSections();
+    const sectionOrderMap = new Map<string, number>();
+    sections.forEach(s => sectionOrderMap.set(s.id, s.sortOrder));
+
+    return this.pages()
+      .filter(p => p.status === 'published')
+      .sort((a, b) => {
+        const secA = sectionOrderMap.get(a.sectionId) ?? 999;
+        const secB = sectionOrderMap.get(b.sectionId) ?? 999;
+        if (secA !== secB) {
+          return secA - secB;
+        }
+        return (a.sortOrder || 0) - (b.sortOrder || 0);
+      });
   }
 
   getPageById(id: string): DocPage | undefined {
@@ -350,7 +617,13 @@ export class CmsDocsService {
     };
 
     all.push(newRev);
-    localStorage.setItem(STORAGE_KEY_REVISIONS, JSON.stringify(all));
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY_REVISIONS, JSON.stringify(all));
+      } catch (e) {
+        console.warn('LocalStorage quota exceeded when saving revisions', e);
+      }
+    }
   }
 
   // ================= UTILITIES & BACKEND LOGGING =================
@@ -397,13 +670,21 @@ publishedAt: "${page.publishedAt || ''}"
 
   private saveSectionsToStorage(sections: DocSection[]): void {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY_SECTIONS, JSON.stringify(sections));
+      try {
+        localStorage.setItem(STORAGE_KEY_SECTIONS, JSON.stringify(sections));
+      } catch (e) {
+        console.warn('LocalStorage quota exceeded when saving sections', e);
+      }
     }
   }
 
   private savePagesToStorage(pages: DocPage[]): void {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY_PAGES, JSON.stringify(pages));
+      try {
+        localStorage.setItem(STORAGE_KEY_PAGES, JSON.stringify(pages));
+      } catch (e) {
+        console.warn('LocalStorage quota exceeded when saving pages', e);
+      }
     }
   }
 
@@ -423,7 +704,11 @@ publishedAt: "${page.publishedAt || ''}"
         changeSummary: 'Initial page creation'
       });
     });
-    localStorage.setItem(STORAGE_KEY_REVISIONS, JSON.stringify(revisions));
+    try {
+      localStorage.setItem(STORAGE_KEY_REVISIONS, JSON.stringify(revisions));
+    } catch (e) {
+      console.warn('LocalStorage quota exceeded when initializing seed revisions', e);
+    }
   }
   private getSeedSections(): DocSection[] {
     return [
@@ -432,7 +717,8 @@ publishedAt: "${page.publishedAt || ''}"
       { id: 'sec-canvas-workspace', title: 'Canvas Workspace & Controls', slug: 'canvas-workspace-and-controls', sortOrder: 3, showHeading: true },
       { id: 'sec-dbml-tablegroups', title: 'DBML Syntax & TableGroups', slug: 'dbml-syntax-and-tablegroups', sortOrder: 4, showHeading: true },
       { id: 'sec-datadict-export', title: 'Data Dictionary & Export', slug: 'data-dictionary-and-export', sortOrder: 5, showHeading: true },
-      { id: 'sec-version-history', title: 'Version History & Releases', slug: 'version-history-and-releases', sortOrder: 6, showHeading: true }
+      { id: 'sec-workspaces', title: 'Workspaces', slug: 'workspaces', sortOrder: 6, showHeading: true },
+      { id: 'sec-version-history', title: 'Version History & Releases', slug: 'version-history-and-releases', sortOrder: 7, showHeading: true }
     ];
   }
 
@@ -457,7 +743,7 @@ Unlike traditional drag-and-drop database GUI tools that produce opaque propriet
 ### Why Choose Declarative DBML Modeling?
 
 1. **Speed & Efficiency**: Type table structures and foreign key references faster than clicking through multi-step dialog boxes.
-2. **Multi-Dialect Code Generation**: Export a single DBML blueprint into production SQL DDL scripts for **PostgreSQL**, **MySQL**, **MS SQL Server**, and **SQLite**.
+2. **Multi-Dialect Code Generation**: Export a single DBML blueprint into production SQL DDL scripts for **PostgreSQL**, **MySQL**, and **Microsoft SQL Server**.
 3. **Visual Canvas Interactivity**: Pan, zoom, drag table cards, group domains into \`TableGroup\` containers, and customize diagram line styles.
 4. **Interactive Data Dictionary**: Auto-generate searchable web field tables from column descriptions and field notes.
 
@@ -494,6 +780,7 @@ Unlike traditional drag-and-drop database GUI tools that produce opaque propriet
         sectionId: 'sec-getting-started',
         content: `# Quick Start Guide
 
+
 Follow this guide to create, visualize, and export your first relational database diagram in under 2 minutes.
 
 ## Step 1: Open the Workspace Canvas
@@ -506,19 +793,21 @@ Paste the following DBML code snippet into the left editor panel:
 
 \`\`\`dbml
 // Define Users Table
-Table users [headercolor: #3b82f6] {
+Table users {
   id int [pk, increment]
   username varchar [not null, unique]
 }
 
 // Define Orders Table
-Table orders [headercolor: #10b981] {
+Table orders {
   id int [pk, increment]
-  user_id int [not null, ref: > users.id]
+  user_id int [not null]
   total_amount decimal(10,2) [not null, default: 0.00]
   order_status varchar [default: 'pending']
   placed_at timestamp [default: \`now()\`]
 }
+
+Ref: orders.user_id > users.id
 
 // Group E-Commerce Tables
 TableGroup ECommerce {
@@ -597,45 +886,6 @@ The DB Nexus application interface is designed for high-efficiency database mode
         updatedAt: now,
         publishedAt: now
       },
-      {
-        id: '105b',
-        title: 'Personal & Team Workspaces Overview',
-        slug: 'personal-and-team-workspaces',
-        description: 'Learn how to manage private schema drafts in Personal Workspaces and collaborate with team members in Organization Workspaces.',
-        sectionId: 'sec-getting-started',
-        content: `# Personal & Team Workspaces Overview
-
-DB Nexus allows developers and software engineering teams to manage database diagrams across two workspace types: **Personal Workspaces** and **Team / Organization Workspaces**.
-
-## Personal Workspaces
-
-Every user account comes with a dedicated **Personal Workspace** by default.
-
-- **Private Schema Drafts**: Prototyping workspace for drafting personal database models and side projects.
-- **Local-First Browser Persistence**: Your personal schema drafts are saved directly in browser local storage for instant offline availability.
-- **Sample Blueprint Gallery**: Load pre-configured database blueprints (e.g. E-Commerce, User Authentication, SaaS Billing) into your personal space with a single click.
-
-## Team / Organization Workspaces
-
-For team projects and enterprise database architecture modeling, DB Nexus provides **Team / Organization Workspaces**.
-
-- **Shared Repository Folders**: Organize diagrams into shared team folders accessible to invited colleagues.
-- **Granular Role Access Control (RBAC)**:
-  - **Owner**: Full administrative control over workspace settings, team billing, and member access.
-  - **Admin**: Create and edit diagrams, manage member invitations, and configure project permissions.
-  - **Member / Editor**: Create, edit, and export database diagrams within assigned team projects.
-  - **Viewer**: Read-only access to inspect visual ER diagrams, field dictionaries, and export SQL DDL scripts.
-- **Workspace Switcher**: Click the workspace selector in the top navigation bar or click **Workspaces** (\`📂 Workspaces\`) to switch context instantly between Personal and Organization environments.
-`,
-        sortOrder: 3,
-        status: 'published',
-        createdBy: 'Super Admin',
-        updatedBy: 'Super Admin',
-        createdAt: '2026-08-17T16:00:00.000Z',
-        updatedAt: now,
-        publishedAt: now
-      },
-
       // SECTION 3: CANVAS WORKSPACE & CONTROLS
       {
         id: '106',
@@ -724,6 +974,8 @@ Click **Auto Organize** from the canvas toolbar to run the automated hierarchica
         sectionId: 'sec-dbml-tablegroups',
         content: `# Tables, Columns & Field Constraints
 
+
+
 Tables represent database entities and are defined using the \`Table\` keyword followed by a table name and column definition block.
 
 ## Enterprise Schema DBML Code Example
@@ -731,32 +983,28 @@ Tables represent database entities and are defined using the \`Table\` keyword f
 Below is a complete DBML schema definition:
 
 \`\`\`dbml
-// 1. Department Table
-Table Department [headercolor: #317ec2] {
-  DepartmentId int [pk, increment]
-  DepartmentName varchar [not null]
-  Location varchar
+Table department {
+  department_id int [pk, increment]
+  department_name varchar(100) [not null, unique]
 }
 
-// 2. Employee Table
-Table Employee [headercolor: #317ec2] {
-  EmployeeId int [pk, increment]
-  DepartmentId int [ref: > Department.DepartmentId]
-  FirstName varchar [not null]
-  LastName varchar [not null]
-  Email varchar [unique, not null]
-  HireDate date
-  Salary decimal(10,2)
-  Status varchar [default: 'active']
+Table employee {
+  employee_id int [pk, increment]
+  employee_name varchar(100) [not null]
+  email varchar(150) [unique]
+  salary decimal(10,2)
+  department_id int [not null]
 }
 
-// 3. Project Table
-Table Project [headercolor: #10b981] {
-  ProjectId int [pk, increment]
-  ProjectName varchar [not null]
-  StartDate date
-  EndDate date
+Table project {
+  project_id int [pk, increment]
+  project_name varchar(150) [not null, unique]
+  department_id int [not null]
 }
+
+Ref: employee.department_id > department.department_id
+
+Ref: project.department_id > department.department_id
 \`\`\`
 
 ## Supported Column Settings
@@ -770,7 +1018,7 @@ Table Project [headercolor: #10b981] {
 | \`null\` | Explicitly allow NULL values | \`bio text [null]\` |
 | \`default: value\` | Default column value | \`status varchar [default: 'active']\` |
 | \`note: 'text'\` | Inline column documentation | \`code varchar [note: 'ISO currency code']\` |
-| \`ref: > target.col\` | Inline foreign key reference | \`dept_id int [ref: > departments.id]\` |
+| \`Ref: table.col > target.col\` | Standalone foreign key reference | \`Ref: employee.department_id > department.department_id\` |
 `,
         sortOrder: 1,
         status: 'published',
@@ -788,32 +1036,22 @@ Table Project [headercolor: #10b981] {
         sectionId: 'sec-dbml-tablegroups',
         content: `# Relationships & Foreign Keys
 
-Connecting tables through foreign key references is the foundation of relational database modeling. DB Nexus supports two ways to declare relationships: **Inline Column References** and **Standalone Ref Statements**.
+## Declaring Foreign Key Relationships via Standalone Ref Statements
 
-## Relationship Types & DBML Operators
-
-| Relationship Type | DBML Operator | Syntax Example | Visual Connector |
-| --- | --- | --- | --- |
-| **Many-to-One** | \`>\` | \`orders.user_id > users.id\` | Bezier line showing \`N\` on left, \`1\` on right |
-| **One-to-Many** | \`<\` | \`users.id < orders.user_id\` | Bezier line showing \`1\` on left, \`N\` on right |
-| **One-to-One** | \`-\` | \`user_profiles.user_id - users.id\` | Bezier line showing \`1\` on left, \`1\` on right |
-| **Many-to-Many** | \`<>\` | \`books.id <> authors.id\` | Bezier line showing \`N\` on left, \`N\` on right |
-
-## 1. Inline Column References
-
-Inline references are defined directly inside column attribute brackets:
+Foreign key relationships are declared below table creation definitions using standalone \`Ref\` statements:
 
 \`\`\`dbml
-Table orders [headercolor: #10b981] {
+Table orders {
   id int [pk, increment]
-  user_id int [not null, ref: > users.id]
+  user_id int [not null]
   total decimal(10,2)
 }
+
+// Standalone Ref Statement below create table
+Ref: orders.user_id > users.id
 \`\`\`
 
-## 2. Standalone Ref Statements
-
-Standalone \`Ref\` statements allow you to declare relationships outside table definitions:
+Standalone \`Ref\` statements allow you to specify foreign key connections and referential actions (such as \`cascade\` or \`no action\`):
 
 \`\`\`dbml
 // One-to-Many Relationship
@@ -825,32 +1063,33 @@ Ref: order_items.order_id > orders.id [delete: cascade, update: no action]
 
 ## 3. Complete Connected Tables Code Example
 
-Below is a complete multi-table blueprint demonstrating how tables connect together:
-
 \`\`\`dbml
 // 1. Primary Users Table
-Table users [headercolor: #3b82f6] {
+Table users {
   id int [pk, increment]
   username varchar [not null, unique]
   email varchar [not null]
 }
 
 // 2. Orders Table Connected to Users
-Table orders [headercolor: #10b981] {
+Table orders {
   id int [pk, increment]
-  user_id int [not null, ref: > users.id]
+  user_id int [not null]
   order_date timestamp [default: \`now()\`]
   status varchar [default: 'pending']
 }
 
 // 3. Order Items Table Connected to Orders
-Table order_items [headercolor: #8b5cf6] {
+Table order_items {
   id int [pk, increment]
   order_id int [not null]
   product_name varchar [not null]
   quantity int [default: 1]
   unit_price decimal(10,2) [not null]
 }
+
+// Relationships
+Ref: orders.user_id > users.id
 
 // Connect Order Items to Orders with Cascade Delete
 Ref: order_items.order_id > orders.id [delete: cascade]
@@ -878,6 +1117,8 @@ As soon as you type foreign key references:
         description: 'Group related tables into visual domain clusters and boundary boxes.',
         sectionId: 'sec-dbml-tablegroups',
         content: `# TableGroups & Domain Clustering
+
+
 
 When building large microservices or enterprise schemas with dozens of tables, **TableGroups** allow you to group related tables into visual domain boundary boxes.
 
@@ -916,32 +1157,46 @@ On the visual diagram canvas:
         id: '112d',
         title: 'Data Dictionary & Schema Annotations',
         slug: 'data-dictionary-and-annotations',
-        description: 'Generate searchable web data dictionaries and multi-line schema documentation notes.',
+        description: 'Browse interactive tabular data dictionaries, inspect column data types, key attributes, and outgoing/incoming entity relationships.',
         sectionId: 'sec-datadict-export',
         content: `# Data Dictionary & Schema Annotations
 
-DB Nexus turns your DBML code definitions into an interactive, searchable **Data Dictionary** for team documentation.
+Mitrah DB Diagram automatically compiles your DBML definitions into an interactive, searchable **Data Dictionary**.
 
-## Field Notes & Multi-line Documentation
+## DBML Schema Example
 
 \`\`\`dbml
-Table payments {
-  id uuid [pk]
-  amount_cents int [not null, note: 'Payment value stored in integer USD cents']
-
-  Note: '''
-  The payments table logs all incoming Stripe transactions.
-  All amounts are stored as integer cents to prevent floating-point rounding errors.
-  '''
+Table department {
+  department_id int [pk, increment]
+  department_name varchar(100) [not null, unique]
 }
+
+Table employee {
+  employee_id int [pk, increment]
+  employee_name varchar(100) [not null]
+  email varchar(150) [unique]
+  salary decimal(10,2)
+  department_id int [not null]
+}
+
+Table project {
+  project_id int [pk, increment]
+  project_name varchar(150) [not null, unique]
+  department_id int [not null]
+}
+
+Ref: employee.department_id > department.department_id
+
+Ref: project.department_id > department.department_id
 \`\`\`
 
-## Interactive Data Dictionary View
+## Interactive Data Dictionary Features
 
-Switch to the **Data Dictionary** tab in the right sidebar to browse a clean tabular overview of:
-- Table descriptions and column data types.
-- Primary keys, foreign key references, and default values.
-- Searchable filter input to find specific fields across your entire database in milliseconds.
+Switch to the **Data Dictionary** view in the workspace header or right inspector panel to explore:
+
+1. **Table & Column Breakdown**: Browse all schema tables (\`department\`, \`employee\`, \`project\`) with column names, data types (\`int\`, \`varchar(100)\`, \`decimal(10,2)\`), and key attribute badges (\`PK\`, \`AUTO\`, \`UNIQUE\`, \`NOT NULL\`).
+2. **Relationships & Connections Panel**: View incoming and outgoing relationship mappings (e.g. \`employee.department_id\` → \`department.department_id\`) with direct table focus buttons (\`View employee\`, \`View project\`).
+3. **Export Documentation**: Click **Download Markdown** to export your structured data dictionary into a clean markdown document.
 `,
         sortOrder: 1,
         status: 'published',
@@ -955,7 +1210,7 @@ Switch to the **Data Dictionary** tab in the right sidebar to browse a clean tab
         id: '115',
         title: 'Exporting SQL DDL & Images',
         slug: 'exporting-sql-ddl-and-images',
-        description: 'Convert DBML visual blueprints into production-ready PostgreSQL, MySQL, SQL Server, and SQLite DDL scripts.',
+        description: 'Convert DBML visual blueprints into production-ready PostgreSQL, MySQL, and Microsoft SQL Server DDL scripts.',
         sectionId: 'sec-datadict-export',
         content: `# Exporting SQL DDL & Images
 
@@ -966,12 +1221,12 @@ Convert your visual DBML diagram into executable SQL migration DDL scripts or hi
 - **PostgreSQL DDL**: Generates \`CREATE TABLE\`, foreign key constraints, \`CREATE TYPE AS ENUM\`, and indexes.
 - **MySQL / MariaDB**: Generates \`CREATE TABLE\` with inline \`ENGINE=InnoDB\`, \`AUTO_INCREMENT\`, and foreign keys.
 - **Microsoft SQL Server**: Generates T-SQL DDL with \`NVARCHAR\`, \`IDENTITY(1,1)\`, and \`CONSTRAINT\` blocks.
-- **SQLite**: Generates lightweight SQLite-compatible DDL scripts.
 
-## Image Export Formats
+## Image & Document Export Formats
 
 - **SVG (Scalable Vector Graphics)**: Crisp vector format ideal for embedding in web documentation without pixelation.
 - **PNG Image**: High-resolution PNG image for team presentations and architecture reports.
+- **PDF Document**: Printable high-resolution document format for sharing database diagrams and offline technical documentation.
 `,
         sortOrder: 2,
         status: 'published',
@@ -983,20 +1238,20 @@ Convert your visual DBML diagram into executable SQL migration DDL scripts or hi
       },
       {
         id: '117',
-        title: 'Importing & Reverse Engineering Schemas',
-        slug: 'importing-existing-schemas',
-        description: 'Reverse engineer existing PostgreSQL, MySQL, and SQLite DDL dumps into visual DBML diagrams.',
+        title: 'Importing SQL Schema',
+        slug: 'importing-sql-schema',
+        description: 'Import existing PostgreSQL, MySQL, and Microsoft SQL Server DDL dumps into visual DBML diagrams.',
         sectionId: 'sec-datadict-export',
-        content: `# Importing & Reverse Engineering Schemas
+        content: `# Importing SQL Schema
 
-Have an existing database? DB Nexus can reverse engineer raw \`.sql\` dump files into interactive visual DBML diagrams in seconds.
+Have an existing database? Mitrah DB Diagram can reverse engineer raw \`.sql\` dump files into interactive visual DBML diagrams in seconds.
 
 ## Reverse Engineering Workflow
 
 1. Click **Import** from the header action bar.
-2. Select your source SQL dialect (**PostgreSQL**, **MySQL**, **SQLite**, or **Rails schema.rb**).
+2. Select your source SQL dialect (**PostgreSQL**, **MySQL**, or **Microsoft SQL Server**).
 3. Upload your \`.sql\` script file or paste SQL text into the import panel.
-4. Click **Parse & Reverse Engineer**. DB Nexus automatically converts your SQL schema into clean DBML code and generates the visual canvas layout.
+4. Click **Parse & Reverse Engineer**. Mitrah DB Diagram automatically converts your SQL schema into clean DBML code and generates the visual canvas layout.
 `,
         sortOrder: 3,
         status: 'published',
@@ -1007,7 +1262,62 @@ Have an existing database? DB Nexus can reverse engineer raw \`.sql\` dump files
         publishedAt: now
       },
 
-      // SECTION 6: VERSION HISTORY & RELEASES
+      // SECTION 6: WORKSPACES
+      {
+        id: '105b',
+        title: 'Personal Workspace',
+        slug: 'personal-workspace',
+        description: 'Learn how to create, prototype, and manage private schema drafts in your default Personal Workspace.',
+        sectionId: 'sec-workspaces',
+        content: `# Personal Workspace
+
+Every user account comes with a dedicated **Personal Workspace** by default for private database schema prototyping and personal projects.
+
+## Personal Workspace Key Features
+
+- **Private Schema Drafts**: All diagrams created in your Personal Workspace are strictly private to your account.
+- **Local-First Browser Persistence**: Personal diagram drafts are stored in browser local storage for instant offline access and zero-latency saving.
+- **Sample Blueprint Gallery**: Instantly load pre-configured database blueprints (e.g. E-Commerce, User Auth, SaaS Billing) into your personal space with a single click.
+- **Unlimited Personal Prototyping**: Create, edit, and experiment with database models without workspace member limits.
+`,
+        sortOrder: 1,
+        status: 'published',
+        createdBy: 'Super Admin',
+        updatedBy: 'Super Admin',
+        createdAt: '2026-08-17T16:00:00.000Z',
+        updatedAt: now,
+        publishedAt: now
+      },
+      {
+        id: '105c',
+        title: 'Team Workspace',
+        slug: 'team-workspace',
+        description: 'Learn how to collaborate with team members, manage shared repositories, and assign role-based permissions in Team Workspaces.',
+        sectionId: 'sec-workspaces',
+        content: `# Team Workspace
+
+For collaborative software engineering teams and enterprise projects, **Team Workspaces** (Organization Workspaces) enable real-time co-authoring and shared diagram management.
+
+## Team Workspace Key Features
+
+- **Shared Repository Folders**: Group database diagrams into shared team folders accessible to invited organization members.
+- **Granular Role-Based Access Control (RBAC)**:
+  - **Admin**: Create, edit, and manage team diagrams, invite collaborators, and manage project permissions.
+  - **Member / Editor**: Create, edit, and export database models within assigned organization projects.
+  - **Viewer**: Read-only permission to inspect visual ER diagrams, field dictionaries, and export SQL DDL scripts.
+- **Workspace Context Switcher**: Easily switch between your **Personal Workspace** and **Team Workspace** using the workspace dropdown selector in the top navigation bar.
+- **Inviting Members**: Navigate to **Members** (\`👥 Members\`) in the workspace sidebar, enter your team colleague's email address, and assign their workspace role.
+`,
+        sortOrder: 2,
+        status: 'published',
+        createdBy: 'Super Admin',
+        updatedBy: 'Super Admin',
+        createdAt: '2026-08-17T17:00:00.000Z',
+        updatedAt: now,
+        publishedAt: now
+      },
+
+      // SECTION 7: VERSION HISTORY & RELEASES
       {
         id: '126',
         title: 'Diagram Revisions & Version History',

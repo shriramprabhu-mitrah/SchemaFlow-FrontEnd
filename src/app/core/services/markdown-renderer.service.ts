@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { TocItem } from '../models/cms-docs.model';
+import { CmsDocsService } from './cms-docs.service';
 
 if (typeof window !== 'undefined') {
-  (window as any).copyDocCodeSnippet = function(btn: HTMLElement) {
+  (window as any).copyDocCodeSnippet = function (btn: HTMLElement) {
     const wrapper = btn.closest('.doc-code-wrapper');
     const codeBlock = wrapper?.querySelector('.doc-code-block') || wrapper?.querySelector('code');
     if (!codeBlock) return;
@@ -56,30 +57,55 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-function parseInlineText(text: string): string {
+function parseInlineText(text: string, mediaResolver?: (src: string) => string): string {
   if (!text) return '';
   let res = text;
 
+  const resolveSrc = (url: string) => {
+    const trimmed = url.trim();
+    if (mediaResolver) {
+      const resolved = mediaResolver(trimmed);
+      if (resolved) return resolved;
+    }
+    return trimmed;
+  };
+
   // Video Embeds ![video:caption](url)
   res = res.replace(/!\[video:([^\]]*)\]\(([^)]+)\)/gi, (match, caption, src) => {
-    const cleanSrc = src.trim();
+    const rawSrc = src.trim();
     const cleanCap = caption.trim();
+    const cleanSrc = resolveSrc(rawSrc);
     if (cleanSrc.includes('youtube.com') || cleanSrc.includes('youtu.be')) {
-      const embedUrl = cleanSrc.replace('watch?v=', 'embed/');
+      let embedUrl = cleanSrc;
+      if (cleanSrc.includes('youtu.be/')) {
+        const id = cleanSrc.split('youtu.be/')[1]?.split('?')[0];
+        embedUrl = `https://www.youtube.com/embed/${id}`;
+      } else if (cleanSrc.includes('watch?v=')) {
+        const id = cleanSrc.split('watch?v=')[1]?.split('&')[0];
+        embedUrl = `https://www.youtube.com/embed/${id}`;
+      }
       return `<div class="doc-media-embed doc-video-embed"><iframe src="${embedUrl}" title="${escapeHtml(cleanCap)}" frameborder="0" allowfullscreen></iframe></div>`;
     }
-    return `<div class="doc-media-embed doc-video-embed"><video controls src="${cleanSrc}"></video><div class="doc-media-caption">${escapeHtml(cleanCap)}</div></div>`;
+    return `<div class="doc-media-embed doc-video-embed"><video controls autoplay loop muted playsinline preload="auto" src="${cleanSrc}"></video><div class="doc-media-caption">${escapeHtml(cleanCap)}</div></div>`;
   });
 
   // Images ![alt](url)
   res = res.replace(/!\[([^\]]*)\]\(([^)]+)\)/gi, (match, alt, src) => {
-    const cleanSrc = src.trim();
+    const rawSrc = src.trim();
     const cleanAlt = alt.trim();
-    return `<div class="doc-media-embed doc-image-embed"><img class="doc-markdown-img" alt="${escapeHtml(cleanAlt)}" src="${cleanSrc}" loading="lazy" onerror="this.onerror=null; let parent=this.closest('.doc-media-embed'); if(parent) parent.remove(); else this.remove();" /><div class="doc-media-caption">${escapeHtml(cleanAlt)}</div></div>`;
+    const cleanSrc = resolveSrc(rawSrc);
+    return `<div class="doc-media-embed doc-image-embed"><img class="doc-markdown-img" alt="${escapeHtml(cleanAlt)}" src="${cleanSrc}" loading="lazy" /><div class="doc-media-caption">${escapeHtml(cleanAlt)}</div></div>`;
   });
 
-  // Links [text](url)
-  res = res.replace(/\[([^\]]+)\]\(([^)]+)\)/gi, '<a class="doc-markdown-link" href="$2" target="_blank" rel="noopener">$1</a>');
+  // Links [text](url) - internal links open in same tab, external links open in new tab
+  res = res.replace(/\[([^\]]+)\]\(([^)]+)\)/gi, (match, text, url) => {
+    const cleanUrl = url.trim();
+    const isExternal = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://');
+    if (isExternal) {
+      return `<a class="doc-markdown-link" href="${cleanUrl}" target="_blank" rel="noopener">${text}</a>`;
+    }
+    return `<a class="doc-markdown-link" href="${cleanUrl}">${text}</a>`;
+  });
 
   // Inline code `code`
   res = res.replace(/`([^`]+)`/g, (match, codeText) => {
@@ -100,11 +126,14 @@ function parseInlineText(text: string): string {
   providedIn: 'root'
 })
 export class MarkdownRendererService {
+  private cmsService = inject(CmsDocsService);
 
   render(markdown: string): { html: string; toc: TocItem[] } {
     if (!markdown) {
       return { html: '', toc: [] };
     }
+
+    const mediaResolver = (src: string) => this.cmsService.getMedia(src) || src;
 
     const toc: TocItem[] = [];
 
@@ -177,7 +206,7 @@ export class MarkdownRendererService {
           while (headerCells.length < maxCols) {
             headerCells.push('');
           }
-          tableHtml += '<tr>' + headerCells.map(c => `<th>${parseInlineText(c)}</th>`).join('') + '</tr></thead><tbody>';
+          tableHtml += '<tr>' + headerCells.map(c => `<th>${parseInlineText(c, mediaResolver)}</th>`).join('') + '</tr></thead><tbody>';
 
           for (let r = 1; r < parsedRows.length; r++) {
             const rowCells = parsedRows[r];
@@ -185,7 +214,7 @@ export class MarkdownRendererService {
               rowCells.push('');
             }
             const finalCells = rowCells.slice(0, maxCols);
-            tableHtml += '<tr>' + finalCells.map(c => `<td>${parseInlineText(c)}</td>`).join('') + '</tr>';
+            tableHtml += '<tr>' + finalCells.map(c => `<td>${parseInlineText(c, mediaResolver)}</td>`).join('') + '</tr>';
           }
         }
         tableHtml += '</tbody></table></div>';
@@ -199,7 +228,7 @@ export class MarkdownRendererService {
         const level = headingMatch[1].length;
         const text = headingMatch[2].trim();
         const id = 'heading-' + text.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
-        htmlBlocks.push(`<h${level} id="${id}" class="doc-heading doc-h${level}">${parseInlineText(text)}</h${level}>`);
+        htmlBlocks.push(`<h${level} id="${id}" class="doc-heading doc-h${level}">${parseInlineText(text, mediaResolver)}</h${level}>`);
         i++;
         continue;
       }
@@ -221,7 +250,7 @@ export class MarkdownRendererService {
           bqLines.push(bLine);
           i++;
         }
-        const contentStr = bqLines.map(b => parseInlineText(b)).join('<br/>');
+        const contentStr = bqLines.map(b => parseInlineText(b, mediaResolver)).join('<br/>');
         if (alertType) {
           htmlBlocks.push(`<blockquote class="doc-alert doc-alert-${alertType}"><div class="doc-alert-title">${alertType.toUpperCase()}</div><p>${contentStr}</p></blockquote>`);
         } else {
@@ -238,7 +267,7 @@ export class MarkdownRendererService {
         let listHtml = `<${listTag} class="${listClass}">`;
         while (i < lines.length && (lines[i].trim().match(/^[-*+]\s+/) || lines[i].trim().match(/^\d+\.\s+/))) {
           let itemText = lines[i].trim().replace(/^([-*+]|\d+\.)\s+/, '');
-          listHtml += `<li>${parseInlineText(itemText)}</li>`;
+          listHtml += `<li>${parseInlineText(itemText, mediaResolver)}</li>`;
           i++;
         }
         listHtml += `</${listTag}>`;
@@ -252,7 +281,7 @@ export class MarkdownRendererService {
         continue;
       }
 
-      htmlBlocks.push(`<p class="doc-paragraph">${parseInlineText(line)}</p>`);
+      htmlBlocks.push(`<p class="doc-paragraph">${parseInlineText(line, mediaResolver)}</p>`);
       i++;
     }
 

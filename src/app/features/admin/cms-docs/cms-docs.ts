@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ViewEncapsulation, HostListener } from '@angular/core';
+import { Component, OnInit, inject, ViewEncapsulation, HostListener, ViewChild, ElementRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -25,10 +25,19 @@ export interface SampleMediaItem {
   encapsulation: ViewEncapsulation.None
 })
 export class CmsDocsComponent implements OnInit {
+  @ViewChild('previewBody') previewBodyRef?: ElementRef<HTMLElement>;
+
   cmsService = inject(CmsDocsService);
   mdRenderer = inject(MarkdownRendererService);
   dashService = inject(DashboardService);
   private router = inject(Router);
+
+  constructor() {
+    effect(() => {
+      this.cmsService.mediaLoaded();
+      this.updatePreview();
+    });
+  }
 
   // Form Dropdown Toggle States
   showStatusDropdown = false;
@@ -255,6 +264,20 @@ export class CmsDocsComponent implements OnInit {
     const content = this.editForm.content || '';
     const res = this.mdRenderer.render(content);
     this.previewHtml = res.html;
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        const videoElements = document.querySelectorAll<HTMLVideoElement>('video');
+        videoElements.forEach(v => {
+          v.muted = true;
+          if (v.src) {
+            try {
+              v.load();
+              v.play().catch(() => {});
+            } catch {}
+          }
+        });
+      }, 100);
+    }
   }
 
   loadRevisions(): void {
@@ -276,28 +299,73 @@ export class CmsDocsComponent implements OnInit {
     if (gutter) {
       gutter.scrollTop = textarea.scrollTop;
     }
+    const previewBody = this.previewBodyRef?.nativeElement;
+    if (previewBody && textarea.scrollHeight > textarea.clientHeight) {
+      const scrollRatio = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight);
+      const maxPreviewScroll = previewBody.scrollHeight - previewBody.clientHeight;
+      if (maxPreviewScroll > 0) {
+        previewBody.scrollTop = scrollRatio * maxPreviewScroll;
+      }
+    }
   }
+
+  isProcessingMedia = false;
 
   // Open Insert Media Modal
   openMediaModal(type: 'image' | 'video' = 'video'): void {
+    this.closeAllToolbarMenus();
     this.mediaModalType = type;
-    this.mediaModalTab = 'upload';
+    this.mediaModalTab = 'url';
     this.mediaUrl = '';
+    this.isProcessingMedia = false;
     this.mediaCaption = type === 'video' ? 'Walkthrough Video' : 'Architecture Diagram';
     this.showMediaModal = true;
+  }
+
+  isDraggingMedia = false;
+
+  onMediaDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingMedia = true;
+  }
+
+  onMediaDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingMedia = false;
+  }
+
+  onMediaFileDropped(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingMedia = false;
+    if (event.dataTransfer && event.dataTransfer.files.length > 0) {
+      this.handleSelectedMediaFile(event.dataTransfer.files[0]);
+    }
   }
 
   onMediaFileSelected(event: Event): void {
     const target = event.target as HTMLInputElement;
     if (target.files && target.files.length > 0) {
-      const file = target.files[0];
-      // Create lightweight Blob URL instead of giant Base64 string
-      this.mediaUrl = URL.createObjectURL(file);
-      const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-      if (!this.mediaCaption || this.mediaCaption === 'Architecture Diagram' || this.mediaCaption === 'Walkthrough Video') {
-        this.mediaCaption = fileNameWithoutExt;
-      }
+      this.handleSelectedMediaFile(target.files[0]);
+      target.value = '';
     }
+  }
+
+  private handleSelectedMediaFile(file: File): void {
+    const cleanFileName = file.name.replace(/[^\w\.-]/g, '_');
+    const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+    if (!this.mediaCaption || this.mediaCaption === 'Architecture Diagram' || this.mediaCaption === 'Walkthrough Video') {
+      this.mediaCaption = fileNameWithoutExt;
+    }
+
+    const mediaPath = `assets/uploads/${cleanFileName}`;
+
+    // Save file to IndexedDB for persistent reload + create instant Blob URL
+    this.cmsService.saveMediaFile(mediaPath, file);
+    this.mediaUrl = mediaPath;
+    this.isProcessingMedia = false;
   }
 
   selectLibraryMedia(item: SampleMediaItem): void {
@@ -307,7 +375,7 @@ export class CmsDocsComponent implements OnInit {
   }
 
   insertMediaFromModal(): void {
-    if (!this.mediaUrl.trim()) return;
+    if (this.isProcessingMedia || !this.mediaUrl.trim()) return;
 
     let markdownSnippet = '';
     if (this.mediaModalType === 'video') {
@@ -322,11 +390,27 @@ export class CmsDocsComponent implements OnInit {
   }
 
   savePageChanges(): void {
-    if (!this.selectedPage || !this.editForm.title) return;
+    if (!this.selectedPage) return;
+    this.formSubmitted = true;
+
+    if (!this.editForm.title || !this.editForm.title.trim()) {
+      return;
+    }
+
+    if (!this.editForm.slug || !this.editForm.slug.trim()) {
+      return;
+    }
+
+    if (this.editForm.sortOrder === null || this.editForm.sortOrder === undefined || isNaN(this.editForm.sortOrder as any) || (this.editForm.sortOrder as any) === '') {
+      return;
+    }
 
     const updated = this.cmsService.savePage({
       ...this.selectedPage,
-      ...this.editForm
+      ...this.editForm,
+      title: this.editForm.title.trim(),
+      slug: this.editForm.slug.trim(),
+      sortOrder: Number(this.editForm.sortOrder)
     }, 'Updated page content from CMS Editor');
 
     this.selectedPage = updated;
@@ -563,6 +647,33 @@ export class CmsDocsComponent implements OnInit {
   }
 
   onEditorKeydown(event: KeyboardEvent): void {
+    const isMac = typeof navigator !== 'undefined' && (navigator.platform.toUpperCase().indexOf('MAC') >= 0 || navigator.userAgent.toUpperCase().indexOf('MAC') >= 0);
+    const ctrlKey = isMac ? event.metaKey : event.ctrlKey;
+
+    if (ctrlKey) {
+      const key = event.key.toLowerCase();
+      if (key === 'b') {
+        event.preventDefault();
+        this.insertMarkdown('**', '**');
+        return;
+      }
+      if (key === 'i') {
+        event.preventDefault();
+        this.insertMarkdown('*', '*');
+        return;
+      }
+      if (key === 'u') {
+        event.preventDefault();
+        this.insertMarkdown('<u>', '</u>');
+        return;
+      }
+      if (key === 'k') {
+        event.preventDefault();
+        this.insertMarkdown('[', '](https://)');
+        return;
+      }
+    }
+
     if (event.key === 'Enter') {
       const textarea = event.target as HTMLTextAreaElement;
       if (!textarea) return;
@@ -715,16 +826,63 @@ export class CmsDocsComponent implements OnInit {
     const text = this.editForm.content || '';
     const start = (textarea && typeof textarea.selectionStart === 'number') ? textarea.selectionStart : text.length;
     const end = (textarea && typeof textarea.selectionEnd === 'number') ? textarea.selectionEnd : text.length;
-    const selected = text.substring(start, end) || 'Sample Text';
-    const replacement = prefix + selected + suffix;
+    const savedScrollTop = textarea ? textarea.scrollTop : 0;
+
+    const rawSelected = text.substring(start, end);
+
+    let leadingSpaces = '';
+    let trailingSpaces = '';
+    let coreSelected = rawSelected;
+
+    if (rawSelected.length > 0) {
+      const matchLeading = rawSelected.match(/^(\s*)/);
+      if (matchLeading) {
+        leadingSpaces = matchLeading[1];
+        coreSelected = coreSelected.substring(leadingSpaces.length);
+      }
+      const matchTrailing = coreSelected.match(/(\s*)$/);
+      if (matchTrailing) {
+        trailingSpaces = matchTrailing[1];
+        coreSelected = coreSelected.substring(0, coreSelected.length - trailingSpaces.length);
+      }
+    }
+
+    if (!coreSelected && !rawSelected) {
+      coreSelected = 'Sample Text';
+    }
+
+    let replacement = '';
+    let selectionStart = start + leadingSpaces.length + prefix.length;
+    let selectionEnd = selectionStart + coreSelected.length;
+
+    // Toggle un-formatting if already wrapped
+    if (
+      prefix &&
+      suffix &&
+      coreSelected.startsWith(prefix) &&
+      coreSelected.endsWith(suffix) &&
+      coreSelected.length >= prefix.length + suffix.length
+    ) {
+      const unwrapped = coreSelected.substring(prefix.length, coreSelected.length - suffix.length);
+      replacement = leadingSpaces + unwrapped + trailingSpaces;
+      selectionStart = start + leadingSpaces.length;
+      selectionEnd = selectionStart + unwrapped.length;
+    } else {
+      replacement = leadingSpaces + prefix + coreSelected + suffix + trailingSpaces;
+    }
 
     this.editForm.content = text.substring(0, start) + replacement + text.substring(end);
     this.updatePreview();
 
     if (textarea) {
       setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+        try {
+          (textarea as any).focus({ preventScroll: true });
+        } catch {
+          textarea.focus();
+        }
+        textarea.setSelectionRange(selectionStart, selectionEnd);
+        textarea.scrollTop = savedScrollTop;
       }, 0);
     }
   }
@@ -735,43 +893,81 @@ export class CmsDocsComponent implements OnInit {
     const text = this.editForm.content || '';
     const start = (textarea && typeof textarea.selectionStart === 'number') ? textarea.selectionStart : text.length;
     const end = (textarea && typeof textarea.selectionEnd === 'number') ? textarea.selectionEnd : text.length;
+    const savedScrollTop = textarea ? textarea.scrollTop : 0;
 
     this.editForm.content = text.substring(0, start) + snippet + text.substring(end);
     this.updatePreview();
 
     if (textarea) {
       setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + snippet.length, start + snippet.length);
+        try {
+          (textarea as any).focus({ preventScroll: true });
+        } catch {
+          textarea.focus();
+        }
+        const newPos = start + snippet.length;
+        textarea.setSelectionRange(newPos, newPos);
+        textarea.scrollTop = savedScrollTop;
       }, 0);
     }
   }
 
+  newPageTitleTouched = false;
+  newPageSubmitted = false;
+  newSectionTitleTouched = false;
+  newSectionSubmitted = false;
+  titleTouched = false;
+  slugTouched = false;
+  sortOrderTouched = false;
+  formSubmitted = false;
+
   openNewPageModal(sectionId?: string): void {
     this.newPageSectionId = sectionId || (this.sections[0]?.id || '');
     this.newPageTitle = '';
+    this.newPageTitleTouched = false;
+    this.newPageSubmitted = false;
     this.showNewPageModal = true;
   }
 
   createNewPage(): void {
-    if (!this.newPageTitle.trim()) return;
+    this.newPageTitleTouched = true;
+    this.newPageSubmitted = true;
+    if (!this.newPageTitle || !this.newPageTitle.trim()) {
+      return;
+    }
     const newPage = this.cmsService.savePage({
       title: this.newPageTitle.trim(),
       sectionId: this.newPageSectionId,
       status: 'draft'
     }, 'Created new page');
     this.showNewPageModal = false;
+    this.newPageTitle = '';
+    this.newPageTitleTouched = false;
+    this.newPageSubmitted = false;
     this.selectPage(newPage);
     this.showToast('New documentation page created!', 'success');
   }
 
+  openNewSectionModal(): void {
+    this.newSectionTitle = '';
+    this.newSectionTitleTouched = false;
+    this.newSectionSubmitted = false;
+    this.showNewSectionModal = true;
+  }
+
   createNewSection(): void {
-    if (!this.newSectionTitle.trim()) return;
+    this.newSectionTitleTouched = true;
+    this.newSectionSubmitted = true;
+    if (!this.newSectionTitle || !this.newSectionTitle.trim()) {
+      return;
+    }
     this.cmsService.saveSection({
       title: this.newSectionTitle.trim()
     });
     this.showNewSectionModal = false;
     this.newSectionTitle = '';
+    this.newSectionTitleTouched = false;
+    this.newSectionSubmitted = false;
     this.showToast('New navigation section created!', 'success');
   }
 
@@ -806,11 +1002,16 @@ export class CmsDocsComponent implements OnInit {
     this.showToast('Public link copied to clipboard!', 'success');
   }
 
+  getPublicDocsUrl(): string {
+    if (this.selectedPage && this.selectedPage.slug) {
+      return `/docs/${this.selectedPage.slug}`;
+    }
+    return '/docs';
+  }
+
   viewPublicDocs(): void {
-    if (this.selectedPage) {
-      this.router.navigate(['/docs', this.selectedPage.slug]);
-    } else {
-      this.router.navigate(['/docs']);
+    if (typeof window !== 'undefined') {
+      window.open(this.getPublicDocsUrl(), '_blank');
     }
   }
 
