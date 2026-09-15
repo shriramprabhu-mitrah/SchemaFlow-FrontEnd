@@ -721,7 +721,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isAllFields) {
         visibleColumns = t.columns;
       } else if (this.svc.isKeyOnly) {
-        visibleColumns = t.columns.filter(c => c.pk || c.fk);
+        visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
       } else if (this.svc.isColumnNameOnly) {
         visibleColumns = [];
       }
@@ -1040,30 +1040,29 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
         ctx.beginPath();
         ctx.moveTo(c.x, c.y);           // Tip
-        ctx.lineTo(c.x, c.y + 16);      // Down left edge
-        ctx.lineTo(c.x + 4.5, c.y + 11.5); // Inner corner
-        ctx.lineTo(c.x + 11, c.y + 11.5);  // Right edge
+        ctx.lineTo(c.x, c.y + 20);      // Down left edge
+        ctx.lineTo(c.x + 5.5, c.y + 14.5); // Inner corner
+        ctx.lineTo(c.x + 14, c.y + 14.5);  // Right edge
         ctx.closePath();
 
         ctx.fill();
         ctx.stroke();
 
         // Draw the username badge
-        ctx.font = '500 11px system-ui, sans-serif';
+        ctx.font = '500 13px system-ui, sans-serif';
         const metrics = ctx.measureText(c.username);
         const textWidth = metrics.width;
 
         ctx.fillStyle = c.color;
         // Position below and to the right of the cursor
         ctx.beginPath();
-        ctx.roundRect(c.x + 8, c.y + 16, textWidth + 12, 18, 4);
+        ctx.roundRect(c.x + 10, c.y + 20, textWidth + 16, 22, 11);
         ctx.fill();
-        ctx.stroke(); // Add white stroke to badge too
 
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(c.username, c.x + 14, c.y + 25);
+        ctx.fillText(c.username, c.x + 18, c.y + 31);
 
         ctx.restore();
       }
@@ -1440,7 +1439,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.svc.isAllFields) {
       visibleColumns = t.columns;
     } else if (this.svc.isKeyOnly) {
-      visibleColumns = t.columns.filter(c => c.pk || c.fk);
+      visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
     } else if (this.svc.isColumnNameOnly) {
       visibleColumns = [];
     }
@@ -3140,6 +3139,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.draggingTable) {
       const droppedTableName = this.draggingTable;
       this.draggingTable = null;
+      this.previousTablePositions = null;
+      this.previousViewState = null;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('previous drag position');
+        localStorage.removeItem('previous view state');
+      }
 
       // Check if dropped overlapping a group
       const t = this.svc.tables.find(tbl => tbl.name === droppedTableName);
@@ -3318,7 +3323,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isAllFields) {
         visibleColumns = table.columns;
       } else if (this.svc.isKeyOnly) {
-        visibleColumns = table.columns.filter(c => c.pk || c.fk);
+        visibleColumns = table.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
       } else if (this.svc.isColumnNameOnly) {
         visibleColumns = [];
       }
@@ -3481,10 +3486,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private previousTablePositions: Record<string, { x: number; y: number }> | null = null;
+  private previousViewState: { x: number; y: number; scale: number } | null = null;
 
   applyLayout(direction: 'vertical' | 'horizontal'): void {
     // Save current positions snapshot before auto-arranging so user can revert/undo
-    this.previousTablePositions = JSON.parse(JSON.stringify(this.svc.tablePositions));
+    // Only save if we haven't already saved a previous state
+    if (!this.previousTablePositions || Object.keys(this.previousTablePositions).length === 0) {
+      this.previousTablePositions = JSON.parse(JSON.stringify(this.svc.tablePositions));
+      this.previousViewState = { x: this.svc.view.x, y: this.svc.view.y, scale: this.svc.view.scale };
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('previous drag position', JSON.stringify(this.previousTablePositions));
+        localStorage.setItem('previous view state', JSON.stringify(this.previousViewState));
+      }
+    }
 
     let offset = 80;
     this.svc.tables.forEach((table) => {
@@ -3514,13 +3528,60 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   revertAutoLayout(): void {
-    this.previousTablePositions = null;
-    this.svc.tablePositions = {};
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('drag position');
+    if (!this.previousTablePositions && typeof localStorage !== 'undefined') {
+      const savedPrev = localStorage.getItem('previous drag position');
+      if (savedPrev) {
+        try {
+          this.previousTablePositions = JSON.parse(savedPrev);
+        } catch (e) { }
+      }
     }
+
+    if (!this.previousViewState && typeof localStorage !== 'undefined') {
+      const savedView = localStorage.getItem('previous view state');
+      if (savedView) {
+        try {
+          this.previousViewState = JSON.parse(savedView);
+        } catch (e) { }
+      }
+    }
+
+    if (this.previousTablePositions && Object.keys(this.previousTablePositions).length > 0) {
+      this.svc.tablePositions = JSON.parse(JSON.stringify(this.previousTablePositions));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('drag position', JSON.stringify(this.svc.tablePositions));
+      }
+      
+      // Clear the snapshot so next auto-layout will capture the fresh manual state
+      this.previousTablePositions = null;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('previous drag position');
+      }
+    } else {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('drag position')) {
+        try {
+          const savedPos = JSON.parse(localStorage.getItem('drag position')!);
+          if (savedPos && Object.keys(savedPos).length > 0) {
+            this.svc.tablePositions = savedPos;
+          }
+        } catch (e) { }
+      }
+    }
+
     this.svc.parseAndLayout();
-    this.zoomFit();
+
+    if (this.previousViewState) {
+      this.svc.view.x = this.previousViewState.x;
+      this.svc.view.y = this.previousViewState.y;
+      this.svc.view.scale = this.previousViewState.scale;
+      
+      // Clear previous view state
+      this.previousViewState = null;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('previous view state');
+      }
+    }
+
     this.scheduleDraw();
     this.svc.showToast('Reset table positions to normal grid layout.', 3000, 'success');
   }
