@@ -53,7 +53,7 @@
             <th>
               <span class="sort-header-clickable" (click)="sortBy('user')">
                 <span>USER</span>
-                <span class="sort-icon" [class.active]="sortColumn === 'user'">
+                <span class="sort-icon" [class.active]="sortColumn === 'user'" [class.desc]="sortColumn === 'user' && !sortAsc">
                   <app-icons name="sort" size="14"></app-icons>
                 </span>
               </span>
@@ -61,7 +61,7 @@
             <th>
               <span class="sort-header-clickable" (click)="sortBy('email')">
                 <span>EMAIL</span>
-                <span class="sort-icon" [class.active]="sortColumn === 'email'">
+                <span class="sort-icon" [class.active]="sortColumn === 'email'" [class.desc]="sortColumn === 'email' && !sortAsc">
                   <app-icons name="sort" size="14"></app-icons>
                 </span>
               </span>
@@ -69,7 +69,7 @@
             <th>
               <span class="sort-header-clickable" (click)="sortBy('role')">
                 <span>ROLE</span>
-                <span class="sort-icon" [class.active]="sortColumn === 'role'">
+                <span class="sort-icon" [class.active]="sortColumn === 'role'" [class.desc]="sortColumn === 'role' && !sortAsc">
                   <app-icons name="sort" size="14"></app-icons>
                 </span>
               </span>
@@ -77,7 +77,7 @@
             <th>
               <span class="sort-header-clickable" (click)="sortBy('status')">
                 <span>STATUS</span>
-                <span class="sort-icon" [class.active]="sortColumn === 'status'">
+                <span class="sort-icon" [class.active]="sortColumn === 'status'" [class.desc]="sortColumn === 'status' && !sortAsc">
                   <app-icons name="sort" size="14"></app-icons>
                 </span>
               </span>
@@ -85,7 +85,7 @@
             <th>
               <span class="sort-header-clickable" (click)="sortBy('joined')">
                 <span>JOINED</span>
-                <span class="sort-icon" [class.active]="sortColumn === 'joined'">
+                <span class="sort-icon" [class.active]="sortColumn === 'joined'" [class.desc]="sortColumn === 'joined' && !sortAsc">
                   <app-icons name="sort" size="14"></app-icons>
                 </span>
               </span>
