@@ -407,70 +407,70 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
 
-.history-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
 
-.history-item .time {
-  font-size: 13px;
-  font-weight: 700;
-  color: #94a3b8;
-  width: 70px;
-}
+    .time {
+      font-size: 13px;
+      font-weight: 700;
+      color: #94a3b8;
+      width: 70px;
+    }
 
-.history-item .action {
-  font-size: 15px;
-  color: #475569;
-}
+    .action {
+      font-size: 15px;
+      color: #475569;
 
-.history-item .action strong {
-  color: #0f172a;
-}
+      strong {
+        color: #0f172a;
+      }
+    }
+  }
 
-.share-box {
-  margin-top: 16px;
-  padding: 24px;
-  background: #eff6ff;
-  border: 1px dashed #bfdbfe;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
+  .share-box {
+    margin-top: 16px;
+    padding: 24px;
+    background: #eff6ff;
+    border: 1px dashed #bfdbfe;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
 
-.share-box span {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e3a8a;
-}
+    span {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
 
-.share-box .link-field {
-  background: #ffffff;
-  padding: 10px 16px;
-  border-radius: 6px;
-  border: 1px solid #bfdbfe;
-  font-size: 14px;
-  color: #64748b;
-  flex: 1;
-}
+    .link-field {
+      background: #ffffff;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: 1px solid #bfdbfe;
+      font-size: 14px;
+      color: #64748b;
+      flex: 1;
+    }
 
-.share-box button {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  }
 }
 
 @media (max-width: 900px) {
