@@ -442,6 +442,7 @@ export class DashboardService {
     if (this._code !== normalizedValue) {
       this.saveErrorOccurred = false;
       this.dbmlValidationError = null;
+      this.dbmlValidation = null;
     }
     this._code = normalizedValue;
     this.updateEditorErrors();
@@ -903,7 +904,7 @@ export class DashboardService {
   emitCollabChange(): void {
     const id = this.diagramId();
     if (id && !this.isDiagramNameEmpty()) {
-      this.socketService.sendChange(id, this.code, this.diagramName, this.buildLayoutPayload());
+      this.socketService.sendChange(id, this.sanitizeDbmlForBackend(this.code), this.diagramName, this.buildLayoutPayload());
       this.updateOriginalState();
     }
   }
@@ -1136,13 +1137,14 @@ export class DashboardService {
         if (headerMatch) {
           const rawName = headerMatch[1].trim();
           const isQuoted = (rawName.startsWith('"') && rawName.endsWith('"')) || (rawName.startsWith("'") && rawName.endsWith("'"));
-          const unquoted = isQuoted ? rawName.slice(1, -1) : rawName;
+          const unquoted = (isQuoted ? rawName.slice(1, -1) : rawName).trim();
           const hasSpace = /\s/.test(unquoted);
-          const isValidIdentifier = !hasSpace && !isQuoted && /^[a-zA-Z0-9_]+$/.test(rawName);
+          const isValidIdentifier = !hasSpace && unquoted.length > 0 && /^[a-zA-Z0-9_]+$/.test(unquoted);
 
           if (!isValidIdentifier && !errors.some(e => e.line === idx + 1)) {
             errors.push({
               line: idx + 1,
+              token: rawName,
               message: 'Expected Table Group, comment, end of input, enum, project, references, table, or whitespace but "N" found.'
             });
           }
@@ -1236,7 +1238,17 @@ export class DashboardService {
                 });
               }
             } else if (/Generated DBML is invalid/i.test(msg) || /Invalid DBML/i.test(msg)) {
-              const noteLineIdx = lines.findIndex(l => /^Note\s+("[^"]*"|\S+\s+[^{]+)\s*\{/i.test(l.trim()));
+              const noteLineIdx = lines.findIndex(l => {
+                const trimmed = l.trim();
+                const headerMatch = trimmed.match(/^Note\s+([^{]*?)(?:\{|$)/i);
+                if (headerMatch) {
+                  const rawName = headerMatch[1].trim();
+                  const isQuoted = (rawName.startsWith('"') && rawName.endsWith('"')) || (rawName.startsWith("'") && rawName.endsWith("'"));
+                  const unquoted = (isQuoted ? rawName.slice(1, -1) : rawName).trim();
+                  return /\s/.test(unquoted) || !/^[a-zA-Z0-9_]+$/.test(unquoted);
+                }
+                return false;
+              });
               if (noteLineIdx !== -1 && !errors.some(e => e.line === noteLineIdx + 1)) {
                 errors.push({
                   line: noteLineIdx + 1,
@@ -1558,12 +1570,19 @@ export class DashboardService {
     }
 
     // Parse Note blocks: Note noteName { 'content' }
-    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|([^\r\n{]+)))?\s*\{\s*'([^']*)'\s*\}/gm;
+    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|'([^']+)'|([^\r\n{]+)))?\s*\{([\s\S]*?)\}/gm;
     const parsedNotes: { name: string; text: string }[] = [];
     let nm: RegExpExecArray | null;
     while ((nm = noteRe.exec(text)) !== null) {
-      const name = (nm[1] || nm[2] || '').trim();
-      parsedNotes.push({ name, text: nm[3] });
+      const name = (nm[1] || nm[2] || nm[3] || '').trim().replace(/^["']|["']$/g, '');
+      let rawText = (nm[4] || '').trim();
+      if (rawText.startsWith("'''") && rawText.endsWith("'''")) {
+        rawText = rawText.slice(3, -3);
+      } else if ((rawText.startsWith("'") && rawText.endsWith("'")) || (rawText.startsWith('"') && rawText.endsWith('"'))) {
+        rawText = rawText.slice(1, -1);
+      }
+      const noteText = rawText.replace(/''/g, "'");
+      parsedNotes.push({ name, text: noteText });
     }
 
     return { tables, refs, groups, notes: parsedNotes };
@@ -1591,6 +1610,18 @@ export class DashboardService {
       const parsedNames = new Set(parsedNotes.map((n: { name: string }) => n.name));
 
       const prevCount = this.notes.length;
+
+      // Handle note renaming in DBML: if total counts match, map unmapped existing notes to renamed ones
+      if (this.notes.length === parsedNotes.length && this.notes.length > 0) {
+        const unmappedOld = this.notes.filter(n => !parsedNames.has(n.name));
+        const unmappedNew = parsedNotes.filter(pn => !this.notes.some(n => n.name === pn.name));
+        if (unmappedOld.length === unmappedNew.length && unmappedOld.length > 0) {
+          unmappedOld.forEach((oldNote, idx) => {
+            oldNote.name = unmappedNew[idx].name;
+            oldNote.text = unmappedNew[idx].text;
+          });
+        }
+      }
 
       // Remove notes deleted from DBML
       this.notes = this.notes.filter(n => parsedNames.has(n.name));
@@ -3514,10 +3545,15 @@ export class DashboardService {
     );
   }
 
+  sanitizeDbmlForBackend(dbml: string): string {
+    if (!dbml) return '';
+    return dbml.replace(/^([ \t]*Note\s+)["']([a-zA-Z0-9_]+)["']([ \t]*\{)/gim, '$1$2$3');
+  }
+
   private buildUpdatePayload(): any {
     return {
       name: this.diagramName,
-      diagramDbml: this.code,
+      diagramDbml: this.sanitizeDbmlForBackend(this.code),
       layout: this.buildLayoutPayload()
     };
   }
@@ -3568,7 +3604,7 @@ export class DashboardService {
     const currentWsId = this.activeWorkspaceId();
     const payload: any = {
       name: this.diagramName,
-      diagramDbml: this.code,
+      diagramDbml: this.sanitizeDbmlForBackend(this.code),
       layout: this.buildLayoutPayload()
     };
     if (currentWsId != null) {
@@ -3741,7 +3777,7 @@ export class DashboardService {
     }
     const headers = this.getAuthHeaders();
     const url = this.appConfig.environment?.diagramApiUrls?.validateDbml ?? "";
-    return this.http.post<any>(url, { dbml }, { headers });
+    return this.http.post<any>(url, { dbml: this.sanitizeDbmlForBackend(dbml) }, { headers });
   }
 
   clearDiagram(preserveDiagramId = false): void {
@@ -4213,7 +4249,7 @@ export class DashboardService {
     this._syncingNotesToCode = true;
     try {
       // Strip existing Note blocks from code
-      let stripped = this._code.replace(/^\s*Note(?:\s+(?:"[^"]+"|[^\r\n{]+))?\s*\{[\s\S]*?\}\s*/gm, '').trimEnd();
+      let stripped = this._code.replace(/^\s*Note(?:\s+(?:"[^"]+"|'[^']+'|[^\r\n{]+))?\s*\{[\s\S]*?\}\s*/gm, '').trimEnd();
       // Append fresh Note blocks for each note that has content or a name
       const noteBlocks = this.notes
         .map(n => {
@@ -4225,6 +4261,7 @@ export class DashboardService {
       if (this._code !== newCode) {
         this.saveErrorOccurred = false;
         this.dbmlValidationError = null;
+        this.dbmlValidation = null;
       }
       this._code = newCode;
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {

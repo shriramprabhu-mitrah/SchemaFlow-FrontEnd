@@ -56,7 +56,7 @@
 
         <button class="nav-item" [class.active]="activeTab === 'my-workspaces' || activeTab === 'edit-workspace'"
           style="position: relative;"
-          (click)="(entitlementService.isMember() || auth.getOrganizationId() || entitlementService.canUseFeature('create_workspaces')) && auth.getCurrentPlanStatus() !== 'expired' ? openMyWorkspaces() : svc.showUpgradeModal('create_workspaces')">
+          (click)="(entitlementService.isMember() || entitlementService.canUseFeature('create_workspaces')) && auth.getCurrentPlanStatus() !== 'expired' ? openMyWorkspaces() : svc.showUpgradeModal('create_workspaces')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
@@ -533,7 +533,7 @@
             </div>
             <p class="empty-desc">{{ workspacesSearch ? 'Try searching for something else.' : 'Create your first
               workspace to collaborate on diagrams with your team.' }}</p>
-            <button *ngIf="auth.hasWorkspaceCreatePermission()" class="btn-create-first" (click)="openCreateWorkspace()">+ Create
+            <button *ngIf="auth.hasWorkspaceCreatePermission()" class="btn-create-first" (click)="entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces')">+ Create
               Workspace</button>
           </div>
 

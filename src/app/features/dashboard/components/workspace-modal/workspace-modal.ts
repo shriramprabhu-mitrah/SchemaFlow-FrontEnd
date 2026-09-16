@@ -157,7 +157,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   ngOnInit(): void {
     this.entitlementService.orgEntitlements$.subscribe(entitlements => {
       this.availableFeatures = entitlements.filter(e => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'pdf_export' || e.feature_key === 'version_history' || e.feature_key === 'advanced_sharing' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram'));
-      if (this.auth.getCurrentPlanStatus() === 'expired') {
+      if (this.auth.getCurrentPlanStatus() === 'expired' || (!this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces'))) {
         if (this.activeTab === 'my-workspaces' || this.activeTab === 'edit-workspace' || this.activeTab === 'create-workspace' || this.activeTab === 'view-members') {
           this.activeTab = 'my-diagrams';
           this.cdr.detectChanges();
@@ -230,6 +230,14 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     if (gotVisible || tabChanged) {
       if (!this.activeTab) {
         this.activeTab = 'my-diagrams';
+      }
+      if (
+        ((this.activeTab === 'my-workspaces') && !this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces')) ||
+        ((this.activeTab === 'create-workspace') && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces')))
+      ) {
+        this.activeTab = 'my-diagrams';
+        this.svc.showUpgradeModal('create_workspaces');
+        return;
       }
       if (this.activeTab === 'my-diagrams') {
         this.selectedWorkspace = null;
@@ -372,6 +380,10 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   }
 
   openCreateWorkspace(): void {
+    if (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces')) {
+      this.svc.showUpgradeModal('create_workspaces');
+      return;
+    }
     this.clearSearches();
     this.activeTab = 'create-workspace';
     this.createWorkspaceError = '';
@@ -710,6 +722,10 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   }
 
   openMyWorkspaces(): void {
+    if (!this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces')) {
+      this.svc.showUpgradeModal('create_workspaces');
+      return;
+    }
     this.clearSearches();
     const tabChanged = this._activeTab !== 'my-workspaces';
     this.activeTab = 'my-workspaces';

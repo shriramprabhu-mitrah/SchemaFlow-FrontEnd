@@ -849,7 +849,11 @@ export class HeaderComponent implements OnInit {
   }
 
   openWorkspaceModal(tab: 'my-diagrams' | 'shared' | 'create-workspace' | 'my-workspaces' | 'edit-workspace' | 'view-members' = 'my-diagrams'): void {
-    if ((tab === 'create-workspace') && !this.entitlementService.canUseFeature('create_workspaces')) {
+    if (tab === 'create-workspace' && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces'))) {
+      this.svc.showUpgradeModal('create_workspaces');
+      return;
+    }
+    if (tab === 'my-workspaces' && !this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces')) {
       this.svc.showUpgradeModal('create_workspaces');
       return;
     }
