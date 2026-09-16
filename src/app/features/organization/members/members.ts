@@ -122,6 +122,7 @@ export class MembersComponent implements OnInit {
             if (m.org_role === 'owner') m.org_role = 'admin';
             return m;
           });
+          this.sortMembers();
           this.meta = res?.meta || {};
           this.loading = false;
           this.cdr.markForCheck();
@@ -170,7 +171,53 @@ export class MembersComponent implements OnInit {
       this.sortColumn = col;
       this.sortAsc = true;
     }
+    this.sortMembers();
+    this.cdr.markForCheck();
     this.load();
+  }
+
+  sortMembers(): void {
+    if (!this.members || this.members.length === 0) return;
+
+    this.members.sort((a: any, b: any) => {
+      let valA = '';
+      let valB = '';
+
+      switch (this.sortColumn) {
+        case 'user':
+          valA = this.getUsername(a).toLowerCase().trim();
+          valB = this.getUsername(b).toLowerCase().trim();
+          break;
+        case 'email':
+          valA = (a.email || '').toLowerCase().trim();
+          valB = (b.email || '').toLowerCase().trim();
+          break;
+        case 'role':
+          valA = (a.org_role || 'member').toLowerCase().trim();
+          valB = (b.org_role || 'member').toLowerCase().trim();
+          break;
+        case 'status':
+          valA = (a.status || 'Active').toLowerCase().trim();
+          valB = (b.status || 'Active').toLowerCase().trim();
+          break;
+        case 'joined': {
+          const rawA = a.joined_at || a.created_at || a.invited_at || '';
+          const rawB = b.joined_at || b.created_at || b.invited_at || '';
+          const timeA = rawA ? new Date(rawA).getTime() : 0;
+          const timeB = rawB ? new Date(rawB).getTime() : 0;
+          const validA = isNaN(timeA) ? 0 : timeA;
+          const validB = isNaN(timeB) ? 0 : timeB;
+          return this.sortAsc ? (validA - validB) : (validB - validA);
+        }
+        default:
+          valA = (a[this.sortColumn] || '').toString().toLowerCase().trim();
+          valB = (b[this.sortColumn] || '').toString().toLowerCase().trim();
+      }
+
+      return this.sortAsc
+        ? valA.localeCompare(valB, undefined, { sensitivity: 'base', numeric: true })
+        : valB.localeCompare(valA, undefined, { sensitivity: 'base', numeric: true });
+    });
   }
 
   // --- Delete Popup Card Methods ---

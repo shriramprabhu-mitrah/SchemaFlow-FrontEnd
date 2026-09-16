@@ -36,8 +36,13 @@ export class OrganizationService {
   }
 
   // ── Members ──
-  getMembers(orgId: number, page = 1, limit = 10, search = '', sortColumn = 'joined', sortAsc = false): Observable<any> {
-    let params = new HttpParams().set('page', page).set('limit', limit).set('sortAsc', sortAsc);
+  getMembers(orgId: number, page = 1, limit = 10, search = '', sortColumn = 'user', sortAsc = true): Observable<any> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('limit', limit)
+      .set('sortAsc', sortAsc)
+      .set('sortBy', sortColumn)
+      .set('sortOrder', sortAsc ? 'asc' : 'desc');
     if (search) params = params.set('search', search);
     if (sortColumn) params = params.set('sortColumn', sortColumn);
     return this.http.get(this.urls.orgMembers.replace('{id}', orgId), { params, withCredentials: true });

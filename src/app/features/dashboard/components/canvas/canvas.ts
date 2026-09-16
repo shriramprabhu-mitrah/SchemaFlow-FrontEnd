@@ -3276,7 +3276,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const tableHit = this.findTableAt(wp.x, wp.y);
     if (tableHit) {
-      this.openContextMenu(sx, sy, 'table', tableHit, null, -1);
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
       return;
     }
 
@@ -4287,7 +4288,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'column':
         return ['Add Column', 'Edit Column', 'Delete Column'];
       case 'table':
-        return ['Add Column', 'Rename Table', 'Delete Table'];
+        return [];
       case 'tableHeader':
         return ['Edit Table', 'Delete Table', 'Change Color'];
       case 'groupHeader':
