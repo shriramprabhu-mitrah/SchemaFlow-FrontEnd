@@ -431,6 +431,7 @@ export class DashboardService {
   dbmlValidation: any = null;
   dbmlValidationError: any = null;
   isValidatingDbml = false;
+  saveErrorOccurred = false;
 
   get code(): string {
     return this._code;
@@ -438,6 +439,9 @@ export class DashboardService {
 
   set code(value: string) {
     const normalizedValue = value ? value.replace(/\r\n|\r/g, '\n') : '';
+    if (this._code !== normalizedValue) {
+      this.saveErrorOccurred = false;
+    }
     this._code = normalizedValue;
     this.updateEditorErrors();
     this.code$.next(normalizedValue);
@@ -465,6 +469,7 @@ export class DashboardService {
    * equality guard might silently swallow the update.
    */
   forceSetCode(value: string): void {
+    this.saveErrorOccurred = false;
     this._code = value;
     this.code$.next(value);
     this.updateGutter();
@@ -875,6 +880,7 @@ export class DashboardService {
           this.auth.isLoggedIn() &&
           !this.isDiagramNameEmpty() &&
           this.hasUnsavedChanges() &&
+          !this.saveErrorOccurred &&
           this.canSaveDiagram(false) &&
           this.validateDiagramName(false)
         ) {
@@ -884,7 +890,7 @@ export class DashboardService {
           } else {
             this.saveDiagram().subscribe({
               error: () => {
-                // Ignore error so it doesn't crash the unhandled observable loop
+                // Handled in saveDiagram tap error
               }
             });
           }
@@ -1505,11 +1511,12 @@ export class DashboardService {
     }
 
     // Parse Note blocks: Note noteName { 'content' }
-    const noteRe = /^\s*Note\s+(\w+)\s*\{\s*'([^']*)'\s*\}/gm;
+    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|([^\r\n{]+)))?\s*\{\s*'([^']*)'\s*\}/gm;
     const parsedNotes: { name: string; text: string }[] = [];
     let nm: RegExpExecArray | null;
     while ((nm = noteRe.exec(text)) !== null) {
-      parsedNotes.push({ name: nm[1], text: nm[2] });
+      const name = (nm[1] || nm[2] || '').trim();
+      parsedNotes.push({ name, text: nm[3] });
     }
 
     return { tables, refs, groups, notes: parsedNotes };
@@ -3466,6 +3473,10 @@ export class DashboardService {
   }
 
   saveDiagram(): Observable<any> {
+    if (this.isSaving()) {
+      return EMPTY;
+    }
+
     if (this.isDiagramNameEmpty()) {
       this.showToast('Diagram name should not be empty', 4000, 'error');
       return throwError(() => new Error('Diagram name should not be empty'));
@@ -3480,9 +3491,21 @@ export class DashboardService {
       const payload = this.buildUpdatePayload();
       const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', currentId.toString()) ?? "";
       return this.http.put<any>(url, payload, { headers }).pipe(
-        tap((res) => {
-          this.extractIdsFromResponse(res);
-          this.updateOriginalState();
+        tap({
+          next: (res) => {
+            this.saveErrorOccurred = false;
+            this.extractIdsFromResponse(res);
+            this.updateOriginalState();
+          },
+          error: (err) => {
+            this.saveErrorOccurred = true;
+            if (err?.status === 403) {
+              this.showUpgradeModal('create_diagrams');
+            } else {
+              const message = err?.error?.message || err?.message || 'Failed to update diagram';
+              this.showToast(message, 5000, 'error');
+            }
+          }
         }),
         finalize(() => this.isSaving.set(false))
       );
@@ -3501,6 +3524,7 @@ export class DashboardService {
     return this.http.post<any>(url, payload, { headers }).pipe(
       tap({
         next: (res) => {
+          this.saveErrorOccurred = false;
           const ids = this.extractDiagramId(res);
           if (ids != null) {
             this.diagramId.set(ids);
@@ -3528,8 +3552,12 @@ export class DashboardService {
           }
         },
         error: (err) => {
+          this.saveErrorOccurred = true;
           if (err?.status === 403) {
             this.showUpgradeModal('create_diagrams');
+          } else {
+            const message = err?.error?.message || err?.message || 'Failed to save diagram';
+            this.showToast(message, 5000, 'error');
           }
         }
       }),
@@ -4125,10 +4153,13 @@ export class DashboardService {
     this._syncingNotesToCode = true;
     try {
       // Strip existing Note blocks from code
-      let stripped = this._code.replace(/^\s*Note\s+\w+\s*\{\s*'[^']*'\s*\}\s*/gm, '').trimEnd();
+      let stripped = this._code.replace(/^\s*Note(?:\s+(?:"[^"]+"|[^\r\n{]+))?\s*\{\s*'[^']*'\s*\}\s*/gm, '').trimEnd();
       // Append fresh Note blocks for each note that has content or a name
       const noteBlocks = this.notes
-        .map(n => `\nNote ${n.name} {\n  '${(n.text || '').replace(/'/g, "''")}' \n}`)
+        .map(n => {
+          const safeName = n.name && (/\s/.test(n.name) && !n.name.startsWith('"')) ? `"${n.name}"` : (n.name || 'note');
+          return `\nNote ${safeName} {\n  '${(n.text || '').replace(/'/g, "''")}' \n}`;
+        })
         .join('\n');
       const newCode = stripped + (noteBlocks ? '\n' + noteBlocks : '');
       // Use forceSetCode to bypass the equality guard — but skip parseAndLayout re-entry

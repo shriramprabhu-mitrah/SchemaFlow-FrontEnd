@@ -28,7 +28,8 @@ export class Toast {
           left: '12px',
           bottom: '12px',
           width: `calc(${this.svc.editorWidthPct()}% - 24px)`,
-          maxWidth: 'none'
+          maxWidth: 'none',
+          zIndex: '999999'
         };
       } else if (mode === 'editor') {
         return {
@@ -36,7 +37,8 @@ export class Toast {
           left: '12px',
           bottom: '12px',
           width: 'calc(100% - 24px)',
-          maxWidth: 'none'
+          maxWidth: 'none',
+          zIndex: '999999'
         };
       }
     }
