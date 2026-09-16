@@ -28,19 +28,28 @@
       [class.active-note]="selectedNoteId === note.id" (mousedown)="selectNote($event, note.id)"
       [style.left.px]="note.posx * svc.view.scale + svc.view.x" [style.top.px]="note.posy * svc.view.scale + svc.view.y"
       [style.width.px]="note.width * svc.view.scale" [style.height.px]="note.height * svc.view.scale"
+      [style.border-radius.px]="6 * svc.view.scale"
       [style.pointer-events]="'all'">
 
       <!-- Double-click to edit hint, shown on hover -->
       <div class="sticky-note-hover-hint" *ngIf="!svc.isReadOnly">Double-click to edit</div>
 
       <!-- Inner card: clips content (header + textarea) properly -->
-      <div class="sticky-note-inner" [style.background-color]="note.color || '#FFE28B'">
+      <div class="sticky-note-inner" [style.background-color]="note.color || '#FFE28B'"
+        [style.border-radius.px]="6 * svc.view.scale">
 
         <!-- Header: drag + name + three-dots -->
         <div class="sticky-note-header" (mousedown)="startNoteDrag($event, note)"
-          (touchstart)="startNoteDrag($event, note)">
-          <span class="sticky-note-drag-icon" title="Drag to move">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          (touchstart)="startNoteDrag($event, note)"
+          [style.min-height.px]="26 * svc.view.scale"
+          [style.height.px]="26 * svc.view.scale"
+          [style.padding]="(4 * svc.view.scale) + 'px ' + (5 * svc.view.scale) + 'px ' + (4 * svc.view.scale) + 'px ' + (6 * svc.view.scale) + 'px'"
+          [style.gap.px]="4 * svc.view.scale"
+          [style.border-top-left-radius.px]="6 * svc.view.scale"
+          [style.border-top-right-radius.px]="6 * svc.view.scale">
+          <span class="sticky-note-drag-icon" title="Drag to move"
+            [style.font-size.px]="13 * svc.view.scale">
+            <svg [attr.width]="12 * svc.view.scale" [attr.height]="12 * svc.view.scale" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="8" cy="5" r="2"></circle>
               <circle cx="8" cy="12" r="2"></circle>
               <circle cx="8" cy="19" r="2"></circle>
@@ -52,16 +61,25 @@
 
           <!-- Note name or inline rename input -->
           <span class="sticky-note-name" *ngIf="editingNoteId !== note.id"
-            [style.color]="note.textColor || '#000000'">{{ note.name }}</span>
+            [style.color]="note.textColor || '#000000'"
+            [style.font-size.px]="11 * svc.view.scale"
+            [style.line-height.px]="14 * svc.view.scale">{{ note.name }}</span>
           <input *ngIf="editingNoteId === note.id" class="sticky-note-name-input" [(ngModel)]="editNoteNameValue"
-            [style.color]="note.textColor || '#000000'" (mousedown)="$event.stopPropagation()"
+            [style.color]="note.textColor || '#000000'"
+            [style.font-size.px]="11 * svc.view.scale"
+            [style.height.px]="18 * svc.view.scale"
+            [style.padding]="'0 ' + (4 * svc.view.scale) + 'px'"
+            [style.border-radius.px]="3 * svc.view.scale"
+            (mousedown)="$event.stopPropagation()"
             (keydown.enter)="commitEditNoteName()" (keydown.escape)="cancelEditNoteName()" (blur)="commitEditNoteName()"
             autofocus />
 
           <!-- Three-dots menu button -->
           <button class="sticky-note-menu-btn tt tt-bottom" *ngIf="!svc.isReadOnly" [attr.data-tt]="'Note options'"
+            [style.padding.px]="2 * svc.view.scale"
+            [style.border-radius.px]="4 * svc.view.scale"
             (mousedown)="$event.stopPropagation()" (click)="toggleNoteMenu($event, note.id)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            <svg [attr.width]="16 * svc.view.scale" [attr.height]="16 * svc.view.scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round">
               <circle cx="12" cy="5" r="1.5"></circle>
               <circle cx="12" cy="12" r="1.5"></circle>
@@ -76,7 +94,8 @@
           (dblclick)="!svc.isReadOnly && editNoteBody($event, note.id)" (input)="onNoteTextChange(note)"
           [readonly]="svc.isReadOnly || editingNoteBodyId !== note.id"
           [style.cursor]="svc.isReadOnly ? 'default' : (editingNoteBodyId === note.id ? 'text' : 'move')"
-          [style.color]="note.textColor || '#000000'" [style.font-size.px]="12 * svc.view.scale"></textarea>
+          [style.color]="note.textColor || '#000000'" [style.font-size.px]="12 * svc.view.scale"
+          [style.padding]="(6 * svc.view.scale) + 'px ' + (8 * svc.view.scale) + 'px'"></textarea>
 
       </div><!-- /sticky-note-inner -->
 

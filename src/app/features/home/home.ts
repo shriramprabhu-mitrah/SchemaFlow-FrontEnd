@@ -76,7 +76,7 @@ export class HomeComponent implements OnInit {
       description: 'Design, document, and collaborate on database schemas with ease. A simple and powerful tool for developers and teams.',
       url: 'https://dbnexus.up.railway.app/'
     });
-    
+
     this.seoService.setStructuredData({
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",

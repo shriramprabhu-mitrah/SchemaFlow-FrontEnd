@@ -2076,11 +2076,12 @@ body.light-theme #extra-controls {
   padding: 4px 5px 4px 6px;
   cursor: move;
   background: rgba(0, 0, 0, 0.09);
-  min-height: 26px;
+  min-height: 0;
   user-select: none;
   flex-shrink: 0;
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
+  box-sizing: border-box;
 
   &:active {
     cursor: move;
@@ -2095,6 +2096,12 @@ body.light-theme #extra-controls {
   cursor: move;
   display: flex;
   align-items: center;
+  justify-content: center;
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
 
   &:active {
     cursor: move;
@@ -2126,7 +2133,7 @@ body.light-theme #extra-controls {
   color: rgba(0, 0, 0, 0.8) !important;
   min-width: 0;
   width: 0;
-  height: 18px;
+  height: auto;
   box-sizing: border-box;
   box-shadow: none !important;
 
@@ -2151,6 +2158,11 @@ body.light-theme #extra-controls {
   align-items: center;
   justify-content: center;
   transition: color 0.1s, background 0.1s;
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
 
   &:hover {
     color: rgba(0, 0, 0, 0.7);

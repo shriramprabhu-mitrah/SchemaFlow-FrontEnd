@@ -431,6 +431,7 @@ export class DashboardService {
   dbmlValidation: any = null;
   dbmlValidationError: any = null;
   isValidatingDbml = false;
+  saveErrorOccurred = false;
 
   get code(): string {
     return this._code;
@@ -438,6 +439,11 @@ export class DashboardService {
 
   set code(value: string) {
     const normalizedValue = value ? value.replace(/\r\n|\r/g, '\n') : '';
+    if (this._code !== normalizedValue) {
+      this.saveErrorOccurred = false;
+      this.dbmlValidationError = null;
+      this.dbmlValidation = null;
+    }
     this._code = normalizedValue;
     this.updateEditorErrors();
     this.code$.next(normalizedValue);
@@ -465,6 +471,7 @@ export class DashboardService {
    * equality guard might silently swallow the update.
    */
   forceSetCode(value: string): void {
+    this.saveErrorOccurred = false;
     this._code = value;
     this.code$.next(value);
     this.updateGutter();
@@ -875,6 +882,7 @@ export class DashboardService {
           this.auth.isLoggedIn() &&
           !this.isDiagramNameEmpty() &&
           this.hasUnsavedChanges() &&
+          !this.saveErrorOccurred &&
           this.canSaveDiagram(false) &&
           this.validateDiagramName(false)
         ) {
@@ -884,7 +892,7 @@ export class DashboardService {
           } else {
             this.saveDiagram().subscribe({
               error: () => {
-                // Ignore error so it doesn't crash the unhandled observable loop
+                // Handled in saveDiagram tap error
               }
             });
           }
@@ -896,7 +904,7 @@ export class DashboardService {
   emitCollabChange(): void {
     const id = this.diagramId();
     if (id && !this.isDiagramNameEmpty()) {
-      this.socketService.sendChange(id, this.code, this.diagramName, this.buildLayoutPayload());
+      this.socketService.sendChange(id, this.sanitizeDbmlForBackend(this.code), this.diagramName, this.buildLayoutPayload());
       this.updateOriginalState();
     }
   }
@@ -1121,7 +1129,30 @@ export class DashboardService {
       }
     });
 
-    // 3. Integrate backend validation errors
+    // 3. Check Note definitions with invalid names (spaces, quotes, or invalid identifiers)
+    lines.forEach((lineText, idx) => {
+      const trimmed = lineText.trim();
+      if (/^Note\b/i.test(trimmed)) {
+        const headerMatch = lineText.match(/^[ \t]*Note\s+([^{]*?)(?:\{|$)/i);
+        if (headerMatch) {
+          const rawName = headerMatch[1].trim();
+          const isQuoted = (rawName.startsWith('"') && rawName.endsWith('"')) || (rawName.startsWith("'") && rawName.endsWith("'"));
+          const unquoted = (isQuoted ? rawName.slice(1, -1) : rawName).trim();
+          const hasSpace = /\s/.test(unquoted);
+          const isValidIdentifier = !hasSpace && unquoted.length > 0 && /^[a-zA-Z0-9_]+$/.test(unquoted);
+
+          if (!isValidIdentifier && !errors.some(e => e.line === idx + 1)) {
+            errors.push({
+              line: idx + 1,
+              token: rawName,
+              message: 'Expected Table Group, comment, end of input, enum, project, references, table, or whitespace but "N" found.'
+            });
+          }
+        }
+      }
+    });
+
+    // 4. Integrate backend validation errors
     const backendErrors = this.getValidationErrors();
     if (this.dbmlValidationError) {
       const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
@@ -1190,6 +1221,40 @@ export class DashboardService {
                 token: `${t1}.${c1}`,
                 message: msg
               });
+            }
+          } else {
+            // Check for syntax errors e.g. 'Expected Table Group... but "N" found.' or 'Generated DBML is invalid: ...'
+            const syntaxCharMatch = msg.match(/but\s+["']([^"']+)["']\s+found/i);
+            if (syntaxCharMatch) {
+              const foundChar = syntaxCharMatch[1];
+              const lineIdx = lines.findIndex(l => {
+                const trimmed = l.trim();
+                return (foundChar === 'N' && /^Note\b/i.test(trimmed)) || (trimmed.startsWith(foundChar) && !trimmed.startsWith('//'));
+              });
+              if (lineIdx !== -1 && !errors.some(e => e.line === lineIdx + 1)) {
+                errors.push({
+                  line: lineIdx + 1,
+                  message: msg
+                });
+              }
+            } else if (/Generated DBML is invalid/i.test(msg) || /Invalid DBML/i.test(msg)) {
+              const noteLineIdx = lines.findIndex(l => {
+                const trimmed = l.trim();
+                const headerMatch = trimmed.match(/^Note\s+([^{]*?)(?:\{|$)/i);
+                if (headerMatch) {
+                  const rawName = headerMatch[1].trim();
+                  const isQuoted = (rawName.startsWith('"') && rawName.endsWith('"')) || (rawName.startsWith("'") && rawName.endsWith("'"));
+                  const unquoted = (isQuoted ? rawName.slice(1, -1) : rawName).trim();
+                  return /\s/.test(unquoted) || !/^[a-zA-Z0-9_]+$/.test(unquoted);
+                }
+                return false;
+              });
+              if (noteLineIdx !== -1 && !errors.some(e => e.line === noteLineIdx + 1)) {
+                errors.push({
+                  line: noteLineIdx + 1,
+                  message: msg
+                });
+              }
             }
           }
         }
@@ -1505,11 +1570,19 @@ export class DashboardService {
     }
 
     // Parse Note blocks: Note noteName { 'content' }
-    const noteRe = /^\s*Note\s+(\w+)\s*\{\s*'([^']*)'\s*\}/gm;
+    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|'([^']+)'|([^\r\n{]+)))?\s*\{([\s\S]*?)\}/gm;
     const parsedNotes: { name: string; text: string }[] = [];
     let nm: RegExpExecArray | null;
     while ((nm = noteRe.exec(text)) !== null) {
-      parsedNotes.push({ name: nm[1], text: nm[2] });
+      const name = (nm[1] || nm[2] || nm[3] || '').trim().replace(/^["']|["']$/g, '');
+      let rawText = (nm[4] || '').trim();
+      if (rawText.startsWith("'''") && rawText.endsWith("'''")) {
+        rawText = rawText.slice(3, -3);
+      } else if ((rawText.startsWith("'") && rawText.endsWith("'")) || (rawText.startsWith('"') && rawText.endsWith('"'))) {
+        rawText = rawText.slice(1, -1);
+      }
+      const noteText = rawText.replace(/''/g, "'");
+      parsedNotes.push({ name, text: noteText });
     }
 
     return { tables, refs, groups, notes: parsedNotes };
@@ -1537,6 +1610,18 @@ export class DashboardService {
       const parsedNames = new Set(parsedNotes.map((n: { name: string }) => n.name));
 
       const prevCount = this.notes.length;
+
+      // Handle note renaming in DBML: if total counts match, map unmapped existing notes to renamed ones
+      if (this.notes.length === parsedNotes.length && this.notes.length > 0) {
+        const unmappedOld = this.notes.filter(n => !parsedNames.has(n.name));
+        const unmappedNew = parsedNotes.filter(pn => !this.notes.some(n => n.name === pn.name));
+        if (unmappedOld.length === unmappedNew.length && unmappedOld.length > 0) {
+          unmappedOld.forEach((oldNote, idx) => {
+            oldNote.name = unmappedNew[idx].name;
+            oldNote.text = unmappedNew[idx].text;
+          });
+        }
+      }
 
       // Remove notes deleted from DBML
       this.notes = this.notes.filter(n => parsedNames.has(n.name));
@@ -3113,7 +3198,6 @@ export class DashboardService {
       ?? this.extractWorkspaceId(response)
       ?? fallbackWorkspace?.id       // ← fall back to what we already know
       ?? null;
-    this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, fallbackWorkspace?.name);
 
     let wsType = diagram?.workspacetype ?? diagram?.workspaceType ?? diagram?.workspace_type ?? diagram?.workspace?.workspacetype
       ?? this.extractWorkspaceType(response);
@@ -3154,7 +3238,11 @@ export class DashboardService {
       ?? response?.data?.workspace?.workspacename ?? response?.data?.workspace?.name ?? response?.data?.workspace?.workspace_name
       ?? fallbackWorkspace?.name ?? undefined;
 
-    this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, rawWsName);
+    if (normalizedWsType === 'Personal') {
+      this.setActiveWorkspace(null);
+    } else {
+      this.setActiveWorkspace(rawWsId ? Number(rawWsId) : null, rawWsName);
+    }
     this.diagramName = diagram?.name || 'Untitled Diagram';
     this.isEnabled = diagram?.isEnabled !== undefined ? !!diagram.isEnabled : false;
     this.publicToken = diagram?.publictoken || diagram?.publicToken || diagram?.public_token || '';
@@ -3457,15 +3545,24 @@ export class DashboardService {
     );
   }
 
+  sanitizeDbmlForBackend(dbml: string): string {
+    if (!dbml) return '';
+    return dbml.replace(/^([ \t]*Note\s+)["']([a-zA-Z0-9_]+)["']([ \t]*\{)/gim, '$1$2$3');
+  }
+
   private buildUpdatePayload(): any {
     return {
       name: this.diagramName,
-      diagramDbml: this.code,
+      diagramDbml: this.sanitizeDbmlForBackend(this.code),
       layout: this.buildLayoutPayload()
     };
   }
 
   saveDiagram(): Observable<any> {
+    if (this.isSaving()) {
+      return EMPTY;
+    }
+
     if (this.isDiagramNameEmpty()) {
       this.showToast('Diagram name should not be empty', 4000, 'error');
       return throwError(() => new Error('Diagram name should not be empty'));
@@ -3480,9 +3577,25 @@ export class DashboardService {
       const payload = this.buildUpdatePayload();
       const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', currentId.toString()) ?? "";
       return this.http.put<any>(url, payload, { headers }).pipe(
-        tap((res) => {
-          this.extractIdsFromResponse(res);
-          this.updateOriginalState();
+        tap({
+          next: (res) => {
+            this.saveErrorOccurred = false;
+            this.dbmlValidationError = null;
+            this.updateEditorErrors();
+            this.extractIdsFromResponse(res);
+            this.updateOriginalState();
+          },
+          error: (err) => {
+            this.saveErrorOccurred = true;
+            if (err?.status === 403) {
+              this.showUpgradeModal('create_diagrams');
+            } else {
+              const message = err?.error?.message || err?.message || 'Failed to update diagram';
+              this.showToast(message, 5000, 'error');
+              this.dbmlValidationError = message;
+              this.updateEditorErrors();
+            }
+          }
         }),
         finalize(() => this.isSaving.set(false))
       );
@@ -3491,7 +3604,7 @@ export class DashboardService {
     const currentWsId = this.activeWorkspaceId();
     const payload: any = {
       name: this.diagramName,
-      diagramDbml: this.code,
+      diagramDbml: this.sanitizeDbmlForBackend(this.code),
       layout: this.buildLayoutPayload()
     };
     if (currentWsId != null) {
@@ -3501,6 +3614,9 @@ export class DashboardService {
     return this.http.post<any>(url, payload, { headers }).pipe(
       tap({
         next: (res) => {
+          this.saveErrorOccurred = false;
+          this.dbmlValidationError = null;
+          this.updateEditorErrors();
           const ids = this.extractDiagramId(res);
           if (ids != null) {
             this.diagramId.set(ids);
@@ -3528,8 +3644,14 @@ export class DashboardService {
           }
         },
         error: (err) => {
+          this.saveErrorOccurred = true;
           if (err?.status === 403) {
             this.showUpgradeModal('create_diagrams');
+          } else {
+            const message = err?.error?.message || err?.message || 'Failed to save diagram';
+            this.showToast(message, 5000, 'error');
+            this.dbmlValidationError = message;
+            this.updateEditorErrors();
           }
         }
       }),
@@ -3655,7 +3777,7 @@ export class DashboardService {
     }
     const headers = this.getAuthHeaders();
     const url = this.appConfig.environment?.diagramApiUrls?.validateDbml ?? "";
-    return this.http.post<any>(url, { dbml }, { headers });
+    return this.http.post<any>(url, { dbml: this.sanitizeDbmlForBackend(dbml) }, { headers });
   }
 
   clearDiagram(preserveDiagramId = false): void {
@@ -3696,6 +3818,8 @@ export class DashboardService {
     } else {
       if (this.activeWorkspaceId() != null) {
         this.diagramWorkspaceType.set('Team');
+      } else {
+        this.diagramWorkspaceType.set('Personal');
       }
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         localStorage.setItem('active_diagram_id', String(this.diagramId()));
@@ -4125,16 +4249,29 @@ export class DashboardService {
     this._syncingNotesToCode = true;
     try {
       // Strip existing Note blocks from code
-      let stripped = this._code.replace(/^\s*Note\s+\w+\s*\{\s*'[^']*'\s*\}\s*/gm, '').trimEnd();
+      let stripped = this._code.replace(/^\s*Note(?:\s+(?:"[^"]+"|'[^']+'|[^\r\n{]+))?\s*\{[\s\S]*?\}\s*/gm, '').trimEnd();
       // Append fresh Note blocks for each note that has content or a name
       const noteBlocks = this.notes
-        .map(n => `\nNote ${n.name} {\n  '${(n.text || '').replace(/'/g, "''")}' \n}`)
+        .map(n => {
+          const safeName = n.name && (/\s/.test(n.name) && !n.name.startsWith('"')) ? `"${n.name}"` : (n.name || 'note');
+          return `\nNote ${safeName} {\n  '${(n.text || '').replace(/'/g, "''")}' \n}`;
+        })
         .join('\n');
-      const newCode = stripped + (noteBlocks ? '\n' + noteBlocks : '');
-      // Use forceSetCode to bypass the equality guard — but skip parseAndLayout re-entry
-      this._code = newCode.replace(/\r\n|\r/g, '\n');
+      const newCode = (stripped + (noteBlocks ? '\n' + noteBlocks : '')).replace(/\r\n|\r/g, '\n');
+      if (this._code !== newCode) {
+        this.saveErrorOccurred = false;
+        this.dbmlValidationError = null;
+        this.dbmlValidation = null;
+      }
+      this._code = newCode;
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem('active_diagram_code', this._code);
+        localStorage.setItem('dbml_code', this._code);
+      }
+      this.updateEditorErrors();
       this.code$.next(this._code);
       this.updateGutter();
+      this.queueDbmlValidation();
     } finally {
       this._syncingNotesToCode = false;
     }

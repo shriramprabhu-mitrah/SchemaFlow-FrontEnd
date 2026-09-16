@@ -224,15 +224,16 @@ export class HeaderComponent implements OnInit {
     this.runWithUnsavedChangesCheck(() => {
       this.svc.requestSplitView();
       
-      const activeWsId = this.svc.activeWorkspaceId();
-      const createReq$ = activeWsId
+      const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
+      const activeWsId = isTeam ? this.svc.activeWorkspaceId() : null;
+      const createReq$ = (isTeam && activeWsId)
         ? this.svc.createWorkspaceDiagram(activeWsId, '')
         : this.svc.createDiagram('');
 
       createReq$.subscribe({
         next: () => {
           this.svc.clearDiagram(true);
-          if (activeWsId) {
+          if (isTeam && activeWsId) {
             this.svc.setActiveWorkspace(activeWsId, this.svc.activeWorkspaceName);
             this.svc.diagramWorkspaceType.set('Team');
           } else {
@@ -848,7 +849,11 @@ export class HeaderComponent implements OnInit {
   }
 
   openWorkspaceModal(tab: 'my-diagrams' | 'shared' | 'create-workspace' | 'my-workspaces' | 'edit-workspace' | 'view-members' = 'my-diagrams'): void {
-    if ((tab === 'create-workspace') && !this.entitlementService.canUseFeature('create_workspaces')) {
+    if (tab === 'create-workspace' && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces'))) {
+      this.svc.showUpgradeModal('create_workspaces');
+      return;
+    }
+    if (tab === 'my-workspaces' && !this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces')) {
       this.svc.showUpgradeModal('create_workspaces');
       return;
     }
