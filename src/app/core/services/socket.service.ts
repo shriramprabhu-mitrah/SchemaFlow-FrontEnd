@@ -52,7 +52,7 @@ export class SocketService {
     this.socket = io(baseUrl, {
       auth: { token },
       withCredentials: true,
-      transports: ['websocket'] // FORCE WEBSOCKETS ONLY. Long-polling is paused by browsers in background tabs!
+      transports: ['polling', 'websocket'] // Allow long-polling fallback for environments that do not support pure websockets out of the box
     });
 
     this.setupListeners();
