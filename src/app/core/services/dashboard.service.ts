@@ -3011,8 +3011,8 @@ export class DashboardService {
     if (token) {
       url += `&token=${token}`;
     }
-    // Omit auth headers intentionally to just check the invitation
-    return this.http.get(url);
+    const headers = this.getAuthHeaders();
+    return this.http.get(url, { headers });
   }
 
   acceptOrgInvitation(payload: { token: string | null, orgId: string }): Observable<any> {
