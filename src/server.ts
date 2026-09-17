@@ -11,7 +11,9 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 // Default hosts + any extra hosts from ALLOWED_HOSTS env var (comma-separated)
 const extraHosts = process.env['ALLOWED_HOSTS']?.split(',').map(h => h.trim()).filter(Boolean) ?? [];
-const allowedHosts = ['*.railway.app', 'localhost', ...extraHosts];
+const allowedHosts = extraHosts.includes('*')
+  ? ['*']
+  : ['*.railway.app', 'localhost', '127.0.0.1', ...extraHosts];
 
 const app = express();
 const angularApp = new AngularNodeAppEngine({
