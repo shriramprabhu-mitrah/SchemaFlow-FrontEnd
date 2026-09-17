@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EntitlementService } from '../../../core/services/entitlement.service';
@@ -28,9 +29,9 @@ export class AcceptInvitationComponent implements OnInit {
     public auth: AuthService,
     public entitlementService: EntitlementService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
-  
+
   orgId = '';
   inviteToken = '';
   isOrgInvite = false;
@@ -54,13 +55,13 @@ export class AcceptInvitationComponent implements OnInit {
       if (foundId) {
         this.workspaceId = foundId;
       }
-      
+
       // Check for orgId explicitly for Organization Invitations
       if (qp['orgId']) {
         this.orgId = qp['orgId'];
         this.isOrgInvite = true;
         if (qp['token']) {
-            this.inviteToken = qp['token'];
+          this.inviteToken = qp['token'];
         }
       }
 
@@ -70,7 +71,7 @@ export class AcceptInvitationComponent implements OnInit {
       if (qp['workspaceName']) {
         this.workspaceName = qp['workspaceName'];
       }
-      
+
       if (qp['orgName']) {
         this.orgName = qp['orgName'];
       }
@@ -89,7 +90,7 @@ export class AcceptInvitationComponent implements OnInit {
             } else if (qp['email']) {
               this.invitedEmail = qp['email'];
             }
-            
+
             if (this.invitedEmail && this.auth.isLoggedIn() && this.userEmail.toLowerCase() !== this.invitedEmail.toLowerCase()) {
               this.emailMismatch = true;
             } else if (this.auth.isLoggedIn()) {
@@ -105,7 +106,7 @@ export class AcceptInvitationComponent implements OnInit {
             }
             this.isRegistered = res.isRegistered || false;
             this.cdr.markForCheck();
-            
+
             // Auto-redirect if not logged in or mismatched
             if (!this.auth.isLoggedIn() || this.emailMismatch || this.noInvitation || this.alreadyMember) {
               this.savePendingInvitation();
@@ -128,7 +129,7 @@ export class AcceptInvitationComponent implements OnInit {
             this.emailMismatch = true;
           }
         }
-        
+
         // Workspace flow: auto-redirect if not logged in
         if (!this.auth.isLoggedIn() || this.emailMismatch) {
           this.savePendingInvitation();
@@ -160,15 +161,15 @@ export class AcceptInvitationComponent implements OnInit {
     localStorage.setItem('pending_accept_invitation_url', this.router.url);
     localStorage.setItem('pending_accept_invitation_type', this.isOrgInvite ? 'org' : 'workspace');
     localStorage.setItem('pending_accept_invitation_token', this.inviteToken || '');
-    
+
     if (this.isOrgInvite) {
       if (this.invitedEmail) {
         localStorage.setItem('pending_invite_email', this.invitedEmail);
       }
-      
+
     }
 
-    
+
   }
 
   onAcceptInvitation(): void {
@@ -180,11 +181,16 @@ export class AcceptInvitationComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const acceptCall = this.isOrgInvite 
-        ? this.svc.acceptOrgInvitation({ token: this.inviteToken || null, orgId: this.orgId })
-        : this.svc.acceptInvitation(this.workspaceId);
+    const acceptCall = this.isOrgInvite
+      ? this.svc.acceptOrgInvitation({ token: this.inviteToken || null, orgId: this.orgId })
+      : this.svc.acceptInvitation(this.workspaceId);
 
-    acceptCall.subscribe({
+    acceptCall.pipe(
+      finalize(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
       next: (res: any) => {
         if (res?.accessToken) {
           this.auth.setToken(res.accessToken);
@@ -210,7 +216,7 @@ export class AcceptInvitationComponent implements OnInit {
 
         const returnedOrgId = res?.organization_id || res?.data?.organization_id;
         const targetOrgId = returnedOrgId || this.orgId;
-        
+
         if (this.isOrgInvite && targetOrgId) {
           this.auth.setOrganizationId(Number(targetOrgId));
         }
@@ -224,7 +230,6 @@ export class AcceptInvitationComponent implements OnInit {
         });
       },
       error: (err) => {
-        this.isLoading = false;
         console.error('Failed to accept invitation:', err);
 
         let errorMsg = '';
@@ -248,7 +253,7 @@ export class AcceptInvitationComponent implements OnInit {
         } else {
           this.errorMessage = errorMsg || 'Failed to accept invitation. The invitation link may be invalid or expired.';
         }
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -257,3 +262,4 @@ export class AcceptInvitationComponent implements OnInit {
     this.router.navigate(['/dashboard']);
   }
 }
+
