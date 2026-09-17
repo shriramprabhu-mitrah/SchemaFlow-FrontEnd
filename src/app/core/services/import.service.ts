@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'sqlserver' | 'oracle';
+export type SqlDialect = 'postgres' | 'mysql' | 'sqlserver' | 'oracle' | 'sqlite';
 
 export interface ImportRequest {
   databaseType: string;
@@ -24,6 +24,7 @@ export class ImportService {
     postgres: 'Postgres',
     mysql: 'Mysql',
     sqlserver: 'SqlServer',
+    sqlite: 'Sqlite',
     oracle: 'Oracle'
   };
 

@@ -273,6 +273,20 @@
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
 
+      <!-- SQLite -->
+      <button class="export-item" id="import-sqlite-btn"
+        (click)="openImportModal('sqlite'); $event.stopPropagation()"
+        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
+        <span class="db-icon sqlite-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+          </svg>
+        </span>
+        SQLite
+        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
+          color="#f59e0b" style="margin-left: auto;"></app-icons>
+      </button>
+
       <!-- Loading / Error state -->
       <div class="export-status" *ngIf="importing">
         <span class="spinner"></span> Importing...
@@ -390,6 +404,19 @@
           </svg>
         </span>
         SQL Server
+        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
+          color="#f59e0b" style="margin-left: auto;"></app-icons>
+      </button>
+
+      <!-- SQLite -->
+      <button class="export-item" id="export-sqlite-btn" (click)="exportSQL('sqlite'); $event.stopPropagation()"
+        [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+        <span class="db-icon sqlite-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+          </svg>
+        </span>
+        SQLite
         <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
           color="#f59e0b" style="margin-left: auto;"></app-icons>
       </button>
@@ -547,8 +574,8 @@
         </svg>
         Import from
         <span class="dialect-badge"
-          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : 'sqlserver-badge'">
-          {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : 'SQL Server' }}
+          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : 'sqlserver-badge'">
+          {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect === 'sqlite' ? 'SQLite' : 'SQL Server' }}
         </span>
       </div>
       <button class="close-modal-btn" id="import-modal-close-btn" (click)="closeImportModal()">&times;</button>

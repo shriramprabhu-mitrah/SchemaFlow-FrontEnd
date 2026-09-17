@@ -6,8 +6,10 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --host 0.0.0.0 --disable-host-check",
     "build": "ng build",
+    "build:iis": "ng build --configuration iis && node scripts/prepare-iis-build.js iis",
+    "build:iisdev": "ng build --configuration iisdev && node scripts/prepare-iis-build.js iisdev",
     "postbuild": "node scripts/inject-env.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
