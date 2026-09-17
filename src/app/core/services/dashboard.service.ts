@@ -3707,6 +3707,15 @@ export class DashboardService {
     return this.http.post<any>(url, {}, { headers });
   }
 
+  compareDiagramVersion(diagramId: number, versionId: number): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const urlPattern = this.appConfig.environment?.diagramApiUrls?.compare;
+    const url = urlPattern
+      ? urlPattern.replace('{id}', diagramId.toString()).replace('{versionId}', versionId.toString())
+      : `${this.appConfig.environment?.apiConfig?.baseUrl}/api/diagrams/${diagramId}/history/${versionId}/compare`;
+    return this.http.get<any>(url, { headers });
+  }
+
   toggleDiagramSharingStatus(diagramId: number, isPublic: boolean, password?: string): Observable<any> {
     const headers = this.getAuthHeaders();
     const url = this.appConfig.environment?.diagramApiUrls?.diagramPublic?.replace('{id}', diagramId.toString()) ?? "";

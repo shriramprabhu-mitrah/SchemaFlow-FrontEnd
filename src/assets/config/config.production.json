@@ -27,6 +27,7 @@
     "validateDbml": "API_URL/api/validate/dbml",
     "history": "API_URL/api/diagrams/{id}/history",
     "revert": "API_URL/api/diagrams/{id}/revert/{versionId}",
+    "compare": "API_URL/api/diagrams/{id}/history/{versionId}/compare",
     "diagramPublic": "API_URL/api/diagrams/{id}/public",
     "diagramShareEmail": "API_URL/api/diagrams/{id}/share-email",
     "publicDiagram": "API_URL/api/diagrams/public/{token}"

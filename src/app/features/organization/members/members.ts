@@ -104,6 +104,7 @@ export class MembersComponent implements OnInit {
     this.searchSubject.pipe(
       debounceTime(300),
       distinctUntilChanged()
+
     ).subscribe(term => {
       this.zone.run(() => {
         this.search = term;
@@ -137,7 +138,7 @@ export class MembersComponent implements OnInit {
     });
   }
 
-  onSearch(term: string): void { 
+  onSearch(term: string): void {
     this.searchSubject.next(term);
   }
   goToPage(p: number): void { this.page = p; this.load(); }

@@ -27,6 +27,7 @@
     "diagramsListAll": "http://localhost:4000/api/diagrams/list-all",
     "history": "http://localhost:4000/api/diagrams/{id}/history",
     "revert": "http://localhost:4000/api/diagrams/{id}/revert/{versionId}",
+    "compare": "http://localhost:4000/api/diagrams/{id}/history/{versionId}/compare",
     "diagramPublic": "http://localhost:4000/api/diagrams/{id}/public",
     "diagramShareEmail": "http://localhost:4000/api/diagrams/{id}/share-email",
     "publicDiagram": "http://localhost:4000/api/diagrams/public/{token}"
