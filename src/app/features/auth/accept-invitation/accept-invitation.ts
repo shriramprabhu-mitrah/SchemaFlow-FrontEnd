@@ -15,6 +15,8 @@ import { Icons } from '../../../core/component/icons/icons';
 export class AcceptInvitationComponent implements OnInit {
   workspaceId = '';
   workspaceName = '';
+  orgName = '';
+  permission = '';
   isLoading = false;
   isSuccess = false;
   errorMessage = '';
@@ -35,6 +37,8 @@ export class AcceptInvitationComponent implements OnInit {
   invitedEmail = '';
   isRegistered = false;
   emailMismatch = false;
+  noInvitation = false;
+  alreadyMember = false;
   isChecking = false;
 
   get userEmail(): string {
@@ -66,19 +70,34 @@ export class AcceptInvitationComponent implements OnInit {
       if (qp['workspaceName']) {
         this.workspaceName = qp['workspaceName'];
       }
+      
       if (qp['orgName']) {
-        this.workspaceName = qp['orgName'];
+        this.orgName = qp['orgName'];
+      }
+      if (qp['permission']) {
+        this.permission = qp['permission'];
       }
 
       if (this.isOrgInvite && this.orgId) {
         this.isChecking = true;
         this.svc.checkOrgInvitation(this.inviteToken || null, this.orgId).subscribe({
           next: (res: any) => {
+            console.log('DEBUG FRONTEND: checkOrgInvitation response:', res);
             this.isChecking = false;
             if (res.invitation && res.invitation.email) {
               this.invitedEmail = res.invitation.email;
-              if (this.auth.isLoggedIn() && this.userEmail.toLowerCase() !== this.invitedEmail.toLowerCase()) {
-                this.emailMismatch = true;
+            } else if (qp['email']) {
+              this.invitedEmail = qp['email'];
+            }
+            
+            if (this.invitedEmail && this.auth.isLoggedIn() && this.userEmail.toLowerCase() !== this.invitedEmail.toLowerCase()) {
+              this.emailMismatch = true;
+            } else if (this.auth.isLoggedIn()) {
+              // Fallback for old links with no email or token
+              if (res.memberStatus === 'active') {
+                this.alreadyMember = true;
+              } else if (res.memberStatus !== 'invited') {
+                this.noInvitation = true;
               }
             }
             if (res.org && res.org.name) {
@@ -87,13 +106,11 @@ export class AcceptInvitationComponent implements OnInit {
             this.isRegistered = res.isRegistered || false;
             this.cdr.markForCheck();
             
-            // Auto-redirect if not logged in
-            if (!this.auth.isLoggedIn() || this.emailMismatch) {
+            // Auto-redirect if not logged in or mismatched
+            if (!this.auth.isLoggedIn() || this.emailMismatch || this.noInvitation || this.alreadyMember) {
               this.savePendingInvitation();
-              if (this.isRegistered) {
+              if (!this.auth.isLoggedIn()) {
                 this.loginRequired = true;
-              } else {
-                this.registrationRequired = true;
               }
               this.cdr.markForCheck();
             }
@@ -105,10 +122,19 @@ export class AcceptInvitationComponent implements OnInit {
           }
         });
       } else if (!this.isOrgInvite && this.workspaceId) {
+        if (qp['email']) {
+          this.invitedEmail = qp['email'];
+          if (this.auth.isLoggedIn() && this.userEmail.toLowerCase() !== this.invitedEmail.toLowerCase()) {
+            this.emailMismatch = true;
+          }
+        }
+        
         // Workspace flow: auto-redirect if not logged in
-        if (!this.auth.isLoggedIn()) {
+        if (!this.auth.isLoggedIn() || this.emailMismatch) {
           this.savePendingInvitation();
-          this.loginRequired = true;
+          if (!this.auth.isLoggedIn()) {
+            this.loginRequired = true;
+          }
           this.cdr.markForCheck();
         }
       }
