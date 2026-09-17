@@ -9,6 +9,7 @@ import { DiagramViews } from '../diagram-views/diagram-views';
 import { VersionHistoryComponent } from '../version-history/version-history';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-canvas',
@@ -238,7 +239,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     public svc: DashboardService,
     private cdr: ChangeDetectorRef,
     public entitlementService: EntitlementService,
-    public auth: AuthService
+    public auth: AuthService,
+    private router: Router
   ) {
     effect(() => {
       this.svc.theme();
@@ -3447,6 +3449,21 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   setTool(t: Tool): void {
     this.svc.tool = t;
     this.scheduleDraw();
+  }
+
+  toggleDiffChecker(): void {
+    this.showLayoutMenu = false;
+    this.svc.toggleDiffChecker();
+    if (this.svc.showDiffChecker()) {
+      this.router.navigate([], { queryParams: { view: 'diff' } });
+    } else {
+      const id = this.svc.diagramId();
+      if (id) {
+        this.router.navigate([], { queryParams: { id } });
+      } else {
+        this.router.navigate([], { queryParams: {} });
+      }
+    }
   }
 
   toggleLayoutMenu(): void {

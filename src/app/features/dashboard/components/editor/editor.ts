@@ -7,11 +7,13 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { Router } from '@angular/router';
 
 import { ButtonComponent } from '../../../../shared/button/button';
+import { SidebarComponent } from '../sidebar/sidebar';
+import { DiagramInspectorComponent } from '../diagram-inspector/diagram-inspector';
 
 @Component({
   selector: 'app-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent],
   templateUrl: './editor.html',
 })
 export class EditorComponent implements OnInit, OnDestroy {

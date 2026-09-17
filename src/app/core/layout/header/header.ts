@@ -51,7 +51,16 @@ export class HeaderComponent implements OnInit {
   showSampleSubmenu = false;
   showWorkspaceSubmenu = false;
   workspaceModalOpen = false;
-  shareModalOpen = false;
+  get shareModalOpen(): boolean {
+    return this.svc.shareModalVisible();
+  }
+  set shareModalOpen(val: boolean) {
+    if (val && this.svc.showVersionHistory()) {
+      this.svc.closeVersionHistory$.next();
+      this.svc.showVersionHistory.set(false);
+    }
+    this.svc.shareModalVisible.set(val);
+  }
   upgradeModalOpen = false;
   upgradeFeatureKey = '';
   workspaceModalTab: 'my-diagrams' | 'shared' | 'create-workspace' | 'my-workspaces' | 'edit-workspace' | 'view-members' = 'my-diagrams';
@@ -157,6 +166,14 @@ export class HeaderComponent implements OnInit {
     this.svc.showUpgradeModal$.subscribe((featureKey: string) => {
       this.upgradeFeatureKey = featureKey || '';
       this.upgradeModalOpen = true;
+      this.cdr.detectChanges();
+    });
+    this.svc.openShareModal$.subscribe(() => {
+      this.openShareModal();
+      this.cdr.detectChanges();
+    });
+    this.svc.openImportModal$.subscribe((dialect: any) => {
+      this.openImportModal(dialect);
       this.cdr.detectChanges();
     });
   }
@@ -867,6 +884,10 @@ export class HeaderComponent implements OnInit {
   }
 
   openShareModal(): void {
+    if (this.svc.showVersionHistory()) {
+      this.svc.closeVersionHistory$.next();
+      this.svc.showVersionHistory.set(false);
+    }
     if (!this.isLoggedIn) {
       this.svc.showToast('Please sign in to share your diagrams', 3000, 'error');
       return;
@@ -878,21 +899,40 @@ export class HeaderComponent implements OnInit {
       return;
     }
 
-    const name = (this.svc.diagramName || '').trim().toLowerCase();
-    const isUnsaved = !this.svc.diagramId() || !name;
-
-    this.svc.showDiscardButton.set(false); // Hide the Discard button when prompting before share
-
-    // If the diagram is unsaved/sample, prompt to save it first
-    if (isUnsaved) {
-      this.svc.forceUnsavedChangesCheck(() => {
-        this.shareModalOpen = true;
-      });
+    // Existing diagram: auto-save in background if there are unsaved edits, and open share modal immediately
+    if (this.svc.diagramId() != null) {
+      if (this.svc.hasUnsavedChanges() && this.svc.canSaveDiagram(false)) {
+        this.svc.saveDiagram().subscribe({
+          error: (err) => console.warn('Auto-save before share failed:', err)
+        });
+      }
+      this.shareModalOpen = true;
+      this.cdr.detectChanges();
       return;
     }
 
-    this.runWithUnsavedChangesCheck(() => {
-      this.shareModalOpen = true;
+    // Unsaved diagram: save it first so backend generates ID & publicToken, then open modal
+    const currentName = (this.svc.diagramName || '').trim();
+    if (!currentName) {
+      this.svc.diagramName = 'Untitled Diagram';
+    }
+
+    if (!this.svc.canSaveDiagram(true)) {
+      return;
+    }
+
+    this.svc.saveDiagram().subscribe({
+      next: () => {
+        this.shareModalOpen = true;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        if (err?.status === 403) {
+          this.svc.showUpgradeModal('create_diagrams');
+        } else {
+          this.svc.showToast('Failed to save diagram before sharing.', 3000, 'error');
+        }
+      }
     });
   }
 

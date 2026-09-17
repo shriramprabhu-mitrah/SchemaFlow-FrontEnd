@@ -183,251 +183,6 @@
         placeholder="Untitled Diagram"></div>
     </div>
   </div>
-  <app-button *ngIf="!isProfilePage" variant="default" (onClick)="toggleDocs()"
-    [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('document_view') && !entitlementService.canUseFeature('document_view'))">
-    <svg *ngIf="!svc.showDocs" class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <path d="M14 2v6h6"></path>
-      <path d="M9 13h6"></path>
-      <path d="M9 17h6"></path>
-      <path d="M9 9h1"></path>
-    </svg>
-
-    <svg *ngIf="svc.showDocs" class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-      <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-      <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-      <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-      <path d="M10 6.5h4M17.5 10v4M14 17.5h-4M6.5 14v-4" stroke-dasharray="2 2"></path>
-    </svg>
-
-    {{ svc.showDocs ? 'View Diagram' : 'View Docs' }}
-    <app-icons *ngIf="!entitlementService.orgHasFeature('document_view')" name="premium-crown" size="14" color="#f59e0b"
-      style="margin-left: 4px; vertical-align: middle;"></app-icons>
-  </app-button>
-
-  <!-- Import dropdown -->
-  <div id="import-dropdown" class="import-dropdown-wrap" *ngIf="!isProfilePage">
-    <app-button variant="default" customClass="import-trigger" id="import-trigger-btn" (onClick)="toggleImportMenu()"
-      [class.active]="importMenuOpen"
-      [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-        <polyline points="7 10 12 5 17 10" />
-        <line x1="12" y1="5" x2="12" y2="15" />
-      </svg>
-      Import
-      <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14" color="#f59e0b"
-        style="margin-left: 4px; vertical-align: middle;"></app-icons>
-      <svg class="chevron" [class.open]="importMenuOpen" width="12" height="12" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </app-button>
-
-    <div class="export-menu" [class.visible]="importMenuOpen">
-      <div class="export-menu-label">Import from SQL</div>
-
-      <!-- PostgreSQL -->
-      <button class="export-item" id="import-postgres-btn"
-        (click)="openImportModal('postgres'); $event.stopPropagation()"
-        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
-        <span class="db-icon postgres-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
-          </svg>
-        </span>
-        PostgreSQL
-        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- MySQL -->
-      <button class="export-item" id="import-mysql-btn" (click)="openImportModal('mysql'); $event.stopPropagation()"
-        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
-        <span class="db-icon mysql-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c.83 0 1.5.67 1.5 1.5S12.83 8 12 8s-1.5-.67-1.5-1.5S11.17 5 12 5zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08C16.71 17.72 14.5 19 12 19z" />
-          </svg>
-        </span>
-        MySQL
-        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- SQL Server -->
-      <button class="export-item" id="import-sqlserver-btn"
-        (click)="openImportModal('sqlserver'); $event.stopPropagation()"
-        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
-        <span class="db-icon mssql-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
-          </svg>
-        </span>
-        SQL Server
-        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- SQLite -->
-      <button class="export-item" id="import-sqlite-btn"
-        (click)="openImportModal('sqlite'); $event.stopPropagation()"
-        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
-        <span class="db-icon sqlite-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
-          </svg>
-        </span>
-        SQLite
-        <app-icons *ngIf="!entitlementService.orgHasFeature('import_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- Loading / Error state -->
-      <div class="export-status" *ngIf="importing">
-        <span class="spinner"></span> Importing...
-      </div>
-      <div class="export-error" *ngIf="importError && !importing">{{ importError }}</div>
-    </div>
-  </div>
-
-  <!-- Export dropdown -->
-  <div id="export-dropdown" class="export-dropdown-wrap" *ngIf="!isProfilePage">
-    <app-button variant="default" customClass="export-trigger" id="export-trigger-btn" (onClick)="toggleExportMenu()"
-      [class.active]="exportMenuOpen"
-      [disabled]="isSampleDiagram() || ((entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image')) && (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql')))">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-        <polyline points="7 10 12 15 17 10" />
-        <line x1="12" y1="15" x2="12" y2="3" />
-      </svg>
-      Export
-      <svg class="chevron" [class.open]="exportMenuOpen" width="12" height="12" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-    </app-button>
-
-    <div class="export-menu" [class.visible]="exportMenuOpen">
-      <div class="export-menu-label">Export as diagram</div>
-
-      <!-- Image / PDF Section -->
-      <button class="export-item" id="export-pdf-btn" (click)="exportPDF(); $event.stopPropagation()"
-        [disabled]="isDiagramEmpty() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
-        <span class="db-icon pdf-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-        </span>
-        PDF
-        <app-icons *ngIf="!entitlementService.orgHasFeature('export_image')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <button class="export-item" id="export-png-btn" (click)="exportPNG(); $event.stopPropagation()"
-        [disabled]="isDiagramEmpty() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
-        <span class="db-icon png-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <polyline points="21 15 16 10 5 21" />
-          </svg>
-        </span>
-        PNG
-        <app-icons *ngIf="!entitlementService.orgHasFeature('export_image')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <button class="export-item" id="export-svg-btn" (click)="exportSVG(); $event.stopPropagation()"
-        [disabled]="isDiagramEmpty() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
-        <span class="db-icon svg-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 2 7 12 12 22 7 12 2" />
-            <polyline points="2 17 12 22 22 17" />
-            <polyline points="2 12 12 17 22 12" />
-          </svg>
-        </span>
-        SVG
-        <app-icons *ngIf="!entitlementService.orgHasFeature('export_image')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <div class="export-menu-divider"></div>
-
-      <div class="export-menu-label">Export as SQL</div>
-
-      <!-- PostgreSQL -->
-      <button class="export-item" id="export-postgres-btn" (click)="exportSQL('postgres'); $event.stopPropagation()"
-        [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
-        <span class="db-icon postgres-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
-          </svg>
-        </span>
-        PostgreSQL
-        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- MySQL -->
-      <button class="export-item" id="export-mysql-btn" (click)="exportSQL('mysql'); $event.stopPropagation()"
-        [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
-        <span class="db-icon mysql-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c.83 0 1.5.67 1.5 1.5S12.83 8 12 8s-1.5-.67-1.5-1.5S11.17 5 12 5zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08C16.71 17.72 14.5 19 12 19z" />
-          </svg>
-        </span>
-        MySQL
-        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- SQL Server -->
-      <button class="export-item" id="export-sqlserver-btn" (click)="exportSQL('sqlserver'); $event.stopPropagation()"
-        [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
-        <span class="db-icon mssql-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
-          </svg>
-        </span>
-        SQL Server
-        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- SQLite -->
-      <button class="export-item" id="export-sqlite-btn" (click)="exportSQL('sqlite'); $event.stopPropagation()"
-        [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
-        <span class="db-icon sqlite-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
-          </svg>
-        </span>
-        SQLite
-        <app-icons *ngIf="!entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14"
-          color="#f59e0b" style="margin-left: auto;"></app-icons>
-      </button>
-
-      <!-- Loading / Error state -->
-      <div class="export-status" *ngIf="exporting">
-        <span class="spinner"></span> Converting...
-      </div>
-      <div class="export-error" *ngIf="exportError && !exporting">{{ exportError }}</div>
-    </div>
-  </div>
 
   <div class="spacer"></div>
 
@@ -447,32 +202,6 @@
     </svg>
     Upgrade
   </app-button>
-  <app-button *ngIf="!isProfilePage" variant="default"
-    [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('version_history') && !entitlementService.canUseFeature('version_history'))"
-    (onClick)="toggleVersionHistory()">
-    <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-    History
-    <app-icons *ngIf="!entitlementService.orgHasFeature('version_history')" name="premium-crown" size="14"
-      color="#f59e0b" style="margin-left: 4px; vertical-align: middle;"></app-icons>
-  </app-button>
-  <app-button *ngIf="!isProfilePage" variant="default" (onClick)="openShareModal()"
-    [disabled]="isSampleDiagram() || (entitlementService.orgHasFeature('share_diagram') && !entitlementService.canUseFeature('share_diagram'))">
-    <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="18" cy="5" r="3"></circle>
-      <circle cx="6" cy="12" r="3"></circle>
-      <circle cx="18" cy="19" r="3"></circle>
-      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-    </svg>
-    Share
-    <app-icons *ngIf="!entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14" color="#f59e0b"
-      style="margin-left: 4px; vertical-align: middle;"></app-icons>
-  </app-button>
   <app-button *ngIf="!isLoggedIn" variant="default" (onClick)="goToLogin()">
     <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -482,6 +211,7 @@
     </svg>
     Sign In
   </app-button>
+
 
   <!-- User Profile Dropdown at Right End (Image 2) -->
   <div class="profile-dropdown-wrap" *ngIf="isLoggedIn">
@@ -530,7 +260,7 @@
         <span>Manage Account</span>
       </button>
 
-      <div class="profile-menu-theme-row">
+      <div class="profile-menu-theme-row" (click)="svc.toggleTheme()" style="cursor: pointer;">
         <div class="theme-label-wrap">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -538,7 +268,7 @@
           </svg>
           <span>Dark Mode</span>
         </div>
-        <label class="switch-toggle">
+        <label class="switch-toggle" (click)="$event.stopPropagation()">
           <input type="checkbox" [checked]="svc.theme() === 'dark'" (change)="svc.toggleTheme()" />
           <span class="slider-round"></span>
         </label>

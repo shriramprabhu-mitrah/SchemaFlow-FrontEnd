@@ -1,3 +1,51 @@
+.editor-shell {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  background: #0b1426 !important;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  app-sidebar {
+    height: 100%;
+    flex-shrink: 0;
+    transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+
+    &.collapsed {
+      width: 0 !important;
+      min-width: 0 !important;
+      max-width: 0 !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      border: none !important;
+    }
+  }
+
+  app-sidebar.collapsed + #editor-pane {
+    border-top-left-radius: 7px;
+    border-bottom-left-radius: 7px;
+  }
+
+  #editor-pane {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border-top-right-radius: 7px;
+    border-bottom-right-radius: 7px;
+  }
+}
+
+html.light-theme .editor-shell,
+body.light-theme .editor-shell {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
 #editor-pane {
   position: relative;
   height: 100%;
@@ -17,9 +65,9 @@
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
-  width: 52px !important;
+  width: 36px !important;
   padding: 16px 0 !important;
-  padding-right: 12px !important;
+  padding-right: 8px !important;
   color: #5a6b8c !important;
   font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
   font-size: 15px !important;
@@ -47,7 +95,7 @@
   position: absolute;
   inset: 0;
   margin: 0;
-  padding: 16px 8px 16px 52px;
+  padding: 16px 8px 16px 36px;
   font-family: 'Fira Code', Consolas, monospace;
   font-size: 15px !important;
   line-height: 1.62 !important;
@@ -70,25 +118,28 @@
   overflow: auto;
 
   /* Custom Premium Scrollbar Design */
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(62, 197, 193, 0.3) rgba(255, 255, 255, 0.02) !important;
+
   &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 8px !important;
+    height: 8px !important;
   }
  
   &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-radius: 4px !important;
   }
  
   &::-webkit-scrollbar-thumb {
-    background: rgba(62, 197, 193, 0.2);
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    transition: background 0.2s ease;
+    background: rgba(62, 197, 193, 0.25) !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.03) !important;
+    transition: background 0.2s ease !important;
   }
  
   &::-webkit-scrollbar-thumb:hover {
-    background: rgba(62, 197, 193, 0.4);
+    background: rgba(62, 197, 193, 0.5) !important;
   }
 }
 
@@ -154,18 +205,16 @@
   }
 }
 
-/* DBML Code Editor Theme Protection (Ensures dark navy editor with bright visible code tokens in all themes) */
+/* DBML Code Editor Default Dark Theme */
+.editor-shell,
 #editor-pane,
-#editor-scroll,
-body.light-theme #editor-pane,
-body.light-theme #editor-scroll {
+#editor-scroll {
   background-color: #0b1426 !important;
   background: #0b1426 !important;
   color: #e6eef9 !important;
 }
 
-#gutter,
-body.light-theme #gutter {
+#gutter {
   background-color: #0b1426 !important;
   background: #0b1426 !important;
   color: #5a6b8c !important;
@@ -173,22 +222,83 @@ body.light-theme #gutter {
   font-size: 15px !important;
   line-height: 1.62 !important;
   text-align: right !important;
-  width: 52px !important;
+  width: 36px !important;
 }
 
-#editor-toolbar,
-body.light-theme #editor-toolbar {
-  background-color: #121c2f !important;
-  background: #121c2f !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+.sidebar-line-toggle-btn {
+  position: absolute !important;
+  top: 36px;
+  left: 58px;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #111b2e;
+  border: 1px solid rgba(62, 197, 193, 0.45);
+  color: #3ec5c1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 70;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25), 0 0 6px rgba(62, 197, 193, 0.18);
+  transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
 
-  .toolbar-title {
-    color: #e6eef9 !important;
+  .toggle-icon {
+    width: 12px;
+    height: 12px;
+    display: block;
+    stroke: currentColor;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #1c2b45;
+    color: #3ec5c1;
+    border-color: #3ec5c1;
+    box-shadow: 0 0 10px rgba(62, 197, 193, 0.45);
+    z-index: 100;
+  }
+
+  &:active {
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+
+  &.collapsed {
+    left: 8px;
+    transform: translateY(-50%);
+
+    &:active {
+      transform: translateY(-50%) scale(0.92);
+    }
   }
 }
 
-#highlight,
-body.light-theme #highlight {
+#editor-toolbar {
+  background-color: #121c2f !important;
+  background: #121c2f !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 0 16px 0 22px !important;
+
+  .toolbar-title {
+    color: #e6eef9 !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+app-sidebar.collapsed ~ #editor-pane #editor-toolbar {
+  padding-left: 36px !important;
+}
+
+app-sidebar.collapsed ~ app-diagram-inspector .inspector-header {
+  padding-left: 36px !important;
+}
+
+#highlight {
   background-color: transparent !important;
   background: transparent !important;
   color: #e6eef9 !important;
@@ -199,8 +309,7 @@ body.light-theme #highlight {
 }
 
 #codearea,
-body.light-theme #codearea,
-body.light-theme textarea#codearea {
+textarea#codearea {
   background-color: transparent !important;
   background: transparent !important;
   color: transparent !important;
@@ -213,6 +322,33 @@ body.light-theme textarea#codearea {
   font-size: 15px !important;
   line-height: 1.62 !important;
   padding-left: 52px !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(62, 197, 193, 0.3) rgba(255, 255, 255, 0.02) !important;
+}
+
+#codearea::-webkit-scrollbar,
+textarea#codearea::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+#codearea::-webkit-scrollbar-track,
+textarea#codearea::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-radius: 4px !important;
+}
+
+#codearea::-webkit-scrollbar-thumb,
+textarea#codearea::-webkit-scrollbar-thumb {
+  background: rgba(62, 197, 193, 0.25) !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+  transition: background 0.2s ease !important;
+}
+
+#codearea::-webkit-scrollbar-thumb:hover,
+textarea#codearea::-webkit-scrollbar-thumb:hover {
+  background: rgba(62, 197, 193, 0.5) !important;
 }
 
 .keyword {
@@ -234,6 +370,196 @@ body.light-theme textarea#codearea {
 
 .groupName {
   color: #e4bd11 !important;
+}
+
+/* ============ LIGHT THEME EDITOR OVERRIDES ============ */
+html.light-theme,
+body.light-theme {
+  .editor-shell {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+
+    .sidebar-line-toggle-btn {
+      background: #ffffff !important;
+      border: 1px solid #93c5fd !important;
+      color: #2563eb !important;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+
+      &:hover {
+        background: #eff6ff !important;
+        color: #1d4ed8 !important;
+        border-color: #60a5fa !important;
+        box-shadow: 0 0 8px rgba(37, 99, 235, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+      }
+    }
+  }
+
+  #editor-pane {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+  }
+
+  #editor-scroll {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+  }
+
+  #editor-toolbar {
+    background-color: #f8fafc !important;
+    background: #f8fafc !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+
+    .toolbar-title {
+      color: #0f172a !important;
+    }
+
+    .editor-pane-action {
+      color: #64748b !important;
+
+      &:hover {
+        color: #0f172a !important;
+        background: rgba(0, 0, 0, 0.05) !important;
+      }
+    }
+
+    .error-badge {
+      background: rgba(239, 68, 68, 0.1) !important;
+      color: #dc2626 !important;
+      border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    }
+  }
+
+  .editor-alert-banner {
+    background: #eff6ff !important;
+    border-bottom: 1px solid #dbeafe !important;
+    color: #1e40af !important;
+
+    .alert-icon {
+      color: #3b82f6 !important;
+    }
+
+    .alert-text {
+      color: #1e40af !important;
+
+      .alert-link {
+        color: #2563eb !important;
+      }
+    }
+  }
+
+  #gutter {
+    background-color: #f8fafc !important;
+    background: #f8fafc !important;
+    color: #94a3b8 !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+  }
+
+  #highlight {
+    background-color: transparent !important;
+    background: transparent !important;
+    color: #0f172a !important;
+
+    .keyword {
+      color: #2563eb !important;
+      font-weight: 700 !important;
+    }
+
+    .datatype {
+      color: #059669 !important;
+      font-weight: 600 !important;
+    }
+
+    .attribute {
+      color: #d97706 !important;
+    }
+
+    .number {
+      color: #d97706 !important;
+    }
+
+    .groupName {
+      color: #7c3aed !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  .editor-shell,
+  #editor-pane,
+  #editor-scroll {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(37, 99, 235, 0.25) rgba(0, 0, 0, 0.02) !important;
+
+    &::-webkit-scrollbar {
+      width: 6px !important;
+      height: 6px !important;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.02) !important;
+      border-radius: 3px !important;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(37, 99, 235, 0.25) !important;
+      border-radius: 3px !important;
+      border: 1px solid rgba(0, 0, 0, 0.03) !important;
+      transition: background 0.15s ease !important;
+
+      &:hover {
+        background: rgba(37, 99, 235, 0.45) !important;
+      }
+
+      &:active {
+        background: rgba(37, 99, 235, 0.65) !important;
+      }
+    }
+
+    &::-webkit-scrollbar-corner {
+      background: transparent !important;
+    }
+  }
+
+  #codearea,
+  textarea#codearea {
+    background-color: transparent !important;
+    background: transparent !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    caret-color: #2563eb !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(37, 99, 235, 0.25) rgba(0, 0, 0, 0.02) !important;
+
+    &::-webkit-scrollbar {
+      width: 6px !important;
+      height: 6px !important;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.02) !important;
+      border-radius: 3px !important;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(37, 99, 235, 0.25) !important;
+      border-radius: 3px !important;
+      border: 1px solid rgba(0, 0, 0, 0.03) !important;
+      transition: background 0.15s ease !important;
+
+      &:hover {
+        background: rgba(37, 99, 235, 0.45) !important;
+      }
+
+      &:active {
+        background: rgba(37, 99, 235, 0.65) !important;
+      }
+    }
+
+    &::-webkit-scrollbar-corner {
+      background: transparent !important;
+    }
+  }
 }
 
 /* Error squiggles in editor (as in Image 2) */
