@@ -11,7 +11,7 @@ import { ButtonComponent } from '../../shared/button/button';
 import { LoaderComponent } from '../../shared/loader/loader';
 import { DiagramViews } from '../dashboard/components/diagram-views/diagram-views';
 import { EntitlementService } from '../../core/services/entitlement.service';
-
+import { DiffCheckerComponent } from './components/diff-checker/diff-checker';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { Subscription, Observable } from 'rxjs';
@@ -25,7 +25,8 @@ import { Subscription, Observable } from 'rxjs';
     HeaderComponent,
     EditorComponent,
     CanvasComponent,
-    DocsComponent,
+    // DocsComponent, // Commented out as requested
+    DiffCheckerComponent,
     ButtonComponent,
     LoaderComponent
   ],
@@ -64,6 +65,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     this.splitViewSubscription = this.svc.splitViewRequested$.subscribe(() => this.restoreSplitView());
 
     effect(() => {
+      if (this.svc.showDiffChecker()) {
+        this.titleService.setTitle('Diff Checker - DBNexus');
+        return;
+      }
       const name = this.svc.diagramNameSignal()?.trim();
       if (name) {
         this.titleService.setTitle(`${name} - DBNexus`);
@@ -99,9 +104,17 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         }
     });
     if (typeof window !== 'undefined') {
+      this.svc.syncThemeFromStorage();
       this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
         const id = params['id'];
         const isSample = params['sample'] === 'true';
+        const isDiff = params['view'] === 'diff' || this.router.url.includes('/diff');
+
+        if (isDiff) {
+          this.svc.showDiffChecker.set(true);
+        } else if (this.svc.showDiffChecker()) {
+          this.svc.showDiffChecker.set(false);
+        }
 
         if (isSample) {
           this.isInitialLoad = false;

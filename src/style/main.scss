@@ -33,6 +33,7 @@
 @use 'public-viewer';
 @use 'upgrade-modal';
 @use 'organization-features';
+@use 'diff-checker';
 @use '../app/features/profile/profile';
 
 
@@ -42,6 +43,8 @@
 html,
 body {
   color-scheme: dark;
+  background-color: #08101f;
+  color: #e6eef9;
 }
 
 * {
@@ -73,7 +76,8 @@ body {
 
 /* Light Theme Overrides */
 html.light-theme,
-body.light-theme {
+body.light-theme,
+html.light-theme body {
   color-scheme: light !important;
   color: #0f172a;
   background-color: #f8fafc !important;
@@ -88,7 +92,7 @@ body.light-theme {
   }
 }
 
-body.light-theme * {
+html.light-theme *:not(#codearea), body.light-theme *:not(#codearea) {
   scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.03) !important;
 }
 
@@ -122,12 +126,11 @@ body.light-theme *, html.light-theme, body.light-theme {
   justify-content: space-between;
   background: rgba(255, 171, 0, 0.15);
   border: 1px solid rgba(255, 171, 0, 0.4);
-  color: var(--text-primary);
+  color: #e6eef9;
   padding: 8px 24px;
   font-size: 14px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  position: relative;
+  z-index: 10;
   border-radius: 6px;
   margin: 8px 16px;
 
@@ -135,38 +138,69 @@ body.light-theme *, html.light-theme, body.light-theme {
     display: flex;
     align-items: center;
     gap: 12px;
+    color: inherit;
+
+    span {
+      color: inherit;
+      line-height: 1.4;
+      font-weight: 500;
+    }
   }
 
   .warning-icon {
     width: 20px;
     height: 20px;
     color: #ffab00;
+    flex-shrink: 0;
   }
 
   .upgrade-btn-banner {
-    background: var(--primary-color, #1e293b);
-    color: white;
+    background: #2563eb;
+    color: #ffffff;
     border: none;
     padding: 6px 14px;
     border-radius: 4px;
     font-weight: 600;
+    font-size: 13px;
     cursor: pointer;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 
     &:hover {
-      opacity: 0.9;
+      background: #1d4ed8;
       transform: translateY(-1px);
     }
   }
 }
 
-html.light-theme .trial-expired-banner {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.3);
-  color: #1e293b;
-  
+html.light-theme .trial-expired-banner,
+body.light-theme .trial-expired-banner,
+.light-theme .trial-expired-banner {
+  background: #fffbeb !important;
+  border: 1px solid #fcd34d !important;
+  color: #92400e !important;
+
+  .banner-content {
+    color: #92400e !important;
+
+    span {
+      color: #92400e !important;
+      font-weight: 500 !important;
+    }
+  }
+
+  .warning-icon {
+    color: #d97706 !important;
+  }
+
   .upgrade-btn-banner {
-    background: #2563eb;
+    background: #2563eb !important;
+    color: #ffffff !important;
+
+    &:hover {
+      background: #1d4ed8 !important;
+      transform: translateY(-1px);
+    }
   }
 }
 

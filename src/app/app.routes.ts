@@ -31,6 +31,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard)
   },
   {
+    path: 'diff',
+    title: 'Diff Checker - DBNexus',
+    loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard)
+  },
+  {
     path: 'profile',
     title: 'Profile - DBNexus',
     canActivate: [authGuard],

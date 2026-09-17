@@ -3,7 +3,7 @@
   <app-header></app-header>
 
   <!-- Trial Expired Banner -->
-  <div class="trial-expired-banner" *ngIf="(entitlementService.hasUsedTrial && (!auth.getCurrentPlanSlug() || auth.getCurrentPlanSlug() === 'free')) || auth.getCurrentPlanStatus() === 'expired'" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 171, 0, 0.15); border: 1px solid rgba(255, 171, 0, 0.4); color: #e6eef9; padding: 8px 24px; font-size: 14px; position: relative; z-index: 1; border-radius: 6px; margin: 8px 16px;">
+  <div class="trial-expired-banner" *ngIf="(entitlementService.hasUsedTrial && (!auth.getCurrentPlanSlug() || auth.getCurrentPlanSlug() === 'free')) || auth.getCurrentPlanStatus() === 'expired'">
     <div class="banner-content">
       <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
@@ -17,20 +17,28 @@
   </div>
 
   <div id="body" #bodyEl [class.editor-fullscreen]="paneMode === 'editor'"
-    [class.canvas-fullscreen]="paneMode === 'canvas'">
+    [class.canvas-fullscreen]="paneMode === 'canvas'"
+    [class.diff-active]="svc.showDiffChecker()">
 
-    <!-- EDITOR -->
-    <app-editor [style.width.%]="paneMode === 'split' ? svc.editorWidthPct() : 100"
-      [style.display]="paneMode === 'canvas' ? 'none' : 'block'"></app-editor>
+    <!-- NORMAL VIEW: EDITOR + CANVAS + DOCS -->
+    <ng-container *ngIf="!svc.showDiffChecker()">
+      <!-- EDITOR -->
+      <app-editor [style.width.%]="paneMode === 'split' ? svc.editorWidthPct() : 100"
+        [style.display]="paneMode === 'canvas' ? 'none' : 'block'"></app-editor>
 
-    <div id="resizer" [class]="paneMode" (mousedown)="onResizerMouseDown($event)"></div>
+      <div id="resizer" [class]="paneMode" (mousedown)="onResizerMouseDown($event)"></div>
 
-    <!-- CANVAS -->
-    <app-canvas
-      [style.display]="paneMode === 'editor' || (svc.showDocs && paneMode !== 'canvas') ? 'none' : 'block'"></app-canvas>
+      <!-- CANVAS -->
+      <app-canvas
+        [style.display]="paneMode === 'editor' ? 'none' : 'block'"></app-canvas>
 
-    <!-- DOCS PANE -->
-    <app-docs *ngIf="svc.showDocs && paneMode !== 'editor' && paneMode !== 'canvas'"></app-docs>
+      <!-- DOCS PANE (Commented out as requested)
+      <app-docs *ngIf="svc.showDocs && paneMode !== 'editor' && paneMode !== 'canvas'"></app-docs>
+      -->
+    </ng-container>
+
+    <!-- DIFF CHECKER VIEW -->
+    <app-diff-checker *ngIf="svc.showDiffChecker()" class="diff-checker-pane"></app-diff-checker>
   </div>
 
   <!-- Instructions modal -->

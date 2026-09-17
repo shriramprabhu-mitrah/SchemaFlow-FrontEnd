@@ -1,0 +1,284 @@
+<div class="diagram-inspector" [class.light]="svc.theme() === 'light'">
+  <!-- ================= TABLES TAB ================= -->
+  <div *ngIf="activeTab === 'tables'" class="inspector-view tables-view">
+    <!-- Top Filter & Action Bar (Matching ChartDB) -->
+    <div class="inspector-header">
+      <input type="text"
+        [(ngModel)]="tableFilter"
+        placeholder="Filter"
+        class="filter-input" />
+
+    </div>
+
+    <!-- Tables List -->
+    <div class="inspector-scroll-area">
+      <div *ngIf="filteredTables.length === 0" class="inspector-empty">
+        <p>No tables found.</p>
+      </div>
+
+      <div *ngFor="let table of filteredTables; let idx = index"
+        class="table-card"
+        [class.expanded]="isTableExpanded(table.name)"
+        [class.active-menu]="activeMenuTable === table.name || activeFieldMenu?.table === table.name">
+        <!-- Colored Left Accent Stripe -->
+        <div class="table-stripe" [style.background-color]="getTableColor(table, idx)"></div>
+
+        <div class="table-card-inner">
+          <!-- Card Header Row -->
+          <div class="table-card-header" (click)="toggleTableExpand(table.name, $event)">
+            <!-- Chevron Expand/Collapse -->
+            <span class="chevron-icon" [class.open]="isTableExpanded(table.name)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+
+            <!-- Drag Handle Icon (6 dots) -->
+            <span class="drag-handle" title="Drag to reorder">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="9" cy="6" r="2"></circle>
+                <circle cx="15" cy="6" r="2"></circle>
+                <circle cx="9" cy="12" r="2"></circle>
+                <circle cx="15" cy="12" r="2"></circle>
+                <circle cx="9" cy="18" r="2"></circle>
+                <circle cx="15" cy="18" r="2"></circle>
+              </svg>
+            </span>
+
+            <!-- Table Name (or rename input) -->
+            <div class="table-name-wrap">
+              <span *ngIf="editingTableName !== table.name" class="table-title">{{ table.name }}</span>
+              <input *ngIf="editingTableName === table.name"
+                class="table-rename-input"
+                [(ngModel)]="newTableNameVal"
+                (click)="$event.stopPropagation()"
+                (keydown.enter)="finishRenameTable(table.name)"
+                (blur)="finishRenameTable(table.name)"
+                autoFocus />
+            </div>
+
+            <!-- Three Dot Menu (Only Focus on Canvas & Rename Table) -->
+            <div class="menu-container" (click)="$event.stopPropagation()">
+              <button class="icon-btn dot-menu-btn" (click)="toggleTableMenu(table.name, $event)" title="Table options">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="2"></circle>
+                  <circle cx="12" cy="12" r="2"></circle>
+                  <circle cx="12" cy="19" r="2"></circle>
+                </svg>
+              </button>
+
+              <div *ngIf="activeMenuTable === table.name" class="dropdown-menu">
+                <button class="dropdown-item" (click)="focusTable(table.name, $event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                  </svg>
+                  Focus on Canvas
+                </button>
+                <button class="dropdown-item" (click)="startRenameTable(table, $event)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  Rename Table
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Expanded Body -->
+          <div *ngIf="isTableExpanded(table.name)" class="table-card-body">
+            <!-- Fields Section -->
+            <div class="inspector-fields-group">
+              <div class="inspector-fields-header" (click)="toggleFieldsExpand(table.name, $event)">
+                <div class="inspector-fields-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  <span>Fields</span>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  class="inspector-fields-chevron"
+                  [class.closed]="!isFieldsExpanded(table.name)">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </div>
+
+              <!-- Field Rows List -->
+              <div class="field-rows-list" *ngIf="isFieldsExpanded(table.name)">
+                <div *ngFor="let col of table.columns" class="field-row">
+                  <!-- Drag handle -->
+                  <span class="field-drag-handle">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="9" cy="6" r="2"></circle>
+                      <circle cx="15" cy="6" r="2"></circle>
+                      <circle cx="9" cy="12" r="2"></circle>
+                      <circle cx="15" cy="12" r="2"></circle>
+                      <circle cx="9" cy="18" r="2"></circle>
+                      <circle cx="15" cy="18" r="2"></circle>
+                    </svg>
+                  </span>
+
+                  <!-- Field Name Input -->
+                  <input type="text"
+                    class="field-input field-name"
+                    [value]="col.name"
+                    (blur)="onFieldNameBlur(table, col, $event)"
+                    placeholder="Field name" />
+
+                  <!-- Field Type Dropdown -->
+                  <div class="custom-type-dropdown" (click)="$event.stopPropagation()">
+                    <button type="button"
+                      class="custom-type-trigger"
+                      (click)="toggleTypeDropdown(table.name, col.name, $event)"
+                      [class.open]="isTypeDropdownOpen(table.name, col.name)"
+                      [title]="col.type">
+                      <span class="custom-type-text">{{ col.type }}</span>
+                      <svg class="type-chevron-icon" [class.open]="isTypeDropdownOpen(table.name, col.name)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
+                    <div class="custom-type-menu" *ngIf="isTypeDropdownOpen(table.name, col.name)">
+                      <button type="button"
+                        class="custom-type-item"
+                        *ngFor="let t of dataTypes"
+                        [class.selected]="t.toLowerCase() === (col.type || '').toLowerCase()"
+                        (click)="selectFieldType(table, col, t, $event)">
+                        <span class="type-item-label">{{ t }}</span>
+                        <span class="type-item-check" *ngIf="t.toLowerCase() === (col.type || '').toLowerCase()">✓</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Nullable Badge (N) -->
+                  <button class="pill-badge nullable-badge"
+                    [class.active]="!col.notNull"
+                    (click)="toggleNotNull(table, col, $event)"
+                    [title]="col.notNull ? 'Not Null (click to make nullable)' : 'Nullable (click to make not null)'">
+                    N
+                  </button>
+
+                  <!-- Primary Key Badge (Key) -->
+                  <button class="pill-badge pk-badge"
+                    [class.active]="col.pk"
+                    (click)="togglePk(table, col, $event)"
+                    [title]="col.pk ? 'Primary Key' : 'Not Primary Key'">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 2l-2 2m-1.5 1.5L16 7m-1.5 1.5L13 10m-1.5 1.5L10 13l-4 4-2-2-2 2 4 4 2-2 2 2 4-4 1.5-1.5M10 13l3.5-3.5a6 6 0 1 0-8.5 8.5L10 13z"></path>
+                    </svg>
+                  </button>
+
+                  <!-- Field Actions Menu -->
+                  <div class="field-menu-wrap" (click)="$event.stopPropagation()">
+                    <button class="icon-btn field-more-btn" (click)="toggleFieldMenu(table.name, col.name, $event)" title="More options">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="5" cy="12" r="2"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <circle cx="19" cy="12" r="2"></circle>
+                      </svg>
+                    </button>
+
+                    <div *ngIf="activeFieldMenu?.table === table.name && activeFieldMenu?.field === col.name" class="dropdown-menu field-dropdown">
+                      <button class="dropdown-item" (click)="togglePk(table, col, $event)">
+                        {{ col.pk ? 'Remove Primary Key' : 'Set as Primary Key' }}
+                      </button>
+                      <button class="dropdown-item" (click)="toggleNotNull(table, col, $event)">
+                        {{ col.notNull ? 'Make Nullable' : 'Set Not Null' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= REFS TAB ================= -->
+  <div *ngIf="activeTab === 'refs'" class="inspector-view refs-view">
+    <!-- Top Filter & Action Bar (Matching ChartDB) -->
+    <div class="inspector-header">
+      <!-- Clean 3-line list icon on the left -->
+      <svg class="list-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+
+      <input type="text"
+        [(ngModel)]="refFilter"
+        placeholder="Filter"
+        class="filter-input" />
+
+    </div>
+
+    <!-- Relationships Count Subtitle -->
+    <div class="inspector-subtitle">
+      <span>{{ filteredRefs.length }} Relationship{{ filteredRefs.length === 1 ? '' : 's' }}</span>
+    </div>
+
+    <!-- Relationships List -->
+    <div class="inspector-scroll-area">
+      <div *ngIf="filteredRefs.length === 0" class="inspector-empty">
+        <p>No relationships found.</p>
+      </div>
+
+      <div *ngFor="let ref of filteredRefs; let rIdx = index"
+        class="ref-card"
+        [class.expanded]="isRefExpanded(rIdx)">
+        <!-- Card Header: Title and controls in a single clean row -->
+        <div class="ref-card-header" (click)="toggleRefExpand(rIdx, $event)">
+          <!-- Chevron -->
+          <span class="chevron-icon" [class.open]="isRefExpanded(rIdx)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+
+          <!-- Ref Name -->
+          <span class="ref-title">{{ getRefName(ref, rIdx) }}</span>
+
+        </div>
+
+        <!-- Expanded Body (Full width stacked below the header) -->
+        <div *ngIf="isRefExpanded(rIdx)" class="ref-card-body">
+          <!-- Two Column Table Pairing -->
+          <div class="ref-tables-grid">
+            <!-- Primary Table Box -->
+            <div class="ref-endpoint-col">
+              <div class="endpoint-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                  <polyline points="10 17 15 12 10 7"></polyline>
+                  <line x1="15" y1="12" x2="3" y2="12"></line>
+                </svg>
+                <span>Primary Table</span>
+              </div>
+              <div class="endpoint-value">{{ ref.fromTable }}({{ ref.fromCol }})</div>
+            </div>
+
+            <!-- Related Table Box -->
+            <div class="ref-endpoint-col">
+              <div class="endpoint-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="14 7 9 12 14 17"></polyline>
+                  <line x1="9" y1="12" x2="21" y2="12"></line>
+                </svg>
+                <span>Related Table</span>
+              </div>
+              <div class="endpoint-value">{{ ref.toTable }}({{ ref.toCol }})</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

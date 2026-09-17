@@ -56,6 +56,7 @@ export class EntitlementService {
       if (cached && cached.length > 0) {
         this.loadedOrgId = orgId;
         this.entitlementsSubject.next(cached);
+        this.orgEntitlementsSubject.next(cached);
       }
     }
 
@@ -81,7 +82,7 @@ export class EntitlementService {
             this.hasUsedTrial = data.hasUsedTrial;
         }
 
-        return (data?.entitlements || []);
+        return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
       }),
       tap(data => {
         this.loadedOrgId = orgId;

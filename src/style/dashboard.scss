@@ -28,6 +28,11 @@
   overflow: hidden;
 }
 
+html.light-theme #app,
+body.light-theme #app {
+  background: #f8fafc !important;
+}
+
 app-header {
   display: block;
 }
@@ -72,6 +77,25 @@ app-header {
     height: 100%;
     display: block;
   }
+
+  app-diff-checker {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: block;
+    border: none !important;
+    outline: none !important;
+  }
+
+  &.diff-active {
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+}
+
+html.light-theme #body,
+body.light-theme #body {
+  background: #f8fafc !important;
 }
 
 #resizer {
@@ -392,17 +416,45 @@ app-header {
   }
 }
 
+html.light-theme,
 body.light-theme {
   #resizer {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.08);
     &:hover,
     &.active {
-      background: rgba(37, 99, 235, 0.15);
+      background: #3b82f6;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
     }
   }
 
-  .modal-container .modal-body p strong {
-    color: #2563eb;
+  .modal-container {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+    .modal-header {
+      h3 {
+        color: #2563eb;
+      }
+
+      .close-btn {
+        color: #64748b;
+
+        &:hover {
+          color: #0f172a;
+        }
+      }
+    }
+
+    .modal-body {
+      p {
+        color: #334155;
+
+        strong {
+          color: #2563eb;
+        }
+      }
+    }
   }
  
   .signbtn {

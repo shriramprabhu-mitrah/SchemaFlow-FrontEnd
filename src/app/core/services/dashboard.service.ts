@@ -510,6 +510,32 @@ export class DashboardService {
   }
 
   showDocs = false;
+  showDiffChecker = signal<boolean>(false);
+  diffCheckerData: { leftText: string; rightText: string; viewMode: 'edit' | 'diff' } = {
+    leftText: '',
+    rightText: '',
+    viewMode: 'edit'
+  };
+  diffCheckerData$ = new Subject<{ leftText: string; rightText: string; viewMode: 'edit' | 'diff' }>();
+
+  openDiffChecker(leftText: string = '', rightText: string = '', mode: 'edit' | 'diff' = 'edit'): void {
+    this.diffCheckerData = { leftText, rightText, viewMode: mode };
+    this.showDocs = false;
+    this.showDiffChecker.set(true);
+    this.diffCheckerData$.next(this.diffCheckerData);
+  }
+
+  closeDiffChecker(): void {
+    this.showDiffChecker.set(false);
+  }
+
+  toggleDiffChecker(): void {
+    if (this.showDiffChecker()) {
+      this.closeDiffChecker();
+    } else {
+      this.openDiffChecker();
+    }
+  }
   isReadOnly = false;
   publicToken: string = '';
   isDiagramPublic: boolean = true;
@@ -541,6 +567,22 @@ export class DashboardService {
 
   showUpgradeModal(featureKey: string = ''): void {
     this.showUpgradeModal$.next(featureKey);
+  }
+
+  openShareModal$ = new Subject<void>();
+
+  openShareModal(): void {
+    if (this.showVersionHistory()) {
+      this.closeVersionHistory$.next();
+      this.showVersionHistory.set(false);
+    }
+    this.openShareModal$.next();
+  }
+
+  openImportModal$ = new Subject<string>();
+
+  openImportModal(dialect: string): void {
+    this.openImportModal$.next(dialect);
   }
 
   formatVersionDate(dateStr: string | Date): string {
@@ -579,7 +621,12 @@ export class DashboardService {
   readonly activeWorkspaceId = signal<number | null>(null);
   readonly _activeWorkspaceName = signal<string>('Personal');
   readonly paneMode = signal<'split' | 'editor' | 'canvas'>('split');
+  readonly sidebarCollapsed = signal<boolean>(false);
   workspacesFetched = false;
+
+  toggleActivitySidebar(): void {
+    this.sidebarCollapsed.set(!this.sidebarCollapsed());
+  }
 
   get activeWorkspaceName(): string {
     return this._activeWorkspaceName();
@@ -681,7 +728,9 @@ export class DashboardService {
   private originalTableColorsMap = '{}';
 
   readonly unsavedModalVisible = signal(false);
+  readonly shareModalVisible = signal(false);
   readonly authModalVisible = signal(false);
+  readonly sidebarInspectorTab = signal<'tables' | 'refs' | null>(null);
   readonly showDiscardButton = signal(true);
   readonly totalDiagrams = signal<number>(0);
   private pendingAction: (() => void) | null = null;
@@ -768,15 +817,30 @@ export class DashboardService {
 
 
 
-  readonly theme = signal<'dark' | 'light'>('light');
+  private getInitialTheme(): 'dark' | 'light' {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark' || saved === 'light') {
+          return saved;
+        }
+      } catch (_) {}
+    }
+    return 'light';
+  }
+
+  readonly theme = signal<'dark' | 'light'>(this.getInitialTheme());
 
   toggleTheme(): void {
     const newTheme = this.theme() === 'dark' ? 'light' : 'dark';
-    this.theme.set(newTheme);
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('theme', newTheme);
+      try {
+        localStorage.setItem('theme', newTheme);
+      } catch (_) {}
       this.applyTheme(newTheme);
     }
+    this.theme.set(newTheme);
+    this.forceRedraw$.next();
   }
 
   applyTheme(theme: 'dark' | 'light'): void {
@@ -790,6 +854,18 @@ export class DashboardService {
       document.documentElement.classList.remove('light-theme');
       document.documentElement.setAttribute('data-theme', 'dark');
     }
+    this.forceRedraw$.next();
+  }
+
+  syncThemeFromStorage(): void {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      const current: 'dark' | 'light' = (saved === 'dark' || saved === 'light') ? saved : 'light';
+      if (this.theme() !== current) {
+        this.theme.set(current);
+      }
+      this.applyTheme(current);
+    }
   }
 
   constructor(
@@ -801,15 +877,7 @@ export class DashboardService {
   ) {
     if (typeof window !== 'undefined') {
       (window as any)._dashboardService = this;
-    }
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as 'dark' | 'light';
-      if (savedTheme) {
-        this.theme.set(savedTheme);
-        this.applyTheme(savedTheme);
-      } else {
-        this.applyTheme('light');
-      }
+      this.applyTheme(this.theme());
     }
     this.updateGutter();
     this.loadPersistedState();
@@ -926,7 +994,17 @@ export class DashboardService {
       this.groupColors = JSON.parse(localStorage.getItem('group_colors') || '{}');
     }
     if (localStorage.getItem('table_colors_map')) {
-      this.tableColorsMap = JSON.parse(localStorage.getItem('table_colors_map') || '{}');
+      try {
+        this.tableColorsMap = JSON.parse(localStorage.getItem('table_colors_map') || '{}');
+        // Clean up any stale auto-generated table names that shouldn't have persistent custom colors
+        Object.keys(this.tableColorsMap).forEach(k => {
+          if (/^table_\d+$/i.test(k)) {
+            delete this.tableColorsMap[k];
+          }
+        });
+      } catch (e) {
+        this.tableColorsMap = {};
+      }
     }
     if (localStorage.getItem('collapsed_groups')) {
       try {
@@ -1662,6 +1740,14 @@ export class DashboardService {
         delete this.tablePositions[name];
       }
     });
+    Object.keys(this.tableColorsMap).forEach((name) => {
+      if (!activeNames.has(name)) {
+        delete this.tableColorsMap[name];
+      }
+    });
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
 
     const groups = parsed.groups || [];
 
@@ -2088,6 +2174,10 @@ export class DashboardService {
       .replace(/\n{3,}/g, '\n\n');
 
     delete this.tablePositions[tableName];
+    delete this.tableColorsMap[tableName];
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
   }
   updateTableInCode(oldName: string, newName: string, columns: Column[]): void {
     const tableRe = new RegExp(`Table\\s+${oldName}\\s*\\{[\\s\\S]*?\\n\\}`);
@@ -2529,6 +2619,10 @@ export class DashboardService {
         localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
       }
     }
+    delete this.tableColorsMap[name];
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
 
     this.updateGutter();
     this.parseAndLayout();
@@ -2536,6 +2630,10 @@ export class DashboardService {
 
   addTableAt(x: number, y: number): void {
     const tableName = this.generateNextTableName();
+    delete this.tableColorsMap[tableName];
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
 
     const newTable: TableDef = {
       name: tableName,
@@ -2546,7 +2644,8 @@ export class DashboardService {
       columns: [
         { name: 'id', type: 'int', pk: true, notNull: false, unique: false, increment: false, fk: false, default: false, check: false }
       ],
-      colY: {}
+      colY: {},
+      color: undefined
     };
 
     newTable.columns.forEach((col, index) => {
@@ -3628,6 +3727,10 @@ export class DashboardService {
           if (currentWsId != null) {
             this.diagramWorkspaceType.set('Team');
           }
+          const diag = res?.data ?? res;
+          if (diag && (diag.publictoken || diag.publicToken || diag.public_token)) {
+            this.publicToken = diag.publictoken || diag.publicToken || diag.public_token;
+          }
           this.updateOriginalState();
           this.extractIdsFromResponse(res);
           this.totalDiagrams.update(n => n + 1);
@@ -3809,8 +3912,12 @@ export class DashboardService {
     this.groupIds = {};
     this.noteIds = {};
     this.tableColorsMap = {};
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.removeItem('table_colors_map');
+    }
     this.diagramName = '';
     this.showDocs = false;
+    this.showDiffChecker.set(false);
     this.showCanvasPlaceholder = false;
     this.isAllFields = true;
     this.isKeyOnly = false;

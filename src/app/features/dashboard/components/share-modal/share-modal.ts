@@ -66,11 +66,13 @@ export class ShareModalComponent implements OnInit {
       this.isPublic = this.svc.isDiagramPublic;
       this.password = this.svc.diagramPassword;
       this.showPassword = false;
-      /*
-      if (!this.isPublic && this.activeTab === 'embedding') {
-        this.activeTab = 'sharing';
+
+      if ((!this.svc.publicToken || this.svc.publicToken === 'TOKEN_PENDING') && this.diagramId) {
+        const d = this.svc.diagrams().find(item => item.id === this.diagramId);
+        if (d && ((d as any).publictoken || (d as any).publicToken)) {
+          this.svc.publicToken = (d as any).publictoken || (d as any).publicToken;
+        }
       }
-      */
     }
   }
 
