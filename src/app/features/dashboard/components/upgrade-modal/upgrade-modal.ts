@@ -298,6 +298,31 @@ export class UpgradeModalComponent implements OnInit {
     return !!(this.currentPlanSlug && this.currentPlanSlug === plan.slug);
   }
 
+  isTrialActive(): boolean {
+    return this.isLoggedIn && this.currentPlanStatus === 'trial';
+  }
+
+  isTrialExpired(): boolean {
+    if (!this.isLoggedIn) return false;
+    // The backend returns them to the free plan if their trial expires
+    return (this.hasUsedTrial && (this.currentPlanSlug === 'free' || !this.currentPlanSlug)) || this.currentPlanStatus === 'expired';
+  }
+
+  shouldShowNoCardRequired(plan: any): boolean {
+    if (!plan || (plan.slug !== 'premium' && plan.slug !== 'team')) {
+      return false;
+    }
+    // Don't show when the free trial is active or expired
+    if (this.isTrialActive() || this.isTrialExpired()) {
+      return false;
+    }
+    // Don't show if user already has an active paid plan
+    if (this.isLoggedIn && this.currentPlanSlug && this.currentPlanSlug !== 'free') {
+      return false;
+    }
+    return true;
+  }
+
   isEligibleForTrial(): boolean {
     if (!this.isLoggedIn) return true;
     if (this.hasUsedTrial) return false;

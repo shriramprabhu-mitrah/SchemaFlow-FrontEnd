@@ -192,6 +192,9 @@
             [disabled]="isCtaDisabled(plan)" (onClick)="selectPlan(plan)">
             {{ getCtaLabel(plan) }}
           </app-button>
+          <div class="no-card-required" *ngIf="shouldShowNoCardRequired(plan)">
+            No credit card required
+          </div>
         </div>
 
         <div class="card-features">
@@ -367,7 +370,8 @@
           <app-icons name="db-diagram-logo" size="32" color="#3ec5c1"></app-icons>
           <span class="logo-text">DB Nexus</span>
         </div>
-        <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers. Built for the modern web.</p>
+        <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers. Built for the
+          modern web.</p>
       </div>
 
       <div class="footer-links-container">
