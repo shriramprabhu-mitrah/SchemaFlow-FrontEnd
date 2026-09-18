@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef, HostListener, NgZone } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener, NgZone, signal, ApplicationRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
@@ -18,12 +18,19 @@ import { Icons } from '../../../core/component/icons/icons';
 export class PlanManagementComponent implements OnInit {
   private admin = inject(AdminService);
   private cdr = inject(ChangeDetectorRef);
+  private appRef = inject(ApplicationRef);
   private ngZone = inject(NgZone);
   public dashService = inject(DashboardService);
   private entitlementService = inject(EntitlementService);
-  savingEntitlements = false;
 
-  plans: any[] = [];
+  private _savingEntitlements = signal(false);
+  get savingEntitlements(): boolean { return this._savingEntitlements(); }
+  set savingEntitlements(v: boolean) { this._savingEntitlements.set(v); }
+
+  private _plans = signal<any[]>([]);
+  get plans(): any[] { return this._plans(); }
+  set plans(v: any[]) { this._plans.set(v); }
+
   features: any[] = [];
   rawPlanEntitlements: any[] = []; // Stores all entitlements for the selected plan
   search = '';
@@ -31,10 +38,19 @@ export class PlanManagementComponent implements OnInit {
   featureSortColumn = 'name';
   featureSortAsc = true;
 
-  featurePage = 1;
+  private _featurePage = signal(1);
+  get featurePage(): number { return this._featurePage(); }
+  set featurePage(v: number) { this._featurePage.set(v); }
+
   featureLimit = 10;
-  totalFeatureCount = 0;
+
+  private _totalFeatureCount = signal(0);
+  get totalFeatureCount(): number { return this._totalFeatureCount(); }
+  set totalFeatureCount(v: number) { this._totalFeatureCount.set(v); }
+
   showFeatureLimitDropdown = false;
+
+  editedEntitlementsMap = new Map<number, any>();
 
   page = 1;
   limit = 10;
@@ -49,14 +65,44 @@ export class PlanManagementComponent implements OnInit {
 
   sortColumn = 'name';
   sortAsc = true;
-  loading = true;
-  loadingEntitlements = false;
+
+  private _loading = signal(true);
+  get loading(): boolean { return this._loading(); }
+  set loading(v: boolean) { this._loading.set(v); }
+
+  private _loadingEntitlements = signal(false);
+  get loadingEntitlements(): boolean { return this._loadingEntitlements(); }
+  set loadingEntitlements(v: boolean) { this._loadingEntitlements.set(v); }
+
   showModal = false;
-  showEntitlementsView = false;
+
+  private _showEntitlementsView = signal(false);
+  get showEntitlementsView(): boolean { return this._showEntitlementsView(); }
+  set showEntitlementsView(v: boolean) { this._showEntitlementsView.set(v); }
+
   editMode = false;
   selectedPlan: any = {};
-  planEntitlements: any[] = [];
+
+  private _planEntitlements = signal<any[]>([]);
+  get planEntitlements(): any[] { return this._planEntitlements(); }
+  set planEntitlements(v: any[]) { this._planEntitlements.set(v); }
+
   form: any = {};
+
+  refreshView(): void {
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+    try {
+      this.appRef.tick();
+    } catch {}
+    setTimeout(() => {
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+      try {
+        this.appRef.tick();
+      } catch {}
+    }, 0);
+  }
 
   /** Filter tab on the plans list: 'all' | 'individual' | 'organization' */
   planTypeFilter: 'all' | 'individual' | 'organization' = 'all';
@@ -103,19 +149,79 @@ export class PlanManagementComponent implements OnInit {
     return this.planEntitlements;
   }
 
-  goToFeaturePage(p: number): void {
-    if (p >= 1 && p <= this.totalFeaturePagesCount && this.featurePage !== p) {
-      this.featurePage = p;
-      this.loadFeatures();
+  isEntitlementChanged(ent: any): boolean {
+    if (!ent || !ent.feature_id) return false;
+    const entId = Number(ent.feature_id);
+    const rawList = Array.isArray(this.rawPlanEntitlements) ? this.rawPlanEntitlements : [];
+    const raw = rawList.find((r: any) => r && Number(r.feature_id) === entId);
+    const rawVal = raw ? String(raw.value ?? 'false') : 'false';
+    const curVal = String(ent.value ?? 'false');
+
+    const rawLimit = (raw?.limit_value === null || raw?.limit_value === undefined || raw?.limit_value === '') ? null : Number(raw.limit_value);
+    const curLimit = (ent.limit_value === null || ent.limit_value === undefined || ent.limit_value === '') ? null : Number(ent.limit_value);
+
+    const rawText = (raw?.display_text || '').trim();
+    const cleanRawText = (rawText === '—' || rawText === '-' || rawText === 'null') ? '' : rawText;
+    const curText = (ent.display_text || '').trim();
+    const cleanCurText = (curText === '—' || curText === '-' || curText === 'null') ? '' : curText;
+
+    return (rawVal !== curVal) || (rawLimit !== curLimit) || (cleanRawText !== cleanCurText);
+  }
+
+  syncCurrentPageToEdits(): void {
+    if (!this.planEntitlements || !Array.isArray(this.planEntitlements) || this.planEntitlements.length === 0) return;
+    for (const ent of this.planEntitlements) {
+      if (!ent || !ent.feature_id) continue;
+      const fId = Number(ent.feature_id);
+      if (this.isEntitlementChanged(ent)) {
+        const curLimit = (ent.limit_value === null || ent.limit_value === undefined || ent.limit_value === '') ? null : Number(ent.limit_value);
+        const curText = (ent.display_text || '').trim();
+        const cleanCurText = (curText === '—' || curText === '-' || curText === 'null') ? '' : curText;
+        this.editedEntitlementsMap.set(fId, {
+          feature_id: fId,
+          feature_key: ent.feature_key,
+          name: ent.name,
+          value_type: ent.value_type,
+          value: String(ent.value ?? 'false'),
+          limit_value: isNaN(curLimit as number) ? null : curLimit,
+          display_text: cleanCurText
+        });
+      } else {
+        this.editedEntitlementsMap.delete(fId);
+      }
     }
   }
 
+  onEntitlementFieldChange(ent?: any): void {
+    this.syncCurrentPageToEdits();
+    this.cdr.detectChanges();
+  }
+
+  setEntitlementValue(ent: any, val: string): void {
+    if (!ent) return;
+    ent.value = val;
+    this.onEntitlementFieldChange(ent);
+  }
+
+  goToFeaturePage(p: number): void {
+    if (p < 1 || p > this.totalFeaturePagesCount || this.featurePage === p) return;
+
+    // Sync any edits made on the current page into the persistent in-memory draft map
+    this.syncCurrentPageToEdits();
+
+    // Seamlessly navigate to target page - no modal popup (single save across all pages)
+    this.featurePage = p;
+    this.loadFeatures();
+  }
+
   onFeatureLimitChange(): void {
+    this.syncCurrentPageToEdits();
     this.featurePage = 1;
     this.loadFeatures();
   }
 
   sortByFeature(col: string): void {
+    this.syncCurrentPageToEdits();
     if (this.featureSortColumn === col) {
       this.featureSortAsc = !this.featureSortAsc;
     } else {
@@ -234,68 +340,94 @@ export class PlanManagementComponent implements OnInit {
   }
 
   onFeatureSearch(): void {
+    this.syncCurrentPageToEdits();
     this.featureSearchSubject.next(this.featureSearch);
   }
 
   loadPlans(): void {
     this.loading = true;
-    this.cdr.detectChanges();
+    this.refreshView();
     this.admin.getPlans(this.page, this.limit, this.search, this.sortColumn, this.sortAsc).subscribe({
       next: (res) => {
-        this.ngZone.run(() => {
-          this.plans = res?.data || [];
-          this._serverTotalCount = res?.meta?.total || this.plans.length;
-          this.loading = false;
-          this.cdr.detectChanges();
-        });
+        this.plans = res?.data || [];
+        this._serverTotalCount = res?.meta?.total || this.plans.length;
+        this.loading = false;
+        this.refreshView();
       },
       error: () => {
-        this.ngZone.run(() => {
-          this.loading = false;
-          this.cdr.detectChanges();
-        });
+        this.loading = false;
+        this.refreshView();
       }
     });
   }
 
   loadFeatures(): void {
     this.loadingEntitlements = true;
-    this.cdr.detectChanges();
-    this.admin.getFeatures(this.featurePage, this.featureLimit, this.featureSearch, this.featureSortColumn, this.featureSortAsc).subscribe({
-      next: (res) => {
-        this.ngZone.run(() => {
+    this.refreshView();
+    this.admin.getFeatures(this.featurePage, this.featureLimit, this.featureSearch, this.featureSortColumn, this.featureSortAsc)
+      .pipe(catchError((err) => {
+        console.error('Error fetching features:', err);
+        return of({ data: [], meta: { total: 0 } });
+      }))
+      .subscribe({
+        next: (res) => {
           this.features = res?.data || [];
           this.totalFeatureCount = res?.meta?.total || 0;
-          this.mapFeaturesToEntitlements();
+          try {
+            this.mapFeaturesToEntitlements();
+          } catch (err) {
+            console.error('Error in mapFeaturesToEntitlements:', err);
+          } finally {
+            this.loadingEntitlements = false;
+            this.refreshView();
+          }
+        },
+        error: () => {
           this.loadingEntitlements = false;
-          this.cdr.detectChanges();
-        });
-      },
-      error: () => {
-        this.ngZone.run(() => {
-          this.loadingEntitlements = false;
-          this.cdr.detectChanges();
-        });
-      }
-    });
+          this.refreshView();
+        }
+      });
   }
 
   mapFeaturesToEntitlements(): void {
+    if (!Array.isArray(this.features)) {
+      this.planEntitlements = [];
+      return;
+    }
+    const rawList = Array.isArray(this.rawPlanEntitlements) ? this.rawPlanEntitlements : [];
+
     this.planEntitlements = this.features.map(f => {
-      const existing = this.rawPlanEntitlements.find((e: any) => e.feature_id === f.feature_id);
+      if (!f) return null;
+      const fId = Number(f.feature_id);
+      const edited = this.editedEntitlementsMap.get(fId);
+      const existing = rawList.find((e: any) => e && Number(e.feature_id) === fId);
       const rawText = (existing?.display_text || '').trim();
       const cleanText = (rawText === '—' || rawText === '-' || rawText === 'null') ? '' : rawText;
 
+      if (edited) {
+        return {
+          feature_id: fId,
+          feature_key: f.feature_key,
+          name: f.name,
+          value_type: f.value_type,
+          value: edited.value,
+          limit_value: edited.limit_value,
+          display_text: edited.display_text
+        };
+      }
+
+      const exLimit = (existing?.limit_value === null || existing?.limit_value === undefined || existing?.limit_value === '') ? null : Number(existing.limit_value);
+
       return {
-        feature_id: f.feature_id,
+        feature_id: fId,
         feature_key: f.feature_key,
         name: f.name,
         value_type: f.value_type,
         value: existing?.value || 'false',
-        limit_value: existing?.limit_value || null,
+        limit_value: isNaN(exLimit as number) ? null : exLimit,
         display_text: cleanText
       };
-    });
+    }).filter(item => item !== null);
   }
 
   formErrors = { name: '', slug: '' };
@@ -372,17 +504,13 @@ export class PlanManagementComponent implements OnInit {
 
     obs.subscribe({
       next: () => {
-        this.ngZone.run(() => {
-          this.dashService.showToast(this.editMode ? 'Plan updated successfully!' : 'Plan created successfully!', 3500, 'success');
-          this.closeModal();
-          this.loadPlans();
-        });
+        this.dashService.showToast(this.editMode ? 'Plan updated successfully!' : 'Plan created successfully!', 3500, 'success');
+        this.closeModal();
+        this.loadPlans();
       },
       error: (err: any) => {
-        this.ngZone.run(() => {
-          this.dashService.showToast(err?.error?.message || 'Error saving plan', 4000, 'error');
-          this.cdr.detectChanges();
-        });
+        this.dashService.showToast(err?.error?.message || 'Error saving plan', 4000, 'error');
+        this.refreshView();
       }
     });
   }
@@ -415,16 +543,12 @@ export class PlanManagementComponent implements OnInit {
 
     this.admin.deletePlan(id).subscribe({
       next: () => {
-        this.ngZone.run(() => {
-          this.dashService.showToast('Plan deactivated successfully!', 3500, 'success');
-          this.loadPlans();
-        });
+        this.dashService.showToast('Plan deactivated successfully!', 3500, 'success');
+        this.loadPlans();
       },
       error: (err: any) => {
-        this.ngZone.run(() => {
-          this.dashService.showToast(err?.error?.message || 'Error deactivating plan', 4000, 'error');
-          this.cdr.detectChanges();
-        });
+        this.dashService.showToast(err?.error?.message || 'Error deactivating plan', 4000, 'error');
+        this.refreshView();
       }
     });
   }
@@ -437,27 +561,35 @@ export class PlanManagementComponent implements OnInit {
     this.featureSortColumn = 'name';
     this.featureSortAsc = true;
     this.featurePage = 1;
-    this.cdr.detectChanges();
+    this.editedEntitlementsMap.clear();
+    this.refreshView();
 
     forkJoin({
-      entitlements: this.admin.getPlanEntitlements(plan.plan_id).pipe(catchError(() => of({ data: [] }))),
-      features: this.admin.getFeatures(this.featurePage, this.featureLimit, this.featureSearch, this.featureSortColumn, this.featureSortAsc).pipe(catchError(() => of({ data: [], meta: { total: 0 } })))
+      entitlements: this.admin.getPlanEntitlements(plan.plan_id).pipe(catchError((err) => {
+        console.error('Error fetching plan entitlements:', err);
+        return of({ data: [] });
+      })),
+      features: this.admin.getFeatures(this.featurePage, this.featureLimit, this.featureSearch, this.featureSortColumn, this.featureSortAsc).pipe(catchError((err) => {
+        console.error('Error fetching features:', err);
+        return of({ data: [], meta: { total: 0 } });
+      }))
     }).subscribe({
       next: (res) => {
-        this.ngZone.run(() => {
-          this.rawPlanEntitlements = res.entitlements?.data || [];
-          this.features = res.features?.data || [];
-          this.totalFeatureCount = res.features?.meta?.total || 0;
+        this.rawPlanEntitlements = res.entitlements?.data || [];
+        this.features = res.features?.data || [];
+        this.totalFeatureCount = res.features?.meta?.total || 0;
+        try {
           this.mapFeaturesToEntitlements();
+        } catch (err) {
+          console.error('Error in mapFeaturesToEntitlements:', err);
+        } finally {
           this.loadingEntitlements = false;
-          this.cdr.detectChanges();
-        });
+          this.refreshView();
+        }
       },
       error: () => {
-        this.ngZone.run(() => {
-          this.loadingEntitlements = false;
-          this.cdr.detectChanges();
-        });
+        this.loadingEntitlements = false;
+        this.refreshView();
       }
     });
   }
@@ -465,47 +597,86 @@ export class PlanManagementComponent implements OnInit {
   closeEntitlementsView(): void {
     this.showEntitlementsView = false;
     this.selectedPlan = {};
-    this.cdr.detectChanges();
+    this.editedEntitlementsMap.clear();
+    this.refreshView();
   }
 
-  saveEntitlements(): void {
+  saveEntitlements(callback?: () => void): void {
     if (this.savingEntitlements) return;
+    this.syncCurrentPageToEdits();
     this.savingEntitlements = true;
     this.cdr.detectChanges();
 
-    const entitlements = this.planEntitlements.map(e => {
+    const entitlementsMap = new Map<number, any>();
+
+    // 1. Existing rawPlanEntitlements
+    if (Array.isArray(this.rawPlanEntitlements)) {
+      for (const r of this.rawPlanEntitlements) {
+        if (!r || !r.feature_id) continue;
+        const dt = (r.display_text || '').trim();
+        entitlementsMap.set(Number(r.feature_id), {
+          feature_id: Number(r.feature_id),
+          value: String(r.value ?? 'false'),
+          limit_value: (r.limit_value === null || r.limit_value === undefined || r.limit_value === '') ? null : (isNaN(Number(r.limit_value)) ? null : Number(r.limit_value)),
+          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+        });
+      }
+    }
+
+    // 2. Overlay all items currently displayed on this page
+    if (Array.isArray(this.planEntitlements)) {
+      for (const e of this.planEntitlements) {
+        if (!e || !e.feature_id) continue;
+        const dt = (e.display_text || '').trim();
+        entitlementsMap.set(Number(e.feature_id), {
+          feature_id: Number(e.feature_id),
+          value: String(e.value ?? 'false'),
+          limit_value: (e.limit_value === null || e.limit_value === undefined || e.limit_value === '') ? null : (isNaN(Number(e.limit_value)) ? null : Number(e.limit_value)),
+          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+        });
+      }
+    }
+
+    // 3. Overlay any edited entitlements from other pages
+    for (const [id, e] of this.editedEntitlementsMap.entries()) {
+      if (!id || !e) continue;
       const dt = (e.display_text || '').trim();
-      return {
-        feature_id: e.feature_id,
-        value: e.value,
-        limit_value: e.limit_value,
+      entitlementsMap.set(Number(id), {
+        feature_id: Number(id),
+        value: String(e.value ?? 'false'),
+        limit_value: (e.limit_value === null || e.limit_value === undefined || e.limit_value === '') ? null : (isNaN(Number(e.limit_value)) ? null : Number(e.limit_value)),
         display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
-      };
-    });
+      });
+    }
+
+    const entitlements = Array.from(entitlementsMap.values());
+
     this.admin.updatePlanEntitlements(this.selectedPlan.plan_id, entitlements).subscribe({
       next: () => {
-        this.ngZone.run(() => {
-          this.savingEntitlements = false;
+        this.savingEntitlements = false;
+        if (Array.isArray(this.rawPlanEntitlements)) {
           entitlements.forEach(saved => {
-            const idx = this.rawPlanEntitlements.findIndex(r => r.feature_id === saved.feature_id);
+            const idx = this.rawPlanEntitlements.findIndex(r => r && r.feature_id === saved.feature_id);
             if (idx >= 0) {
               this.rawPlanEntitlements[idx] = { ...this.rawPlanEntitlements[idx], ...saved };
             } else {
               this.rawPlanEntitlements.push(saved);
             }
           });
-          this.dashService.showToast('Plan entitlements saved successfully!', 3500, 'success');
-          this.cdr.detectChanges();
-        });
-        this.entitlementService.loadPlans(true).subscribe();
-        this.entitlementService.loadEntitlements(true).subscribe();
+        }
+        this.editedEntitlementsMap.clear();
+        this.dashService.showToast('Plan entitlements saved successfully!', 3500, 'success');
+        this.refreshView();
+        if (callback) {
+          callback();
+        }
+        this.entitlementService.loadPlans(true).pipe(catchError(() => of([]))).subscribe();
+        this.entitlementService.loadEntitlements(true).pipe(catchError(() => of([]))).subscribe();
       },
       error: (err: any) => {
-        this.ngZone.run(() => {
-          this.savingEntitlements = false;
-          this.dashService.showToast(err?.error?.message || 'Error saving entitlements', 4000, 'error');
-          this.cdr.detectChanges();
-        });
+        this.savingEntitlements = false;
+        this.dashService.showToast(err?.error?.message || 'Error saving entitlements', 4000, 'error');
+        this.refreshView();
       }
     });
   }

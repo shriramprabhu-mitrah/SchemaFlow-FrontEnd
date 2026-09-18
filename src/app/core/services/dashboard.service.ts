@@ -536,7 +536,13 @@ export class DashboardService {
       this.openDiffChecker();
     }
   }
-  isReadOnly = false;
+  private _isReadOnly = signal(false);
+  get isReadOnly(): boolean {
+    return this._isReadOnly();
+  }
+  set isReadOnly(val: boolean) {
+    this._isReadOnly.set(val);
+  }
   publicToken: string = '';
   isDiagramPublic: boolean = true;
   isPublicViewer: boolean = false;
@@ -752,9 +758,14 @@ export class DashboardService {
   /** Signal wrapper so Angular effects can track changes */
   readonly hiddenTables = signal<Set<string>>(this._hiddenTables);
 
+  onDiagramViewsToggled?: (isOpen: boolean) => void;
+
   toggleDiagramViews(focusSearch: boolean = false): void {
     this.showDiagramViews = !this.showDiagramViews;
     this.focusDiagramViewsSearch = this.showDiagramViews && focusSearch;
+    if (this.onDiagramViewsToggled) {
+      this.onDiagramViewsToggled(this.showDiagramViews);
+    }
   }
 
   toggleTableVisibility(tableName: string): void {
@@ -882,6 +893,11 @@ export class DashboardService {
     this.updateGutter();
     this.loadPersistedState();
     this.updateOriginalState();
+
+    // Re-evaluate DBML-derived canvas groups & notes whenever user entitlements change
+    this.entitlementService.entitlements$.subscribe(() => {
+      this.parseAndLayout();
+    });
 
     // Subscribe to local code changes for instant real-time collab emission
     this.code$.pipe(debounceTime(300)).subscribe(() => {
@@ -1683,7 +1699,12 @@ export class DashboardService {
     const parsed = this.parseDBML(this.code);
 
     // --- Sync Note blocks from DBML into svc.notes (editor → canvas) ---
-    if (!this._syncingNotesToCode) {
+    if (!this.entitlementService.canUseFeature('diagram_notes')) {
+      if (this.notes.length > 0) {
+        this.notes = [];
+        setTimeout(() => this.forceRedraw$.next(), 0);
+      }
+    } else if (!this._syncingNotesToCode) {
       const parsedNotes = parsed.notes ?? [];
       const parsedNames = new Set(parsedNotes.map((n: { name: string }) => n.name));
 
@@ -1749,7 +1770,8 @@ export class DashboardService {
       localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
     }
 
-    const groups = parsed.groups || [];
+    const canUseGroups = this.entitlementService.canUseFeature('table_group');
+    const groups = canUseGroups ? (parsed.groups || []) : [];
 
     // Automatically position newly added/chosen tables inside the group's existing visual bounds
     groups.forEach((g) => {
@@ -2009,12 +2031,12 @@ export class DashboardService {
     this.tables.forEach((t) => {
       t.columns.forEach((c) => {
         const refInfo = fkMap.get(`${t.name}.${c.name}`);
-        
+
         // Also ensure any column involved in a relation is considered a foreign key for visibility purposes
         const isSource = parsed.refs.some(r => r.fromTable === t.name && r.fromCol === c.name);
-        
+
         c.fk = !!refInfo || isSource;
-        
+
         if (refInfo) {
           c.fkTable = refInfo.targetTable;
           c.fkCol = refInfo.targetCol;
@@ -2026,7 +2048,7 @@ export class DashboardService {
           c.fkTable = undefined;
           c.fkCol = undefined;
         }
-        
+
         // Track if it's a target so we can include it in Keys Only view even if not a PK/FK
         (c as any).isRelTarget = parsed.refs.some(r => r.toTable === t.name && r.toCol === c.name);
       });
@@ -2057,6 +2079,7 @@ export class DashboardService {
   /* ============ ACTIONS ============ */
 
   addColumnInCode(tableName: string): void {
+    if (this.isReadOnly) return;
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const re = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?)(\\r?\\n?\\s*\\})`, 'i');
     if (!re.test(this.code)) return;
@@ -2077,6 +2100,7 @@ export class DashboardService {
   }
 
   renameColumnInCode(tableName: string, oldColName: string, newColName: string): void {
+    if (this.isReadOnly) return;
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const tableRe = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
     const match = this.code.match(tableRe);
@@ -2088,6 +2112,7 @@ export class DashboardService {
   }
 
   deleteColumnInCode(tableName: string, colName: string): void {
+    if (this.isReadOnly) return;
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const tableRe = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
     const match = this.code.match(tableRe);
@@ -2145,6 +2170,7 @@ export class DashboardService {
   }
 
   renameTableInCode(oldName: string, newName: string): void {
+    if (this.isReadOnly) return;
     const headerRe = new RegExp(`(Table\\s+)${oldName}(\\s*\\{)`);
     this.code = this.code.replace(headerRe, `$1${newName}$2`);
 
@@ -2161,6 +2187,7 @@ export class DashboardService {
   }
 
   deleteTableInCode(tableName: string): void {
+    if (this.isReadOnly) return;
     const tableRe = new RegExp(`Table\\s+${tableName}\\s*\\{[\\s\\S]*?\\n\\}\\n?`);
     this.code = this.code.replace(tableRe, '');
 
@@ -2293,6 +2320,7 @@ export class DashboardService {
   }
 
   deleteConnectionInCode(ref: RefDef): boolean {
+    if (this.isReadOnly) return false;
     const esc = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const fTab = esc(ref.fromTable);
     const fCol = esc(ref.fromCol);
@@ -2466,6 +2494,7 @@ export class DashboardService {
   }
 
   updateTableGroupInCode(oldName: string, newName: string, tableNames: string[]): void {
+    if (this.isReadOnly) return;
     const escapedGroupName = oldName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const groupRe = new RegExp(`TableGroup\\s+["']?(${escapedGroupName})["']?\\s*(?:\\[color:\\s*([^\\]]+)\\])?\\s*\\{([\\s\\S]*?)\\}`, 'i');
     let match = groupRe.exec(this.code);
@@ -2519,6 +2548,7 @@ export class DashboardService {
   }
 
   deleteTableGroupInCode(groupName: string): void {
+    if (this.isReadOnly) return;
     const escapedGroupName = groupName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const groupRe = new RegExp(`TableGroup\\s+["']?(${escapedGroupName})["']?\\s*(?:\\[color:\\s*([^\\]]+)\\])?\\s*\\{([\\s\\S]*?)\\}`, 'i');
     const match = groupRe.exec(this.code);
@@ -2576,6 +2606,7 @@ export class DashboardService {
   }
 
   insertNewTableInCode(name: string, columns: Column[], x?: number, y?: number): void {
+    if (this.isReadOnly) return;
     const attributes = (column: Column): string => {
       const values: string[] = [];
       if (column.pk) values.push('pk');
@@ -2629,6 +2660,7 @@ export class DashboardService {
   }
 
   addTableAt(x: number, y: number): void {
+    if (this.isReadOnly) return;
     const tableName = this.generateNextTableName();
     delete this.tableColorsMap[tableName];
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -2668,12 +2700,14 @@ export class DashboardService {
   }
 
   addTable(): void {
+    if (this.isReadOnly) return;
     const nextName = this.generateNextTableName();
     const tableNo = parseInt(nextName.replace('table_', ''), 10) || (this.tables.length + 1);
     this.addTableAt(100 + tableNo * 30, 100 + tableNo * 30);
   }
 
   addRelation(fromTable: string, fromCol: string, toTable: string, toCol: string): boolean {
+    if (this.isReadOnly) return false;
     const fromTab = this.tables.find((t) => t.name === fromTable);
     const toTab = this.tables.find((t) => t.name === toTable);
     const fromColObj = fromTab?.columns.find((c) => c.name === fromCol);
@@ -3231,15 +3265,17 @@ export class DashboardService {
         this.refColors[`${relation.from}>${relation.to}`] = relation.color;
       }
     });
-    layout?.tableGroup?.forEach((group: any) => {
-      if (group?.name && group?.color) {
-        this.groupColors[group.name] = group.color;
-      }
-      // Persist the backend group id so it can be round-tripped on save
-      if (group?.name != null && group?.id != null) {
-        this.groupIds[group.name] = group.id;
-      }
-    });
+    if (this.entitlementService.canUseFeature('table_group')) {
+      layout?.tableGroup?.forEach((group: any) => {
+        if (group?.name && group?.color) {
+          this.groupColors[group.name] = group.color;
+        }
+        // Persist the backend group id so it can be round-tripped on save
+        if (group?.name != null && group?.id != null) {
+          this.groupIds[group.name] = group.id;
+        }
+      });
+    }
 
     const diagProps = Array.isArray(layout?.diagramProperties)
       ? layout?.diagramProperties[0]
@@ -3270,7 +3306,7 @@ export class DashboardService {
 
     // Load sticky notes
     const rawNotes = layout?.diagramNotes;
-    if (Array.isArray(rawNotes)) {
+    if (Array.isArray(rawNotes) && this.entitlementService.canUseFeature('diagram_notes')) {
       this.notes = rawNotes.map((n: any, i: number) => ({
         id: n.id ?? Date.now() + i,
         name: n.name ?? n.Notes_name ?? `note_${i + 1}`,
@@ -3312,11 +3348,55 @@ export class DashboardService {
     const normalizedWsType = wsType.toString().trim().toLowerCase() === 'team' ? 'Team' : 'Personal';
     this.diagramWorkspaceType.set(normalizedWsType);
 
-    const permission = diagram?.permission ?? diagram?.workspace?.permission ?? diagram?.shared_permission ?? response?.data?.permission ?? 'Editor';
-    if (normalizedWsType === 'Team' && permission === 'Viewer') {
+    const foundWs = rawWsId != null ? this.workspaces().find(w => w.id === Number(rawWsId)) : null;
+    const permission = diagram?.permission
+      ?? diagram?.workspace?.permission
+      ?? diagram?.shared_permission
+      ?? (foundWs as any)?.permission
+      ?? (foundWs as any)?.role
+      ?? (foundWs as any)?.permission_type
+      ?? (fallbackWorkspace as any)?.permission
+      ?? response?.data?.permission
+      ?? response?.data?.role
+      ?? response?.permission
+      ?? response?.role
+      ?? 'Editor';
+    const isViewer = typeof permission === 'string' && (
+      permission.toLowerCase() === 'viewer' ||
+      permission.toLowerCase().includes('view') ||
+      permission.toLowerCase() === 'can view' ||
+      permission.toLowerCase() === 'canview'
+    );
+    if (normalizedWsType === 'Team' && isViewer) {
       this.isReadOnly = true;
     } else {
       this.isReadOnly = false;
+    }
+
+    // Double-check workspace members if Team workspace to be 100% sure viewer status is detected
+    if (normalizedWsType === 'Team' && rawWsId != null) {
+      const userPayload = this.auth.getTokenPayload();
+      const currentUserEmail = (userPayload?.email || '').toLowerCase().trim();
+      if (currentUserEmail) {
+        this.fetchWorkspaceMembers(Number(rawWsId)).subscribe({
+          next: (res: any) => {
+            const list = Array.isArray(res) ? res : (res?.data ?? res?.members ?? res?.result ?? []);
+            const member = list.find((m: any) => {
+              const mEmail = (m?.email || m?.user_email || m?.userEmail || m?.member_email || '').toString().trim().toLowerCase();
+              return mEmail === currentUserEmail;
+            });
+            if (member) {
+              const rawPerm = (member.permission || member.role || member.access || member.permission_type || member.permissionType || '').toString().toLowerCase();
+              if (rawPerm.includes('view')) {
+                this.isReadOnly = true;
+              } else if (rawPerm === 'owner' || rawPerm.includes('edit') || rawPerm.includes('admin') || rawPerm.includes('invite')) {
+                this.isReadOnly = false;
+              }
+            }
+          },
+          error: () => {}
+        });
+      }
     }
 
     let layout = diagram?.layout;
@@ -3735,7 +3815,7 @@ export class DashboardService {
           this.extractIdsFromResponse(res);
           this.totalDiagrams.update(n => n + 1);
           this.entitlementService.incrementUsage('create_diagrams');
-          
+
           // Connect to socket if newly created in a team workspace
           if (this.diagramWorkspaceType() === 'Team') {
             const dId = this.diagramId();

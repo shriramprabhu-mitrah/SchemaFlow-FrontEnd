@@ -229,6 +229,11 @@ app-version-history {
   z-index: 30;
 }
 
+#canvas-pane.read-only #create-table-control,
+#create-table-control.read-only-hide {
+  display: none !important;
+}
+
 .layout-menu {
   position: absolute;
   top: 0;
