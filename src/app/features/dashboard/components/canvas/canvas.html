@@ -1,7 +1,6 @@
 <div id="canvas-pane" #canvasPane (mouseenter)="isMouseOverCanvas = true" (mouseleave)="isMouseOverCanvas = false"
-  [class.read-only]="svc.isReadOnly"
-  [class.tool-pan]="svc.tool === 'pan'" [class.tool-select]="svc.tool === 'select'" [class.panning]="isPanning"
-  [class.dragging]="draggingTable !== null" [style.display]="svc.showDocs ? 'none' : ''">
+  [class.read-only]="svc.isReadOnly" [class.tool-pan]="svc.tool === 'pan'" [class.tool-select]="svc.tool === 'select'"
+  [class.panning]="isPanning" [class.dragging]="draggingTable !== null" [style.display]="svc.showDocs ? 'none' : ''">
 
   <div *ngIf="svc.isReadOnly"
     style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 1000; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); backdrop-filter: blur(4px);"
@@ -19,7 +18,6 @@
 
   <div id="canvas-wrap" #canvasWrap>
     <canvas #canvas (mousedown)="onCanvasMouseDown($event)" (contextmenu)="onCanvasContextMenu($event)"
-      (dblclick)="onCanvasDblClick($event)"
       (mouseleave)="onCanvasMouseLeave()"></canvas>
   </div>
 
@@ -31,11 +29,10 @@
       [class.active-note]="selectedNoteId === note.id" (mousedown)="selectNote($event, note.id)"
       [style.left.px]="note.posx * svc.view.scale + svc.view.x" [style.top.px]="note.posy * svc.view.scale + svc.view.y"
       [style.width.px]="note.width * svc.view.scale" [style.height.px]="note.height * svc.view.scale"
-      [style.border-radius.px]="6 * svc.view.scale" 
-      [style.pointer-events]="'all'">
+      [style.border-radius.px]="6 * svc.view.scale" [style.pointer-events]="'all'">
 
       <!-- Double-click to edit hint, shown on hover -->
-      <div class="sticky-note-hover-hint" *ngIf="!svc.isReadOnly">Double-click to edit</div>
+      <div class="sticky-note-hover-hint" *ngIf="!svc.isReadOnly && !isSampleDiagram()">Double-click to edit</div>
 
       <!-- Inner card: clips content (header + textarea) properly -->
       <div class="sticky-note-inner" [style.background-color]="note.color || '#FFE28B'"
@@ -43,16 +40,14 @@
 
         <!-- Header: drag + name + three-dots -->
         <div class="sticky-note-header" (mousedown)="startNoteDrag($event, note)"
-          (touchstart)="startNoteDrag($event, note)" 
-          [style.min-height.px]="26 * svc.view.scale"
+          (touchstart)="startNoteDrag($event, note)" [style.min-height.px]="26 * svc.view.scale"
           [style.height.px]="26 * svc.view.scale"
           [style.padding]="(4 * svc.view.scale) + 'px ' + (5 * svc.view.scale) + 'px ' + (4 * svc.view.scale) + 'px ' + (6 * svc.view.scale) + 'px'"
-          [style.gap.px]="4 * svc.view.scale"
-          [style.border-top-left-radius.px]="6 * svc.view.scale"
+          [style.gap.px]="4 * svc.view.scale" [style.border-top-left-radius.px]="6 * svc.view.scale"
           [style.border-top-right-radius.px]="6 * svc.view.scale">
-          <span class="sticky-note-drag-icon" title="Drag to move" 
-          [style.font-size.px]="13 * svc.view.scale">
-            <svg [attr.width]="12 * svc.view.scale" [attr.height]="12 * svc.view.scale" viewBox="0 0 24 24" fill="currentColor">
+          <span class="sticky-note-drag-icon" title="Drag to move" [style.font-size.px]="13 * svc.view.scale">
+            <svg [attr.width]="12 * svc.view.scale" [attr.height]="12 * svc.view.scale" viewBox="0 0 24 24"
+              fill="currentColor">
               <circle cx="8" cy="5" r="2"></circle>
               <circle cx="8" cy="12" r="2"></circle>
               <circle cx="8" cy="19" r="2"></circle>
@@ -63,27 +58,23 @@
           </span>
 
           <!-- Note name or inline rename input -->
-          <span class="sticky-note-name" *ngIf="editingNoteId !== note.id" 
-          [style.color]="note.textColor || '#000000'"
-            [style.font-size.px]="11 * svc.view.scale" 
-            [style.line-height.px]="14 * svc.view.scale">{{ note.name }}</span>
+          <span class="sticky-note-name" *ngIf="editingNoteId !== note.id" [style.color]="note.textColor || '#000000'"
+            [style.font-size.px]="11 * svc.view.scale" [style.line-height.px]="14 * svc.view.scale">{{ note.name
+            }}</span>
           <input *ngIf="editingNoteId === note.id" class="sticky-note-name-input" [(ngModel)]="editNoteNameValue"
-            [style.color]="note.textColor || '#000000'" 
-            [style.font-size.px]="11 * svc.view.scale"
-            [style.height.px]="18 * svc.view.scale" 
-            [style.padding]="'0 ' + (4 * svc.view.scale) + 'px'"
-            [style.border-radius.px]="3 * svc.view.scale" 
-            (mousedown)="$event.stopPropagation()"
+            [style.color]="note.textColor || '#000000'" [style.font-size.px]="11 * svc.view.scale"
+            [style.height.px]="18 * svc.view.scale" [style.padding]="'0 ' + (4 * svc.view.scale) + 'px'"
+            [style.border-radius.px]="3 * svc.view.scale" (mousedown)="$event.stopPropagation()"
             (keydown.enter)="commitEditNoteName()" (keydown.escape)="cancelEditNoteName()" (blur)="commitEditNoteName()"
             autofocus />
 
           <!-- Three-dots menu button -->
-          <button class="sticky-note-menu-btn tt tt-bottom" *ngIf="!svc.isReadOnly" [attr.data-tt]="'Note options'"
-            [style.padding.px]="2 * svc.view.scale" 
-            [style.border-radius.px]="4 * svc.view.scale"
-            (mousedown)="$event.stopPropagation()" (click)="toggleNoteMenu($event, note.id)">
-            <svg [attr.width]="16 * svc.view.scale" [attr.height]="16 * svc.view.scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
-              stroke-linecap="round">
+          <button class="sticky-note-menu-btn tt tt-bottom" *ngIf="!svc.isReadOnly && !isSampleDiagram()"
+            [attr.data-tt]="'Note options'" [style.padding.px]="2 * svc.view.scale"
+            [style.border-radius.px]="4 * svc.view.scale" (mousedown)="$event.stopPropagation()"
+            (click)="toggleNoteMenu($event, note.id)">
+            <svg [attr.width]="16 * svc.view.scale" [attr.height]="16 * svc.view.scale" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <circle cx="12" cy="5" r="1.5"></circle>
               <circle cx="12" cy="12" r="1.5"></circle>
               <circle cx="12" cy="19" r="1.5"></circle>
@@ -92,11 +83,13 @@
         </div>
 
         <!-- Editable text body -->
-        <textarea class="sticky-note-body" [placeholder]="svc.isReadOnly ? '' : 'Write something...'"
-          [(ngModel)]="note.text" (mousedown)="onNoteBodyMouseDown($event, note)"
-          (dblclick)="!svc.isReadOnly && editNoteBody($event, note.id)" (input)="onNoteTextChange(note)"
-          [readonly]="svc.isReadOnly || editingNoteBodyId !== note.id"
-          [style.cursor]="svc.isReadOnly ? 'default' : (editingNoteBodyId === note.id ? 'text' : 'move')"
+        <textarea class="sticky-note-body"
+          [placeholder]="svc.isReadOnly || isSampleDiagram() ? '' : 'Write something...'" [(ngModel)]="note.text"
+          (mousedown)="onNoteBodyMouseDown($event, note)"
+          (dblclick)="!svc.isReadOnly && !isSampleDiagram() && editNoteBody($event, note.id)"
+          (input)="onNoteTextChange(note)"
+          [readonly]="svc.isReadOnly || isSampleDiagram() || editingNoteBodyId !== note.id"
+          [style.cursor]="svc.isReadOnly || isSampleDiagram() ? 'default' : (editingNoteBodyId === note.id ? 'text' : 'move')"
           [style.color]="note.textColor || '#000000'" [style.font-size.px]="12 * svc.view.scale"
           [style.padding]="(6 * svc.view.scale) + 'px ' + (8 * svc.view.scale) + 'px'"></textarea>
 
@@ -188,37 +181,39 @@
     [(ngModel)]="inlineEdit.value" (keydown.enter)="commitInlineEdit()" (keydown.escape)="cancelInlineEdit()"
     (blur)="commitInlineEdit()" (mousedown)="$event.stopPropagation()" />
 
-  <div id="create-table-control" *ngIf="!isReadOnly && !svc.isPublicViewer"
-    [class.read-only-hide]="isReadOnly"
-    [style.display]="isReadOnly ? 'none !important' : ''">
+  <div id="create-table-control" *ngIf="!svc.isPublicViewer"
+    [class.disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('edit_diagram') && !entitlementService.canUseFeature('edit_diagram'))">
     <app-button variant="toolbar" customClass="create-table-button"
       (onClick)="entitlementService.canUseFeature('edit_diagram') ? createTable() : svc.showUpgradeModal()"
-      [disabled]="isReadOnly || !auth.isLoggedIn() || (entitlementService.orgHasFeature('edit_diagram') && !entitlementService.canUseFeature('edit_diagram'))">
+      [disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('edit_diagram') && !entitlementService.canUseFeature('edit_diagram'))"
+      [tooltip]="isSampleDiagram() ? 'Create table is disabled for sample diagrams' : (!auth.isLoggedIn() ? 'Sign in to create table' : undefined)"
+      tooltipPosition="bottom">
       <span class="create-table-icon"><app-icons name="plus" size="17"></app-icons></span>
       <span>Create table</span>
-      <app-icons *ngIf="!entitlementService.orgHasFeature('edit_diagram')" name="premium-crown" size="10"
-        color="#f59e0b" style="position: absolute; top: 3px; right: 3px;"></app-icons>
+      <app-icons *ngIf="auth.isLoggedIn() && !isSampleDiagram() && !entitlementService.orgHasFeature('edit_diagram')"
+        name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 3px; right: 3px;"></app-icons>
     </app-button>
   </div>
 
   <div id="layout-control" *ngIf="!svc.isPublicViewer">
     <app-button [variant]="svc.showDiagramViews ? 'toolbar-active' : 'toolbar'"
-      (onClick)="entitlementService.canUseFeature('digram_view') ? toggleDiagramViews(false) : svc.showUpgradeModal()"
-      [tooltip]="'Diagram Views'" tooltipPosition="left" style="position: relative;"
-      [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
+      (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(false) : svc.showUpgradeModal()"
+      [tooltip]="isSampleDiagram() ? 'Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Diagram Views' : 'Diagram Views')"
+      tooltipPosition="left" style="position: relative;"
+      [disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
       <svg viewBox="0 0 24 24" style="width: 17px; height: 17px;" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round" fill="none">
         <polygon points="12 2 2 7 12 12 22 7 12 2" />
         <polyline points="2 17 12 22 22 17" />
         <polyline points="2 12 12 17 22 12" />
       </svg>
-      <app-icons *ngIf="!entitlementService.orgHasFeature('digram_view')" name="premium-crown" size="10" color="#f59e0b"
-        style="position: absolute; top: 3px; right: 3px;"></app-icons>
+      <app-icons *ngIf="auth.isLoggedIn() && !isSampleDiagram() && !entitlementService.orgHasFeature('digram_view')"
+        name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 3px; right: 3px;"></app-icons>
     </app-button>
 
-    <app-button id="layout-menu-button" *ngIf="!isReadOnly" [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'"
-      (onClick)="toggleLayoutMenu()" [tooltip]="'Layout and links'" tooltipPosition="left"
-      [disabled]="!auth.isLoggedIn()">
+    <app-button [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'" (onClick)="toggleLayoutMenu()"
+      [tooltip]="isSampleDiagram() ? 'Layout and links (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Layout and links' : 'Layout and links')"
+      tooltipPosition="left" [disabled]="!auth.isLoggedIn() || isSampleDiagram()">
       <app-icons name="schema" size="17"></app-icons>
     </app-button>
 
@@ -311,8 +306,10 @@
       (click)="closeAllDropdowns($event)">
       <div class="table-modal-header">
         <div>
-          <h2 id="table-modal-title">{{ isReadOnly ? 'View table' : (tableModal.isNew ? 'Create table' : 'Edit table') }}</h2>
-          <p>{{ isReadOnly ? 'Table details and column definitions.' : 'Update its name, columns, and constraints.' }}</p>
+          <h2 id="table-modal-title">{{ isReadOnly ? 'View table' : (tableModal.isNew ? 'Create table' : 'Edit table')
+            }}</h2>
+          <p>{{ isReadOnly ? 'Table details and column definitions.' : 'Update its name, columns, and constraints.' }}
+          </p>
         </div>
         <app-button variant="none" customClass="table-modal-close" aria-label="Close"
           (onClick)="closeTableModal()">×</app-button>
@@ -330,8 +327,8 @@
             (click)="toggleGroupOption(true)" style="display: flex; align-items: center; gap: 4px;"
             [disabled]="entitlementService.orgHasFeature('table_group') && !entitlementService.canUseFeature('table_group')">
             Group
-            <app-icons *ngIf="!entitlementService.orgHasFeature('table_group')" name="premium-crown" size="12"
-              color="#f59e0b"></app-icons>
+            <app-icons *ngIf="auth.isLoggedIn() && !entitlementService.orgHasFeature('table_group')"
+              name="premium-crown" size="12" color="#f59e0b"></app-icons>
           </button>
         </div>
       </div>
@@ -360,7 +357,8 @@
       </div>
 
       <label class="table-name-field">Table name
-        <input [(ngModel)]="tableModal.name" (input)="tableModal.error = ''" [disabled]="isReadOnly" [readonly]="isReadOnly" />
+        <input [(ngModel)]="tableModal.name" (input)="tableModal.error = ''" [disabled]="isReadOnly"
+          [readonly]="isReadOnly" />
       </label>
       <div class="table-columns-heading">
         <span>Columns</span>
@@ -368,7 +366,8 @@
       </div>
       <div class="table-columns">
         <div class="table-column-labels" aria-hidden="true">
-          <span>#</span><span>Column name</span><span>Type</span><span>Constraints</span><span *ngIf="!isReadOnly"></span>
+          <span>#</span><span>Column name</span><span>Type</span><span>Constraints</span><span
+            *ngIf="!isReadOnly"></span>
         </div>
         <div class="table-columns-list" #tableColumnsList (scroll)="closeAllDropdowns()">
           <div class="table-column" *ngFor="let column of tableModal.columns; let i = index">
@@ -379,7 +378,8 @@
               <input aria-label="Column data type" placeholder="varchar" [(ngModel)]="column.type" autocomplete="off"
                 (focus)="!isReadOnly && openTypeDropdown(i, $event)" (click)="$event.stopPropagation()"
                 [disabled]="isReadOnly" [readonly]="isReadOnly" />
-              <app-button *ngIf="!isReadOnly" variant="none" customClass="type-trigger-arrow" (onClick)="toggleTypeDropdown(i, $event)">
+              <app-button *ngIf="!isReadOnly" variant="none" customClass="type-trigger-arrow"
+                (onClick)="toggleTypeDropdown(i, $event)">
                 <app-icons name="chevron-down" size="14"></app-icons>
               </app-button>
               <div class="type-menu" *ngIf="!isReadOnly && typeDropdownIndex === i" (click)="$event.stopPropagation()">
@@ -392,12 +392,15 @@
             </div>
             <div class="constraint-dropdown">
               <app-button variant="none" customClass="constraint-trigger"
-                (onClick)="!isReadOnly && toggleConstraintDropdown(i, $event)" [attr.aria-expanded]="constraintDropdownIndex === i"
-                [tooltip]="constraintSummary(column)" tooltipPosition="left">
+                (onClick)="!isReadOnly && toggleConstraintDropdown(i, $event)"
+                [attr.aria-expanded]="constraintDropdownIndex === i" [tooltip]="constraintSummary(column)"
+                tooltipPosition="left">
                 <span class="constraint-text">{{ constraintSummary(column) }}</span>
-                <span class="constraint-arrow" *ngIf="!isReadOnly"><app-icons name="chevron-down" size="14"></app-icons></span>
+                <span class="constraint-arrow" *ngIf="!isReadOnly"><app-icons name="chevron-down"
+                    size="14"></app-icons></span>
               </app-button>
-              <div class="constraint-menu" *ngIf="!isReadOnly && constraintDropdownIndex === i" (click)="$event.stopPropagation()">
+              <div class="constraint-menu" *ngIf="!isReadOnly && constraintDropdownIndex === i"
+                (click)="$event.stopPropagation()">
                 <div class="constraint-item">
                   <label><input type="checkbox" [(ngModel)]="column.fk" /> Foreign key</label>
                   <div *ngIf="column.fk" class="fk-selector-wrap">
@@ -451,15 +454,18 @@
                 </div>
               </div>
             </div>
-            <app-button *ngIf="!isReadOnly" variant="none" customClass="column-delete" [disabled]="tableModal.columns.length === 1"
-              (onClick)="removeModalColumn(i)" aria-label="Delete column">×</app-button>
+            <app-button *ngIf="!isReadOnly" variant="none" customClass="column-delete"
+              [disabled]="tableModal.columns.length === 1" (onClick)="removeModalColumn(i)"
+              aria-label="Delete column">×</app-button>
           </div>
         </div>
       </div>
       <p class="table-modal-error" *ngIf="tableModal.error">{{ tableModal.error }}</p>
       <div class="table-modal-actions">
-        <app-button variant="none" customClass="secondary" (onClick)="closeTableModal()">{{ isReadOnly ? 'Close' : 'Cancel' }}</app-button>
-        <app-button *ngIf="!isReadOnly" variant="none" customClass="primary" (onClick)="saveTableModal()">Save changes</app-button>
+        <app-button variant="none" customClass="secondary" (onClick)="closeTableModal()">{{ isReadOnly ? 'Close' :
+          'Cancel' }}</app-button>
+        <app-button *ngIf="!isReadOnly" variant="none" customClass="primary" (onClick)="saveTableModal()">Save
+          changes</app-button>
       </div>
     </section>
   </div>
@@ -471,7 +477,8 @@
       <div class="table-modal-header">
         <div>
           <h2 id="group-modal-title">{{ isReadOnly ? 'View Table Group' : 'Edit Table Group' }}</h2>
-          <p>{{ isReadOnly ? 'Group details and table membership.' : 'Update group name and manage tables in this group.' }}</p>
+          <p>{{ isReadOnly ? 'Group details and table membership.' : 'Update group name and manage tables in this
+            group.' }}</p>
         </div>
         <app-button variant="none" customClass="table-modal-close" aria-label="Close"
           (onClick)="closeGroupModal()">×</app-button>
@@ -527,8 +534,8 @@
           <div class="group-table-row" *ngFor="let tableName of groupModal.tables; let i = index">
             <span class="column-number">{{ i + 1 }}</span>
             <span class="group-table-name">{{ tableName }}</span>
-            <app-button *ngIf="!isReadOnly" variant="none" customClass="group-remove-btn" (onClick)="removeTableFromGroupList(i)"
-              aria-label="Remove table from group">Remove table</app-button>
+            <app-button *ngIf="!isReadOnly" variant="none" customClass="group-remove-btn"
+              (onClick)="removeTableFromGroupList(i)" aria-label="Remove table from group">Remove table</app-button>
           </div>
 
           <div class="empty-group-message" *ngIf="groupModal.tables.length === 0">
@@ -539,8 +546,10 @@
 
       <p class="table-modal-error" *ngIf="groupModal.error">{{ groupModal.error }}</p>
       <div class="table-modal-actions">
-        <app-button variant="none" customClass="secondary" (onClick)="closeGroupModal()">{{ isReadOnly ? 'Close' : 'Cancel' }}</app-button>
-        <app-button *ngIf="!isReadOnly" variant="none" customClass="primary" (onClick)="saveGroupModal()">Save changes</app-button>
+        <app-button variant="none" customClass="secondary" (onClick)="closeGroupModal()">{{ isReadOnly ? 'Close' :
+          'Cancel' }}</app-button>
+        <app-button *ngIf="!isReadOnly" variant="none" customClass="primary" (onClick)="saveGroupModal()">Save
+          changes</app-button>
       </div>
     </section>
   </div>
@@ -565,8 +574,8 @@
   </div>
 
   <!-- Delete Connection Confirmation Modal -->
-  <div class="modal-backdrop" *ngIf="deleteConnectionConfirm.visible && !isReadOnly" (click)="closeDeleteConnectionConfirm()"
-    (wheel)="$event.stopPropagation()">
+  <div class="modal-backdrop" *ngIf="deleteConnectionConfirm.visible && !isReadOnly"
+    (click)="closeDeleteConnectionConfirm()" (wheel)="$event.stopPropagation()">
     <div class="modal-container" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Delete Connection</h3>
@@ -659,15 +668,18 @@
       <ng-container *ngIf="!svc.isReadOnly">
         <app-button variant="extra"
           (onClick)="entitlementService.canUseFeature('diagram_notes') ? addNoteAtCenter() : svc.showUpgradeModal()"
-          [tooltip]="'Add sticky note — ' + svc.notes.length" style="position: relative;"
-          [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('diagram_notes') && !entitlementService.canUseFeature('diagram_notes'))">
+          [tooltip]="isSampleDiagram() ? 'Add sticky note (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to add sticky note' : 'Add sticky note — ' + svc.notes.length)"
+          style="position: relative;"
+          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('diagram_notes') && !entitlementService.canUseFeature('diagram_notes'))">
           <svg viewBox="0 0 24 24" style="width:16px;height:16px;" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4h16v10l-6 6H4z"></path>
             <path d="M14 20v-6h6"></path>
           </svg>
-          <app-icons *ngIf="!entitlementService.orgHasFeature('diagram_notes')" name="premium-crown" size="10"
-            color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+          <app-icons
+            *ngIf="auth.isLoggedIn() && !isSampleDiagram() && !entitlementService.orgHasFeature('diagram_notes')"
+            name="premium-crown" size="10" color="#f59e0b"
+            style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
 
         <!-- Vertical Divider line -->
@@ -676,8 +688,9 @@
         <!-- Detail Level Trigger Button -->
         <app-button [variant]="showDetailLevelMenu ? 'extra-active' : 'extra'" customClass="detail-level-btn"
           (onClick)="entitlementService.canUseFeature('diagram_detailing') ? toggleDetailLevelMenu($event) : svc.showUpgradeModal()"
-          [tooltip]="'Change diagram detail level'" style="position: relative;"
-          [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('diagram_detailing') && !entitlementService.canUseFeature('diagram_detailing'))">
+          [tooltip]="isSampleDiagram() ? 'Detail level (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to change detail level' : 'Change diagram detail level')"
+          style="position: relative;"
+          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('diagram_detailing') && !entitlementService.canUseFeature('diagram_detailing'))">
           <div style="display: flex; align-items: center; padding: 0 4px;">
             <app-icons [name]="getCurrentDetailLevelIcon()" size="15" style="display: flex;"></app-icons>
             <span style="margin: 0 6px 0 6px; font-size: 12px; font-weight: 500; white-space: nowrap;">{{
@@ -685,20 +698,24 @@
             <app-icons name="chevron-down" size="10"
               [style]="{ display: 'flex', 'transition': 'transform 0.15s ease', 'transform': showDetailLevelMenu ? 'rotate(180deg)' : 'rotate(0deg)' }"></app-icons>
           </div>
-          <app-icons *ngIf="!entitlementService.orgHasFeature('diagram_detailing')" name="premium-crown" size="10"
-            color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+          <app-icons
+            *ngIf="auth.isLoggedIn() && !isSampleDiagram() && !entitlementService.orgHasFeature('diagram_detailing')"
+            name="premium-crown" size="10" color="#f59e0b"
+            style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
         <app-button variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
-          (onClick)="entitlementService.canUseFeature('digram_view') ? toggleDiagramViews(true) : svc.showUpgradeModal()"
-          [tooltip]="'Search / Diagram Views'" style="position: relative;"
-          [disabled]="!auth.isLoggedIn() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
+          (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(true) : svc.showUpgradeModal()"
+          [tooltip]="isSampleDiagram() ? 'Search / Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Search / Diagram Views' : 'Search / Diagram Views')"
+          style="position: relative;"
+          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
           <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;" fill="none" stroke="currentColor"
             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <app-icons *ngIf="!entitlementService.orgHasFeature('digram_view')" name="premium-crown" size="10"
-            color="#f59e0b" style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
+          <app-icons *ngIf="auth.isLoggedIn() && !isSampleDiagram() && !entitlementService.orgHasFeature('digram_view')"
+            name="premium-crown" size="10" color="#f59e0b"
+            style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
       </ng-container>
 

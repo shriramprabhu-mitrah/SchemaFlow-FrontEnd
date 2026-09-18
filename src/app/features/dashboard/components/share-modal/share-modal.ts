@@ -214,6 +214,7 @@ export class ShareModalComponent implements OnInit {
       navigator.clipboard.writeText(text).then(() => {
         if (type === 'link') {
           this.linkCopied = true;
+          this.svc.showToast('Link copied to clipboard!', 2000, 'success');
           this.cdr.detectChanges();
           setTimeout(() => {
             this.linkCopied = false;

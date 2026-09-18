@@ -34,7 +34,7 @@
             </span>
 
             <!-- Drag Handle Icon (6 dots) -->
-            <span class="drag-handle" title="Drag to reorder">
+            <span class="drag-handle tt tt-bottom" data-tt="Drag to reorder" aria-label="Drag to reorder">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="9" cy="6" r="2"></circle>
                 <circle cx="15" cy="6" r="2"></circle>
@@ -53,13 +53,18 @@
                 [(ngModel)]="newTableNameVal"
                 (click)="$event.stopPropagation()"
                 (keydown.enter)="finishRenameTable(table.name)"
+                (keydown.escape)="cancelRenameTable()"
                 (blur)="finishRenameTable(table.name)"
-                autoFocus />
+                autofocus />
             </div>
 
             <!-- Three Dot Menu (Only Focus on Canvas & Rename Table) -->
             <div class="menu-container" (click)="$event.stopPropagation()">
-              <button class="icon-btn dot-menu-btn" (click)="toggleTableMenu(table.name, $event)" title="Table options">
+              <button class="icon-btn dot-menu-btn tt-left"
+                [class.tt]="activeMenuTable !== table.name"
+                (click)="toggleTableMenu(table.name, $event)"
+                [attr.data-tt]="activeMenuTable !== table.name ? 'Table options' : null"
+                aria-label="Table options">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="12" cy="5" r="2"></circle>
                   <circle cx="12" cy="12" r="2"></circle>
@@ -109,7 +114,7 @@
               <div class="field-rows-list" *ngIf="isFieldsExpanded(table.name)">
                 <div *ngFor="let col of table.columns" class="field-row">
                   <!-- Drag handle -->
-                  <span class="field-drag-handle">
+                  <span class="field-drag-handle tt tt-top" data-tt="Drag to reorder" aria-label="Drag to reorder">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
                       <circle cx="9" cy="6" r="2"></circle>
                       <circle cx="15" cy="6" r="2"></circle>
@@ -130,10 +135,12 @@
                   <!-- Field Type Dropdown -->
                   <div class="custom-type-dropdown" (click)="$event.stopPropagation()">
                     <button type="button"
-                      class="custom-type-trigger"
-                      (click)="toggleTypeDropdown(table.name, col.name, $event)"
+                      class="custom-type-trigger tt tt-top"
                       [class.open]="isTypeDropdownOpen(table.name, col.name)"
-                      [title]="col.type">
+                      [class.tt]="!isTypeDropdownOpen(table.name, col.name)"
+                      (click)="toggleTypeDropdown(table.name, col.name, $event)"
+                      [attr.data-tt]="!isTypeDropdownOpen(table.name, col.name) ? col.type : null"
+                      [attr.aria-label]="col.type">
                       <span class="custom-type-text">{{ col.type }}</span>
                       <svg class="type-chevron-icon" [class.open]="isTypeDropdownOpen(table.name, col.name)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -152,18 +159,20 @@
                   </div>
 
                   <!-- Nullable Badge (N) -->
-                  <button class="pill-badge nullable-badge"
+                  <button class="pill-badge nullable-badge tt tt-top"
                     [class.active]="!col.notNull"
                     (click)="toggleNotNull(table, col, $event)"
-                    [title]="col.notNull ? 'Not Null (click to make nullable)' : 'Nullable (click to make not null)'">
+                    [attr.data-tt]="col.notNull ? 'Not Null (click to make nullable)' : 'Nullable (click to make not null)'"
+                    [attr.aria-label]="col.notNull ? 'Not Null (click to make nullable)' : 'Nullable (click to make not null)'">
                     N
                   </button>
 
                   <!-- Primary Key Badge (Key) -->
-                  <button class="pill-badge pk-badge"
+                  <button class="pill-badge pk-badge tt tt-top"
                     [class.active]="col.pk"
                     (click)="togglePk(table, col, $event)"
-                    [title]="col.pk ? 'Primary Key' : 'Not Primary Key'">
+                    [attr.data-tt]="col.pk ? 'Primary Key' : 'Not Primary Key'"
+                    [attr.aria-label]="col.pk ? 'Primary Key' : 'Not Primary Key'">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 2l-2 2m-1.5 1.5L16 7m-1.5 1.5L13 10m-1.5 1.5L10 13l-4 4-2-2-2 2 4 4 2-2 2 2 4-4 1.5-1.5M10 13l3.5-3.5a6 6 0 1 0-8.5 8.5L10 13z"></path>
                     </svg>
@@ -171,7 +180,11 @@
 
                   <!-- Field Actions Menu -->
                   <div class="field-menu-wrap" (click)="$event.stopPropagation()">
-                    <button class="icon-btn field-more-btn" (click)="toggleFieldMenu(table.name, col.name, $event)" title="More options">
+                    <button class="icon-btn field-more-btn tt-left"
+                      [class.tt]="!(activeFieldMenu?.table === table.name && activeFieldMenu?.field === col.name)"
+                      (click)="toggleFieldMenu(table.name, col.name, $event)"
+                      [attr.data-tt]="!(activeFieldMenu?.table === table.name && activeFieldMenu?.field === col.name) ? 'More options' : null"
+                      aria-label="More options">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                         <circle cx="5" cy="12" r="2"></circle>
                         <circle cx="12" cy="12" r="2"></circle>

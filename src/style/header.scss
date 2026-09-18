@@ -55,6 +55,42 @@ body.light-theme {
       color: #0f172a !important;
       border-color: #337ab7 !important;
     }
+
+    &.disabled,
+    &:disabled,
+    &[disabled] {
+      opacity: 0.45 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      background: #f1f5f9 !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #94a3b8 !important;
+
+      * {
+        color: #94a3b8 !important;
+        stroke: #94a3b8 !important;
+      }
+
+      .create-table-icon {
+        color: #94a3b8 !important;
+
+        * {
+          color: #94a3b8 !important;
+          stroke: #94a3b8 !important;
+        }
+
+        svg {
+          color: #94a3b8 !important;
+          stroke: #94a3b8 !important;
+        }
+      }
+
+      &:hover {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #94a3b8 !important;
+      }
+    }
   }
 
   .btn-upgrade {

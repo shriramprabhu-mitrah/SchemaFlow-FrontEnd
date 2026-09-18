@@ -19,6 +19,7 @@
     <div id="editor-toolbar">
       <div class="toolbar-title">
         <span class="dot" [class.error-dot]="svc.editorErrors().length > 0"></span> DBML
+        <span class="readonly-badge" *ngIf="!isLoggedIn || svc.isReadOnly || isSampleDiagram()">Read-Only</span>
         <span class="error-badge" *ngIf="svc.editorErrors().length > 0">
           {{ svc.editorErrors().length }} error{{ svc.editorErrors().length > 1 ? 's' : '' }}
         </span>
@@ -41,22 +42,25 @@
         </svg>
       </app-button>
     </div>
-    <div class="editor-alert-banner" *ngIf="!isLoggedIn">
+    <div class="editor-alert-banner" *ngIf="!isLoggedIn || isSampleDiagram()">
       <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
         <line x1="12" y1="9" x2="12" y2="13"></line>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
-      <span class="alert-text">
-        <a class="alert-link" (click)="goToLogin()">Sign in</a> to save and manage your diagrams.
+      <span class="alert-text" *ngIf="!isLoggedIn">
+        Read-Only Mode &bull; <a class="alert-link" (click)="goToLogin()">Sign in</a> to save and manage your diagrams.
+      </span>
+      <span class="alert-text" *ngIf="isLoggedIn && isSampleDiagram()">
+        Read-Only Mode &bull; Sample diagrams are view-only.
       </span>
     </div>
     <div id="editor-scroll">
       <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
       <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
       <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
-        [readonly]="svc.isReadOnly"
+        [readonly]="!isLoggedIn || svc.isReadOnly || isSampleDiagram()"
         (click)="onCursorEvent($event)" (keyup)="onCursorEvent($event)"
         (mousemove)="onCodeAreaMouseMove($event)" (mouseleave)="onCodeAreaMouseLeave()"
         (input)="onTextInput($event)" (scroll)="onEditorScroll($event)"></textarea>

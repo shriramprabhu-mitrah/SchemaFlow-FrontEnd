@@ -995,7 +995,7 @@ export class HeaderComponent implements OnInit {
       this.svc.updateOriginalState();
       
       this.router.navigate([], {
-        queryParams: { sample: 'true', id: null },
+        queryParams: { sample: type, id: null },
         queryParamsHandling: 'merge'
       });
     });

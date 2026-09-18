@@ -372,6 +372,29 @@ app-version-history {
       background: rgba(255, 255, 255, 0.1);
       color: #f8fafc;
     }
+
+    &.disabled,
+    &[disabled],
+    &:disabled {
+      opacity: 0.38 !important;
+      cursor: not-allowed !important;
+      color: #64748b !important;
+      box-shadow: none !important;
+
+      * {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      svg {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      app-icons {
+        color: #64748b !important;
+      }
+    }
   }
 
   .btn.toolbar-active,
@@ -601,6 +624,36 @@ app-version-history {
     background: #1d334c;
     color: #ffffff !important;
   }
+
+  &.disabled,
+  &:disabled,
+  &[disabled] {
+    opacity: 0.38 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    color: #64748b !important;
+    border-color: rgba(104, 138, 179, 0.15) !important;
+
+    * {
+      color: #64748b !important;
+      stroke: #64748b !important;
+    }
+
+    .create-table-icon {
+      color: #64748b !important;
+
+      svg {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+    }
+  }
+}
+
+#create-table-control.disabled {
+  opacity: 0.38 !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
 }
 
 .create-table-icon {
@@ -608,7 +661,7 @@ app-version-history {
   align-items: center;
   justify-content: center;
   transform: translateY(1.5px);
-  color: #3ec5c1 !important;
+  color: #3ec5c1;
 }
 
 .table-modal-backdrop {
@@ -1756,6 +1809,29 @@ body.light-theme {
         background: #f1f5f9 !important;
         color: #0f172a !important;
       }
+
+      &.disabled,
+      &[disabled],
+      &:disabled {
+        opacity: 0.38 !important;
+        cursor: not-allowed !important;
+        color: #94a3b8 !important;
+        box-shadow: none !important;
+
+        * {
+          color: #94a3b8 !important;
+          stroke: #94a3b8 !important;
+        }
+
+        svg {
+          color: #94a3b8 !important;
+          stroke: #94a3b8 !important;
+        }
+
+        app-icons {
+          color: #94a3b8 !important;
+        }
+      }
     }
 
     .btn.toolbar-active,
@@ -1767,6 +1843,12 @@ body.light-theme {
         background: rgba(51, 122, 183, 0.15) !important;
       }
     }
+  }
+
+  #create-table-control.disabled {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
   }
 
   #zoom-pct {
@@ -1992,6 +2074,28 @@ body.light-theme .detail-level-dropdown {
       color: #61d7d3 !important;
       /* active color dark theme */
     }
+
+    &.disabled,
+    &[disabled],
+    &:disabled {
+      opacity: 0.38 !important;
+      cursor: not-allowed !important;
+      color: #64748b !important;
+
+      * {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      svg {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      app-icons {
+        color: #64748b !important;
+      }
+    }
   }
 
   .controls-divider {
@@ -2011,6 +2115,28 @@ body.light-theme #extra-controls {
     &.extra-active {
       color: #337ab7 !important;
       /* active color light theme */
+    }
+
+    &.disabled,
+    &[disabled],
+    &:disabled {
+      opacity: 0.38 !important;
+      cursor: not-allowed !important;
+      color: #94a3b8 !important;
+
+      * {
+        color: #94a3b8 !important;
+        stroke: #94a3b8 !important;
+      }
+
+      svg {
+        color: #94a3b8 !important;
+        stroke: #94a3b8 !important;
+      }
+
+      app-icons {
+        color: #94a3b8 !important;
+      }
     }
   }
 

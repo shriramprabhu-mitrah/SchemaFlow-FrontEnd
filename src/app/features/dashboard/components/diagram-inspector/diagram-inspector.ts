@@ -145,42 +145,50 @@ export class DiagramInspectorComponent implements OnInit {
     this.newTableNameVal = table.name;
     this.activeMenuTable = null;
     this.cdr.markForCheck();
+    setTimeout(() => {
+      const input = document.querySelector('.table-rename-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  }
+
+  cancelRenameTable(): void {
+    this.editingTableName = null;
+    this.cdr.markForCheck();
   }
 
   finishRenameTable(oldName: string): void {
+    if (!this.editingTableName) return;
     const newName = (this.newTableNameVal || '').trim();
     this.editingTableName = null;
-    if (!newName || newName === oldName) return;
+    if (!newName || newName === oldName) {
+      this.cdr.markForCheck();
+      return;
+    }
 
-    // Replace table name in DBML
-    const tableDefRe = new RegExp(`\\bTable\\s+${oldName}\\b`, 'g');
-    let updated = this.svc.code.replace(tableDefRe, `Table ${newName}`);
+    this.svc.renameTableInCode(oldName, newName);
 
-    // Update refs referencing this table
-    const refFromRe = new RegExp(`(\\bRef(?:\\s+[A-Za-z0-9_]+)?\\s*:\\s*)${oldName}\\.`, 'g');
-    const refToRe = new RegExp(`((?:<->|<>|>|<|-)\\s*)${oldName}\\.`, 'g');
-    updated = updated.replace(refFromRe, `$1${newName}.`);
-    updated = updated.replace(refToRe, `$1${newName}.`);
-
-    this.svc.code = updated;
     if (this.expandedTables.has(oldName)) {
       this.expandedTables.delete(oldName);
       this.expandedTables.add(newName);
     }
-    this.svc.forceRedraw$.next();
+    if (this.collapsedFieldsTables.has(oldName)) {
+      this.collapsedFieldsTables.delete(oldName);
+      this.collapsedFieldsTables.add(newName);
+    }
+
+    this.svc.showToast(`Table renamed to "${newName}" successfully.`, 2500, 'success');
     this.cdr.markForCheck();
   }
 
   deleteTable(tableName: string, e?: Event): void {
     if (e) e.stopPropagation();
     this.activeMenuTable = null;
-    const tableRegex = new RegExp(`\\n?\\s*Table\\s+${tableName}\\s*\\{[\\s\\S]*?\\}\\s*`, 'gi');
-    let code = this.svc.code.replace(tableRegex, '\n');
-    const refRegex = new RegExp(`\\n?\\s*Ref(?:\\s+[A-Za-z0-9_]+)?\\s*:\\s*(?:${tableName}\\.[A-Za-z0-9_]+|[A-Za-z0-9_]+\\.[A-Za-z0-9_]+)\\s*(?:<->|<>|>|<|-)\\s*(?:${tableName}\\.[A-Za-z0-9_]+|[A-Za-z0-9_]+\\.[A-Za-z0-9_]+)\\s*`, 'gi');
-    code = code.replace(refRegex, '\n');
-    this.svc.code = code.trim();
+    this.svc.deleteTableInCode(tableName);
     this.expandedTables.delete(tableName);
-    this.svc.forceRedraw$.next();
+    this.collapsedFieldsTables.delete(tableName);
     this.cdr.markForCheck();
   }
 
@@ -196,6 +204,8 @@ export class DiagramInspectorComponent implements OnInit {
     const tableRegex = new RegExp(`(Table\\s+${table.name}\\s*\\{[\\s\\S]*?)(\\s*\\})`, 'i');
     if (tableRegex.test(this.svc.code)) {
       this.svc.code = this.svc.code.replace(tableRegex, `$1  ${newCol} varchar\n$2`);
+      this.svc.updateGutter();
+      this.svc.parseAndLayout();
       this.svc.forceRedraw$.next();
       this.cdr.markForCheck();
     }
@@ -216,6 +226,8 @@ export class DiagramInspectorComponent implements OnInit {
         })
         .join('\n');
       this.svc.code = this.svc.code.replace(tableRegex, `$1${newBody}$3`);
+      this.svc.updateGutter();
+      this.svc.parseAndLayout();
       this.svc.forceRedraw$.next();
       this.cdr.markForCheck();
     }
@@ -272,6 +284,8 @@ export class DiagramInspectorComponent implements OnInit {
         })
         .join('\n');
       this.svc.code = this.svc.code.replace(tableRegex, `$1${newBody}$3`);
+      this.svc.updateGutter();
+      this.svc.parseAndLayout();
       this.svc.forceRedraw$.next();
       this.cdr.markForCheck();
     }

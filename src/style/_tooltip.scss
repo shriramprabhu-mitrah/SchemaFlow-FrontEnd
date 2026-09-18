@@ -42,15 +42,7 @@
   &:not([data-tt]):hover::after,
   &:not([data-tt]):hover::before,
   &[data-tt=""]:hover::after,
-  &[data-tt=""]:hover::before,
-  &.disabled:hover::after,
-  &.disabled:hover::before,
-  &:disabled:hover::after,
-  &:disabled:hover::before,
-  &[disabled]:hover::after,
-  &[disabled]:hover::before,
-  &.is-disabled:hover::after,
-  &.is-disabled:hover::before {
+  &[data-tt=""]:hover::before {
     content: none !important;
     display: none !important;
   }
