@@ -1,0 +1,113 @@
+<div class="interactive-preview-wrapper">
+  
+  <div class="ip-tabs-container">
+    <div class="ip-tabs">
+      <button class="ip-tab" [class.active]="activeTab === 'diagram'" (click)="setTab('diagram')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        Diagram
+      </button>
+      <button class="ip-tab" [class.active]="activeTab === 'sql'" (click)="setTab('sql')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        SQL
+      </button>
+      <button class="ip-tab" [class.active]="activeTab === 'dbml'" (click)="setTab('dbml')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        DBML
+      </button>
+      <button class="ip-tab" [class.active]="activeTab === 'diff'" (click)="setTab('diff')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        Diff
+      </button>
+    </div>
+  </div>
+
+  <div class="ip-content-container">
+    
+    <!-- Diagram Tab -->
+    <div class="ip-canvas-container" *ngIf="activeTab === 'diagram'">
+      <div class="ip-canvas-grid"></div>
+      
+      <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+          </marker>
+        </defs>
+        <g *ngFor="let rel of relationships">
+          <path [attr.d]="getPath(rel)"
+                fill="none"
+                stroke="#94a3b8"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+                marker-end="url(#arrow)" />
+          <!-- Label "1" near the arrow end -->
+          <text [attr.x]="getLabelPos(rel).x"
+                [attr.y]="getLabelPos(rel).y"
+                fill="#475569" font-size="12" font-weight="600" font-family="sans-serif">1</text>
+        </g>
+      </svg>
+      
+      <!-- Tables -->
+      <div *ngFor="let table of tables" 
+           class="ip-table-node shadow" 
+           [style.left.px]="table.x" 
+           [style.top.px]="table.y"
+           (mousedown)="onTableMouseDown($event, table)">
+        
+        <div class="ip-table-header">
+          <div class="ip-th-left">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <span class="ip-table-name">{{table.name}}</span>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </div>
+        
+        <div class="ip-table-fields">
+          <div *ngFor="let field of table.fields" class="ip-table-field-row">
+            <div class="ip-field-left">
+              <span class="ip-field-pk" *ngIf="field.isPk">🔑</span>
+              <span class="ip-field-fk" *ngIf="field.isFk" style="font-size: 10px; transform: rotate(45deg); display: inline-block;">🔗</span>
+              <span class="ip-field-name">{{field.name}}</span>
+            </div>
+            <div class="ip-field-type">{{field.type}}</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SQL Tab -->
+    <div class="ip-code-container" *ngIf="activeTab === 'sql'" style="background: #fff;">
+      <div class="ip-code-line-numbers" style="color: #cbd5e1; border-right: 1px solid #e2e8f0; padding-right: 12px; margin-right: 12px;">
+        <div *ngFor="let line of sqlLines; let i = index">{{i + 1}}</div>
+      </div>
+      <pre class="ip-code-content" style="color: #0f172a; margin: 0; white-space: pre;"><code [innerHTML]="getHighlightedCode(sqlCode, 'sql')"></code></pre>
+    </div>
+
+    <!-- DBML Tab -->
+    <div class="ip-code-container" *ngIf="activeTab === 'dbml'" style="background: #fff;">
+      <div class="ip-code-line-numbers" style="color: #cbd5e1; border-right: 1px solid #e2e8f0; padding-right: 12px; margin-right: 12px;">
+        <div *ngFor="let line of dbmlLines; let i = index">{{i + 1}}</div>
+      </div>
+      <pre class="ip-code-content" style="color: #0f172a; margin: 0; white-space: pre;"><code [innerHTML]="getHighlightedCode(dbmlCode, 'dbml')"></code></pre>
+    </div>
+
+    <!-- Diff Tab -->
+    <div class="ip-diff-container" *ngIf="activeTab === 'diff'" style="background: #fff;">
+      <div class="ip-diff-pane left-pane" #leftPane (scroll)="syncScroll(leftPane, rightPane)">
+        <div class="ip-code-line-numbers" style="color: #cbd5e1; border-right: 1px solid #e2e8f0; padding-right: 12px; margin-right: 12px;">
+          <div *ngFor="let line of diffOldLines; let i = index">{{i + 1}}</div>
+        </div>
+        <pre class="ip-code-content" style="color: #0f172a; margin: 0; white-space: pre;"><code [innerHTML]="getHighlightedCode(diffOldCode, 'dbml')"></code></pre>
+      </div>
+
+      <div class="ip-diff-pane right-pane" #rightPane (scroll)="syncScroll(rightPane, leftPane)">
+        <div class="ip-code-line-numbers" style="color: #cbd5e1; border-right: 1px solid #e2e8f0; padding-right: 12px; margin-right: 12px;">
+          <div *ngFor="let line of diffNewLines; let i = index">{{i + 1}}</div>
+        </div>
+        <pre class="ip-code-content" style="color: #0f172a; margin: 0; white-space: pre;"><code [innerHTML]="getHighlightedCode(diffNewCode, 'dbml')"></code></pre>
+      </div>
+    </div>
+
+  </div>
+</div>
