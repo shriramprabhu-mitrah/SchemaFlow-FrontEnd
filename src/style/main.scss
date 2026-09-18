@@ -38,8 +38,26 @@
 
 
 /* ==========================================
-   GLOBAL CUSTOM SCROLLBAR COLORS
+   GLOBAL CUSTOM SCROLLBAR COLORS & VARIABLES
    ========================================== */
+:root {
+  --sf-scrollbar-thumb: rgba(62, 197, 193, 0.4);
+  --sf-scrollbar-thumb-hover: rgba(62, 197, 193, 0.75);
+  --sf-scrollbar-track: rgba(255, 255, 255, 0.01);
+  --sf-scrollbar-color: rgba(62, 197, 193, 0.4) rgba(255, 255, 255, 0.02);
+}
+
+:root[data-theme='light'],
+html.light-theme,
+body.light-theme,
+html[data-theme='light'],
+.light-theme {
+  --sf-scrollbar-thumb: rgba(2, 132, 199, 0.55);
+  --sf-scrollbar-thumb-hover: #0284c7;
+  --sf-scrollbar-track: rgba(0, 0, 0, 0.04);
+  --sf-scrollbar-color: rgba(2, 132, 199, 0.55) rgba(0, 0, 0, 0.04);
+}
+
 html,
 body {
   color-scheme: dark;
@@ -50,34 +68,43 @@ body {
 * {
   box-sizing: border-box;
   scrollbar-width: thin !important;
-  scrollbar-color: rgba(62, 197, 193, 0.4) rgba(255, 255, 255, 0.02) !important;
+  scrollbar-color: var(--sf-scrollbar-color) !important;
 }
 
-*, html, body {
-  &::-webkit-scrollbar {
-    width: 6px !important;
-    height: 6px !important;
-  }
+::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
 
-  &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.01) !important;
-    border-radius: 3px !important;
-  }
+::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: var(--sf-scrollbar-track) !important;
+  border-radius: 3px !important;
+}
 
-  &::-webkit-scrollbar-thumb {
-    background: rgba(62, 197, 193, 0.4) !important;
-    border-radius: 3px !important;
+::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: var(--sf-scrollbar-thumb) !important;
+  border-radius: 3px !important;
 
-    &:hover {
-      background: rgba(62, 197, 193, 0.7) !important;
-    }
+  &:hover {
+    background: var(--sf-scrollbar-thumb-hover) !important;
   }
 }
 
 /* Light Theme Overrides */
 html.light-theme,
 body.light-theme,
-html.light-theme body {
+html.light-theme body,
+:root[data-theme='light'],
+html[data-theme='light'] {
   color-scheme: light !important;
   color: #0f172a;
   background-color: #f8fafc !important;
@@ -92,27 +119,30 @@ html.light-theme body {
   }
 }
 
-html.light-theme *:not(#codearea), body.light-theme *:not(#codearea) {
-  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.03) !important;
-}
+/* Light Theme Scrollbars (Root window & all elements) */
+html.light-theme,
+body.light-theme,
+html.light-theme body,
+:root[data-theme='light'],
+html[data-theme='light'],
+html.light-theme *:not(#codearea),
+body.light-theme *:not(#codearea),
+html[data-theme='light'] *:not(#codearea) {
+  scrollbar-color: rgba(2, 132, 199, 0.55) rgba(0, 0, 0, 0.04) !important;
 
-body.light-theme *, html.light-theme, body.light-theme {
-  &::-webkit-scrollbar {
-    width: 6px !important;
-    height: 6px !important;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.03) !important;
+  &::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.04) !important;
     border-radius: 3px !important;
   }
 
-  &::-webkit-scrollbar-thumb {
-    background: rgba(59, 130, 246, 0.5) !important;
+  &::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background: rgba(2, 132, 199, 0.55) !important;
     border-radius: 3px !important;
 
     &:hover {
-      background: rgba(59, 130, 246, 0.8) !important;
+      background: #0284c7 !important;
     }
   }
 }
