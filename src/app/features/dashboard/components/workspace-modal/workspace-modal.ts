@@ -346,8 +346,14 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.activeDiagramDeleted = false;
     this.openMenuId = null;
     this.svc.requestSplitView();
+    const perm = this.selectedWorkspace ? this.getWorkspacePermission(this.selectedWorkspace) : undefined;
     const fallbackWs = this.selectedWorkspace
-      ? { id: this.selectedWorkspace.id, name: this.selectedWorkspace.name }
+      ? {
+          id: this.selectedWorkspace.id,
+          name: this.selectedWorkspace.name,
+          type: this.selectedWorkspace.type,
+          permission: perm
+        }
       : null;
     this.svc.loadDiagram(id, fallbackWs).subscribe({
       next: () => {

@@ -110,6 +110,7 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
 
   onTextInput(e: Event): void {
+    if (this.svc.isReadOnly) return;
     const ta = e.target as HTMLTextAreaElement;
     const val = ta.value;
     this.displayCode = val;
@@ -119,6 +120,7 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
 
   onCodeChange(val: string): void {
+    if (this.svc.isReadOnly) return;
     this.displayCode = val;
     this.svc.code = val;
     this.onCodeInput();

@@ -4,7 +4,8 @@ import {
   Component,
   HostListener,
   OnInit,
-  OnDestroy
+  OnDestroy,
+  effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -39,7 +40,23 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private exportSvc: ExportService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    effect(() => {
+      // Automatically close inspectors or menus if diagram is in read-only / can-view mode
+      if (this.isCanViewOnly) {
+        if (this.svc.sidebarInspectorTab() === 'tables') {
+          this.svc.sidebarInspectorTab.set(null);
+        }
+        if (this.importMenuOpen) {
+          this.importMenuOpen = false;
+        }
+        if (this.svc.showVersionHistory()) {
+          this.svc.showVersionHistory.set(false);
+        }
+      }
+      this.cdr.markForCheck();
+    });
+  }
 
   ngOnInit(): void {
     this.entitlementService.entitlements$
@@ -61,6 +78,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   get isLoggedIn(): boolean {
     return this.auth.isLoggedIn();
+  }
+
+  get isCanViewOnly(): boolean {
+    if (this.svc.isReadOnly) return true;
+    const wsId = this.svc.activeWorkspaceId();
+    if (wsId) {
+      const ws = this.svc.workspaces().find(w => w.id === wsId);
+      if (ws) {
+        const perm = (ws.permission || (ws as any).role || '').toLowerCase();
+        if (perm.includes('view') || perm === 'viewer') return true;
+      }
+    }
+    return false;
   }
 
   isSampleDiagram(): boolean {

@@ -2,7 +2,7 @@
   <!-- Top section -->
   <div class="activity-top-group">
     <!-- Import Button -->
-    <div class="activity-nav-item import-item tt tt-right" [class.active]="importMenuOpen" (click)="toggleImportMenu($event)"
+    <div class="activity-nav-item import-item tt tt-right" *ngIf="!isCanViewOnly" [class.active]="importMenuOpen" (click)="toggleImportMenu($event)"
       [attr.data-tt]="importMenuOpen ? null : 'Import from SQL'" aria-label="Import from SQL">
       <app-icons *ngIf="showCrown('import')" class="sidebar-crown-badge" name="premium-crown" size="10"
         color="#f59e0b"></app-icons>
@@ -201,7 +201,7 @@
     </div>
 
     <!-- Share Button -->
-    <div class="activity-nav-item share-item tt tt-right" [class.active]="svc.shareModalVisible()" (click)="openShare($event)"
+    <div class="activity-nav-item share-item tt tt-right" *ngIf="!isCanViewOnly" [class.active]="svc.shareModalVisible()" (click)="openShare($event)"
       data-tt="Share diagram" aria-label="Share diagram">
       <app-icons *ngIf="showCrown('share')" class="sidebar-crown-badge" name="premium-crown" size="10"
         color="#f59e0b"></app-icons>
@@ -219,7 +219,7 @@
     </div>
 
     <!-- Versions Button (below Share, no New badge) -->
-    <div class="activity-nav-item versions-item tt tt-right" [class.active]="svc.showVersionHistory()"
+    <div class="activity-nav-item versions-item tt tt-right" *ngIf="!isCanViewOnly" [class.active]="svc.showVersionHistory()"
       (click)="toggleVersionHistory($event)" data-tt="Version History" aria-label="Version History">
       <app-icons *ngIf="showCrown('versions')" class="sidebar-crown-badge" name="premium-crown" size="10"
         color="#f59e0b"></app-icons>
@@ -267,7 +267,7 @@
     </div>
 
     <!-- Tables Button -->
-    <div class="activity-nav-item tables-item tt tt-right" [class.active]="svc.sidebarInspectorTab() === 'tables' && !svc.showDiffChecker()"
+    <div class="activity-nav-item tables-item tt tt-right" *ngIf="!isCanViewOnly" [class.active]="svc.sidebarInspectorTab() === 'tables' && !svc.showDiffChecker()"
       (click)="toggleInspector('tables', $event)" data-tt="Tables" aria-label="Tables">
       <app-icons *ngIf="showCrown('tables')" class="sidebar-crown-badge" name="premium-crown" size="10"
         color="#f59e0b"></app-icons>
