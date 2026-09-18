@@ -11,6 +11,7 @@
           class="nav-link">Features</a>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
         <a routerLink="/docs" target="_blank" routerLinkActive="active" class="nav-link">Docs</a>
+        <a routerLink="/diff" routerLinkActive="active" class="nav-link">Code Compare</a>
       </nav>
       <div class="header-actions">
         <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
@@ -32,6 +33,8 @@
         (click)="toggleMobileMenu()">Pricing</a>
       <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link"
         (click)="toggleMobileMenu()">Docs</a>
+      <a routerLink="/diff" routerLinkActive="active" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Code Compare</a>
 
       <div class="mobile-nav-bottom">
         <div class="mobile-nav-divider"></div>
@@ -133,6 +136,12 @@
         </div>
       </div>
     </div>
+
+    <!-- NEW INTERACTIVE PREVIEW COMPONENT -->
+    <div style="margin-top: 60px;">
+      <app-interactive-preview></app-interactive-preview>
+    </div>
+
   </section>
 
   <!-- CLASSIC ZIG-ZAG FEATURE LAYOUT WITH CONNECTED CARDS -->
