@@ -44,7 +44,7 @@
             (click)="entitlementService.orgHasFeature('create_workspaces') ? openWorkspaceModal('my-workspaces') : openUpgradeModal('create_workspaces'); closePersonalMenu(); closeWorkspaceSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Team Workspace
-              <app-icons *ngIf="!entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
+              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
                 color="#f59e0b"></app-icons>
             </span>
             <svg *ngIf="(svc.diagramWorkspaceType() | titlecase) === 'Team'" width="14" height="14" viewBox="0 0 24 24"
@@ -59,7 +59,7 @@
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Create Workspace
               <app-icons
-                *ngIf="!entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')"
+                *ngIf="isLoggedIn && !entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')"
                 name="premium-crown" size="14" color="#f59e0b"></app-icons>
             </span>
           </div>
@@ -91,7 +91,7 @@
           <div class="submenu-item" (click)="createSampleDiagram('group'); closePersonalMenu(); closeSampleSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Modular Schema (Table Group Diagram)
-              <app-icons *ngIf="!entitlementService.orgHasFeature('table_group')" name="premium-crown" size="14"
+              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('table_group')" name="premium-crown" size="14"
                 color="#f59e0b"></app-icons>
             </span>
           </div>
@@ -134,7 +134,7 @@
         <span class="item-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
             with Me</span>
-          <app-icons *ngIf="!entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14"
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14"
             color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </span>
       </button>

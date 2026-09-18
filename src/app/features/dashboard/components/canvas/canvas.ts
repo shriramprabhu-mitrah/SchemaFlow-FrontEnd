@@ -235,19 +235,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       groupName: null
     };
 
-  get isReadOnly(): boolean {
-    if (this.svc.isReadOnly) return true;
-    const wsId = this.svc.activeWorkspaceId();
-    if (wsId) {
-      const ws = this.svc.workspaces().find(w => w.id === wsId);
-      if (ws) {
-        const perm = (ws.permission || (ws as any).role || '').toLowerCase();
-        if (perm.includes('view') || perm === 'viewer') return true;
-      }
-    }
-    return false;
-  }
-
   constructor(
     public svc: DashboardService,
     private cdr: ChangeDetectorRef,
@@ -258,17 +245,20 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     effect(() => {
       this.svc.theme();
       this.svc.hiddenTables(); // Track hiddenTables signal so canvas redraws on visibility changes
-      const _ = this.svc.isReadOnly; // Track isReadOnly signal so change detection & redraw occur
-      if (this.isReadOnly) {
-        this.showLayoutMenu = false;
-      }
-      this.cdr.markForCheck();
       if (typeof window !== 'undefined') {
         this.scheduleDraw();
       }
     });
   }
 
+
+  isSampleDiagram(): boolean {
+    return this.svc.diagramName === 'Sample Diagram';
+  }
+
+  get isReadOnly(): boolean {
+    return this.svc.isReadOnly;
+  }
 
   private getDiagramBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
     let minX = Infinity;
@@ -876,17 +866,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.hasFitted = false;
       this.fitCanvasAfterLayout();
     }));
-
-    this.svc.onDiagramViewsToggled = (isOpen: boolean) => {
-      if (isOpen) {
-        this.showLayoutMenu = false;
-        this.contextMenu.visible = false;
-        this.colorPicker.visible = false;
-        this.activeNoteMenuId = null;
-        this.showDetailLevelMenu = false;
-        this.cdr.detectChanges();
-      }
-    };
   }
 
   ngAfterViewInit(): void {
@@ -931,9 +910,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resizeObserver?.disconnect();
     this.subscriptions.unsubscribe();
     if (this.fitTimer) clearTimeout(this.fitTimer);
-    if (this.svc.onDiagramViewsToggled) {
-      this.svc.onDiagramViewsToggled = undefined;
-    }
   }
 
   private resizeCanvasToDisplaySize(): void {
@@ -1201,7 +1177,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private drawTableGroups(ctx: CanvasRenderingContext2D, geometry: Record<string, TableDef>): void {
     this.groupColorIcons = [];
     if (!this.svc.groups || this.svc.groups.length === 0) return;
-    if (!this.entitlementService.canUseFeature('table_group')) return;
 
     const isLight = this.svc.theme() === 'light';
 
@@ -1453,7 +1428,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const isSettingsHovered = this.hoveredTableHeaderIcon?.tableName === t.name && this.hoveredTableHeaderIcon.type === 'settings';
 
-    if (this.auth.isLoggedIn()) {
+    if (!this.svc.isReadOnly && this.auth.isLoggedIn()) {
       // Draw Settings Icon
       this.drawSettingIcon(ctx, settingX, editY, isSettingsHovered);
 
@@ -1465,7 +1440,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         this.activeTooltip = {
           x: settingX,
           y: editY,
-          label: this.svc.isReadOnly ? 'View Table' : 'Settings'
+          label: 'Settings'
         };
       }
     }
@@ -2536,9 +2511,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
 
-    if (this.handleContextMenuMouseDown(e)) {
-      return;
-    }
+    if (this.handleContextMenuMouseDown(e)) return;
 
     if (this.colorPicker.visible) {
       this.colorPicker.visible = false;
@@ -2645,11 +2618,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (tableHeaderIcon) {
       const table = this.svc.tables.find((item) => item.name === tableHeaderIcon.tableName);
       if (tableHeaderIcon.type === 'settings' && table) {
-        if (this.contextMenu.visible && this.contextMenu.table?.name === table.name) {
-          this.contextMenu.visible = false;
-          this.scheduleDraw();
-          return;
-        }
         if (!this.auth.isLoggedIn()) {
           this.svc.authModalVisible.set(true);
           return;
@@ -2764,26 +2732,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.selectedConnectionPoint = null;
     }
-    // A drag on any non-table/non-column area pans the infinite workspace.
-    if (e.button === 0 || e.button === 1 || (this.svc.tool as string) === 'pan') {
+    // A drag on any non-table/non-column area pans the infinite workspace only if using Middle Click or the Hand Tool.
+    if (e.button === 1 || (this.svc.tool as string) === 'pan') {
       this.isPanning = true;
       this.panStart = { x: e.clientX - this.svc.view.x, y: e.clientY - this.svc.view.y };
     }
     this.scheduleDraw();
-  }
-
-  onCanvasDblClick(e: MouseEvent): void {
-    const wp = this.worldPointFromEvent(e);
-    const table = this.findTableAt(wp.x, wp.y);
-    if (table) {
-      this.openTableModal(table);
-      return;
-    }
-    const groupIcon = this.findGroupColorIconAt(wp.x, wp.y);
-    if (groupIcon) {
-      this.openGroupModal(groupIcon.groupName);
-      return;
-    }
   }
 
   private handleAutoScroll(e: MouseEvent): void {
@@ -3163,7 +3117,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.connectionDraft && e && !this.isReadOnly) {
+    if (this.connectionDraft && e) {
       const wp = this.worldPointFromEvent(e);
       const columnHit = this.findColumnAt(wp.x, wp.y);
       if (columnHit) {
@@ -3176,7 +3130,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    if (this.reconnectDraft && e && !this.isReadOnly) {
+    if (this.reconnectDraft && e) {
       const wp = this.worldPointFromEvent(e);
       const columnHit = this.findColumnAt(wp.x, wp.y);
       if (columnHit) {
@@ -3299,6 +3253,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCanvasContextMenu(e: MouseEvent): void {
+    if (this.svc.isReadOnly) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     if (!this.auth.isLoggedIn()) {
       this.svc.authModalVisible.set(true);
@@ -3320,17 +3278,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.svc.tables.forEach((t) => (geometry[t.name] = t));
     const connectionHit = this.findHoveredConnectionIndex(wp.x, wp.y, geometry);
     if (connectionHit !== -1) {
-      if (!this.svc.isReadOnly) {
-        this.svc.selectedConnectionIndex = connectionHit;
-      }
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return;
-    }
-
-    // Check if right-clicking on table header settings icon - do not open menu on right click
-    const tableHeaderIcon = this.findTableHeaderIconAt(wp.x, wp.y);
-    if (tableHeaderIcon) {
+      this.svc.selectedConnectionIndex = connectionHit;
       this.contextMenu.visible = false;
       this.scheduleDraw();
       return;
@@ -3338,58 +3286,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const tableHit = this.findTableAt(wp.x, wp.y);
     if (tableHit) {
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return;
-    }
-
-    // Do not open group menu on right click; group menu only opens via left-clicking the gear icon
-    const groupColorIcon = this.findGroupColorIconAt(wp.x, wp.y);
-    if (groupColorIcon) {
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return;
-    }
-
-    if (this.svc.groups && this.svc.groups.length > 0) {
-      for (const g of this.svc.groups) {
-        const bounds = this.getGroupBounds(g, geometry);
-        if (bounds) {
-          const headerH = 26;
-          // If right-clicking on group header, dismiss context menu instead of opening group menu
-          if (wp.x >= bounds.x && wp.x <= bounds.x + bounds.w && wp.y >= bounds.y && wp.y <= bounds.y + headerH) {
-            this.contextMenu.visible = false;
-            this.scheduleDraw();
-            return;
-          }
-        }
-      }
-    }
-
-    if (this.svc.isReadOnly) {
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return;
-    }
-
-    // Check if right-clicking on sticky notes
-    if (this.svc.notes && this.svc.notes.length > 0) {
-      const noteHit = this.svc.notes.find((n) =>
-        wp.x >= n.posx && wp.x <= n.posx + n.width && wp.y >= n.posy && wp.y <= n.posy + n.height
-      );
-      if (noteHit) {
-        this.contextMenu.visible = false;
-        this.scheduleDraw();
-        return;
-      }
-    }
-
-    // Check if right-clicking on connection icons, corners, or midpoints
-    if (
-      this.findConnectionIconAt(wp.x, wp.y) ||
-      this.findCornerAt(wp.x, wp.y, geometry) ||
-      this.findMidpointAt(wp.x, wp.y, geometry)
-    ) {
       this.contextMenu.visible = false;
       this.scheduleDraw();
       return;
@@ -3579,27 +3475,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleLayoutMenu(): void {
-    if (this.isReadOnly) {
-      this.showLayoutMenu = false;
-      return;
-    }
     this.showLayoutMenu = !this.showLayoutMenu;
     if (this.showLayoutMenu) {
-      this.svc.showDiagramViews = false;
       this.contextMenu.visible = false;
       this.activeNoteMenuId = null;
       this.colorPicker.visible = false;
-      this.showDetailLevelMenu = false;
     }
-  }
-
-  toggleDiagramViews(focusSearch: boolean = false): void {
-    this.showLayoutMenu = false;
-    this.contextMenu.visible = false;
-    this.activeNoteMenuId = null;
-    this.colorPicker.visible = false;
-    this.showDetailLevelMenu = false;
-    this.svc.toggleDiagramViews(focusSearch);
   }
 
   triggerLayoutConfirm(direction: 'vertical' | 'horizontal'): void {
@@ -3815,7 +3696,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createTable(): void {
-    if (this.svc.isReadOnly) return;
     const rect = this.canvasWrapRef.nativeElement.getBoundingClientRect();
     const x = (rect.width / 2 - this.svc.view.x) / this.svc.view.scale - this.svc.CARD_W / 2;
     const y = (rect.height / 2 - this.svc.view.y) / this.svc.view.scale - 70;
@@ -3841,7 +3721,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openTableModal(table: TableDef, isNew = false): void {
-    if (this.svc.isReadOnly && isNew) return;
     if (!this.auth.isLoggedIn()) {
       this.svc.authModalVisible.set(true);
       return;
@@ -4000,9 +3879,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showDetailLevelMenu = false;
 
     const target = event.target as HTMLElement;
-    const isInsideLayoutMenu = target.closest('.layout-menu');
-    const isLayoutButton = target.closest('#layout-menu-button');
-    if (!isInsideLayoutMenu && !isLayoutButton) {
+    const isInsideLayoutControl = target.closest('#layout-control');
+    if (!isInsideLayoutControl) {
       this.showLayoutMenu = false;
     }
   }
@@ -4109,7 +3987,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveGroupModal(): void {
-    if (this.isReadOnly) return;
     const name = this.groupModal.name.trim();
     const validName = /^[A-Za-z_][A-Za-z0-9_]*$/;
     if (!validName.test(name)) {
@@ -4171,7 +4048,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveTableModal(): void {
-    if (this.svc.isReadOnly) return;
     const name = this.tableModal.name.trim();
     const validName = /^[A-Za-z_][A-Za-z0-9_]*$/;
     if (!validName.test(name)) {
@@ -4433,19 +4309,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ============ CONTEXT MENU ============ */
 
   private getContextMenuItems(): string[] {
-    if (this.svc.isReadOnly) {
-      switch (this.contextMenu.targetType) {
-        case 'tableHeader':
-        case 'table':
-        case 'column':
-          return ['View Table'];
-        case 'groupHeader':
-          return ['View Group'];
-        default:
-          return [];
-      }
-    }
-
     switch (this.contextMenu.targetType) {
       case 'column':
         return ['Add Column', 'Edit Column', 'Delete Column'];
@@ -4473,6 +4336,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     connectionIndex: number,
     groupName: string | null = null
   ): void {
+    if (this.svc.isReadOnly) return;
     if (!this.auth.isLoggedIn()) {
       this.svc.authModalVisible.set(true);
       return;
@@ -4587,7 +4451,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private drawStickyNotes(ctx: CanvasRenderingContext2D): void {
     if (!this.svc.notes || this.svc.notes.length === 0) return;
-    if (!this.entitlementService.canUseFeature('diagram_notes')) return;
 
     this.svc.notes.forEach((note) => {
       const { posx, posy, width, height, color, name, text } = note;
@@ -4720,22 +4583,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       return true;
     }
 
-    const wp = this.worldPointFromEvent(e);
-    // If clicking on the same group icon or table settings icon that opened the menu, close it and consume click (toggle)
-    const groupIcon = this.findGroupColorIconAt(wp.x, wp.y);
-    if (this.contextMenu.targetType === 'groupHeader' && groupIcon && groupIcon.groupName === this.contextMenu.groupName) {
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return true;
-    }
-
-    const tableIcon = this.findTableHeaderIconAt(wp.x, wp.y);
-    if (this.contextMenu.targetType === 'tableHeader' && tableIcon && tableIcon.tableName === this.contextMenu.table?.name) {
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return true;
-    }
-
     this.contextMenu.visible = false;
     this.scheduleDraw();
     return false;
@@ -4743,17 +4590,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private handleContextMenuClick(label: string | undefined): void {
     if (!label) return;
-
-    if (this.isReadOnly) {
-      if (label === 'View Table' && this.contextMenu.table) {
-        this.openTableModal(this.contextMenu.table);
-      } else if (label === 'View Group' && this.contextMenu.groupName) {
-        this.openGroupModal(this.contextMenu.groupName);
-      }
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return;
-    }
 
     switch (this.contextMenu.targetType) {
       case 'column':
@@ -4775,14 +4611,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleEmptyMenuAction(label: string): void {
-    if (this.isReadOnly) return;
     if (label === 'Add Table') {
       this.svc.addTableAt(this.contextMenuWorldPoint.x, this.contextMenuWorldPoint.y);
     }
   }
 
   private deleteTable(tableName: string): void {
-    if (this.isReadOnly) return;
     this.deleteConfirm = {
       visible: true,
       tableName: tableName
@@ -4790,10 +4624,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   confirmDeleteTable(): void {
-    if (this.isReadOnly) {
-      this.closeDeleteConfirm();
-      return;
-    }
     if (this.deleteConfirm.tableName) {
       this.svc.deleteTableInCode(this.deleteConfirm.tableName);
       this.svc.updateGutter();
@@ -4811,7 +4641,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private deleteGroup(groupName: string): void {
-    if (this.isReadOnly) return;
     this.deleteGroupConfirm = {
       visible: true,
       groupName: groupName
@@ -4819,10 +4648,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   confirmDeleteGroup(): void {
-    if (this.isReadOnly) {
-      this.closeDeleteGroupConfirm();
-      return;
-    }
     if (this.deleteGroupConfirm.groupName) {
       this.svc.deleteTableGroupInCode(this.deleteGroupConfirm.groupName);
       this.svc.showToast(`Group "${this.deleteGroupConfirm.groupName}" deleted successfully.`, 2500, 'success');
@@ -4838,10 +4663,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   confirmDeleteConnection(): void {
-    if (this.isReadOnly) {
-      this.closeDeleteConnectionConfirm();
-      return;
-    }
     const ref = this.deleteConnectionConfirm.ref;
     if (ref) {
       this.svc.deleteConnectionInCode(ref);
@@ -4867,7 +4688,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleColumnMenuAction(label: string): void {
-    if (this.isReadOnly) return;
     const table = this.contextMenu.table;
     const column = this.contextMenu.column;
     if (!table || !column) return;
@@ -4888,7 +4708,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleTableMenuAction(label: string): void {
-    if (this.isReadOnly) return;
     const table = this.contextMenu.table;
     if (!table) return;
 
@@ -4908,7 +4727,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleTableHeaderMenuAction(label: string): void {
-    if (this.isReadOnly) return;
     const table = this.contextMenu.table;
     if (!table) return;
 
@@ -4992,7 +4810,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ============ INLINE EDITS ============ */
 
   private openInlineEditForColumn(table: TableDef, column: Column): void {
-    if (this.isReadOnly) return;
     const rowIndex = table.columns.findIndex((c) => c.name === column.name);
     if (rowIndex === -1) return;
     const rowY = table.y + this.svc.HEADER_H + rowIndex * this.svc.ROW_H;
@@ -5011,7 +4828,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private openInlineEditForTable(table: TableDef): void {
-    if (this.isReadOnly) return;
     this.inlineEdit = {
       visible: true,
       x: table.x * this.svc.view.scale + this.svc.view.x,
@@ -5026,10 +4842,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   commitInlineEdit(): void {
-    if (this.isReadOnly) {
-      this.inlineEdit.visible = false;
-      return;
-    }
     if (!this.inlineEdit.visible) return;
     const val = this.inlineEdit.value.trim();
 

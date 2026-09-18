@@ -104,12 +104,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   hasFeatureAccess(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
-    if (featureKey === 'code_compare' && !this.isLoggedIn) return false;
+    if (featureKey === 'code_compare' && !this.isLoggedIn) return true;
     return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
   }
 
   showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare'): boolean {
-    if (this.auth.isSuperAdmin()) return false;
+    if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     switch (item) {
       case 'import':
         return !this.hasFeatureAccess('import_sql');
@@ -133,8 +133,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleImportMenu(e?: Event): void {
     if (e) e.stopPropagation();
-    if (!this.isLoggedIn) {
-      this.svc.authModalVisible.set(true);
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
     this.importMenuOpen = !this.importMenuOpen;
@@ -147,8 +147,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   openImportDialect(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
-    if (!this.isLoggedIn) {
-      this.svc.authModalVisible.set(true);
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
     if (!this.entitlementService.canUseFeature('import_sql')) {
@@ -169,8 +169,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleExportMenu(e?: Event): void {
     if (e) e.stopPropagation();
-    if (!this.isLoggedIn) {
-      this.svc.authModalVisible.set(true);
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
     this.exportMenuOpen = !this.exportMenuOpen;
@@ -185,6 +185,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   exportFormat(format: 'pdf' | 'png' | 'svg', e?: Event): void {
     if (e) e.stopPropagation();
     this.exportMenuOpen = false;
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      return;
+    }
     if (this.isDiagramEmpty()) {
       this.svc.showToast('Diagram is empty. Nothing to export.', 3000, 'error');
       return;
@@ -201,6 +204,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   exportSQL(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
     if (e) e.stopPropagation();
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      return;
+    }
     if (this.isDiagramEmpty()) {
       this.svc.showToast('Diagram is empty. Nothing to export.', 3000, 'error');
       return;
@@ -262,8 +268,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.svc.closeVersionHistory$.next();
       this.svc.showVersionHistory.set(false);
     }
-    if (!this.isLoggedIn) {
-      this.svc.showToast('Please sign in to share your diagrams', 3000, 'error');
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
     if (!this.entitlementService.canUseFeature('share_diagram')) {
@@ -288,8 +294,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
     }
-    if (!this.isLoggedIn) {
-      this.svc.authModalVisible.set(true);
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
     if (!this.entitlementService.canUseFeature('version_history')) {
@@ -319,8 +325,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (!this.isLoggedIn) {
-      this.svc.authModalVisible.set(true);
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
 
@@ -369,7 +375,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   // ============ DIFF CHECKER ============
- 
+
   toggleDiffChecker(e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
@@ -377,11 +383,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.svc.shareModalVisible()) {
       this.svc.shareModalVisible.set(false);
     }
-    if (!this.isLoggedIn) {
-      this.svc.authModalVisible.set(true);
-      return;
-    }
-    if (!this.hasFeatureAccess('code_compare')) {
+    if (this.isLoggedIn && !this.hasFeatureAccess('code_compare')) {
       this.svc.showUpgradeModal('code_compare');
       return;
     }

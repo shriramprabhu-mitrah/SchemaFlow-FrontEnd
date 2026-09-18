@@ -161,6 +161,27 @@
     }
   }
 
+  /* Disabled state when unauthenticated or restricted */
+  &.disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+
+    &:hover {
+      background: transparent !important;
+      color: #cfd3d8 !important;
+
+      .nav-icon {
+        stroke: #cfd3d8 !important;
+        color: #cfd3d8 !important;
+        transform: none !important;
+      }
+
+      .nav-label {
+        color: #cfd3d8 !important;
+      }
+    }
+  }
+
   &.docs-item .nav-label,
   &.logout-item .nav-label,
   &.login-item .nav-label {
@@ -349,6 +370,26 @@
 
         .nav-label {
           color: #337ab7;
+        }
+      }
+    }
+
+    &.disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+
+      &:hover {
+        background: transparent !important;
+        color: #64748b !important;
+
+        .nav-icon {
+          stroke: #64748b !important;
+          color: #64748b !important;
+          transform: none !important;
+        }
+
+        .nav-label {
+          color: #64748b !important;
         }
       }
     }

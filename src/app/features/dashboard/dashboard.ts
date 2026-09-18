@@ -107,7 +107,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       this.svc.syncThemeFromStorage();
       this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
         const id = params['id'];
-        const isSample = params['sample'] === 'true';
+        const sampleParam = params['sample'];
+        const isSample = sampleParam === 'true' || sampleParam === 'normal' || sampleParam === 'group';
         const isDiff = params['view'] === 'diff' || this.router.url.includes('/diff');
 
         if (isDiff) {
@@ -119,7 +120,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         if (isSample) {
           this.isInitialLoad = false;
           this.svc.clearDiagram(false);
-          this.svc.code = this.svc.getSampleCode('normal');
+          const sampleType = sampleParam === 'group' ? 'group' : 'normal';
+          this.svc.code = this.svc.getSampleCode(sampleType);
           this.svc.diagramName = 'Sample Diagram';
           this.svc.showCanvasPlaceholder = false;
           this.svc.updateGutter();
