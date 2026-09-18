@@ -103,6 +103,7 @@ export class UpgradeModalComponent implements OnInit {
       case 'max_diagrams': return 'diagram';
       case 'create_workspaces': return 'workspace';
       case 'workspace_members': return 'team member';
+      case 'code_compare': return 'code compare';
       default: return 'feature';
     }
   }

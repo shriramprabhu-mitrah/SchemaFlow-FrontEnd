@@ -308,6 +308,11 @@ export class EntitlementService {
       }
     }
 
+    // Default premium features that must be explicitly enabled
+    if (featureKey === 'code_compare') {
+      return false;
+    }
+
     return true; // default to true if the feature is unknown
   }
 

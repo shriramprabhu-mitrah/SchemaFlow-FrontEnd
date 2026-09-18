@@ -63,12 +63,17 @@
 
   svg {
     display: block;
+    stroke: currentColor;
   }
 
   &:hover {
     background: #337ab7;
     color: #ffffff;
     border-color: #337ab7;
+
+    svg {
+      stroke: #ffffff !important;
+    }
   }
 }
 
@@ -639,22 +644,53 @@ html.light-theme,
   }
 
   .btn-back-diagram {
-    color: #64748b;
-    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+
+    svg {
+      stroke: #334155;
+    }
+
+    &:hover {
+      background: #337ab7 !important;
+      border-color: #337ab7 !important;
+      color: #ffffff !important;
+
+      svg {
+        stroke: #ffffff !important;
+      }
+    }
   }
 
   .toolbar-mode-group {
     background: #f1f5f9;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
   }
 
   .btn-mode-toggle {
-    color: #64748b;
+    color: #475569;
+
+    svg {
+      stroke: currentColor;
+    }
+
+    &:hover {
+      color: #0f172a;
+
+      svg {
+        stroke: #0f172a;
+      }
+    }
 
     &.active {
       background: #ffffff;
       color: #337ab7;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+
+      svg {
+        stroke: #337ab7;
+      }
     }
   }
 
@@ -672,6 +708,42 @@ html.light-theme,
     background: #ffffff;
     border: 1px solid #cbd5e1;
     color: #337ab7;
+
+    svg {
+      stroke: currentColor;
+    }
+
+    &:hover {
+      background: #f0f7fc !important;
+      border-color: #337ab7 !important;
+      color: #286090 !important;
+
+      svg {
+        stroke: #286090 !important;
+      }
+    }
+
+    &.copied {
+      background: rgba(51, 122, 183, 0.1) !important;
+      border-color: #337ab7 !important;
+      color: #337ab7 !important;
+
+      svg {
+        stroke: #337ab7 !important;
+      }
+    }
+  }
+
+  .pane-tag {
+    svg {
+      stroke: currentColor;
+    }
+  }
+
+  .stat-badge {
+    svg {
+      stroke: currentColor;
+    }
   }
 
   .diff-main-workspace,
