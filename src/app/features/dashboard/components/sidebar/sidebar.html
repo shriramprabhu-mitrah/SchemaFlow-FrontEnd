@@ -235,7 +235,7 @@
     </div>
 
     <!-- DBML Code Button -->
-    <div class="activity-nav-item dbml-item tt tt-right" [class.active]="svc.sidebarInspectorTab() === null"
+    <div class="activity-nav-item dbml-item tt tt-right" [class.active]="svc.sidebarInspectorTab() === null && !svc.showDiffChecker()"
       (click)="showDbmlEditor($event)" data-tt="DBML Code Editor" aria-label="DBML Code Editor">
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -247,8 +247,27 @@
       <span class="nav-label">DBML</span>
     </div>
 
+    <!-- Diff Checker Button -->
+    <div class="activity-nav-item diff-item tt tt-right" [class.active]="svc.showDiffChecker()"
+      (click)="toggleDiffChecker($event)" data-tt="Code Compare" aria-label="Code Compare">
+      <app-icons *ngIf="showCrown('compare')" class="sidebar-crown-badge" name="premium-crown" size="10"
+        color="#f59e0b"></app-icons>
+      <div class="nav-icon-box">
+        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="7" height="16" rx="1.5" />
+          <rect x="14" y="4" width="7" height="16" rx="1.5" />
+          <line x1="6.5" y1="9" x2="7.5" y2="9" />
+          <line x1="6.5" y1="13" x2="7.5" y2="13" />
+          <line x1="16.5" y1="9" x2="18.5" y2="9" />
+          <line x1="16.5" y1="13" x2="18.5" y2="13" />
+        </svg>
+      </div>
+      <span class="nav-label">Compare</span>
+    </div>
+
     <!-- Tables Button -->
-    <div class="activity-nav-item tables-item tt tt-right" [class.active]="svc.sidebarInspectorTab() === 'tables'"
+    <div class="activity-nav-item tables-item tt tt-right" [class.active]="svc.sidebarInspectorTab() === 'tables' && !svc.showDiffChecker()"
       (click)="toggleInspector('tables', $event)" data-tt="Tables" aria-label="Tables">
       <app-icons *ngIf="showCrown('tables')" class="sidebar-crown-badge" name="premium-crown" size="10"
         color="#f59e0b"></app-icons>
@@ -265,7 +284,7 @@
     </div>
 
     <!-- Refs / Relationships Button -->
-    <div class="activity-nav-item refs-item tt tt-right" [class.active]="svc.sidebarInspectorTab() === 'refs'"
+    <div class="activity-nav-item refs-item tt tt-right" [class.active]="svc.sidebarInspectorTab() === 'refs' && !svc.showDiffChecker()"
       (click)="toggleInspector('refs', $event)" data-tt="Relationships" aria-label="Relationships">
       <app-icons *ngIf="showCrown('refs')" class="sidebar-crown-badge" name="premium-crown" size="10"
         color="#f59e0b"></app-icons>
