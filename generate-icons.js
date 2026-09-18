@@ -16,7 +16,8 @@ const svgFiles = fs
 
 const iconEntries = svgFiles.map((file) => {
   const iconName = path.basename(file, '.svg');
-  const content = fs.readFileSync(path.join(iconsDir, file), 'utf8').trim();
+  let content = fs.readFileSync(path.join(iconsDir, file), 'utf8').trim();
+  content = content.replace(/<\?xml[\s\S]*?\?>\s*/g, '').trim();
   return `  ${JSON.stringify(iconName)}: ${JSON.stringify(content)}`;
 });
 

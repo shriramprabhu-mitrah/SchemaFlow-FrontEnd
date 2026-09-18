@@ -207,7 +207,7 @@
               <td>{{ ws.owner }}</td>
               <td>{{ ws.diagrams }}</td>
               <td>{{ ws.members }}</td>
-              <td>{{ ws.lastActivity }}</td>
+              <td>{{ ws.lastActivity || ws.lastactivity || ws.last_activity || '-' }}</td>
             </tr>
           </tbody>
         </table>

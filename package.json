@@ -6,7 +6,9 @@
   },
   "scripts": {
     "ng": "ng",
+    "prestart": "node generate-icons.js",
     "start": "ng serve --host 0.0.0.0 --disable-host-check",
+    "prebuild": "node generate-icons.js",
     "build": "ng build",
     "build:iis": "ng build --configuration iis && node scripts/prepare-iis-build.js iis",
     "build:iisdev": "ng build --configuration iisdev && node scripts/prepare-iis-build.js iisdev",
