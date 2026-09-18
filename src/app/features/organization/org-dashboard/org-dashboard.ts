@@ -61,8 +61,12 @@ export class OrgDashboardComponent implements OnInit {
               }
               return log;
             });
-            this.activeWorkspaces = res.data.activeWorkspaces;
-            this.pendingInvitations = res.data.pendingInvitations;
+            const rawWorkspaces = res.data.activeWorkspaces || res.data.activeworkspaces || [];
+            this.activeWorkspaces = rawWorkspaces.map((ws: any) => ({
+              ...ws,
+              lastActivity: ws.lastActivity || ws.lastactivity || ws.last_activity || ''
+            }));
+            this.pendingInvitations = res.data.pendingInvitations || res.data.pendinginvitations || [];
             this.chartData = res.data.chartData || [];
           }
           this.loading = false;
