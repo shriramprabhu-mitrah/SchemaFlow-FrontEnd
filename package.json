@@ -1,6 +1,6 @@
 {
   "name": "db-diagram",
-  "version": "0.0.0",
+  "version": "1.1.0",
   "engines": {
     "node": ">=24.15.0"
   },
