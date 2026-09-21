@@ -1395,24 +1395,52 @@ body:has(.modal-backdrop) {
 
 /* ============ LIGHT THEME OVERRIDES ============ */
 body.light-theme {
-  .layout-menu-item:hover {
-    background: rgba(59, 130, 246, 0.08);
-    color: #3b82f6;
+  #canvas-pane {
+    background: #f8fafc !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
   }
 
-  .layout-menu-item:hover .menu-icon {
-    background: rgba(59, 130, 246, 0.12);
-    color: #3b82f6;
-  }
+  .layout-menu {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.1) !important;
 
-  .layout-menu-item.active {
-    background: rgba(59, 130, 246, 0.12);
-    color: #3b82f6;
-  }
+    .layout-menu-title {
+      color: #64748b !important;
+    }
 
-  .layout-menu-item.active .menu-icon {
-    background: rgba(59, 130, 246, 0.2);
-    color: #3b82f6;
+    .layout-menu-divider {
+      background: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .layout-menu-item {
+      color: #334155 !important;
+
+      .menu-icon {
+        background: rgba(0, 0, 0, 0.04) !important;
+        color: #64748b !important;
+      }
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.08) !important;
+        color: #3b82f6 !important;
+
+        .menu-icon {
+          background: rgba(59, 130, 246, 0.12) !important;
+          color: #3b82f6 !important;
+        }
+      }
+
+      &.active {
+        background: rgba(59, 130, 246, 0.12) !important;
+        color: #3b82f6 !important;
+
+        .menu-icon {
+          background: rgba(59, 130, 246, 0.2) !important;
+          color: #3b82f6 !important;
+        }
+      }
+    }
   }
 
   .group-menu {

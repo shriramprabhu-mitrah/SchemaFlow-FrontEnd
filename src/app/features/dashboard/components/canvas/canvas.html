@@ -197,7 +197,7 @@
 
   <div id="layout-control" *ngIf="!svc.isPublicViewer">
     <app-button [variant]="svc.showDiagramViews ? 'toolbar-active' : 'toolbar'"
-      (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(false) : svc.showUpgradeModal()"
+      (onClick)="toggleDiagramViews(false, $event)"
       [tooltip]="isSampleDiagram() ? 'Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Diagram Views' : 'Diagram Views')"
       tooltipPosition="left" style="position: relative;"
       [disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
@@ -211,7 +211,7 @@
         name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 3px; right: 3px;"></app-icons>
     </app-button>
 
-    <app-button [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'" (onClick)="toggleLayoutMenu()"
+    <app-button id="layout-menu-button" [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'" (onClick)="toggleLayoutMenu($event)"
       [tooltip]="isSampleDiagram() ? 'Layout and links (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Layout and links' : 'Layout and links')"
       tooltipPosition="left" [disabled]="!auth.isLoggedIn() || isSampleDiagram()">
       <app-icons name="schema" size="17"></app-icons>
@@ -236,7 +236,7 @@
       </svg>
     </app-button>
 
-    <div class="layout-menu" *ngIf="showLayoutMenu && !isReadOnly" (wheel)="$event.stopPropagation()">
+    <div class="layout-menu" *ngIf="showLayoutMenu && !isReadOnly" (click)="$event.stopPropagation()" (wheel)="$event.stopPropagation()">
       <button type="button" class="layout-menu-item" (click)="triggerLayoutConfirm('vertical')">
         <span class="menu-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -704,7 +704,7 @@
             style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
         <app-button variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
-          (onClick)="entitlementService.canUseFeature('digram_view') ? svc.toggleDiagramViews(true) : svc.showUpgradeModal()"
+          (onClick)="toggleDiagramViews(true, $event)"
           [tooltip]="isSampleDiagram() ? 'Search / Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Search / Diagram Views' : 'Search / Diagram Views')"
           style="position: relative;"
           [disabled]="!auth.isLoggedIn() || isSampleDiagram() || (entitlementService.orgHasFeature('digram_view') && !entitlementService.canUseFeature('digram_view'))">
