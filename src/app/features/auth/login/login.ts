@@ -192,8 +192,12 @@ export class LoginComponent {
     const pass = this.password;
 
     let hasValidationError = false;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!user) {
-      this.usernameError = 'Please enter your username or email.';
+      this.usernameError = 'Please enter your email.';
+      hasValidationError = true;
+    } else if (!emailPattern.test(user)) {
+      this.usernameError = 'Please enter a valid email address.';
       hasValidationError = true;
     }
     if (!pass) {
@@ -202,6 +206,7 @@ export class LoginComponent {
     }
 
     if (hasValidationError) {
+      this.cdr.detectChanges();
       return;
     }
 

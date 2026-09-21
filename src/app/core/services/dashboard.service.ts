@@ -431,7 +431,13 @@ export class DashboardService {
   dbmlValidation: any = null;
   dbmlValidationError: any = null;
   isValidatingDbml = false;
-  saveErrorOccurred = false;
+  private readonly _saveErrorOccurred = signal<boolean>(false);
+  get saveErrorOccurred(): boolean {
+    return this._saveErrorOccurred();
+  }
+  set saveErrorOccurred(val: boolean) {
+    this._saveErrorOccurred.set(val);
+  }
 
   get code(): string {
     return this._code;
@@ -448,8 +454,13 @@ export class DashboardService {
     this.updateEditorErrors();
     this.code$.next(normalizedValue);
 
+    if (!this.hasUnsavedChanges()) {
+      this.saveErrorOccurred = false;
+      this.dbmlValidationError = null;
+    }
+
     // INSTANT REAL-TIME COLLAB: Bypass RxJS completely to guarantee emission
-    if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+    if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected && !this.showVersionHistory()) {
       if (this.hasUnsavedChanges()) {
         this.emitCollabChange();
       }
@@ -510,6 +521,32 @@ export class DashboardService {
   }
 
   showDocs = false;
+  showDiffChecker = signal<boolean>(false);
+  diffCheckerData: { leftText: string; rightText: string; viewMode: 'edit' | 'diff' } = {
+    leftText: '',
+    rightText: '',
+    viewMode: 'edit'
+  };
+  diffCheckerData$ = new Subject<{ leftText: string; rightText: string; viewMode: 'edit' | 'diff' }>();
+
+  openDiffChecker(leftText: string = '', rightText: string = '', mode: 'edit' | 'diff' = 'edit'): void {
+    this.diffCheckerData = { leftText, rightText, viewMode: mode };
+    this.showDocs = false;
+    this.showDiffChecker.set(true);
+    this.diffCheckerData$.next(this.diffCheckerData);
+  }
+
+  closeDiffChecker(): void {
+    this.showDiffChecker.set(false);
+  }
+
+  toggleDiffChecker(): void {
+    if (this.showDiffChecker()) {
+      this.closeDiffChecker();
+    } else {
+      this.openDiffChecker();
+    }
+  }
   isReadOnly = false;
   publicToken: string = '';
   isDiagramPublic: boolean = true;
@@ -517,6 +554,38 @@ export class DashboardService {
   diagramPassword: string = '';
   readonly diagramNameSignal = signal<string>('');
   readonly isDiagramNameEmpty = computed(() => !this.diagramNameSignal() || !this.diagramNameSignal().trim());
+
+  readonly isDiagramNameDuplicate = computed(() => {
+    const name = (this.diagramNameSignal() || '').trim();
+    if (!name || name.toLowerCase() === 'untitled diagram') return false;
+    const currentId = this.diagramId();
+    return this.diagrams().some(
+      (d) => d.id !== currentId && d.name.trim().toLowerCase() === name.toLowerCase()
+    );
+  });
+
+  readonly isDiagramNameInvalid = computed(() => this.isDiagramNameEmpty() || this.isDiagramNameDuplicate());
+
+  hasUnsavedError(): boolean {
+    if (this.isDiagramNameInvalid()) return true;
+    if (this.editorErrors().length > 0) return true;
+    if (this.hasUnsavedChanges() && this.saveErrorOccurred) return true;
+    return false;
+  }
+
+  getSaveStatusTooltip(): string {
+    if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
+    if (this.isDiagramNameDuplicate()) return 'Diagram name already exists';
+    if (this.editorErrors().length > 0) {
+      const first = this.editorErrors()[0];
+      return first?.message || 'DBML has syntax or relationship errors';
+    }
+    if (this.hasUnsavedChanges() && this.saveErrorOccurred) {
+      return typeof this.dbmlValidationError === 'string' ? this.dbmlValidationError : 'Save failed';
+    }
+    if (this.isSaving()) return 'Saving...';
+    return 'Saved';
+  }
 
   get diagramName(): string {
     return this.diagramNameSignal();
@@ -541,6 +610,30 @@ export class DashboardService {
 
   showUpgradeModal(featureKey: string = ''): void {
     this.showUpgradeModal$.next(featureKey);
+  }
+
+  openShareModal$ = new Subject<void>();
+
+  openShareModal(): void {
+    if (this.editorErrors().length > 0 || this.getValidationErrors().length > 0 || this.dbmlValidationError != null) {
+      this.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (!this.code || this.code.trim() === '' || this.tables.length === 0) {
+      this.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
+    if (this.showVersionHistory()) {
+      this.closeVersionHistory$.next();
+      this.showVersionHistory.set(false);
+    }
+    this.openShareModal$.next();
+  }
+
+  openImportModal$ = new Subject<string>();
+
+  openImportModal(dialect: string): void {
+    this.openImportModal$.next(dialect);
   }
 
   formatVersionDate(dateStr: string | Date): string {
@@ -579,7 +672,12 @@ export class DashboardService {
   readonly activeWorkspaceId = signal<number | null>(null);
   readonly _activeWorkspaceName = signal<string>('Personal');
   readonly paneMode = signal<'split' | 'editor' | 'canvas'>('split');
+  readonly sidebarCollapsed = signal<boolean>(false);
   workspacesFetched = false;
+
+  toggleActivitySidebar(): void {
+    this.sidebarCollapsed.set(!this.sidebarCollapsed());
+  }
 
   get activeWorkspaceName(): string {
     return this._activeWorkspaceName();
@@ -681,7 +779,9 @@ export class DashboardService {
   private originalTableColorsMap = '{}';
 
   readonly unsavedModalVisible = signal(false);
+  readonly shareModalVisible = signal(false);
   readonly authModalVisible = signal(false);
+  readonly sidebarInspectorTab = signal<'tables' | 'refs' | null>(null);
   readonly showDiscardButton = signal(true);
   readonly totalDiagrams = signal<number>(0);
   private pendingAction: (() => void) | null = null;
@@ -703,9 +803,14 @@ export class DashboardService {
   /** Signal wrapper so Angular effects can track changes */
   readonly hiddenTables = signal<Set<string>>(this._hiddenTables);
 
+  onDiagramViewsToggled?: (isOpen: boolean) => void;
+
   toggleDiagramViews(focusSearch: boolean = false): void {
     this.showDiagramViews = !this.showDiagramViews;
     this.focusDiagramViewsSearch = this.showDiagramViews && focusSearch;
+    if (this.onDiagramViewsToggled) {
+      this.onDiagramViewsToggled(this.showDiagramViews);
+    }
   }
 
   toggleTableVisibility(tableName: string): void {
@@ -768,15 +873,30 @@ export class DashboardService {
 
 
 
-  readonly theme = signal<'dark' | 'light'>('light');
+  private getInitialTheme(): 'dark' | 'light' {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark' || saved === 'light') {
+          return saved;
+        }
+      } catch (_) { }
+    }
+    return 'light';
+  }
+
+  readonly theme = signal<'dark' | 'light'>(this.getInitialTheme());
 
   toggleTheme(): void {
     const newTheme = this.theme() === 'dark' ? 'light' : 'dark';
-    this.theme.set(newTheme);
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('theme', newTheme);
+      try {
+        localStorage.setItem('theme', newTheme);
+      } catch (_) { }
       this.applyTheme(newTheme);
     }
+    this.theme.set(newTheme);
+    this.forceRedraw$.next();
   }
 
   applyTheme(theme: 'dark' | 'light'): void {
@@ -790,6 +910,18 @@ export class DashboardService {
       document.documentElement.classList.remove('light-theme');
       document.documentElement.setAttribute('data-theme', 'dark');
     }
+    this.forceRedraw$.next();
+  }
+
+  syncThemeFromStorage(): void {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      const current: 'dark' | 'light' = (saved === 'dark' || saved === 'light') ? saved : 'light';
+      if (this.theme() !== current) {
+        this.theme.set(current);
+      }
+      this.applyTheme(current);
+    }
   }
 
   constructor(
@@ -801,26 +933,47 @@ export class DashboardService {
   ) {
     if (typeof window !== 'undefined') {
       (window as any)._dashboardService = this;
-    }
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as 'dark' | 'light';
-      if (savedTheme) {
-        this.theme.set(savedTheme);
-        this.applyTheme(savedTheme);
-      } else {
-        this.applyTheme('light');
-      }
+      this.applyTheme(this.theme());
     }
     this.updateGutter();
     this.loadPersistedState();
     this.updateOriginalState();
 
+    // Re-evaluate layout and features when entitlements are loaded or updated
+    this.entitlementService.entitlements$.subscribe(() => {
+      this.parseAndLayout();
+    });
+
     // Subscribe to local code changes for instant real-time collab emission
     this.code$.pipe(debounceTime(300)).subscribe(() => {
-      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected && !this.showVersionHistory()) {
         if (this.hasUnsavedChanges()) { // Bypassed canSaveDiagram()
           this.emitCollabChange();
         }
+      }
+    });
+
+    // Debounced auto-save on DBML code changes (1200ms after user stops typing)
+    this.code$.pipe(debounceTime(1200)).subscribe(() => {
+      if (
+        this.auth.isLoggedIn() &&
+        !this.isDiagramNameEmpty() &&
+        this.hasUnsavedChanges() &&
+        !this.showVersionHistory() &&
+        this.canSaveDiagram(false) &&
+        this.validateDiagramName(false) &&
+        this.editorErrors().length === 0
+      ) {
+        if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+          this.emitCollabChange();
+        } else {
+          this.saveDiagram().subscribe({
+            error: () => {}
+          });
+        }
+      } else if (!this.hasUnsavedChanges()) {
+        this.saveErrorOccurred = false;
+        this.dbmlValidationError = null;
       }
     });
 
@@ -882,9 +1035,10 @@ export class DashboardService {
           this.auth.isLoggedIn() &&
           !this.isDiagramNameEmpty() &&
           this.hasUnsavedChanges() &&
-          !this.saveErrorOccurred &&
+          !this.showVersionHistory() &&
           this.canSaveDiagram(false) &&
-          this.validateDiagramName(false)
+          this.validateDiagramName(false) &&
+          this.editorErrors().length === 0
         ) {
           // If connected to a Team diagram socket, use socket emit
           if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
@@ -896,6 +1050,9 @@ export class DashboardService {
               }
             });
           }
+        } else if (!this.hasUnsavedChanges() && this.saveErrorOccurred) {
+          this.saveErrorOccurred = false;
+          this.dbmlValidationError = null;
         }
       }, 5000);
     }
@@ -926,7 +1083,17 @@ export class DashboardService {
       this.groupColors = JSON.parse(localStorage.getItem('group_colors') || '{}');
     }
     if (localStorage.getItem('table_colors_map')) {
-      this.tableColorsMap = JSON.parse(localStorage.getItem('table_colors_map') || '{}');
+      try {
+        this.tableColorsMap = JSON.parse(localStorage.getItem('table_colors_map') || '{}');
+        // Clean up any stale auto-generated table names that shouldn't have persistent custom colors
+        Object.keys(this.tableColorsMap).forEach(k => {
+          if (/^table_\d+$/i.test(k)) {
+            delete this.tableColorsMap[k];
+          }
+        });
+      } catch (e) {
+        this.tableColorsMap = {};
+      }
     }
     if (localStorage.getItem('collapsed_groups')) {
       try {
@@ -1078,12 +1245,20 @@ export class DashboardService {
             });
           }
 
+          if (fromTab === toTab && fromCol === toCol) {
+            errors.push({
+              line: idx + 1,
+              token: `${fromTab}.${fromCol}`,
+              message: `Cannot create relationship from "${fromTab}.${fromCol}" to itself`
+            });
+          }
+
           const fromTabObj = parsed.tables.find(t => t.name === fromTab);
           const toTabObj = parsed.tables.find(t => t.name === toTab);
           const fromColObj = fromTabObj?.columns.find(c => c.name === fromCol);
           const toColObj = toTabObj?.columns.find(c => c.name === toCol);
 
-          if (fromColObj && toColObj) {
+          if (fromColObj && toColObj && !(fromTab === toTab && fromCol === toCol)) {
             const fromEligible = fromColObj.pk || fromColObj.unique;
             const toEligible = toColObj.pk || toColObj.unique;
 
@@ -1299,14 +1474,21 @@ export class DashboardService {
   }
 
   isRefInvalid(ref: RefDef): boolean {
+    if (!ref) return false;
+
+    // 1. Self-reference to the exact same column is always invalid
+    if (ref.fromTable === ref.toTable && ref.fromCol === ref.toCol) {
+      return true;
+    }
+
     const fromTab = this.tables.find((t) => t.name === ref.fromTable);
     const toTab = this.tables.find((t) => t.name === ref.toTable);
-    // Missing tables (e.g. during renaming, duplicate tables, or WIP) are not relationship errors
-    if (!fromTab || !toTab) return false;
+    // Missing tables mean relationship cannot be validly formed
+    if (!fromTab || !toTab) return true;
 
-    const fromColObj = fromTab.columns.find((c) => c.name === ref.fromCol);
-    const toColObj = toTab.columns.find((c) => c.name === ref.toCol);
-    if (!fromColObj || !toColObj) return false;
+    const fromColObj = fromTab.columns?.find((c) => c.name === ref.fromCol);
+    const toColObj = toTab.columns?.find((c) => c.name === ref.toCol);
+    if (!fromColObj || !toColObj) return true;
 
     const fromEligible = fromColObj.pk || fromColObj.unique;
     const toEligible = toColObj.pk || toColObj.unique;
@@ -1319,6 +1501,25 @@ export class DashboardService {
     // Local check 2: Data types of connected columns must be compatible (e.g. varchar vs int is invalid)
     if (!this.areTypesCompatible(fromColObj.type, toColObj.type)) {
       return true;
+    }
+
+    // Check if there are editor errors for this ref's line or tokens
+    const errors = this.editorErrors();
+    if (errors && errors.length > 0) {
+      if (ref.lineNumber && errors.some(e => e.line === ref.lineNumber)) {
+        return true;
+      }
+      const refToken1 = `${ref.fromTable}.${ref.fromCol}`;
+      const refToken2 = `${ref.toTable}.${ref.toCol}`;
+      const hasError = errors.some(e => {
+        if (e.token && (e.token === refToken1 || e.token === refToken2)) return true;
+        if (e.message) {
+          if (e.message.includes(ref.fromTable) && e.message.includes(ref.fromCol)) return true;
+          if (e.message.includes(ref.toTable) && e.message.includes(ref.toCol)) return true;
+        }
+        return false;
+      });
+      if (hasError) return true;
     }
 
     const backendErrors = this.getValidationErrors();
@@ -1361,6 +1562,9 @@ export class DashboardService {
           return true;
         }
       }
+
+      if (msg.includes(ref.fromTable) && msg.includes(ref.fromCol)) return true;
+      if (msg.includes(ref.toTable) && msg.includes(ref.toCol)) return true;
     }
 
     return false;
@@ -1372,6 +1576,8 @@ export class DashboardService {
    * saving is still permitted so a brand-new diagram isn't blocked forever.
    */
   isSubscriptionExpired = signal(false);
+  currentOrgPlanSlug = signal<string>('free');
+  currentOrgPlanStatus = signal<string>('active');
 
   canSaveDiagram(showToast = true): boolean {
     if (this.isReadOnly) {
@@ -1381,6 +1587,15 @@ export class DashboardService {
     if (this.isDiagramNameEmpty()) {
       if (showToast) {
         this.showToast('Diagram name should not be empty', 4000, 'error');
+      }
+      return false;
+    }
+
+    if (this.editorErrors().length > 0) {
+      if (showToast) {
+        const first = this.editorErrors()[0];
+        const suffix = this.editorErrors().length > 1 ? ` (+${this.editorErrors().length - 1} more)` : '';
+        this.showToast(`Cannot save: ${first.message}${suffix}`, 4000, 'error');
       }
       return false;
     }
@@ -1606,7 +1821,8 @@ export class DashboardService {
 
     // --- Sync Note blocks from DBML into svc.notes (editor → canvas) ---
     if (!this._syncingNotesToCode) {
-      const parsedNotes = parsed.notes ?? [];
+      const canUseNotes = this.entitlementService.canUseFeature('diagram_notes');
+      const parsedNotes = canUseNotes ? (parsed.notes ?? []) : [];
       const parsedNames = new Set(parsedNotes.map((n: { name: string }) => n.name));
 
       const prevCount = this.notes.length;
@@ -1662,8 +1878,17 @@ export class DashboardService {
         delete this.tablePositions[name];
       }
     });
+    Object.keys(this.tableColorsMap).forEach((name) => {
+      if (!activeNames.has(name)) {
+        delete this.tableColorsMap[name];
+      }
+    });
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
 
-    const groups = parsed.groups || [];
+    const canUseTableGroup = this.entitlementService.canUseFeature('table_group');
+    const groups = canUseTableGroup ? (parsed.groups || []) : [];
 
     // Automatically position newly added/chosen tables inside the group's existing visual bounds
     groups.forEach((g) => {
@@ -1710,7 +1935,7 @@ export class DashboardService {
     const groupColors = ['#4f8ff0', '#34a853', '#fbbc05', '#a855f7', '#ec4899', '#14b8a6'];
     const tableToGroupColOffset = new Map<string, number>();
     const tableColors = new Map<string, string>();
-    this.groups = groups.map((g, gi) => {
+    this.groups = canUseTableGroup ? groups.map((g, gi) => {
       const defaultColor = groupColors[gi % groupColors.length];
       const color = g.color || this.groupColors[g.name] || defaultColor;
       g.tables.forEach((tableName: string, index: number) => {
@@ -1725,7 +1950,7 @@ export class DashboardService {
         id: this.groupIds[g.name],
         color
       };
-    });
+    }) : [];
 
     const totalTables = parsed.tables.length;
     const numGroupCols = groups.length * 2;
@@ -1923,12 +2148,12 @@ export class DashboardService {
     this.tables.forEach((t) => {
       t.columns.forEach((c) => {
         const refInfo = fkMap.get(`${t.name}.${c.name}`);
-        
+
         // Also ensure any column involved in a relation is considered a foreign key for visibility purposes
         const isSource = parsed.refs.some(r => r.fromTable === t.name && r.fromCol === c.name);
-        
+
         c.fk = !!refInfo || isSource;
-        
+
         if (refInfo) {
           c.fkTable = refInfo.targetTable;
           c.fkCol = refInfo.targetCol;
@@ -1940,7 +2165,7 @@ export class DashboardService {
           c.fkTable = undefined;
           c.fkCol = undefined;
         }
-        
+
         // Track if it's a target so we can include it in Keys Only view even if not a PK/FK
         (c as any).isRelTarget = parsed.refs.some(r => r.toTable === t.name && r.toCol === c.name);
       });
@@ -2072,10 +2297,19 @@ export class DashboardService {
       this.tablePositions[newName] = this.tablePositions[oldName];
       delete this.tablePositions[oldName];
     }
+
+    if (this.tableColorsMap[oldName]) {
+      this.tableColorsMap[newName] = this.tableColorsMap[oldName];
+      delete this.tableColorsMap[oldName];
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+      }
+    }
   }
 
   deleteTableInCode(tableName: string): void {
-    const tableRe = new RegExp(`Table\\s+${tableName}\\s*\\{[\\s\\S]*?\\n\\}\\n?`);
+    const safeName = tableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeName}(?:["'])?\\s*\\{[\\s\\S]*?\\}\\n?`, 'gi');
     this.code = this.code.replace(tableRe, '');
 
     this.code = this.code
@@ -2088,9 +2322,15 @@ export class DashboardService {
       .replace(/\n{3,}/g, '\n\n');
 
     delete this.tablePositions[tableName];
+    delete this.tableColorsMap[tableName];
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
   }
+
   updateTableInCode(oldName: string, newName: string, columns: Column[]): void {
-    const tableRe = new RegExp(`Table\\s+${oldName}\\s*\\{[\\s\\S]*?\\n\\}`);
+    const safeOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeOldName}(?:["'])?\\s*\\{[\\s\\S]*?\\}`, 'gi');
     if (!tableRe.test(this.code)) return;
 
     // Parse existing references BEFORE changing code
@@ -2529,6 +2769,10 @@ export class DashboardService {
         localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
       }
     }
+    delete this.tableColorsMap[name];
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
 
     this.updateGutter();
     this.parseAndLayout();
@@ -2536,6 +2780,10 @@ export class DashboardService {
 
   addTableAt(x: number, y: number): void {
     const tableName = this.generateNextTableName();
+    delete this.tableColorsMap[tableName];
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
 
     const newTable: TableDef = {
       name: tableName,
@@ -2546,7 +2794,8 @@ export class DashboardService {
       columns: [
         { name: 'id', type: 'int', pk: true, notNull: false, unique: false, increment: false, fk: false, default: false, check: false }
       ],
-      colY: {}
+      colY: {},
+      color: undefined
     };
 
     newTable.columns.forEach((col, index) => {
@@ -3011,8 +3260,8 @@ export class DashboardService {
     if (token) {
       url += `&token=${token}`;
     }
-    // Omit auth headers intentionally to just check the invitation
-    return this.http.get(url);
+    const headers = this.getAuthHeaders();
+    return this.http.get(url, { headers });
   }
 
   acceptOrgInvitation(payload: { token: string | null, orgId: string }): Observable<any> {
@@ -3400,7 +3649,8 @@ export class DashboardService {
     diagramProperties: { zoomLevel: number; isGridView: boolean; isAllFields: boolean; isKeyOnly: boolean; isColumnNameOnly: boolean; isStraightLine: boolean; isSmoothLine: boolean; showAllConnections: boolean }[];
     diagramNotes: DiagramNote[];
   } {
-    const tableGroup = (this.groups || []).map((group) => {
+    const canUseTableGroup = this.entitlementService.canUseFeature('table_group');
+    const tableGroup = (canUseTableGroup && this.groups ? this.groups : []).map((group) => {
       const groupTables = this.tables.filter((t) => group.tables.includes(t.name));
       let minX = 0;
       let minY = 0;
@@ -3559,7 +3809,7 @@ export class DashboardService {
   }
 
   saveDiagram(): Observable<any> {
-    if (this.isSaving()) {
+    if (this.isSaving() || this.showVersionHistory()) {
       return EMPTY;
     }
 
@@ -3628,11 +3878,15 @@ export class DashboardService {
           if (currentWsId != null) {
             this.diagramWorkspaceType.set('Team');
           }
+          const diag = res?.data ?? res;
+          if (diag && (diag.publictoken || diag.publicToken || diag.public_token)) {
+            this.publicToken = diag.publictoken || diag.publicToken || diag.public_token;
+          }
           this.updateOriginalState();
           this.extractIdsFromResponse(res);
           this.totalDiagrams.update(n => n + 1);
           this.entitlementService.incrementUsage('create_diagrams');
-          
+
           // Connect to socket if newly created in a team workspace
           if (this.diagramWorkspaceType() === 'Team') {
             const dId = this.diagramId();
@@ -3705,6 +3959,15 @@ export class DashboardService {
       ? urlPattern.replace('{id}', diagramId.toString()).replace('{versionId}', versionId.toString())
       : `${this.appConfig.environment?.apiConfig?.baseUrl}/api/diagrams/${diagramId}/revert/${versionId}`;
     return this.http.post<any>(url, {}, { headers });
+  }
+
+  compareDiagramVersion(diagramId: number, versionId: number): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const urlPattern = this.appConfig.environment?.diagramApiUrls?.compare;
+    const url = urlPattern
+      ? urlPattern.replace('{id}', diagramId.toString()).replace('{versionId}', versionId.toString())
+      : `${this.appConfig.environment?.apiConfig?.baseUrl}/api/diagrams/${diagramId}/history/${versionId}/compare`;
+    return this.http.get<any>(url, { headers });
   }
 
   toggleDiagramSharingStatus(diagramId: number, isPublic: boolean, password?: string): Observable<any> {
@@ -3800,8 +4063,12 @@ export class DashboardService {
     this.groupIds = {};
     this.noteIds = {};
     this.tableColorsMap = {};
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.removeItem('table_colors_map');
+    }
     this.diagramName = '';
     this.showDocs = false;
+    this.showDiffChecker.set(false);
     this.showCanvasPlaceholder = false;
     this.isAllFields = true;
     this.isKeyOnly = false;
@@ -4253,8 +4520,8 @@ export class DashboardService {
       // Append fresh Note blocks for each note that has content or a name
       const noteBlocks = this.notes
         .map(n => {
-          const safeName = n.name && (/\s/.test(n.name) && !n.name.startsWith('"')) ? `"${n.name}"` : (n.name || 'note');
-          return `\nNote ${safeName} {\n  '${(n.text || '').replace(/'/g, "''")}' \n}`;
+          const safeName = n.name ? (/\s/.test(n.name) && !n.name.startsWith('"') ? `"${n.name}"` : n.name) : '';
+          return `\nNote ${safeName ? safeName + ' ' : ''}{\n  '${(n.text || '').replace(/'/g, "''")}' \n}`;
         })
         .join('\n');
       const newCode = (stripped + (noteBlocks ? '\n' + noteBlocks : '')).replace(/\r\n|\r/g, '\n');

@@ -42,15 +42,7 @@
   &:not([data-tt]):hover::after,
   &:not([data-tt]):hover::before,
   &[data-tt=""]:hover::after,
-  &[data-tt=""]:hover::before,
-  &.disabled:hover::after,
-  &.disabled:hover::before,
-  &:disabled:hover::after,
-  &:disabled:hover::before,
-  &[disabled]:hover::after,
-  &[disabled]:hover::before,
-  &.is-disabled:hover::after,
-  &.is-disabled:hover::before {
+  &[data-tt=""]:hover::before {
     content: none !important;
     display: none !important;
   }
@@ -86,6 +78,30 @@
     bottom: auto;
     right: 0;
     left: auto;
+    transform: translateZ(0);
+    animation: tt-fade-bottom 0.15s ease-out;
+  }
+
+  &:hover::before {
+    top: calc(100% + 4px);
+    bottom: auto;
+    left: 50%;
+    margin-left: -4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+    border-bottom: none;
+    transform: rotate(45deg);
+    animation: tt-fade-bottom 0.15s ease-out;
+  }
+}
+
+.tt.tt-bottom-left {
+  &:hover::after {
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: 0;
+    right: auto;
     transform: translateZ(0);
     animation: tt-fade-bottom 0.15s ease-out;
   }

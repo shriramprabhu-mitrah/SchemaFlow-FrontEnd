@@ -1,0 +1,428 @@
+:host {
+  display: block;
+  height: 100%;
+  flex-shrink: 0;
+  z-index: 60;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+
+  &.collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+
+    .activity-sidebar {
+      width: 0 !important;
+      min-width: 0 !important;
+      max-width: 0 !important;
+      overflow: hidden !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
+}
+
+.activity-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 58px;
+  height: 100%;
+  background: #08101f;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  padding: 10px 0;
+  box-sizing: border-box;
+  user-select: none;
+  position: relative;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.activity-top-group,
+.activity-bottom-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+}
+
+.activity-spacer {
+  flex: 1;
+  min-height: 16px;
+}
+
+.activity-divider {
+  width: 32px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 4px 0;
+}
+
+/* Nav Item (Icon over text) */
+.activity-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  padding: 6px 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #cfd3d8 ;
+  position: relative;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .sidebar-crown-badge {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  .nav-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    position: relative;
+
+    .nav-icon {
+      stroke-width: 2.2;
+      transition: transform 0.15s ease, stroke 0.15s ease;
+    }
+  }
+
+  .nav-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1.2;
+    margin-top: 3px;
+    text-align: center;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+  }
+
+  &:hover {
+    color: #3ec5c1;
+    background: rgba(255, 255, 255, 0.08);
+
+    .nav-icon {
+      stroke: #3ec5c1;
+      color: #3ec5c1;
+      transform: translateY(-1px);
+    }
+
+    .nav-label {
+      color: #3ec5c1;
+    }
+  }
+
+  /* Active / selected state matching select tool button */
+  &.active {
+    background: rgba(62, 197, 193, 0.15);
+    color: #3ec5c1;
+
+    .nav-icon {
+      stroke: #3ec5c1;
+      color: #3ec5c1;
+    }
+
+    .nav-label {
+      color: #3ec5c1;
+      font-weight: 600;
+    }
+
+    &:hover {
+      background: rgba(62, 197, 193, 0.22);
+      color: #3ec5c1;
+
+      .nav-icon {
+        stroke: #3ec5c1;
+        color: #3ec5c1;
+      }
+
+      .nav-label {
+        color: #3ec5c1;
+      }
+    }
+  }
+
+  /* Disabled state when unauthenticated or restricted */
+  &.disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+
+    &:hover {
+      background: transparent !important;
+      color: #cfd3d8 !important;
+
+      .nav-icon {
+        stroke: #cfd3d8 !important;
+        color: #cfd3d8 !important;
+        transform: none !important;
+      }
+
+      .nav-label {
+        color: #cfd3d8 !important;
+      }
+    }
+  }
+
+  &.docs-item .nav-label,
+  &.logout-item .nav-label,
+  &.login-item .nav-label {
+    font-size: 9.5px;
+    letter-spacing: -0.2px;
+  }
+}
+
+/* Flyout Menus */
+.sidebar-flyout-menu {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  width: 190px;
+  background: #121c2f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+  padding: 6px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: flyoutSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+
+  .flyout-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+    padding: 6px 10px 4px;
+  }
+
+  .flyout-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 4px 0;
+  }
+
+  .flyout-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: #cbd5e1;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    gap: 8px;
+    transition: all 0.12s ease;
+    text-align: left;
+    box-sizing: border-box;
+
+    &:hover:not([disabled]) {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    &[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .db-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+
+      &.postgres-icon {
+        color: #336791;
+      }
+      &.mysql-icon {
+        color: #00758f;
+      }
+      &.mssql-icon {
+        color: #cc292b;
+      }
+      &.sqlite-icon {
+        color: #0284c7;
+      }
+      &.pdf-icon {
+        color: #ef4444;
+      }
+      &.png-icon {
+        color: #10b981;
+      }
+      &.svg-icon {
+        color: #f59e0b;
+      }
+    }
+
+    .item-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .flyout-status {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #3ec5c1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+@keyframes flyoutSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============ LIGHT THEME OVERRIDES ============ */
+:host-context(body.light-theme) .activity-sidebar,
+.activity-sidebar.light {
+  background: #ffffff;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+
+  .activity-divider {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .activity-nav-item {
+    color: #64748b;
+
+    .nav-icon {
+      stroke: #64748b;
+      color: #64748b;
+    }
+
+    .nav-label {
+      color: #64748b;
+    }
+
+    &:hover {
+      color: #0f172a;
+      background: rgba(0, 0, 0, 0.05);
+
+      .nav-icon {
+        stroke: #0f172a;
+        color: #0f172a;
+      }
+
+      .nav-label {
+        color: #0f172a;
+      }
+    }
+
+    &.active {
+      background: rgba(51, 122, 183, 0.1);
+      color: #337ab7;
+
+      .nav-icon {
+        stroke: #337ab7;
+        color: #337ab7;
+      }
+
+      .nav-label {
+        color: #337ab7;
+      }
+
+      &:hover {
+        background: rgba(51, 122, 183, 0.14);
+        color: #337ab7;
+
+        .nav-icon {
+          stroke: #337ab7;
+          color: #337ab7;
+        }
+
+        .nav-label {
+          color: #337ab7;
+        }
+      }
+    }
+
+    &.disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+
+      &:hover {
+        background: transparent !important;
+        color: #64748b !important;
+
+        .nav-icon {
+          stroke: #64748b !important;
+          color: #64748b !important;
+          transform: none !important;
+        }
+
+        .nav-label {
+          color: #64748b !important;
+        }
+      }
+    }
+  }
+
+  .sidebar-flyout-menu {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    .flyout-header {
+      color: #94a3b8;
+    }
+
+    .flyout-divider {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .flyout-item {
+      color: #334155;
+
+      &:hover:not([disabled]) {
+        background: rgba(0, 0, 0, 0.04);
+        color: #0f172a;
+      }
+
+      &[disabled] {
+        opacity: 0.45;
+      }
+    }
+
+    .flyout-status {
+      color: #2563eb;
+    }
+  }
+}

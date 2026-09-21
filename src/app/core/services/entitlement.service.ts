@@ -40,6 +40,21 @@ export class EntitlementService {
   public memberFeatureAccess: string[] | null = null;
   public hasUsedTrial: boolean = false;
 
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('userLogout', () => {
+        this.hasUsedTrial = false;
+        this.loadedOrgId = null;
+        this.memberFeatureAccess = null;
+        this.plansLoaded = false;
+        this.inflightRequest$ = null;
+        this.entitlementsSubject.next([]);
+        this.orgEntitlementsSubject.next([]);
+        this.plansSubject.next([]);
+      });
+    }
+  }
+
   loadEntitlements(force = false): Observable<EffectiveEntitlement[]> {
     this.loadPlans(force).subscribe();
 
@@ -56,6 +71,7 @@ export class EntitlementService {
       if (cached && cached.length > 0) {
         this.loadedOrgId = orgId;
         this.entitlementsSubject.next(cached);
+        this.orgEntitlementsSubject.next(cached);
       }
     }
 
@@ -81,7 +97,7 @@ export class EntitlementService {
             this.hasUsedTrial = data.hasUsedTrial;
         }
 
-        return (data?.entitlements || []);
+        return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
       }),
       tap(data => {
         this.loadedOrgId = orgId;
@@ -305,6 +321,11 @@ export class EntitlementService {
         }
         return true;
       }
+    }
+
+    // Default premium features that must be explicitly enabled
+    if (featureKey === 'code_compare' || (planSlug === 'free' && (featureKey === 'table_group' || featureKey === 'diagram_notes'))) {
+      return false;
     }
 
     return true; // default to true if the feature is unknown

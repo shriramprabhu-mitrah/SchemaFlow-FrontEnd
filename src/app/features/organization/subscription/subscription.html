@@ -239,11 +239,11 @@
         </div>
         <div class="popup-body">
           <label class="form-label">Number of Members</label>
-          <input type="number" class="form-input" min="1" [(ngModel)]="addSeatCount">
+          <input type="number" class="form-input" min="1" max="5" [(ngModel)]="addSeatCount" (input)="onSeatCountChange($event)">
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" (click)="closeAddSeatsModal()">Cancel</button>
-          <button class="btn-primary" (click)="confirmAddSeats()">Request Members</button>
+          <button class="btn-primary" [disabled]="!addSeatCount || addSeatCount < 1 || addSeatCount > 5" (click)="confirmAddSeats()">Request Members</button>
         </div>
       </ng-container>
 

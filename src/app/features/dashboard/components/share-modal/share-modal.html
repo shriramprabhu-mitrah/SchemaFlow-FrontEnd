@@ -20,6 +20,27 @@
     </div>
 
     <div class="modal-body">
+      <!-- Error Warning Banner if DBML has errors or diagram is empty -->
+      <div class="share-error-banner" *ngIf="hasDbmlErrors()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>Cannot share diagram while there are syntax errors in the code. Please fix errors first.</span>
+      </div>
+
+      <div class="share-error-banner" *ngIf="!hasDbmlErrors() && isDiagramEmpty()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>Diagram is empty. Nothing to share.</span>
+      </div>
+
       <!-- SHARING TAB -->
       <div *ngIf="activeTab === 'sharing'" class="tab-content sharing-tab">
 
@@ -27,12 +48,13 @@
         <div class="embed-header-row mb-2" style="border-bottom: none; padding-bottom: 0;">
           <div class="embed-toggle-group">
             <span class="embed-label">Public Diagram</span>
-            <label class="switch-toggle blue-toggle">
-              <input type="checkbox" [(ngModel)]="isPublic" />
+            <label class="switch-toggle blue-toggle" [class.disabled]="hasDbmlErrors() || isDiagramEmpty()">
+              <input type="checkbox" [(ngModel)]="isPublic" [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
               <span class="slider-round"></span>
             </label>
           </div>
-          <button *ngIf="isPublic" class="btn btn-primary" (click)="saveSharingSettings()" [disabled]="savingStatus">
+          <button *ngIf="isPublic" class="btn btn-primary" (click)="saveSharingSettings()"
+            [disabled]="savingStatus || hasDbmlErrors() || isDiagramEmpty()">
             {{ savingStatus ? 'Saving...' : 'Save Settings' }}
           </button>
         </div>
@@ -42,9 +64,11 @@
           <label class="section-desc mb-2">Password</label>
           <div class="password-input-wrapper" style="position: relative; display: flex; align-items: center;">
             <input [type]="showPassword ? 'text' : 'password'" class="db-input w-100" style="padding-right: 40px;"
-              placeholder="Enter password to protect this diagram" [(ngModel)]="password" />
+              placeholder="Enter password to protect this diagram" [(ngModel)]="password"
+              [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
             <button type="button" class="password-toggle-btn"
-              (click)="showPassword = !showPassword" [title]="showPassword ? 'Hide password' : 'Show password'">
+              (click)="showPassword = !showPassword" [disabled]="hasDbmlErrors() || isDiagramEmpty()"
+              [title]="showPassword ? 'Hide password' : 'Show password'">
               <svg *ngIf="!showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -62,7 +86,8 @@
         </div>
 
         <div class="save-settings-row mb-3" style="justify-content: flex-start;" *ngIf="!isPublic">
-          <button class="btn btn-primary" (click)="saveSharingSettings()" [disabled]="savingStatus">
+          <button class="btn btn-primary" (click)="saveSharingSettings()"
+            [disabled]="savingStatus || hasDbmlErrors() || isDiagramEmpty()">
             {{ savingStatus ? 'Saving...' : 'Save Settings' }}
           </button>
         </div>
@@ -72,8 +97,9 @@
         <!-- Share Link with Copy -->
         <p class="section-desc mb-2">Share this link with others</p>
         <div class="embed-code-box mb-3">
-          <input type="text" class="db-input code-input" [value]="getShareLink()" readonly />
-          <button class="btn btn-primary copy-btn" (click)="copyToClipboard(getShareLink(), 'link')">
+          <input type="text" class="db-input code-input" [value]="getShareLink()" readonly [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
+          <button class="btn btn-primary copy-btn" (click)="copyToClipboard(getShareLink(), 'link')"
+            [disabled]="hasDbmlErrors() || isDiagramEmpty()" title="Copy Link">
             <svg *ngIf="!linkCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -90,9 +116,9 @@
         <p class="section-desc mb-2">Send link via email</p>
         <div class="invite-form-row" style="margin-top: 0; background: none; border: none; padding: 0;">
           <input type="text" class="db-input flex-grow" placeholder="Email, comma or space separated"
-            [(ngModel)]="emailsInput" />
+            [(ngModel)]="emailsInput" [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
           <button class="btn btn-primary invite-btn" (click)="sendEmails()"
-            [disabled]="sendingEmails || emailsInput.trim().length === 0" style="margin-left: 8px;">
+            [disabled]="sendingEmails || emailsInput.trim().length === 0 || hasDbmlErrors() || isDiagramEmpty()" style="margin-left: 8px;">
             Share
           </button>
         </div>

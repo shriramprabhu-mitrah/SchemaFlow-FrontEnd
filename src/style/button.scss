@@ -12,10 +12,10 @@
   background: transparent;
   color: #e6eef9;
 
-  &.disabled {
-    opacity: 0.5;
+  &.disabled,
+  &[disabled] {
+    opacity: 0.38;
     cursor: not-allowed;
-    pointer-events: none;
   }
 }
 
@@ -31,6 +31,17 @@
   
   &:hover:not(.disabled) {
     background: #2a3a4e;
+  }
+}
+
+body.light-theme .default {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+
+  &:hover:not(.disabled) {
+    background: #e2e8f0;
+    color: #0f172a;
   }
 }
 

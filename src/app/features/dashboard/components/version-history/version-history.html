@@ -25,7 +25,7 @@
     </div>
 
     <!-- Versions List -->
-    <div *ngIf="!isLoading && !error && versions.length > 0">
+    <ng-container *ngIf="!isLoading && !error && versions.length > 0">
       <div class="history-item" 
            *ngFor="let v of versions" 
            [class.selected]="selectedVersion === v" 
@@ -49,13 +49,42 @@
           </div>
         </div>
         
-        <div class="history-item-actions">
-          <button class="row-restore-btn" (click)="restoreFromRow($event, v)">
-            Restore
+        <div class="history-item-actions history-menu-container">
+          <button class="row-more-btn tt-left" 
+                  [class.tt]="activeMenuVersion !== v"
+                  type="button" 
+                  [attr.data-tt]="activeMenuVersion !== v ? 'More options' : null"
+                  [class.active]="activeMenuVersion === v"
+                  (click)="toggleMenu($event, v)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2"/>
+              <circle cx="12" cy="12" r="2"/>
+              <circle cx="12" cy="19" r="2"/>
+            </svg>
           </button>
+
+          <!-- Dropdown Menu -->
+          <div class="history-dropdown-menu" 
+               *ngIf="activeMenuVersion === v" 
+               (click)="$event.stopPropagation()">
+            <button type="button" class="menu-item" (click)="restoreFromRow($event, v)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 .49-3.29"/>
+              </svg>
+              <span>Restore</span>
+            </button>
+            <button type="button" class="menu-item" (click)="compareFromRow($event, v)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="18" rx="1"/>
+                <rect x="14" y="3" width="7" height="18" rx="1"/>
+              </svg>
+              <span>Compare</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </ng-container>
   </div>
 
   <!-- Bottom Actions -->
