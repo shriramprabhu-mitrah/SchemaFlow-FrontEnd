@@ -309,7 +309,7 @@ export class EntitlementService {
     }
 
     // Default premium features that must be explicitly enabled
-    if (featureKey === 'code_compare') {
+    if (featureKey === 'code_compare' || (planSlug === 'free' && (featureKey === 'table_group' || featureKey === 'diagram_notes'))) {
       return false;
     }
 

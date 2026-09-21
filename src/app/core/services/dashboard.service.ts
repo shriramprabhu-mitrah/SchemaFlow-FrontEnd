@@ -752,9 +752,14 @@ export class DashboardService {
   /** Signal wrapper so Angular effects can track changes */
   readonly hiddenTables = signal<Set<string>>(this._hiddenTables);
 
+  onDiagramViewsToggled?: (isOpen: boolean) => void;
+
   toggleDiagramViews(focusSearch: boolean = false): void {
     this.showDiagramViews = !this.showDiagramViews;
     this.focusDiagramViewsSearch = this.showDiagramViews && focusSearch;
+    if (this.onDiagramViewsToggled) {
+      this.onDiagramViewsToggled(this.showDiagramViews);
+    }
   }
 
   toggleTableVisibility(tableName: string): void {
@@ -882,6 +887,11 @@ export class DashboardService {
     this.updateGutter();
     this.loadPersistedState();
     this.updateOriginalState();
+
+    // Re-evaluate layout and features when entitlements are loaded or updated
+    this.entitlementService.entitlements$.subscribe(() => {
+      this.parseAndLayout();
+    });
 
     // Subscribe to local code changes for instant real-time collab emission
     this.code$.pipe(debounceTime(300)).subscribe(() => {
@@ -1686,7 +1696,8 @@ export class DashboardService {
 
     // --- Sync Note blocks from DBML into svc.notes (editor → canvas) ---
     if (!this._syncingNotesToCode) {
-      const parsedNotes = parsed.notes ?? [];
+      const canUseNotes = this.entitlementService.canUseFeature('diagram_notes');
+      const parsedNotes = canUseNotes ? (parsed.notes ?? []) : [];
       const parsedNames = new Set(parsedNotes.map((n: { name: string }) => n.name));
 
       const prevCount = this.notes.length;
@@ -1751,7 +1762,8 @@ export class DashboardService {
       localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
     }
 
-    const groups = parsed.groups || [];
+    const canUseTableGroup = this.entitlementService.canUseFeature('table_group');
+    const groups = canUseTableGroup ? (parsed.groups || []) : [];
 
     // Automatically position newly added/chosen tables inside the group's existing visual bounds
     groups.forEach((g) => {
@@ -1798,7 +1810,7 @@ export class DashboardService {
     const groupColors = ['#4f8ff0', '#34a853', '#fbbc05', '#a855f7', '#ec4899', '#14b8a6'];
     const tableToGroupColOffset = new Map<string, number>();
     const tableColors = new Map<string, string>();
-    this.groups = groups.map((g, gi) => {
+    this.groups = canUseTableGroup ? groups.map((g, gi) => {
       const defaultColor = groupColors[gi % groupColors.length];
       const color = g.color || this.groupColors[g.name] || defaultColor;
       g.tables.forEach((tableName: string, index: number) => {
@@ -1813,7 +1825,7 @@ export class DashboardService {
         id: this.groupIds[g.name],
         color
       };
-    });
+    }) : [];
 
     const totalTables = parsed.tables.length;
     const numGroupCols = groups.length * 2;
@@ -3501,7 +3513,8 @@ export class DashboardService {
     diagramProperties: { zoomLevel: number; isGridView: boolean; isAllFields: boolean; isKeyOnly: boolean; isColumnNameOnly: boolean; isStraightLine: boolean; isSmoothLine: boolean; showAllConnections: boolean }[];
     diagramNotes: DiagramNote[];
   } {
-    const tableGroup = (this.groups || []).map((group) => {
+    const canUseTableGroup = this.entitlementService.canUseFeature('table_group');
+    const tableGroup = (canUseTableGroup && this.groups ? this.groups : []).map((group) => {
       const groupTables = this.tables.filter((t) => group.tables.includes(t.name));
       let minX = 0;
       let minY = 0;
