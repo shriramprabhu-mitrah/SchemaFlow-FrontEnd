@@ -6,7 +6,7 @@
       <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
         [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
         <app-icons name="db-diagram-logo" size="48" class="brand-icon-wrap"></app-icons>
-        <span class="brand-text brand-text-flex" *ngIf="!sidebarCollapsed">DB Nexus</span>
+        <span class="brand-text brand-text-flex dbnexus-text" *ngIf="!sidebarCollapsed">dbNexus</span>
       </a>
       <!-- Close button visible on mobile -->
       <button class="collapse-btn mobile-close-btn" *ngIf="!sidebarCollapsed" (click)="toggleSidebar()">

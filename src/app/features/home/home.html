@@ -4,14 +4,14 @@
     <div class="header-inner">
       <div class="header-brand" routerLink="/" style="cursor: pointer;">
         <app-icons name="db-diagram-logo" size="56"></app-icons>
-        <span class="brand-text">DB Nexus</span>
+        <span class="brand-text">dbNexus</span>
       </div>
       <nav class="header-nav">
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
           class="nav-link">Features</a>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
         <a routerLink="/docs" target="_blank" routerLinkActive="active" class="nav-link">Docs</a>
-        <a routerLink="/diff" routerLinkActive="active" class="nav-link">Code Compare</a>
+        <a routerLink="/diff" routerLinkActive="active" class="nav-link">SQL Compare</a>
       </nav>
       <div class="header-actions">
         <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
@@ -34,7 +34,7 @@
       <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link"
         (click)="toggleMobileMenu()">Docs</a>
       <a routerLink="/diff" routerLinkActive="active" class="mobile-nav-link"
-        (click)="toggleMobileMenu()">Code Compare</a>
+        (click)="toggleMobileMenu()">SQL Compare</a>
 
       <div class="mobile-nav-bottom">
         <div class="mobile-nav-divider"></div>
@@ -79,7 +79,7 @@
 
       <div class="hero-visual-content">
         <div class="hero-animation-wrapper">
-          <img src="assets/nexus_canvas_animated.svg" alt="DB Nexus - Collaborative Database Schema Design" class="hero-animation-img" />
+          <img src="assets/nexus_canvas_animated.svg" alt="dbNexus - Collaborative Database Schema Design" class="hero-animation-img" />
         </div>
       </div>
     </div>
@@ -90,13 +90,13 @@
     <div class="problem-container">
       <div class="problem-header text-center-override">
         <span class="danger-title-solid">THE PAIN OF THE PAST</span>
-        <h2>What Happens Without DB Nexus?</h2>
+        <h2>What Happens Without dbNexus?</h2>
         <p>If you aren't using a visual, collaborative tool, your team is suffering from the following chaos:</p>
       </div>
 
       <div class="problem-grid-solid">
         <div class="problem-card">
-          <div class="icon-danger-solid">
+          <div class="icon-primary-solid">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
               <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -109,7 +109,7 @@
         </div>
 
         <div class="problem-card">
-          <div class="icon-danger-solid">
+          <div class="icon-primary-solid">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -122,7 +122,7 @@
         </div>
 
         <div class="problem-card">
-          <div class="icon-danger-solid">
+          <div class="icon-primary-solid">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
@@ -407,7 +407,7 @@
       <div class="footer-brand-section">
         <div class="footer-logo">
           <app-icons name="db-diagram-logo" size="32" color="#3ec5c1"></app-icons>
-          <span class="logo-text">DB Nexus</span>
+          <span class="logo-text">dbNexus</span>
         </div>
         <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers. Built for the modern web.</p>
       </div>
@@ -418,6 +418,7 @@
           <a class="footer-link" (click)="onCreateDiagram()">Schema Designer</a>
           <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
           <a class="footer-link" routerLink="/pricing">Pricing Options</a>
+          <a class="footer-link" routerLink="/diff">SQL Compare</a>
         </div>
 
         <div class="footer-col">
@@ -437,7 +438,7 @@
     </div>
 
     <div class="footer-bottom">
-      <p class="copyright">&copy; 2026 DB Nexus. All rights reserved.</p>
+      <p class="copyright">&copy; 2026 dbNexus. All rights reserved.</p>
     </div>
   </footer>
 </div>
