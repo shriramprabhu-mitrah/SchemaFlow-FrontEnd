@@ -373,6 +373,14 @@ export class AuthService {
       localStorage.removeItem('ref colors');
       localStorage.removeItem('user_entitlements');
       localStorage.removeItem('current_plan_slug');
+      localStorage.removeItem('cachedHasUsedTrial');
+    }
+    
+    this.currentPlanSlug = 'free';
+    this.currentPlanStatus = 'active';
+
+    if (isPlatformBrowser(this.platformId)) {
+      window.dispatchEvent(new Event('userLogout'));
     }
   }
 

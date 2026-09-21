@@ -47,6 +47,7 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
       groupColors: JSON.parse(JSON.stringify(this.svc.groupColors || {})),
       groupIds: JSON.parse(JSON.stringify(this.svc.groupIds || {})),
       tableColorsMap: JSON.parse(JSON.stringify(this.svc.tableColorsMap || {})),
+      notes: JSON.parse(JSON.stringify(this.svc.notes || [])),
       view: { ...this.svc.view }
     };
 
@@ -161,14 +162,15 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
     this.svc.selectedVersion.set(null);
     // Restore the live original diagram state on exit
     if (this.originalState) {
-      this.svc.code = this.originalState.code;
       this.svc.diagramName = this.originalState.diagramName;
       this.svc.tablePositions = this.originalState.tablePositions;
       this.svc.refColors = this.originalState.refColors;
       this.svc.groupColors = this.originalState.groupColors;
       this.svc.groupIds = this.originalState.groupIds;
       this.svc.tableColorsMap = this.originalState.tableColorsMap;
+      this.svc.notes = this.originalState.notes;
       this.svc.view = this.originalState.view;
+      this.svc.code = this.originalState.code;
       this.svc.updateGutter();
       this.svc.parseAndLayout();
       this.svc.requestCanvasFit();
