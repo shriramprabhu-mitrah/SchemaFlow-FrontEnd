@@ -40,6 +40,21 @@ export class EntitlementService {
   public memberFeatureAccess: string[] | null = null;
   public hasUsedTrial: boolean = false;
 
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('userLogout', () => {
+        this.hasUsedTrial = false;
+        this.loadedOrgId = null;
+        this.memberFeatureAccess = null;
+        this.plansLoaded = false;
+        this.inflightRequest$ = null;
+        this.entitlementsSubject.next([]);
+        this.orgEntitlementsSubject.next([]);
+        this.plansSubject.next([]);
+      });
+    }
+  }
+
   loadEntitlements(force = false): Observable<EffectiveEntitlement[]> {
     this.loadPlans(force).subscribe();
 

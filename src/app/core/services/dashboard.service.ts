@@ -460,7 +460,7 @@ export class DashboardService {
     }
 
     // INSTANT REAL-TIME COLLAB: Bypass RxJS completely to guarantee emission
-    if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+    if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected && !this.showVersionHistory()) {
       if (this.hasUnsavedChanges()) {
         this.emitCollabChange();
       }
@@ -938,7 +938,7 @@ export class DashboardService {
 
     // Subscribe to local code changes for instant real-time collab emission
     this.code$.pipe(debounceTime(300)).subscribe(() => {
-      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected && !this.showVersionHistory()) {
         if (this.hasUnsavedChanges()) { // Bypassed canSaveDiagram()
           this.emitCollabChange();
         }
