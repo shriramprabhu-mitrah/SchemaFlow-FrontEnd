@@ -234,3 +234,12 @@ body.light-theme .trial-expired-banner,
   }
 }
 
+/* Global DB Nexus Text Gradient */
+.dbnexus-text, .brand-text, .logo-text, .brand-title {
+  background: linear-gradient(135deg, #3ec5c1, #3b82f6) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-size: 1.40em !important;
+}
+
