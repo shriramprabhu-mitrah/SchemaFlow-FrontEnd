@@ -63,6 +63,7 @@
         [readonly]="!isLoggedIn || svc.isReadOnly || isSampleDiagram()"
         (click)="onCursorEvent($event)" (keyup)="onCursorEvent($event)"
         (mousemove)="onCodeAreaMouseMove($event)" (mouseleave)="onCodeAreaMouseLeave()"
+        (blur)="onCodeAreaBlur()"
         (input)="onTextInput($event)" (scroll)="onEditorScroll($event)"></textarea>
 
       <!-- Overview Ruler Error Markers (as in Image 2 right margin) -->

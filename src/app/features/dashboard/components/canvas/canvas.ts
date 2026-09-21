@@ -625,6 +625,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const trunkXByAnchor: Record<string, number> = {};
     this.svc.refs.forEach((ref, i) => {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) return;
+      if (this.isRefInvalid(ref)) return;
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return;
 
@@ -1560,6 +1561,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) {
         return null;
       }
+      if (this.isRefInvalid(ref)) {
+        return null;
+      }
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return null;
 
@@ -2093,6 +2097,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const anchorUsage = this.buildAnchorUsage();
 
     for (let i = 0; i < this.svc.refs.length; i++) {
+      if (this.isRefInvalid(this.svc.refs[i])) continue;
       const path = this.getConnectionPath(this.svc.refs[i], geometry, undefined, i, anchorUsage);
       if (!path) continue;
 
@@ -2128,6 +2133,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     let a = geometry[ref.fromTable];
     let b = geometry[ref.toTable];
     if (!a || !b) return null;
+    if (ref.fromTable === ref.toTable && ref.fromCol === ref.toCol) {
+      return null;
+    }
 
     // Check if both tables belong to the same collapsed table group
     const fromBase = ref.fromTable.includes('.') ? ref.fromTable.split('.')[1] : ref.fromTable;
