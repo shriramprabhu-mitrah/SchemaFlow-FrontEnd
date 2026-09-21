@@ -68,6 +68,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         req.url.includes('/auth/register') ||
         req.url.includes('/auth/refreshToken') ||
         req.url.includes('/auth/logout') ||
+        req.url.includes('/auth/reset-password') ||
+        req.url.includes('/auth/forget-password') ||
         req.url.includes('/api/diagrams/public') ||
         req.url.includes('/api/pricing');
 

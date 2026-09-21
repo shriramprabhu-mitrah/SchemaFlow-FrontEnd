@@ -1450,6 +1450,8 @@ export class DashboardService {
    * saving is still permitted so a brand-new diagram isn't blocked forever.
    */
   isSubscriptionExpired = signal(false);
+  currentOrgPlanSlug = signal<string>('free');
+  currentOrgPlanStatus = signal<string>('active');
 
   canSaveDiagram(showToast = true): boolean {
     if (this.isReadOnly) {

@@ -76,8 +76,8 @@
     </div>
   </div>
 
-  <!-- Middle Grid: Chart & Audit Log -->
-  <div class="dashboard-middle-grid">
+  <!-- Main Grid: Chart, Audit Log, Workspaces -->
+  <div class="dashboard-cards-grid">
     <!-- Chart Section -->
     <div class="dashboard-panel glass-panel" style="position: relative; display: flex; flex-direction: column;">
 
@@ -138,7 +138,7 @@
     </div>
 
     <!-- Audit Log Section -->
-    <div class="dashboard-panel glass-panel" style="align-self: flex-start;">
+    <div class="dashboard-panel glass-panel" style="align-self: flex-start;" *ngIf="showPremiumFeatures">
       <div class="panel-header flex-between-center">
         <h3 class="panel-title">Audit Log</h3>
         <a [routerLink]="['/organization/audit-logs']" class="go-to-logs-link">Go to Logs</a>
@@ -181,10 +181,7 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Bottom Grid: Tables -->
-  <div class="dashboard-bottom-grid">
     <!-- Active Workspaces -->
     <div class="dashboard-panel glass-panel">
       <div class="panel-header flex-between-center">
