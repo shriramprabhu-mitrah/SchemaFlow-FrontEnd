@@ -1,31 +1,222 @@
+/* =========================================
+   INTERACTIVE PREVIEW COMPONENT
+   Fully adaptive for Light and Dark Themes
+   ========================================= */
+
 .interactive-preview-wrapper {
-  max-width: 900px;
-  margin: 0 auto 80px auto;
-  border-radius: 12px;
-  background-color: #fafafa;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  // Light Theme Default Variables
+  --ip-bg: #fafafa;
+  --ip-border: #e2e8f0;
+  --ip-shadow: 0 12px 36px rgba(0, 0, 0, 0.06);
+
+  // Tabs Header
+  --ip-tabs-bar-bg: #f8fafc;
+  --ip-tabs-bar-border: #e2e8f0;
+  --ip-tabs-pill-bg: #ffffff;
+  --ip-tabs-pill-border: #e2e8f0;
+  --ip-tab-text: #64748b;
+  --ip-tab-hover-text: #0f172a;
+  --ip-tab-hover-bg: rgba(0, 0, 0, 0.04);
+  --ip-tab-active-bg: #0f172a;
+  --ip-tab-active-text: #ffffff;
+  --ip-tab-active-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+
+  // Canvas / Diagram
+  --ip-content-bg: #ffffff;
+  --ip-canvas-bg: #f8fafc;
+  --ip-canvas-dot: #cbd5e1;
+  --ip-canvas-dot-opacity: 0.6;
+  --ip-arrow-color: #94a3b8;
+  --ip-label-color: #475569;
+
+  // Table Nodes
+  --ip-table-bg: #f8fafc;
+  --ip-table-border: #cbd5e1;
+  --ip-table-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --ip-table-header-bg: #337ab7;
+  --ip-table-header-text: #ffffff;
+  --ip-table-row-bg: #f2f4f8;
+  --ip-table-row-border: #e2e8f0;
+  --ip-field-text: #0f172a;
+  --ip-type-text: #64748b;
+
+  // Code & Editor
+  --ip-code-bg: #ffffff;
+  --ip-line-num-bg: #f8fafc;
+  --ip-line-num-text: #94a3b8;
+  --ip-line-num-border: #e2e8f0;
+  --ip-code-text: #0f172a;
+
+  // Syntax Highlighting
+  --ip-syntax-keyword: #0284c7;
+  --ip-syntax-type: #059669;
+  --ip-syntax-dbml-kw: #2563eb;
+  --ip-syntax-attr: #d97706;
+  --ip-syntax-number: #d97706;
+  --ip-syntax-comment: #64748b;
+
+  // Diff
+  --ip-diff-left-bg: #fffbfb;
+  --ip-diff-right-bg: #fbfdfb;
+  --ip-diff-border: #e2e8f0;
+  --ip-diff-add-bg: #e6ffed;
+  --ip-diff-add-text: #166534;
+  --ip-diff-empty-bg: #fce8e6;
+
+  max-width: 960px;
+  margin: 0 auto 60px auto;
+  border-radius: 16px;
+  background-color: var(--ip-bg);
+  border: 1px solid var(--ip-border);
+  box-shadow: var(--ip-shadow);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* =========================================
+   DARK THEME VARIABLES OVERRIDE
+   Applies when dark mode is active
+   ========================================= */
+html[data-theme="dark"] .interactive-preview-wrapper,
+body:not(.light-theme) .interactive-preview-wrapper,
+html:not(.light-theme) .interactive-preview-wrapper,
+[data-theme="dark"] .interactive-preview-wrapper {
+  --ip-bg: #030712;
+  --ip-border: #1e293b;
+  --ip-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.07);
+
+  // Tabs Header
+  --ip-tabs-bar-bg: #080f1e;
+  --ip-tabs-bar-border: #1e293b;
+  --ip-tabs-pill-bg: #0f172a;
+  --ip-tabs-pill-border: #1e293b;
+  --ip-tab-text: #94a3b8;
+  --ip-tab-hover-text: #f8fafc;
+  --ip-tab-hover-bg: rgba(255, 255, 255, 0.05);
+  --ip-tab-active-bg: linear-gradient(135deg, #0284c7, #3b82f6);
+  --ip-tab-active-text: #ffffff;
+  --ip-tab-active-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+
+  // Canvas / Diagram
+  --ip-content-bg: #030712;
+  --ip-canvas-bg: #080e1a;
+  --ip-canvas-dot: #334155;
+  --ip-canvas-dot-opacity: 0.45;
+  --ip-arrow-color: #3ec5c1;
+  --ip-label-color: #3ec5c1;
+
+  // Table Nodes
+  --ip-table-bg: #141d31;
+  --ip-table-border: #1d2539;
+  --ip-table-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --ip-table-header-bg: #3ec5c1;
+  --ip-table-header-text: #ffffff;
+  --ip-table-row-bg: #141d31;
+  --ip-table-row-border: #1e293b;
+  --ip-field-text: #e2e8f0;
+  --ip-type-text: #64748b;
+
+  // Code & Editor
+  --ip-code-bg: #0b1426;
+  --ip-line-num-bg: #0b1426;
+  --ip-line-num-text: #5a6b8c;
+  --ip-line-num-border: rgba(255, 255, 255, 0.06);
+  --ip-code-text: #e6eef9;
+
+  // Syntax Highlighting (Matching editor format from image 2)
+  --ip-syntax-keyword: #2979ff;
+  --ip-syntax-type: #43a047;
+  --ip-syntax-dbml-kw: #2979ff;
+  --ip-syntax-attr: #ef6c00;
+  --ip-syntax-number: #e4bd11;
+  --ip-syntax-comment: #5a6b8c;
+
+  // Diff
+  --ip-diff-left-bg: #070c18;
+  --ip-diff-right-bg: #0b1426;
+  --ip-diff-border: #1e293b;
+  --ip-diff-add-bg: rgba(67, 160, 71, 0.16);
+  --ip-diff-add-text: #81c784;
+  --ip-diff-empty-bg: rgba(239, 108, 0, 0.12);
+}
+
+// Explicit light theme override
+html.light-theme .interactive-preview-wrapper,
+body.light-theme .interactive-preview-wrapper,
+[data-theme="light"] .interactive-preview-wrapper {
+  --ip-bg: #fafafa;
+  --ip-border: #e2e8f0;
+  --ip-shadow: 0 12px 36px rgba(0, 0, 0, 0.06);
+
+  --ip-tabs-bar-bg: #f8fafc;
+  --ip-tabs-bar-border: #e2e8f0;
+  --ip-tabs-pill-bg: #ffffff;
+  --ip-tabs-pill-border: #e2e8f0;
+  --ip-tab-text: #64748b;
+  --ip-tab-hover-text: #0f172a;
+  --ip-tab-hover-bg: rgba(0, 0, 0, 0.04);
+  --ip-tab-active-bg: #0f172a;
+  --ip-tab-active-text: #ffffff;
+  --ip-tab-active-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+
+  --ip-content-bg: #ffffff;
+  --ip-canvas-bg: #f8fafc;
+  --ip-canvas-dot: #cbd5e1;
+  --ip-canvas-dot-opacity: 0.6;
+  --ip-arrow-color: #94a3b8;
+  --ip-label-color: #475569;
+
+  --ip-table-bg: #f8fafc;
+  --ip-table-border: #cbd5e1;
+  --ip-table-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --ip-table-header-bg: #337ab7;
+  --ip-table-header-text: #ffffff;
+  --ip-table-row-bg: #f2f4f8;
+  --ip-table-row-border: #e2e8f0;
+  --ip-field-text: #0f172a;
+  --ip-type-text: #64748b;
+
+  --ip-code-bg: #ffffff;
+  --ip-line-num-bg: #f8fafc;
+  --ip-line-num-text: #94a3b8;
+  --ip-line-num-border: #e2e8f0;
+  --ip-code-text: #0f172a;
+
+  --ip-syntax-keyword: #0284c7;
+  --ip-syntax-type: #059669;
+  --ip-syntax-dbml-kw: #2563eb;
+  --ip-syntax-attr: #d97706;
+  --ip-syntax-number: #d97706;
+  --ip-syntax-comment: #64748b;
+
+  --ip-diff-left-bg: #fffbfb;
+  --ip-diff-right-bg: #fbfdfb;
+  --ip-diff-border: #e2e8f0;
+  --ip-diff-add-bg: #e6ffed;
+  --ip-diff-add-text: #166534;
+  --ip-diff-empty-bg: #fce8e6;
 }
 
 /* Tabs Header */
 .ip-tabs-container {
   display: flex;
   justify-content: center;
-  background-color: #f8fafc;
-  padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--ip-tabs-bar-bg);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ip-tabs-bar-border);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .ip-tabs {
   display: flex;
-  background: white;
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  background: var(--ip-tabs-pill-bg);
+  border-radius: 24px;
+  border: 1px solid var(--ip-tabs-pill-border);
   padding: 4px;
   gap: 4px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .ip-tab {
@@ -35,29 +226,36 @@
   padding: 6px 16px;
   border: none;
   background: transparent;
-  border-radius: 16px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--ip-tab-text);
   cursor: pointer;
-  transition: all 0.2s;
-}
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-.ip-tab:hover {
-  color: #0f172a;
-}
+  &:hover {
+    color: var(--ip-tab-hover-text);
+    background: var(--ip-tab-hover-bg);
+  }
 
-.ip-tab.active {
-  background: #0f172a;
-  color: white;
+  &.active {
+    background: var(--ip-tab-active-bg);
+    color: var(--ip-tab-active-text);
+    box-shadow: var(--ip-tab-active-shadow);
+  }
+
+  svg {
+    stroke-width: 2.2px;
+  }
 }
 
 /* Content Area */
 .ip-content-container {
-  height: 400px;
+  height: 420px;
   position: relative;
-  background: white;
+  background: var(--ip-content-bg);
   overflow: hidden;
+  transition: background-color 0.2s ease;
 }
 
 /* Canvas (Diagram) */
@@ -65,41 +263,69 @@
   width: 100%;
   height: 100%;
   position: relative;
-  background-color: #f8fafc;
+  background-color: var(--ip-canvas-bg);
   overflow: hidden;
+  transition: background-color 0.2s ease;
+
+  &.is-dragging,
+  &.is-dragging * {
+    cursor: move !important;
+  }
 }
 
 .ip-canvas-grid {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-image: radial-gradient(var(--ip-canvas-dot) 1px, transparent 1px);
   background-size: 20px 20px;
-  opacity: 0.5;
+  opacity: var(--ip-canvas-dot-opacity);
+  pointer-events: none;
+}
+
+/* SVG Connectors */
+.ip-arrow-marker {
+  fill: var(--ip-arrow-color);
+  transition: fill 0.2s ease;
+}
+
+.ip-arrow-line {
+  stroke: var(--ip-arrow-color);
+  transition: stroke 0.2s ease;
+}
+
+.ip-rel-label {
+  fill: var(--ip-label-color);
+  transition: fill 0.2s ease;
 }
 
 /* Table Node */
 .ip-table-node {
   position: absolute;
   width: 200px;
-  background: #f8fafc;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  cursor: grab;
+  background: var(--ip-table-bg);
+  border-radius: 8px;
+  border: 1px solid var(--ip-table-border);
+  box-shadow: var(--ip-table-shadow);
+  cursor: move;
   user-select: none;
   overflow: hidden;
   z-index: 2;
-  font-family: 'Inter', system-ui, sans-serif;
-}
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  will-change: left, top;
 
-.ip-table-node:active {
-  cursor: grabbing;
+  &:active,
+  &.is-dragging {
+    cursor: move;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+    transition: none !important;
+  }
 }
 
 .ip-table-header {
   padding: 8px 12px;
-  background-color: #3b82f6; /* Blue theme */
-  color: white;
+  background: var(--ip-table-header-bg);
+  color: var(--ip-table-header-text);
   font-weight: 600;
   font-size: 13px;
   display: flex;
@@ -122,21 +348,25 @@
 .ip-table-field-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 6px 12px;
   font-size: 12px;
-  border-bottom: 1px solid #e2e8f0;
-  background-color: #f1f5f9;
-}
-.ip-table-field-row:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid var(--ip-table-row-border);
+  background-color: var(--ip-table-row-bg);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .ip-field-left {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #0f172a;
+  color: var(--ip-field-text);
   font-weight: 500;
+  transition: color 0.2s ease;
 }
 
 .ip-field-pk, .ip-field-fk {
@@ -147,41 +377,71 @@
 }
 
 .ip-field-type {
-  color: #64748b;
+  color: var(--ip-type-text);
   font-size: 11px;
+  font-family: monospace;
+  transition: color 0.2s ease;
 }
 
-
-/* Code Views */
+/* Code Views (SQL & DBML) */
 .ip-code-container {
   display: flex;
   height: 100%;
   overflow: auto;
-  background: white;
+  background: var(--ip-code-bg);
+  transition: background-color 0.2s ease;
 }
 
 .ip-code-line-numbers {
-  padding: 16px 8px;
-  background: #f8fafc;
-  color: #cbd5e1;
+  padding: 16px 12px;
+  background: var(--ip-line-num-bg);
+  color: var(--ip-line-num-text);
   text-align: right;
-  font-family: monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  border-right: 1px solid #e2e8f0;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.62;
+  border-right: 1px solid var(--ip-line-num-border);
   user-select: none;
-  min-width: 30px;
+  min-width: 44px;
+  margin-right: 4px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .ip-code-content {
   margin: 0;
-  padding: 16px;
-  font-family: monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #0f172a;
+  padding: 16px 20px;
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.62;
+  color: var(--ip-code-text);
   white-space: pre;
   flex: 1;
+  background: transparent !important;
+  background-color: transparent !important;
+  transition: color 0.2s ease;
+
+  code,
+  span:not(.ip-diff-added-line):not(.ip-diff-empty-line) {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
+
+.ip-code-container,
+.ip-diff-container {
+  code,
+  span:not(.ip-diff-added-line):not(.ip-diff-empty-line) {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
 }
 
 /* Diff View */
@@ -190,19 +450,64 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
+  background: var(--ip-code-bg);
 }
 
 .ip-diff-pane {
   flex: 1;
   display: flex;
   overflow: auto;
+
+  &.left-pane {
+    border-right: 1px solid var(--ip-diff-border);
+    background: var(--ip-diff-left-bg);
+  }
+
+  &.right-pane {
+    background: var(--ip-diff-right-bg);
+  }
 }
 
-.left-pane {
-  border-right: 1px solid #e2e8f0;
-  background: #fffafa; /* very slight red tint */
+/* Syntax Highlighting */
+.ip-syntax-type {
+  color: var(--ip-syntax-type);
 }
 
-.right-pane {
-  background: #fafffa; /* very slight green tint */
+.ip-syntax-dbml-kw {
+  color: var(--ip-syntax-dbml-kw);
+  font-weight: bold;
+}
+
+.ip-syntax-attr {
+  color: var(--ip-syntax-attr);
+}
+
+.ip-syntax-number {
+  color: var(--ip-syntax-number);
+}
+
+.ip-syntax-keyword {
+  color: var(--ip-syntax-keyword);
+  font-weight: bold;
+}
+
+.ip-syntax-comment {
+  color: var(--ip-syntax-comment);
+  font-style: italic;
+}
+
+.ip-diff-added-line {
+  background-color: var(--ip-diff-add-bg);
+  color: var(--ip-diff-add-text);
+  display: inline-block;
+  width: 100%;
+  padding-left: 4px;
+  border-radius: 2px;
+}
+
+.ip-diff-empty-line {
+  background-color: var(--ip-diff-empty-bg);
+  display: inline-block;
+  width: 100%;
+  user-select: none;
 }

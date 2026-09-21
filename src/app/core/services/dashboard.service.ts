@@ -615,6 +615,14 @@ export class DashboardService {
   openShareModal$ = new Subject<void>();
 
   openShareModal(): void {
+    if (this.editorErrors().length > 0 || this.getValidationErrors().length > 0 || this.dbmlValidationError != null) {
+      this.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (!this.code || this.code.trim() === '' || this.tables.length === 0) {
+      this.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
     if (this.showVersionHistory()) {
       this.closeVersionHistory$.next();
       this.showVersionHistory.set(false);

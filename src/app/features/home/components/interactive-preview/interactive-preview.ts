@@ -1,5 +1,5 @@
-import { Component, ElementRef, OnDestroy, OnInit, Renderer2, HostListener, ViewChild, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, OnDestroy, OnInit, Renderer2, HostListener, ViewChild, AfterViewInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
@@ -14,19 +14,29 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
   constructor(
     private el: ElementRef, 
     private renderer: Renderer2,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.boundMouseMove = this.onMouseMove.bind(this);
     this.boundMouseUp = this.onMouseUp.bind(this);
   }
 
   // Mock Tables
-  tables = [
+  tables: {
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    zIndex: number;
+    fields: { name: string; type: string; isPk: boolean; isFk: boolean; }[];
+  }[] = [
     {
       id: 'departments',
       name: 'departments',
       x: 100,
       y: 120,
+      zIndex: 2,
       fields: [
         { name: 'id', type: 'int', isPk: true, isFk: false },
         { name: 'name', type: 'varchar', isPk: false, isFk: false },
@@ -38,6 +48,7 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
       name: 'employees',
       x: 450,
       y: 50,
+      zIndex: 2,
       fields: [
         { name: 'id', type: 'int', isPk: true, isFk: false },
         { name: 'dept_id', type: 'int', isPk: false, isFk: true },
@@ -50,6 +61,7 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
       name: 'projects',
       x: 450,
       y: 250,
+      zIndex: 2,
       fields: [
         { name: 'id', type: 'int', isPk: true, isFk: false },
         { name: 'dept_id', type: 'int', isPk: false, isFk: true },
@@ -70,6 +82,8 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
   draggingTable: any = null;
   dragOffsetX = 0;
   dragOffsetY = 0;
+  highestZIndex = 2;
+  private cachedContainerRect: DOMRect | null = null;
 
   getPath(rel: any): string {
     const fromTable = this.tables.find(t => t.id === rel.from);
@@ -104,6 +118,20 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     let midX = startX + (endX - startX) / 2;
     if (Math.abs(startX - endX) < 40) {
        midX = Math.min(startX, endX) - 30;
+    }
+
+    const radius = Math.min(12, Math.abs(midX - startX) / 2, Math.abs(y2 - y1) / 2);
+    if (radius > 3 && Math.abs(y2 - y1) > 6) {
+      const dirY = y2 > y1 ? 1 : -1;
+      const startDirX = midX > startX ? 1 : -1;
+      const endDirX = endX > midX ? 1 : -1;
+
+      return `M ${startX} ${y1} ` +
+             `L ${midX - startDirX * radius} ${y1} ` +
+             `Q ${midX} ${y1} ${midX} ${y1 + dirY * radius} ` +
+             `L ${midX} ${y2 - dirY * radius} ` +
+             `Q ${midX} ${y2} ${midX + endDirX * radius} ${y2} ` +
+             `L ${endX} ${y2}`;
     }
 
     return `M ${startX} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${endX} ${y2}`;
@@ -251,41 +279,60 @@ Table projects {
       let htmlCode = this.escapeHtml(codePart);
       
       if (lang === 'dbml') {
-        // Types (Green)
-        const types = ['int', 'varchar', 'boolean', 'datetime', 'timestamp'];
+        // Types
+        const types = ['int', 'varchar', 'boolean', 'datetime', 'timestamp', 'date', 'decimal', 'float', 'text', 'bigint', 'integer'];
         types.forEach(t => {
           const regex = new RegExp(`\\b${t}\\b`, 'g');
-          htmlCode = htmlCode.replace(regex, `<span style="color: #059669; font-weight: 600;">${t}</span>`);
+          htmlCode = htmlCode.replace(regex, `<span class="ip-syntax-type">${t}</span>`);
         });
 
-        // Keywords (Blue)
-        const keywords = ['Table', 'Ref:', 'Enum', 'Project', 'TableGroup'];
+        // Keywords
+        const keywords = ['Table', 'Ref:', 'Enum', 'Project', 'TableGroup', 'Note'];
         keywords.forEach(kw => {
-          htmlCode = htmlCode.replace(new RegExp(`\\b${kw.replace(':', '')}:?`, 'g'), `<span style="color: #2563eb; font-weight: 600;">$&</span>`);
+          htmlCode = htmlCode.replace(new RegExp(`\\b${kw.replace(':', '')}:?`, 'g'), `<span class="ip-syntax-dbml-kw">$&</span>`);
         });
         
-        // Brackets and attributes (Orange)
-        htmlCode = htmlCode.replace(/\[(.*?)\]/g, '<span style="color: #d97706;">[$1]</span>');
+        // Brackets and attributes
+        htmlCode = htmlCode.replace(/\[(.*?)\]/g, '<span class="ip-syntax-attr">[$1]</span>');
+
+        // Numbers in parentheses
+        htmlCode = htmlCode.replace(/(\([\d\s,]+\))/g, '<span class="ip-syntax-number">$1</span>');
       } else if (lang === 'sql') {
-        // SQL keywords (Light Blue/Cyan)
+        // Types
+        const types = ['INT', 'VARCHAR', 'BOOLEAN', 'DATETIME', 'DATE', 'TEXT', 'TIMESTAMP', 'DECIMAL', 'FLOAT', 'BIGINT'];
+        types.forEach(t => {
+          const regex = new RegExp(`\\b${t}\\b`, 'g');
+          htmlCode = htmlCode.replace(regex, `<span class="ip-syntax-type">${t}</span>`);
+        });
+
+        // SQL keywords
         const keywords = [
-          'CREATE TABLE', 'PRIMARY KEY', 'AUTO_INCREMENT', 'VARCHAR', 'NOT NULL', 
-          'FOREIGN KEY', 'REFERENCES', 'INT', 'BOOLEAN', 'DATETIME'
+          'CREATE TABLE', 'PRIMARY KEY', 'AUTO_INCREMENT', 'FOREIGN KEY', 'REFERENCES'
         ];
         keywords.forEach(kw => {
           const regex = new RegExp(`\\b${kw}\\b`, 'g');
-          htmlCode = htmlCode.replace(regex, `<span style="color: #0ea5e9;">${kw}</span>`);
+          htmlCode = htmlCode.replace(regex, `<span class="ip-syntax-keyword">${kw}</span>`);
         });
+
+        // Constraints and attributes
+        const attrs = ['NOT NULL', 'UNIQUE'];
+        attrs.forEach(a => {
+          const regex = new RegExp(`\\b${a}\\b`, 'g');
+          htmlCode = htmlCode.replace(regex, `<span class="ip-syntax-attr">${a}</span>`);
+        });
+
+        // Numbers in parentheses (e.g. (255))
+        htmlCode = htmlCode.replace(/(\([\d\s,]+\))/g, '<span class="ip-syntax-number">$1</span>');
       }
       
       if (commentPart) {
-        htmlCode += `<span style="color: #0ea5e9;">${this.escapeHtml(commentPart)}</span>`;
+        htmlCode += `<span class="ip-syntax-comment">${this.escapeHtml(commentPart)}</span>`;
       }
       
       // Parse Diff Additions and Empties
-      htmlCode = htmlCode.replace(/@@ADD@@/g, '<span style="background-color: #e6ffed; display: inline-block; width: 100%;">');
+      htmlCode = htmlCode.replace(/@@ADD@@/g, '<span class="ip-diff-added-line">');
       htmlCode = htmlCode.replace(/@@ENDADD@@/g, '</span>');
-      htmlCode = htmlCode.replace(/@@EMPTY@@/g, '<span style="background-color: #fce8e6; display: inline-block; width: 100%; user-select: none;"> </span>');
+      htmlCode = htmlCode.replace(/@@EMPTY@@/g, '<span class="ip-diff-empty-line"> </span>');
 
       return htmlCode;
     }).join('\n');
@@ -306,52 +353,61 @@ Table projects {
   private boundMouseUp: (e: any) => void;
 
   ngAfterViewInit() {
-    document.addEventListener('mousemove', this.boundMouseMove);
-    document.addEventListener('mouseup', this.boundMouseUp);
+    if (isPlatformBrowser(this.platformId)) {
+      document.addEventListener('mousemove', this.boundMouseMove);
+      document.addEventListener('mouseup', this.boundMouseUp);
+    }
   }
 
   ngOnDestroy() {
-    document.removeEventListener('mousemove', this.boundMouseMove);
-    document.removeEventListener('mouseup', this.boundMouseUp);
+    if (isPlatformBrowser(this.platformId)) {
+      document.removeEventListener('mousemove', this.boundMouseMove);
+      document.removeEventListener('mouseup', this.boundMouseUp);
+    }
   }
 
   setTab(tab: 'diagram' | 'sql' | 'dbml' | 'diff') {
     this.activeTab = tab;
   }
 
-  onTableMouseDown(event: any, table: any) {
+  onTableMouseDown(event: MouseEvent, table: any) {
+    if (!isPlatformBrowser(this.platformId) || event.button !== 0) return;
     this.draggingTable = table;
-    
-    // Move to top layer by re-inserting at the end of the array
-    this.tables = this.tables.filter((t: any) => t !== table);
-    this.tables.push(table);
+    table.zIndex = ++this.highestZIndex;
+
+    const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
+    if (container) {
+      this.cachedContainerRect = container.getBoundingClientRect();
+    }
 
     const target = (event.currentTarget as HTMLElement).closest('.ip-table-node') as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    
-    // Use container scale if any? Assume 1 for simplicity in landing page
-    this.dragOffsetX = event.clientX - rect.left;
-    this.dragOffsetY = event.clientY - rect.top;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      this.dragOffsetX = event.clientX - rect.left;
+      this.dragOffsetY = event.clientY - rect.top;
+    }
 
     event.preventDefault(); // Prevent text selection
+    this.cdr.detectChanges();
   }
 
-  onMouseMove(event: any) {
-    if (!this.draggingTable) return;
+  onMouseMove(event: MouseEvent) {
+    if (!this.draggingTable || !isPlatformBrowser(this.platformId)) return;
 
-    const container = document.querySelector('.ip-canvas-container') as HTMLElement;
-    if (!container) return;
-    
-    const containerRect = container.getBoundingClientRect();
-    
-    let newX = event.clientX - containerRect.left - this.dragOffsetX;
-    let newY = event.clientY - containerRect.top - this.dragOffsetY;
+    if (!this.cachedContainerRect) {
+      const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
+      if (!container) return;
+      this.cachedContainerRect = container.getBoundingClientRect();
+    }
 
-    // Boundary constraints (width=180 roughly)
-    const tableWidth = 180;
-    const tableHeight = 150; // approximate
-    const maxX = containerRect.width - tableWidth;
-    const maxY = containerRect.height - tableHeight;
+    let newX = event.clientX - this.cachedContainerRect.left - this.dragOffsetX;
+    let newY = event.clientY - this.cachedContainerRect.top - this.dragOffsetY;
+
+    // Actual table dimensions
+    const tableWidth = 200;
+    const tableHeight = 135;
+    const maxX = Math.max(0, this.cachedContainerRect.width - tableWidth);
+    const maxY = Math.max(0, this.cachedContainerRect.height - tableHeight);
 
     if (newX < 0) newX = 0;
     if (newY < 0) newY = 0;
@@ -360,9 +416,22 @@ Table projects {
 
     this.draggingTable.x = newX;
     this.draggingTable.y = newY;
+    this.cdr.detectChanges();
   }
 
-  onMouseUp(event: any) {
-    this.draggingTable = null;
+  onMouseUp(event?: MouseEvent) {
+    if (this.draggingTable) {
+      this.draggingTable = null;
+      this.cachedContainerRect = null;
+      this.cdr.detectChanges();
+    }
+  }
+
+  trackByTableId(index: number, table: any): string {
+    return table.id;
+  }
+
+  trackByRel(index: number, rel: any): string {
+    return rel.from + '-' + rel.to;
   }
 }
