@@ -179,6 +179,10 @@ export class DiagramInspectorComponent implements OnInit {
       this.collapsedFieldsTables.add(newName);
     }
 
+    this.svc.updateGutter();
+    this.svc.parseAndLayout();
+    this.svc.forceRedraw$.next();
+
     this.svc.showToast(`Table renamed to "${newName}" successfully.`, 2500, 'success');
     this.cdr.markForCheck();
   }
@@ -189,6 +193,11 @@ export class DiagramInspectorComponent implements OnInit {
     this.svc.deleteTableInCode(tableName);
     this.expandedTables.delete(tableName);
     this.collapsedFieldsTables.delete(tableName);
+
+    this.svc.updateGutter();
+    this.svc.parseAndLayout();
+    this.svc.forceRedraw$.next();
+
     this.cdr.markForCheck();
   }
 
@@ -263,7 +272,8 @@ export class DiagramInspectorComponent implements OnInit {
 
   private replaceFieldInDbml(tableName: string, oldColName: string, newColName: string, type: string, pk: boolean, notNull: boolean): void {
     const tableRegex = new RegExp(`(Table\\s+${tableName}\\s*\\{)([\\s\\S]*?)(\\})`, 'i');
-    const match = this.svc.code.match(tableRegex);
+    let newCode = this.svc.code;
+    const match = newCode.match(tableRegex);
     if (match) {
       const body = match[2];
       const newBody = body
@@ -283,12 +293,24 @@ export class DiagramInspectorComponent implements OnInit {
           return line;
         })
         .join('\n');
-      this.svc.code = this.svc.code.replace(tableRegex, `$1${newBody}$3`);
+      newCode = newCode.replace(tableRegex, `$1${newBody}$3`);
+      
+      // Update References globally
+      if (oldColName !== newColName) {
+        const refRegex = new RegExp(`\\b${tableName}\\.${oldColName}\\b`, 'g');
+        newCode = newCode.replace(refRegex, `${tableName}.${newColName}`);
+      }
+
+      this.svc.code = newCode;
       this.svc.updateGutter();
       this.svc.parseAndLayout();
       this.svc.forceRedraw$.next();
       this.cdr.markForCheck();
     }
+  }
+
+  blurInput(event: Event): void {
+    (event.target as HTMLElement).blur();
   }
 
   focusTable(tableName: string, e?: Event): void {

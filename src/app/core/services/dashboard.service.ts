@@ -2289,6 +2289,14 @@ export class DashboardService {
       this.tablePositions[newName] = this.tablePositions[oldName];
       delete this.tablePositions[oldName];
     }
+
+    if (this.tableColorsMap[oldName]) {
+      this.tableColorsMap[newName] = this.tableColorsMap[oldName];
+      delete this.tableColorsMap[oldName];
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+      }
+    }
   }
 
   deleteTableInCode(tableName: string): void {

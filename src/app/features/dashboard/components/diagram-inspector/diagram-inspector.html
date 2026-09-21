@@ -33,18 +33,6 @@
               </svg>
             </span>
 
-            <!-- Drag Handle Icon (6 dots) -->
-            <span class="drag-handle tt tt-bottom" data-tt="Drag to reorder" aria-label="Drag to reorder">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="9" cy="6" r="2"></circle>
-                <circle cx="15" cy="6" r="2"></circle>
-                <circle cx="9" cy="12" r="2"></circle>
-                <circle cx="15" cy="12" r="2"></circle>
-                <circle cx="9" cy="18" r="2"></circle>
-                <circle cx="15" cy="18" r="2"></circle>
-              </svg>
-            </span>
-
             <!-- Table Name (or rename input) -->
             <div class="table-name-wrap">
               <span *ngIf="editingTableName !== table.name" class="table-title">{{ table.name }}</span>
@@ -113,17 +101,7 @@
               <!-- Field Rows List -->
               <div class="field-rows-list" *ngIf="isFieldsExpanded(table.name)">
                 <div *ngFor="let col of table.columns" class="field-row">
-                  <!-- Drag handle -->
-                  <span class="field-drag-handle tt tt-top" data-tt="Drag to reorder" aria-label="Drag to reorder">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="9" cy="6" r="2"></circle>
-                      <circle cx="15" cy="6" r="2"></circle>
-                      <circle cx="9" cy="12" r="2"></circle>
-                      <circle cx="15" cy="12" r="2"></circle>
-                      <circle cx="9" cy="18" r="2"></circle>
-                      <circle cx="15" cy="18" r="2"></circle>
-                    </svg>
-                  </span>
+
 
                   <!-- Field Name Input -->
                   <input type="text"
