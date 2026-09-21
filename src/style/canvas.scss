@@ -50,6 +50,7 @@ canvas {
   justify-content: center;
   text-align: center;
   gap: 12px;
+  pointer-events: none;
 }
 
 #empty-state.hidden {

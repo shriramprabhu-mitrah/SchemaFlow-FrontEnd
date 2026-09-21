@@ -141,7 +141,7 @@
 
 
   <!-- Empty State Placeholder -->
-  <div id="empty-state" *ngIf="svc.tables.length === 0 && !svc.code.trim()" style="z-index: 2;">
+  <div id="empty-state" *ngIf="svc.tables.length === 0 && !svc.code.trim()" style="z-index: 2; pointer-events: none;">
     <div class="icon-circle">
       <app-icons name="schema" size="28"></app-icons>
     </div>
