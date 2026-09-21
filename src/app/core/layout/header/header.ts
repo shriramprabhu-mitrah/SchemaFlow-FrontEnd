@@ -325,6 +325,7 @@ export class HeaderComponent implements OnInit {
     const el = e.target as HTMLDivElement;
     const name = this.getDiagramNameFromEl(el);
     this.svc.diagramName = name;
+    this.svc.saveErrorOccurred = false;
 
     if (this.diagramNameDebounce) {
       clearTimeout(this.diagramNameDebounce);
@@ -337,7 +338,8 @@ export class HeaderComponent implements OnInit {
           this.svc.diagramName &&
           !this.svc.isDiagramNameEmpty() &&
           this.svc.canSaveDiagram(false) &&
-          this.svc.validateDiagramName(false)
+          this.svc.validateDiagramName(false) &&
+          !this.svc.saveErrorOccurred
         ) {
           if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
             this.svc.emitCollabChange();
@@ -346,6 +348,19 @@ export class HeaderComponent implements OnInit {
           }
         }
       }, 1000);
+    }
+  }
+
+  onDiagramNameFocus(e: FocusEvent): void {
+    const el = e.target as HTMLDivElement;
+    if (this.getDiagramNameFromEl(el) === 'Untitled Diagram') {
+      setTimeout(() => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }, 0);
     }
   }
 
@@ -367,7 +382,8 @@ export class HeaderComponent implements OnInit {
     if (
       name !== this.svc.originalDiagramName &&
       this.svc.canSaveDiagram(false) &&
-      this.svc.validateDiagramName(false)
+      this.svc.validateDiagramName(false) &&
+      !this.svc.saveErrorOccurred
     ) {
       if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
         this.svc.emitCollabChange();
