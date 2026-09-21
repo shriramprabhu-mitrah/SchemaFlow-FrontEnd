@@ -2308,7 +2308,8 @@ export class DashboardService {
   }
 
   deleteTableInCode(tableName: string): void {
-    const tableRe = new RegExp(`Table\\s+${tableName}\\s*\\{[\\s\\S]*?\\n\\}\\n?`);
+    const safeName = tableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeName}(?:["'])?\\s*\\{[\\s\\S]*?\\}\\n?`, 'gi');
     this.code = this.code.replace(tableRe, '');
 
     this.code = this.code
@@ -2328,7 +2329,8 @@ export class DashboardService {
   }
 
   updateTableInCode(oldName: string, newName: string, columns: Column[]): void {
-    const tableRe = new RegExp(`Table\\s+${oldName}\\s*\\{[\\s\\S]*?\\n\\}`);
+    const safeOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeOldName}(?:["'])?\\s*\\{[\\s\\S]*?\\}`, 'gi');
     if (!tableRe.test(this.code)) return;
 
     // Parse existing references BEFORE changing code
@@ -4518,8 +4520,8 @@ export class DashboardService {
       // Append fresh Note blocks for each note that has content or a name
       const noteBlocks = this.notes
         .map(n => {
-          const safeName = n.name && (/\s/.test(n.name) && !n.name.startsWith('"')) ? `"${n.name}"` : (n.name || 'note');
-          return `\nNote ${safeName} {\n  '${(n.text || '').replace(/'/g, "''")}' \n}`;
+          const safeName = n.name ? (/\s/.test(n.name) && !n.name.startsWith('"') ? `"${n.name}"` : n.name) : '';
+          return `\nNote ${safeName ? safeName + ' ' : ''}{\n  '${(n.text || '').replace(/'/g, "''")}' \n}`;
         })
         .join('\n');
       const newCode = (stripped + (noteBlocks ? '\n' + noteBlocks : '')).replace(/\r\n|\r/g, '\n');

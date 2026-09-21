@@ -191,22 +191,23 @@ export class SubscriptionComponent implements OnInit {
 
   onSeatCountChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    let val = parseInt(input.value, 10);
+    const cleanVal = input.value.replace(/[^0-9]/g, '');
+    let val = parseInt(cleanVal, 10);
     
     if (isNaN(val)) {
-      this.addSeatCount = 1;
+      input.value = '';
+      this.addSeatCount = 0;
       return;
     }
 
     if (val > 5) {
-      input.value = '5';
-      this.addSeatCount = 5;
+      val = 5;
     } else if (val < 1) {
-      input.value = '1';
-      this.addSeatCount = 1;
-    } else {
-      this.addSeatCount = val;
+      val = 1;
     }
+
+    input.value = val.toString();
+    this.addSeatCount = val;
   }
 
   confirmAddSeats(): void {

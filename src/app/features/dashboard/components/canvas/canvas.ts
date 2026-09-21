@@ -3809,8 +3809,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   createTable(): void {
     const rect = this.canvasWrapRef.nativeElement.getBoundingClientRect();
-    const x = (rect.width / 2 - this.svc.view.x) / this.svc.view.scale - this.svc.CARD_W / 2;
-    const y = (rect.height / 2 - this.svc.view.y) / this.svc.view.scale - 70;
+    let x = (rect.width / 2 - this.svc.view.x) / this.svc.view.scale - this.svc.CARD_W / 2;
+    let y = (rect.height / 2 - this.svc.view.y) / this.svc.view.scale - 70;
+
+    let overlap = true;
+    let attempts = 0;
+    while (overlap && attempts < 15) {
+      overlap = Object.values(this.svc.tablePositions).some((pos: { x: number, y: number }) => 
+        Math.abs(pos.x - x) < 30 && Math.abs(pos.y - y) < 30
+      );
+      if (overlap) {
+        x += 30;
+        y += 30;
+        attempts++;
+      }
+    }
+
     this.pendingNewTablePosition = { x, y };
 
     const defaultName = this.svc.generateNextTableName();
@@ -5098,12 +5112,31 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       return;
     }
+    
+    if (this.svc.saveErrorOccurred || this.svc.editorErrors().length > 0) {
+      this.svc.showToast('Please fix the errors before creating more notes.', 4000, 'error');
+      return;
+    }
+
     const canvas = this.canvasRef?.nativeElement;
     const w = canvas ? canvas.clientWidth : 800;
     const h = canvas ? canvas.clientHeight : 600;
     // Convert screen center to world coordinates
-    const worldX = Math.round((w / 2 - this.svc.view.x) / this.svc.view.scale - 100);
-    const worldY = Math.round((h / 2 - this.svc.view.y) / this.svc.view.scale - 75);
+    let worldX = Math.round((w / 2 - this.svc.view.x) / this.svc.view.scale - 100);
+    let worldY = Math.round((h / 2 - this.svc.view.y) / this.svc.view.scale - 75);
+
+    // Shift position if it overlaps perfectly with an existing note
+    let overlap = true;
+    let offsetAttempts = 0;
+    while (overlap && offsetAttempts < 15) {
+      overlap = this.svc.notes && this.svc.notes.some((n: any) => Math.abs(n.posx - worldX) < 10 && Math.abs(n.posy - worldY) < 10);
+      if (overlap) {
+        worldX += 30; // Shift down and right
+        worldY += 30;
+        offsetAttempts++;
+      }
+    }
+
     this.svc.addNote(worldX, worldY);
     this.cdr.detectChanges();
   }
@@ -5259,7 +5292,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   commitEditNoteName(): void {
-    if (this.editingNoteId !== null && this.editNoteNameValue.trim()) {
+    if (this.editingNoteId !== null) {
       this.svc.updateNote(this.editingNoteId, { name: this.editNoteNameValue.trim() });
     }
     this.editingNoteId = null;
