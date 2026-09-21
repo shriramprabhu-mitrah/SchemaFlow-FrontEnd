@@ -211,7 +211,7 @@
         name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 3px; right: 3px;"></app-icons>
     </app-button>
 
-    <app-button id="layout-menu-button" [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'" (onClick)="toggleLayoutMenu($event)"
+    <app-button *ngIf="!isReadOnly" id="layout-menu-button" [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'" (onClick)="toggleLayoutMenu($event)"
       [tooltip]="isSampleDiagram() ? 'Layout and links (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Layout and links' : 'Layout and links')"
       tooltipPosition="left" [disabled]="!auth.isLoggedIn() || isSampleDiagram()">
       <app-icons name="schema" size="17"></app-icons>

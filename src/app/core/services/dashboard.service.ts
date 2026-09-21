@@ -431,7 +431,13 @@ export class DashboardService {
   dbmlValidation: any = null;
   dbmlValidationError: any = null;
   isValidatingDbml = false;
-  saveErrorOccurred = false;
+  private readonly _saveErrorOccurred = signal<boolean>(false);
+  get saveErrorOccurred(): boolean {
+    return this._saveErrorOccurred();
+  }
+  set saveErrorOccurred(val: boolean) {
+    this._saveErrorOccurred.set(val);
+  }
 
   get code(): string {
     return this._code;
@@ -447,6 +453,11 @@ export class DashboardService {
     this._code = normalizedValue;
     this.updateEditorErrors();
     this.code$.next(normalizedValue);
+
+    if (!this.hasUnsavedChanges()) {
+      this.saveErrorOccurred = false;
+      this.dbmlValidationError = null;
+    }
 
     // INSTANT REAL-TIME COLLAB: Bypass RxJS completely to guarantee emission
     if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
@@ -556,13 +567,20 @@ export class DashboardService {
   readonly isDiagramNameInvalid = computed(() => this.isDiagramNameEmpty() || this.isDiagramNameDuplicate());
 
   hasUnsavedError(): boolean {
-    return this.isDiagramNameInvalid() || this.saveErrorOccurred;
+    if (this.isDiagramNameInvalid()) return true;
+    if (this.editorErrors().length > 0) return true;
+    if (this.hasUnsavedChanges() && this.saveErrorOccurred) return true;
+    return false;
   }
 
   getSaveStatusTooltip(): string {
     if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
     if (this.isDiagramNameDuplicate()) return 'Diagram name already exists';
-    if (this.saveErrorOccurred) {
+    if (this.editorErrors().length > 0) {
+      const first = this.editorErrors()[0];
+      return first?.message || 'DBML has syntax or relationship errors';
+    }
+    if (this.hasUnsavedChanges() && this.saveErrorOccurred) {
       return typeof this.dbmlValidationError === 'string' ? this.dbmlValidationError : 'Save failed';
     }
     if (this.isSaving()) return 'Saving...';
@@ -927,6 +945,30 @@ export class DashboardService {
       }
     });
 
+    // Debounced auto-save on DBML code changes (1200ms after user stops typing)
+    this.code$.pipe(debounceTime(1200)).subscribe(() => {
+      if (
+        this.auth.isLoggedIn() &&
+        !this.isDiagramNameEmpty() &&
+        this.hasUnsavedChanges() &&
+        !this.showVersionHistory() &&
+        this.canSaveDiagram(false) &&
+        this.validateDiagramName(false) &&
+        this.editorErrors().length === 0
+      ) {
+        if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+          this.emitCollabChange();
+        } else {
+          this.saveDiagram().subscribe({
+            error: () => {}
+          });
+        }
+      } else if (!this.hasUnsavedChanges()) {
+        this.saveErrorOccurred = false;
+        this.dbmlValidationError = null;
+      }
+    });
+
     this.dbmlChanges$.pipe(
       debounceTime(500),
       tap(() => {
@@ -985,10 +1027,10 @@ export class DashboardService {
           this.auth.isLoggedIn() &&
           !this.isDiagramNameEmpty() &&
           this.hasUnsavedChanges() &&
-          !this.saveErrorOccurred &&
           !this.showVersionHistory() &&
           this.canSaveDiagram(false) &&
-          this.validateDiagramName(false)
+          this.validateDiagramName(false) &&
+          this.editorErrors().length === 0
         ) {
           // If connected to a Team diagram socket, use socket emit
           if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
@@ -1000,6 +1042,9 @@ export class DashboardService {
               }
             });
           }
+        } else if (!this.hasUnsavedChanges() && this.saveErrorOccurred) {
+          this.saveErrorOccurred = false;
+          this.dbmlValidationError = null;
         }
       }, 5000);
     }
@@ -1192,12 +1237,20 @@ export class DashboardService {
             });
           }
 
+          if (fromTab === toTab && fromCol === toCol) {
+            errors.push({
+              line: idx + 1,
+              token: `${fromTab}.${fromCol}`,
+              message: `Cannot create relationship from "${fromTab}.${fromCol}" to itself`
+            });
+          }
+
           const fromTabObj = parsed.tables.find(t => t.name === fromTab);
           const toTabObj = parsed.tables.find(t => t.name === toTab);
           const fromColObj = fromTabObj?.columns.find(c => c.name === fromCol);
           const toColObj = toTabObj?.columns.find(c => c.name === toCol);
 
-          if (fromColObj && toColObj) {
+          if (fromColObj && toColObj && !(fromTab === toTab && fromCol === toCol)) {
             const fromEligible = fromColObj.pk || fromColObj.unique;
             const toEligible = toColObj.pk || toColObj.unique;
 
@@ -1413,14 +1466,21 @@ export class DashboardService {
   }
 
   isRefInvalid(ref: RefDef): boolean {
+    if (!ref) return false;
+
+    // 1. Self-reference to the exact same column is always invalid
+    if (ref.fromTable === ref.toTable && ref.fromCol === ref.toCol) {
+      return true;
+    }
+
     const fromTab = this.tables.find((t) => t.name === ref.fromTable);
     const toTab = this.tables.find((t) => t.name === ref.toTable);
-    // Missing tables (e.g. during renaming, duplicate tables, or WIP) are not relationship errors
-    if (!fromTab || !toTab) return false;
+    // Missing tables mean relationship cannot be validly formed
+    if (!fromTab || !toTab) return true;
 
-    const fromColObj = fromTab.columns.find((c) => c.name === ref.fromCol);
-    const toColObj = toTab.columns.find((c) => c.name === ref.toCol);
-    if (!fromColObj || !toColObj) return false;
+    const fromColObj = fromTab.columns?.find((c) => c.name === ref.fromCol);
+    const toColObj = toTab.columns?.find((c) => c.name === ref.toCol);
+    if (!fromColObj || !toColObj) return true;
 
     const fromEligible = fromColObj.pk || fromColObj.unique;
     const toEligible = toColObj.pk || toColObj.unique;
@@ -1433,6 +1493,25 @@ export class DashboardService {
     // Local check 2: Data types of connected columns must be compatible (e.g. varchar vs int is invalid)
     if (!this.areTypesCompatible(fromColObj.type, toColObj.type)) {
       return true;
+    }
+
+    // Check if there are editor errors for this ref's line or tokens
+    const errors = this.editorErrors();
+    if (errors && errors.length > 0) {
+      if (ref.lineNumber && errors.some(e => e.line === ref.lineNumber)) {
+        return true;
+      }
+      const refToken1 = `${ref.fromTable}.${ref.fromCol}`;
+      const refToken2 = `${ref.toTable}.${ref.toCol}`;
+      const hasError = errors.some(e => {
+        if (e.token && (e.token === refToken1 || e.token === refToken2)) return true;
+        if (e.message) {
+          if (e.message.includes(ref.fromTable) && e.message.includes(ref.fromCol)) return true;
+          if (e.message.includes(ref.toTable) && e.message.includes(ref.toCol)) return true;
+        }
+        return false;
+      });
+      if (hasError) return true;
     }
 
     const backendErrors = this.getValidationErrors();
@@ -1475,6 +1554,9 @@ export class DashboardService {
           return true;
         }
       }
+
+      if (msg.includes(ref.fromTable) && msg.includes(ref.fromCol)) return true;
+      if (msg.includes(ref.toTable) && msg.includes(ref.toCol)) return true;
     }
 
     return false;
@@ -1497,6 +1579,15 @@ export class DashboardService {
     if (this.isDiagramNameEmpty()) {
       if (showToast) {
         this.showToast('Diagram name should not be empty', 4000, 'error');
+      }
+      return false;
+    }
+
+    if (this.editorErrors().length > 0) {
+      if (showToast) {
+        const first = this.editorErrors()[0];
+        const suffix = this.editorErrors().length > 1 ? ` (+${this.editorErrors().length - 1} more)` : '';
+        this.showToast(`Cannot save: ${first.message}${suffix}`, 4000, 'error');
       }
       return false;
     }
@@ -2219,6 +2310,7 @@ export class DashboardService {
       localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
     }
   }
+
   updateTableInCode(oldName: string, newName: string, columns: Column[]): void {
     const tableRe = new RegExp(`Table\\s+${oldName}\\s*\\{[\\s\\S]*?\\n\\}`);
     if (!tableRe.test(this.code)) return;

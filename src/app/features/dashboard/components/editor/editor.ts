@@ -133,6 +133,29 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.emitCursor(ta);
   }
 
+  onCodeAreaBlur(): void {
+    if (
+      this.isLoggedIn &&
+      !this.svc.isDiagramNameEmpty() &&
+      this.svc.hasUnsavedChanges() &&
+      !this.svc.showVersionHistory() &&
+      this.svc.canSaveDiagram(false) &&
+      this.svc.validateDiagramName(false) &&
+      this.svc.editorErrors().length === 0
+    ) {
+      if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
+        this.svc.emitCollabChange();
+      } else {
+        this.svc.saveDiagram().subscribe({
+          error: () => {}
+        });
+      }
+    } else if (!this.svc.hasUnsavedChanges()) {
+      this.svc.saveErrorOccurred = false;
+      this.svc.dbmlValidationError = null;
+    }
+  }
+
   private emitCursor(ta: HTMLTextAreaElement): void {
     if (this.svc.diagramWorkspaceType() !== 'Team') return;
     const pos = ta.selectionStart;
