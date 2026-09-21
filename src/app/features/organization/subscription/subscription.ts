@@ -189,8 +189,28 @@ export class SubscriptionComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  onSeatCountChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let val = parseInt(input.value, 10);
+    
+    if (isNaN(val)) {
+      this.addSeatCount = 1;
+      return;
+    }
+
+    if (val > 5) {
+      input.value = '5';
+      this.addSeatCount = 5;
+    } else if (val < 1) {
+      input.value = '1';
+      this.addSeatCount = 1;
+    } else {
+      this.addSeatCount = val;
+    }
+  }
+
   confirmAddSeats(): void {
-    if (!this.addSeatCount || this.addSeatCount < 1) return;
+    if (!this.addSeatCount || this.addSeatCount < 1 || this.addSeatCount > 5) return;
     this.orgService.requestSeats(this.orgId, Number(this.addSeatCount)).subscribe({
       next: (res: any) => {
         this.isRequestSeatSuccess = true;

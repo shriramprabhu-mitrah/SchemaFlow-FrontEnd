@@ -3307,6 +3307,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    if (this.svc.groups && this.svc.groups.length > 0) {
+      for (const g of this.svc.groups) {
+        const bounds = this.getGroupBounds(g, geometry);
+        if (bounds) {
+          if (wp.x >= bounds.x && wp.x <= bounds.x + bounds.w && wp.y >= bounds.y && wp.y <= bounds.y + bounds.h) {
+            this.contextMenu.visible = false;
+            this.scheduleDraw();
+            return;
+          }
+        }
+      }
+    }
+
     this.contextMenuWorldPoint = wp;
     this.openContextMenu(sx, sy, 'empty', null, null, -1);
   }

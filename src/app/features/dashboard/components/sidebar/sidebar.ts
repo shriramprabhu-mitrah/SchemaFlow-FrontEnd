@@ -165,6 +165,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.openImportDialect(dialect, e);
   }
 
+  hasDbmlErrors(): boolean {
+    return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;
+  }
+
   // ============ EXPORT ============
 
   toggleExportMenu(e?: Event): void {

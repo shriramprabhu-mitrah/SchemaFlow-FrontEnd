@@ -98,7 +98,7 @@
         <div class="flyout-header">Export as diagram</div>
 
         <button class="flyout-item" (click)="exportFormat('pdf', $event)"
-          [disabled]="isDiagramEmpty() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
           <span class="db-icon pdf-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -115,7 +115,7 @@
         </button>
 
         <button class="flyout-item" (click)="exportFormat('png', $event)"
-          [disabled]="isDiagramEmpty() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
           <span class="db-icon png-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -130,7 +130,7 @@
         </button>
 
         <button class="flyout-item" (click)="exportFormat('svg', $event)"
-          [disabled]="isDiagramEmpty() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
           <span class="db-icon svg-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -149,7 +149,7 @@
         <div class="flyout-header">Export as SQL</div>
 
         <button class="flyout-item" (click)="exportSQL('postgres', $event)"
-          [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
           <span class="db-icon postgres-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
@@ -161,7 +161,7 @@
         </button>
 
         <button class="flyout-item" (click)="exportSQL('mysql', $event)"
-          [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
           <span class="db-icon mysql-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -174,7 +174,7 @@
         </button>
 
         <button class="flyout-item" (click)="exportSQL('sqlserver', $event)"
-          [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
           <span class="db-icon mssql-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
@@ -188,7 +188,7 @@
         <!-- SQLite -->
         <button class="flyout-item export-item" id="export-sqlite-btn"
           (click)="exportSQL('sqlite'); $event.stopPropagation()"
-          [disabled]="isDiagramEmpty() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
           <span class="db-icon sqlite-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path
