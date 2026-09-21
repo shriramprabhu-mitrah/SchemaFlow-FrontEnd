@@ -2,7 +2,7 @@
 
 ---
 
-## [1.1.1] - 2026-09-21
+## [1.1.0] - 2026-09-21
 
 ### Added
 - Code Compare feature integrated with Version History for side-by-side DBML diff viewing
