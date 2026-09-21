@@ -3,6 +3,7 @@ import { authGuard } from './core/authguard/auth.guard';
 import { superAdminGuard } from './core/authguard/super-admin.guard';
 import { orgAdminGuard } from './core/authguard/org-admin.guard';
 import { orgOwnerGuard } from './core/authguard/org-owner.guard';
+import { premiumOrgGuard } from './core/authguard/premium-org.guard';
 
 export const routes: Routes = [
   {
@@ -93,9 +94,9 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', title: 'Organization Dashboard - DBNexus', loadComponent: () => import('./features/organization/org-dashboard/org-dashboard').then(m => m.OrgDashboardComponent) },
       { path: 'settings', title: 'Organization Settings - DBNexus', loadComponent: () => import('./features/organization/org-settings/org-settings').then(m => m.OrgSettingsComponent) },
-      { path: 'subscription', title: 'Organization Subscription - DBNexus', canActivate: [orgOwnerGuard], loadComponent: () => import('./features/organization/subscription/subscription').then(m => m.SubscriptionComponent) },
-      { path: 'members', title: 'Team Members - DBNexus', loadComponent: () => import('./features/organization/members/members').then(m => m.MembersComponent) },
-      { path: 'audit-logs', title: 'Organization Audit Logs - DBNexus', loadComponent: () => import('./features/organization/org-audit-logs/org-audit-logs.component').then(m => m.OrgAuditLogsComponent) },
+      { path: 'subscription', title: 'Organization Subscription - DBNexus', canActivate: [orgOwnerGuard, premiumOrgGuard], loadComponent: () => import('./features/organization/subscription/subscription').then(m => m.SubscriptionComponent) },
+      { path: 'members', title: 'Team Members - DBNexus', canActivate: [premiumOrgGuard], loadComponent: () => import('./features/organization/members/members').then(m => m.MembersComponent) },
+      { path: 'audit-logs', title: 'Organization Audit Logs - DBNexus', canActivate: [premiumOrgGuard], loadComponent: () => import('./features/organization/org-audit-logs/org-audit-logs.component').then(m => m.OrgAuditLogsComponent) },
     ]
   },
 

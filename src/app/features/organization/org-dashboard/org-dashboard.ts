@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { OrganizationService } from '../services/organization.service';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
 
 @Component({
   selector: 'app-org-dashboard',
@@ -17,6 +18,14 @@ export class OrgDashboardComponent implements OnInit {
   private ngZone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
   private auth = inject(AuthService);
+  private dashService = inject(DashboardService);
+
+  get showPremiumFeatures(): boolean {
+    const plan = this.dashService.currentOrgPlanSlug();
+    const isFree = plan === 'free' || !plan;
+    const isExpired = this.dashService.isSubscriptionExpired() || this.dashService.currentOrgPlanStatus() === 'expired';
+    return !isFree && !isExpired;
+  }
 
   orgId!: number;
   loading = true;

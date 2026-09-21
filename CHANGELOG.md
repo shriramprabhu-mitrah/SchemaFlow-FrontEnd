@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 ---
 
@@ -14,3 +14,14 @@
 ### Fixed
 - Logo shadow rendering issue in UI
 - Code Compare visual and functional bugs
+
+## [1.1.0] - Initial Release
+
+### Added
+- Realtime Collaboration
+- Version History
+- Import as MySQL, SQL Server, PostgreSQL
+- Export as PNG, SVG, PDF, MySQL, SQL Server, PostgreSQL
+- Table Grouping
+- Share Diagram
+- Collaborative Workspace

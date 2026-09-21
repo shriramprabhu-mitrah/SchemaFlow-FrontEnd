@@ -36,18 +36,7 @@
   }
 
 
-  .dashboard-middle-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-bottom: 24px;
-
-    @media (max-width: 1024px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .dashboard-bottom-grid {
+  .dashboard-cards-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
