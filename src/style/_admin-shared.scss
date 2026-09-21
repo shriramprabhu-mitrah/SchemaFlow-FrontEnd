@@ -1915,7 +1915,9 @@ body.light-theme {
     }
   }
 
-  code {
+  app-admin-layout code,
+  app-org-layout code,
+  .admin-page code {
     color: #0284c7 !important;
     background: #f0f9ff !important;
     border-color: #bae6fd !important;

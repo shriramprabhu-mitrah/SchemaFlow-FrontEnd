@@ -52,6 +52,15 @@ export class ShareModalComponent implements OnInit {
   showLinkTypeDropdown = false;
   */
 
+  hasDbmlErrors(): boolean {
+    return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;
+  }
+
+  isDiagramEmpty(): boolean {
+    const code = this.svc.code;
+    return !code || code.trim() === '' || this.svc.tables.length === 0;
+  }
+
   constructor(
     public svc: DashboardService,
     private appConfig: AppConfigService,
@@ -116,6 +125,16 @@ export class ShareModalComponent implements OnInit {
   saveSharingSettings(): void {
     if (!this.diagramId) return;
     
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
+
     if (this.isPublic) {
       this.password = ''; // Clear password when making it public
     } else if (!this.password) {
@@ -142,6 +161,16 @@ export class ShareModalComponent implements OnInit {
 
   sendEmails(): void {
     if (!this.diagramId) return;
+
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
     
     // Parse emails from input
     const rawEmails = this.emailsInput.split(/[\s,]+/).map(e => e.trim()).filter(e => e.length > 0);
@@ -210,6 +239,14 @@ export class ShareModalComponent implements OnInit {
   */
 
   copyToClipboard(text: string, type: 'link' | 'embed'): void {
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
         if (type === 'link') {

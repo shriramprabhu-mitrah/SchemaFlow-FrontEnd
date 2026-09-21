@@ -42,6 +42,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {
     effect(() => {
+      // Track editor errors and validation errors to keep sidebar states reactive
+      this.svc.editorErrors();
+
       // Automatically close inspectors or menus if diagram is in read-only / can-view mode
       if (this.isCanViewOnly) {
         if (this.svc.sidebarInspectorTab() === 'tables') {
@@ -65,6 +68,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
     this.entitlementService.orgEntitlements$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+      });
+    this.svc.redraw$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.cdr.markForCheck();
@@ -177,6 +185,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot export diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to export.', 3000, 'error');
+      return;
+    }
     this.exportMenuOpen = !this.exportMenuOpen;
     if (this.exportMenuOpen) {
       this.importMenuOpen = false;
@@ -266,15 +282,23 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openShare(e?: Event): void {
     if (e) e.stopPropagation();
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      return;
+    }
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (this.svc.showVersionHistory()) {
       this.svc.closeVersionHistory$.next();
       this.svc.showVersionHistory.set(false);
-    }
-    if (!this.isLoggedIn || this.isSampleDiagram()) {
-      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
-      return;
     }
     if (!this.entitlementService.canUseFeature('share_diagram')) {
       if (!this.entitlementService.orgHasFeature('share_diagram')) {

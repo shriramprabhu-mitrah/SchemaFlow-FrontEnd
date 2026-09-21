@@ -78,7 +78,7 @@
 
     <!-- Export Button -->
     <div class="activity-nav-item export-item-wrap tt tt-right" [class.active]="exportMenuOpen"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleExportMenu($event)"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || hasDbmlErrors() || isDiagramEmpty()" (click)="toggleExportMenu($event)"
       [attr.data-tt]="exportMenuOpen ? null : (!isLoggedIn ? 'Sign in to export diagram or SQL' : (isSampleDiagram() ? 'Export is disabled for sample diagrams' : 'Export diagram or SQL'))"
       aria-label="Export diagram or SQL">
       <app-icons *ngIf="showCrown('export')" class="sidebar-crown-badge" name="premium-crown" size="10"
@@ -208,7 +208,7 @@
 
     <!-- Share Button -->
     <div class="activity-nav-item share-item tt tt-right" *ngIf="!isCanViewOnly"
-      [class.active]="svc.shareModalVisible()" [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      [class.active]="svc.shareModalVisible()" [class.disabled]="!isLoggedIn || isSampleDiagram() || hasDbmlErrors() || isDiagramEmpty()"
       (click)="openShare($event)"
       [attr.data-tt]="!isLoggedIn ? 'Sign in to share diagram' : (isSampleDiagram() ? 'Sharing is disabled for sample diagrams' : 'Share diagram')"
       aria-label="Share diagram">

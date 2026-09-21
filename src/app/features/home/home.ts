@@ -67,7 +67,7 @@ export class HomeComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private router: Router,
-    private svc: DashboardService,
+    public svc: DashboardService,
     private seoService: SeoService
   ) { }
 
@@ -93,6 +93,7 @@ export class HomeComponent implements OnInit {
 
     if (typeof window !== 'undefined') {
       this.isLoggedIn = this.auth.isLoggedIn();
+      this.svc.syncThemeFromStorage();
     }
   }
 

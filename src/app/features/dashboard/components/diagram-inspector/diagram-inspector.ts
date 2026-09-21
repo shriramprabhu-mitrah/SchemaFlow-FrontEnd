@@ -43,29 +43,22 @@ export class DiagramInspectorComponent implements OnInit {
 
   dataTypes = [
     'int',
+    'integer',
     'bigint',
-    'smallint',
     'varchar',
     'text',
-    'char',
     'boolean',
     'timestamp',
-    'timestamptz',
     'datetime',
     'date',
-    'decimal',
-    'float',
-    'numeric',
-    'json',
-    'jsonb',
-    'uuid',
-    'serial'
+    'decimal'
+
   ];
 
   constructor(
     public svc: DashboardService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // By default expand the first table if exists
@@ -294,7 +287,7 @@ export class DiagramInspectorComponent implements OnInit {
         })
         .join('\n');
       newCode = newCode.replace(tableRegex, `$1${newBody}$3`);
-      
+
       // Update References globally
       if (oldColName !== newColName) {
         const refRegex = new RegExp(`\\b${tableName}\\.${oldColName}\\b`, 'g');

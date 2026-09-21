@@ -908,6 +908,14 @@ export class HeaderComponent implements OnInit {
       this.svc.showToast('Please sign in to share your diagrams', 3000, 'error');
       return;
     }
+    if (this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (!this.svc.code || this.svc.code.trim() === '' || this.svc.tables.length === 0) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
     if (!this.entitlementService.canUseFeature('share_diagram')) {
       if (!this.entitlementService.orgHasFeature('share_diagram')) {
         this.svc.showUpgradeModal('share_diagram');
