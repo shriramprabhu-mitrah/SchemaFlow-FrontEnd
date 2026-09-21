@@ -92,6 +92,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private forceHighlightConnections = false;
 
   private wheelListener!: (e: WheelEvent) => void;
+  private scrollListener!: () => void;
 
   // ---- Sticky note drag/resize state ----
   private draggingNote: DiagramNote | null = null;
@@ -234,6 +235,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       connectionIndex: -1,
       groupName: null
     };
+  private contextMenuOpenedAt = 0;
 
   constructor(
     public svc: DashboardService,
@@ -853,12 +855,26 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Redraw subscription from service
     this.subscriptions.add(this.svc.redraw$.subscribe(() => {
+      if (this.contextMenu.visible && this.contextMenu.targetType !== 'empty') {
+        const tableExists = this.contextMenu.table ? this.svc.tables.some(t => t.name === this.contextMenu.table?.name) : false;
+        const groupExists = this.contextMenu.groupName ? this.svc.groups.some(g => g.name === this.contextMenu.groupName) : false;
+        if (!tableExists && !groupExists) {
+          this.contextMenu.visible = false;
+        }
+      }
       if (typeof window !== 'undefined') {
         this.scheduleDraw();
       }
     }));
     // Force redraw for immediate visibility changes (bypasses rafPending guard)
     this.subscriptions.add(this.svc.forceRedraw$.subscribe(() => {
+      if (this.contextMenu.visible && this.contextMenu.targetType !== 'empty') {
+        const tableExists = this.contextMenu.table ? this.svc.tables.some(t => t.name === this.contextMenu.table?.name) : false;
+        const groupExists = this.contextMenu.groupName ? this.svc.groups.some(g => g.name === this.contextMenu.groupName) : false;
+        if (!tableExists && !groupExists) {
+          this.contextMenu.visible = false;
+        }
+      }
       if (typeof window !== 'undefined' && this.ctx) {
         this.draw();
       }
@@ -885,6 +901,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (typeof window === 'undefined') return;
 
     this.wheelListener = (e: WheelEvent) => {
+      if (this.contextMenu.visible) {
+        this.contextMenu.visible = false;
+        this.scheduleDraw();
+      }
       if (this.colorPicker.visible) {
         this.colorPicker.visible = false;
         this.cdr.detectChanges();
@@ -898,6 +918,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
     window.addEventListener('wheel', this.wheelListener, { passive: false });
+
+    this.scrollListener = () => {
+      if (this.contextMenu.visible) {
+        this.contextMenu.visible = false;
+        this.scheduleDraw();
+      }
+      if (this.colorPicker.visible) {
+        this.colorPicker.visible = false;
+        this.cdr.detectChanges();
+      }
+      if (this.activeNoteMenuId !== null) {
+        this.activeNoteMenuId = null;
+        this.cdr.detectChanges();
+      }
+    };
+    window.addEventListener('scroll', this.scrollListener, { capture: true, passive: true });
 
     this.resizeCanvasToDisplaySize();
     this.resizeObserver = new ResizeObserver(() => {
@@ -913,8 +949,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (typeof window !== 'undefined' && this.wheelListener) {
-      window.removeEventListener('wheel', this.wheelListener);
+    if (typeof window !== 'undefined') {
+      if (this.wheelListener) {
+        window.removeEventListener('wheel', this.wheelListener);
+      }
+      if (this.scrollListener) {
+        window.removeEventListener('scroll', this.scrollListener, { capture: true } as any);
+      }
     }
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
@@ -1047,7 +1088,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.restore();
 
     if (this.contextMenu.visible && !this.drawingClean) {
-      this.drawContextMenu(ctx);
+      if (this.contextMenu.targetType !== 'empty') {
+        const tableExists = this.contextMenu.table ? this.svc.tables.some(t => t.name === this.contextMenu.table?.name) : false;
+        const groupExists = this.contextMenu.groupName ? this.svc.groups.some(g => g.name === this.contextMenu.groupName) : false;
+        if (!tableExists && !groupExists) {
+          this.contextMenu.visible = false;
+        }
+      }
+      if (this.contextMenu.visible) {
+        this.drawContextMenu(ctx);
+      }
     }
   }
 
@@ -2835,6 +2885,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.svc.selectedConnectionIndex = -1;
     }
 
+    if (this.contextMenu.visible && (this.isPanning || this.draggingTable || this.draggingGroup || this.isDraggingWaypoint || this.connectionDraft || this.reconnectDraft)) {
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+    }
+
     if (this.draggingGroup) {
       const dx = wp.x - this.dragGroupStartMouse.x;
       const dy = wp.y - this.dragGroupStartMouse.y;
@@ -3254,6 +3309,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.contextMenu.visible) {
       this.contextMenu.visible = false;
+      this.scheduleDraw();
     }
 
     this.svc.selectedConnectionIndex = -1;
@@ -3924,8 +3980,40 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fkColDropdownOpen = false;
   }
 
+  @HostListener('document:mousedown', ['$event'])
+  onDocumentMouseDown(event: MouseEvent): void {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.contextMenuOpenedAt < 250) {
+      return;
+    }
+    if (this.contextMenu.visible && !this.isPointInsideContextMenu(event.clientX, event.clientY)) {
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+    }
+  }
+
+  @HostListener('document:contextmenu', ['$event'])
+  onDocumentContextMenu(event: MouseEvent): void {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.contextMenuOpenedAt < 250) {
+      return;
+    }
+    if (this.contextMenu.visible && event.target !== this.canvasRef?.nativeElement) {
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.contextMenuOpenedAt >= 250) {
+      if (this.contextMenu.visible && !this.isPointInsideContextMenu(event.clientX, event.clientY)) {
+        this.contextMenu.visible = false;
+        this.scheduleDraw();
+      }
+    }
+
     this.typeDropdownIndex = null;
     this.constraintDropdownIndex = null;
     this.groupDropdownVisible = false;
@@ -4384,6 +4472,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private isPointInsideContextMenu(clientX: number, clientY: number): boolean {
+    if (!this.contextMenu.visible || !this.canvasRef?.nativeElement) return false;
+    const rect = this.canvasRef.nativeElement.getBoundingClientRect();
+    const sx = clientX - rect.left;
+    const sy = clientY - rect.top;
+    const items = this.getContextMenuItems();
+    if (!items.length) return false;
+    const menuHeight = items.length * this.menuItemHeight;
+    return (
+      sx >= this.contextMenu.x &&
+      sx <= this.contextMenu.x + this.menuWidth &&
+      sy >= this.contextMenu.y &&
+      sy <= this.contextMenu.y + menuHeight
+    );
+  }
+
   private openContextMenu(
     sx: number,
     sy: number,
@@ -4424,6 +4528,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.contextMenu.x = Math.max(6, Math.min(sx, maxX));
     this.contextMenu.y = Math.max(6, Math.min(sy, maxY));
     this.contextMenu.visible = true;
+    this.contextMenuOpenedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
     this.scheduleDraw();
   }
