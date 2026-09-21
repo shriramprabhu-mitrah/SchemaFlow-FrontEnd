@@ -544,6 +544,31 @@ export class DashboardService {
   readonly diagramNameSignal = signal<string>('');
   readonly isDiagramNameEmpty = computed(() => !this.diagramNameSignal() || !this.diagramNameSignal().trim());
 
+  readonly isDiagramNameDuplicate = computed(() => {
+    const name = (this.diagramNameSignal() || '').trim();
+    if (!name || name.toLowerCase() === 'untitled diagram') return false;
+    const currentId = this.diagramId();
+    return this.diagrams().some(
+      (d) => d.id !== currentId && d.name.trim().toLowerCase() === name.toLowerCase()
+    );
+  });
+
+  readonly isDiagramNameInvalid = computed(() => this.isDiagramNameEmpty() || this.isDiagramNameDuplicate());
+
+  hasUnsavedError(): boolean {
+    return this.isDiagramNameInvalid() || this.saveErrorOccurred;
+  }
+
+  getSaveStatusTooltip(): string {
+    if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
+    if (this.isDiagramNameDuplicate()) return 'Diagram name already exists';
+    if (this.saveErrorOccurred) {
+      return typeof this.dbmlValidationError === 'string' ? this.dbmlValidationError : 'Save failed';
+    }
+    if (this.isSaving()) return 'Saving...';
+    return 'Saved';
+  }
+
   get diagramName(): string {
     return this.diagramNameSignal();
   }
@@ -961,6 +986,7 @@ export class DashboardService {
           !this.isDiagramNameEmpty() &&
           this.hasUnsavedChanges() &&
           !this.saveErrorOccurred &&
+          !this.showVersionHistory() &&
           this.canSaveDiagram(false) &&
           this.validateDiagramName(false)
         ) {
@@ -3673,7 +3699,7 @@ export class DashboardService {
   }
 
   saveDiagram(): Observable<any> {
-    if (this.isSaving()) {
+    if (this.isSaving() || this.showVersionHistory()) {
       return EMPTY;
     }
 
