@@ -1414,7 +1414,8 @@ html[data-theme="dark"] {
   .workspace-img,
   .version-history-img,
   .share-panel-img,
-  .team-workspace-img {
+  .team-workspace-img,
+  .hero-animation-img {
     filter: none !important;
     background: transparent;
   }
@@ -1793,7 +1794,7 @@ html[data-theme="dark"] {
 html[data-theme="dark"] .hero-animation-wrapper {
   border-color: #334155;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-  background: #0f172a;
+  background: #08101f;
 }
 
 
