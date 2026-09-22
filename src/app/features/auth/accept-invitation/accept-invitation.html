@@ -4,7 +4,7 @@
     <!-- Header Brand Logo -->
     <div class="card-brand">
       <app-icons name="db-diagram-logo" size="80"></app-icons>
-      <span class="brand-title">DB Nexus</span>
+      <span class="brand-title dbnexus-text">dbNexus</span>
       <span class="invite-badge">{{ isOrgInvite ? "ORGANIZATION INVITATION" : "WORKSPACE INVITATION" }}</span>
     </div>
 
@@ -16,19 +16,23 @@
       <div class="workspace-details-box">
         <div class="detail-row">
           <span class="detail-label">{{ isOrgInvite ? "Organization Name" : "Workspace Name" }}</span>
-          <span class="detail-value highlight">{{ workspaceName }}</span>
+          <span class="detail-value highlight">
+            <span *ngIf="workspaceName">{{ workspaceName }}</span>
+            <span *ngIf="!workspaceName && isChecking" class="skeleton-text"></span>
+            <span *ngIf="!workspaceName && !isChecking">Unknown Organization</span>
+          </span>
         </div>
 
-        <div class="detail-row">
-          <span class="detail-label">{{ isOrgInvite ? "Organization ID" : "Workspace / Invitation ID" }}</span>
-          <span class="detail-value code-font tt" [attr.data-tt]="isOrgInvite ? orgId : workspaceId">{{ (isOrgInvite ?
-            orgId : workspaceId) || 'None provided' }}</span>
+        <div class="detail-row" *ngIf="!isOrgInvite && orgName">
+          <span class="detail-label">Organization Name</span>
+          <span class="detail-value highlight">{{ orgName }}</span>
         </div>
 
-        <div class="detail-row" *ngIf="auth.isLoggedIn()">
-          <span class="detail-label">Accepting as</span>
-          <span class="detail-value">{{ userEmail }}</span>
+        <div class="detail-row" *ngIf="permission">
+          <span class="detail-label">Role / Permission</span>
+          <span class="detail-value highlight">{{ permission }}</span>
         </div>
+
       </div>
 
       <!-- Success Alert Banner -->
@@ -50,7 +54,34 @@
       </div>
 
       <!-- Validation Alert Banners -->
-      <div class="alert-banner error-banner" *ngIf="loginRequired">
+      <div class="alert-banner warning-banner" *ngIf="emailMismatch">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>This invitation was sent to {{ invitedEmail }}, but you are logged in as {{ userEmail }}. Please login with the correct account to accept.</span>
+      </div>
+
+      <div class="alert-banner warning-banner" *ngIf="noInvitation">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>You do not have a pending invitation for this organization. Please login with the correct account to accept.</span>
+      </div>
+
+      <div class="alert-banner warning-banner" *ngIf="alreadyMember">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>You are already an active member of this organization.</span>
+      </div>
+
+      <div class="alert-banner warning-banner" *ngIf="loginRequired">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
@@ -61,7 +92,7 @@
           invitation.</span>
       </div>
 
-      <div class="alert-banner error-banner" *ngIf="registrationRequired">
+      <div class="alert-banner warning-banner" *ngIf="registrationRequired">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
@@ -74,7 +105,7 @@
       <!-- Action Buttons -->
       <div class="card-actions" *ngIf="!isSuccess">
         <button class="btn-accept-invitation" (click)="onAcceptInvitation()"
-          [disabled]="isLoading || isChecking || emailMismatch || loginRequired || registrationRequired || (!workspaceId && !orgId)">
+          [disabled]="isLoading || isChecking || emailMismatch || noInvitation || alreadyMember || loginRequired || registrationRequired || (!workspaceId && !orgId)">
           <span *ngIf="isLoading" class="spinner"></span>
           <span>{{ isLoading ? 'Accepting Invitation...' : 'Accept Invitation' }}</span>
         </button>

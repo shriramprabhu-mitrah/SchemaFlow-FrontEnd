@@ -50,6 +50,7 @@ canvas {
   justify-content: center;
   text-align: center;
   gap: 12px;
+  pointer-events: none;
 }
 
 #empty-state.hidden {
@@ -229,6 +230,11 @@ app-version-history {
   z-index: 30;
 }
 
+#canvas-pane.read-only #create-table-control,
+#create-table-control.read-only-hide {
+  display: none !important;
+}
+
 .layout-menu {
   position: absolute;
   top: 0;
@@ -366,6 +372,29 @@ app-version-history {
     &:hover:not(.disabled) {
       background: rgba(255, 255, 255, 0.1);
       color: #f8fafc;
+    }
+
+    &.disabled,
+    &[disabled],
+    &:disabled {
+      opacity: 0.38 !important;
+      cursor: not-allowed !important;
+      color: #64748b !important;
+      box-shadow: none !important;
+
+      * {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      svg {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      app-icons {
+        color: #64748b !important;
+      }
     }
   }
 
@@ -596,6 +625,36 @@ app-version-history {
     background: #1d334c;
     color: #ffffff !important;
   }
+
+  &.disabled,
+  &:disabled,
+  &[disabled] {
+    opacity: 0.38 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    color: #64748b !important;
+    border-color: rgba(104, 138, 179, 0.15) !important;
+
+    * {
+      color: #64748b !important;
+      stroke: #64748b !important;
+    }
+
+    .create-table-icon {
+      color: #64748b !important;
+
+      svg {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+    }
+  }
+}
+
+#create-table-control.disabled {
+  opacity: 0.38 !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
 }
 
 .create-table-icon {
@@ -603,7 +662,7 @@ app-version-history {
   align-items: center;
   justify-content: center;
   transform: translateY(1.5px);
-  color: #3ec5c1 !important;
+  color: #3ec5c1;
 }
 
 .table-modal-backdrop {
@@ -1337,24 +1396,52 @@ body:has(.modal-backdrop) {
 
 /* ============ LIGHT THEME OVERRIDES ============ */
 body.light-theme {
-  .layout-menu-item:hover {
-    background: rgba(59, 130, 246, 0.08);
-    color: #3b82f6;
+  #canvas-pane {
+    background: #f8fafc !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
   }
 
-  .layout-menu-item:hover .menu-icon {
-    background: rgba(59, 130, 246, 0.12);
-    color: #3b82f6;
-  }
+  .layout-menu {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.1) !important;
 
-  .layout-menu-item.active {
-    background: rgba(59, 130, 246, 0.12);
-    color: #3b82f6;
-  }
+    .layout-menu-title {
+      color: #64748b !important;
+    }
 
-  .layout-menu-item.active .menu-icon {
-    background: rgba(59, 130, 246, 0.2);
-    color: #3b82f6;
+    .layout-menu-divider {
+      background: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .layout-menu-item {
+      color: #334155 !important;
+
+      .menu-icon {
+        background: rgba(0, 0, 0, 0.04) !important;
+        color: #64748b !important;
+      }
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.08) !important;
+        color: #3b82f6 !important;
+
+        .menu-icon {
+          background: rgba(59, 130, 246, 0.12) !important;
+          color: #3b82f6 !important;
+        }
+      }
+
+      &.active {
+        background: rgba(59, 130, 246, 0.12) !important;
+        color: #3b82f6 !important;
+
+        .menu-icon {
+          background: rgba(59, 130, 246, 0.2) !important;
+          color: #3b82f6 !important;
+        }
+      }
+    }
   }
 
   .group-menu {
@@ -1751,6 +1838,29 @@ body.light-theme {
         background: #f1f5f9 !important;
         color: #0f172a !important;
       }
+
+      &.disabled,
+      &[disabled],
+      &:disabled {
+        opacity: 0.38 !important;
+        cursor: not-allowed !important;
+        color: #94a3b8 !important;
+        box-shadow: none !important;
+
+        * {
+          color: #94a3b8 !important;
+          stroke: #94a3b8 !important;
+        }
+
+        svg {
+          color: #94a3b8 !important;
+          stroke: #94a3b8 !important;
+        }
+
+        app-icons {
+          color: #94a3b8 !important;
+        }
+      }
     }
 
     .btn.toolbar-active,
@@ -1762,6 +1872,12 @@ body.light-theme {
         background: rgba(51, 122, 183, 0.15) !important;
       }
     }
+  }
+
+  #create-table-control.disabled {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
   }
 
   #zoom-pct {
@@ -1987,6 +2103,28 @@ body.light-theme .detail-level-dropdown {
       color: #61d7d3 !important;
       /* active color dark theme */
     }
+
+    &.disabled,
+    &[disabled],
+    &:disabled {
+      opacity: 0.38 !important;
+      cursor: not-allowed !important;
+      color: #64748b !important;
+
+      * {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      svg {
+        color: #64748b !important;
+        stroke: #64748b !important;
+      }
+
+      app-icons {
+        color: #64748b !important;
+      }
+    }
   }
 
   .controls-divider {
@@ -2006,6 +2144,28 @@ body.light-theme #extra-controls {
     &.extra-active {
       color: #337ab7 !important;
       /* active color light theme */
+    }
+
+    &.disabled,
+    &[disabled],
+    &:disabled {
+      opacity: 0.38 !important;
+      cursor: not-allowed !important;
+      color: #94a3b8 !important;
+
+      * {
+        color: #94a3b8 !important;
+        stroke: #94a3b8 !important;
+      }
+
+      svg {
+        color: #94a3b8 !important;
+        stroke: #94a3b8 !important;
+      }
+
+      app-icons {
+        color: #94a3b8 !important;
+      }
     }
   }
 

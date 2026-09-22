@@ -743,7 +743,7 @@
               .action-menu-dropdown {
                 position: absolute;
                 right: 16px !important;
-                top: calc(100% + 6px);
+                top: calc(100% + 0px);
                 width: max-content !important;
                 min-width: 160px !important;
                 background: #141c2e !important;
@@ -1461,13 +1461,13 @@
 
       .diagrams-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
 
         thead {
           tr {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
             th {
+              border-bottom: 1px solid rgba(255, 255, 255, 0.08);
               text-align: left;
               padding: 10px 12px;
               font-size: 11.5px;
@@ -1501,7 +1501,6 @@
 
         tbody {
           tr {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             cursor: default;
             transition: background 0.15s ease;
 
@@ -1523,6 +1522,7 @@
             }
 
             td {
+              border-bottom: 1px solid rgba(255, 255, 255, 0.04);
               padding: 12px;
               font-size: 12.5px;
               color: #d1dbe9;
@@ -2303,9 +2303,8 @@ body.light-theme {
         .diagrams-table {
           thead {
             tr {
-              border-bottom-color: rgba(0, 0, 0, 0.08);
-
               th {
+                border-bottom-color: rgba(0, 0, 0, 0.08);
                 color: #000000;
 
                 .sort-icon {
@@ -2321,8 +2320,6 @@ body.light-theme {
 
           tbody {
             tr {
-              border-bottom-color: rgba(0, 0, 0, 0.04);
-
               &:hover {
                 background: #f8fafc;
               }
@@ -2336,6 +2333,7 @@ body.light-theme {
               }
 
               td {
+                border-bottom-color: rgba(0, 0, 0, 0.04);
                 color: #1e293b;
 
                 &.col-modified,
@@ -2472,6 +2470,12 @@ body.light-theme {
       }
     }
   }
+}
+
+/* Make dropdowns in the last 2 rows open upwards to prevent expanding the scroll container */
+tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-dropdown {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
 }
 
 /* Make dropdowns in the last 2 rows open upwards to prevent expanding the scroll container */

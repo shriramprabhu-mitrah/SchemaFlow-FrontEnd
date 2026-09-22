@@ -64,7 +64,7 @@
   .history-list {
     flex: 1;
     overflow-y: auto;
-    padding: 12px 10px;
+    padding: 12px 10px 48px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -77,22 +77,22 @@
       padding: 10px 12px;
       border-radius: 8px;
       cursor: pointer;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: transparent;
+      border: 1px solid transparent;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 
       &:hover {
-        background: rgba(255, 255, 255, 0.07);
-        border-color: rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.05);
+        border-color: transparent;
 
-        .row-restore-btn {
+        .row-more-btn {
           opacity: 1;
         }
       }
 
       &.selected {
         background: rgba(62, 197, 193, 0.12);
-        border-color: rgba(62, 197, 193, 0.4);
+        border-color: transparent;
 
         .version-time {
           color: #3ec5c1;
@@ -164,26 +164,78 @@
       }
 
       .history-item-actions {
+        position: relative;
         flex-shrink: 0;
 
-        .row-restore-btn {
-          opacity: 0.9;
-          background: rgba(62, 197, 193, 0.12);
-          border: 1px solid rgba(62, 197, 193, 0.35);
-          color: #3ec5c1;
-          padding: 5px 12px;
+        .row-more-btn {
+          opacity: 0.8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
           border-radius: 6px;
-          font-size: 11.5px;
-          font-weight: 600;
+          border: 1px solid transparent;
+          background: transparent;
+          color: #94a3b8;
           cursor: pointer;
           transition: all 0.15s ease;
 
-          &:hover {
-            background: #3ec5c1;
-            color: #08101f;
-            border-color: #3ec5c1;
+          &:hover,
+          &.active {
             opacity: 1;
-            box-shadow: 0 2px 8px rgba(62, 197, 193, 0.35);
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+        }
+
+        .history-dropdown-menu {
+          position: absolute;
+          top: calc(100% + 4px);
+          right: 0;
+          z-index: 60;
+          min-width: 130px;
+          padding: 4px;
+          background: #0f172a;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 8px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          animation: fadeInMenu 0.12s ease-out;
+
+          .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 7px 10px;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: #cbd5e1;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.12s ease;
+
+            svg {
+              flex-shrink: 0;
+              color: #94a3b8;
+              transition: color 0.12s ease;
+            }
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.08);
+              color: #ffffff;
+
+              svg {
+                color: #3ec5c1;
+              }
+            }
           }
         }
       }
@@ -297,8 +349,8 @@ body.light-theme {
 
     .history-list {
       .history-item {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: transparent;
+        border: 1px solid transparent;
 
         .user-avatar-col {
           .user-avatar {
@@ -318,12 +370,12 @@ body.light-theme {
 
         &:hover {
           background: #f1f5f9;
-          border-color: #cbd5e1;
+          border-color: transparent;
         }
 
         &.selected {
           background: rgba(37, 99, 235, 0.08);
-          border-color: rgba(37, 99, 235, 0.3);
+          border-color: transparent;
 
           .version-time {
             color: #2563eb;
@@ -331,15 +383,37 @@ body.light-theme {
         }
 
         .history-item-actions {
-          .row-restore-btn {
-            background: rgba(37, 99, 235, 0.08);
-            border: 1px solid rgba(37, 99, 235, 0.3);
-            color: #2563eb;
+          .row-more-btn {
+            color: #64748b;
 
-            &:hover {
-              background: #2563eb;
-              color: #ffffff;
-              border-color: #2563eb;
+            &:hover,
+            &.active {
+              background: #e2e8f0;
+              color: #0f172a;
+              border-color: #cbd5e1;
+            }
+          }
+
+          .history-dropdown-menu {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+
+            .menu-item {
+              color: #334155;
+
+              svg {
+                color: #64748b;
+              }
+
+              &:hover {
+                background: #f1f5f9;
+                color: #0f172a;
+
+                svg {
+                  color: #2563eb;
+                }
+              }
             }
           }
         }
@@ -362,5 +436,16 @@ body.light-theme {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeInMenu {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

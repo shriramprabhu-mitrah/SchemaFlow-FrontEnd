@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { OrganizationService } from '../services/organization.service';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
 
 @Component({
   selector: 'app-org-dashboard',
@@ -17,6 +18,14 @@ export class OrgDashboardComponent implements OnInit {
   private ngZone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
   private auth = inject(AuthService);
+  private dashService = inject(DashboardService);
+
+  get showPremiumFeatures(): boolean {
+    const plan = this.dashService.currentOrgPlanSlug();
+    const isFree = plan === 'free' || !plan;
+    const isExpired = this.dashService.isSubscriptionExpired() || this.dashService.currentOrgPlanStatus() === 'expired';
+    return !isFree && !isExpired;
+  }
 
   orgId!: number;
   loading = true;
@@ -61,8 +70,12 @@ export class OrgDashboardComponent implements OnInit {
               }
               return log;
             });
-            this.activeWorkspaces = res.data.activeWorkspaces;
-            this.pendingInvitations = res.data.pendingInvitations;
+            const rawWorkspaces = res.data.activeWorkspaces || res.data.activeworkspaces || [];
+            this.activeWorkspaces = rawWorkspaces.map((ws: any) => ({
+              ...ws,
+              lastActivity: ws.lastActivity || ws.lastactivity || ws.last_activity || ''
+            }));
+            this.pendingInvitations = res.data.pendingInvitations || res.data.pendinginvitations || [];
             this.chartData = res.data.chartData || [];
           }
           this.loading = false;

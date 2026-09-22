@@ -226,7 +226,9 @@
                   {{ formatDate(d.created_at) }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
-                  <div class="action-menu-wrap">
+                  <div class="action-menu-wrap"
+                       [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
+                       [style.position]="openMenuId === d.id ? 'relative' : 'static'">
                     <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
                       (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -413,7 +415,9 @@
                   {{ formatDate(d.shared_date) }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
-                  <div class="action-menu-wrap" (click)="$event.stopPropagation()">
+                  <div class="action-menu-wrap"
+                       [style.zIndex]="openMenuId === d.diagramid ? 99999 : 'auto'"
+                       [style.position]="openMenuId === d.diagramid ? 'relative' : 'static'">
                     <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.diagramid"
                       (click)="toggleRowMenu(d.diagramid, $event)"
                       [attr.data-tt]="openMenuId !== d.diagramid ? 'Options' : null">
@@ -570,7 +574,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let ws of svc.workspaces()">
+              <tr *ngFor="let ws of svc.workspaces()">
                   <td class="col-name">
                     <div class="diagram-name-cell">
                       <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -600,7 +604,9 @@
                     <span class="ws-permission-tag">{{ getWorkspacePermission(ws) }}</span>
                   </td>
                   <td class="col-actions" (click)="$event.stopPropagation()">
-                    <div class="action-menu-wrap">
+                    <div class="action-menu-wrap"
+                         [style.zIndex]="openWorkspaceMenuId === ws.id ? 99999 : 'auto'"
+                         [style.position]="openWorkspaceMenuId === ws.id ? 'relative' : 'static'">
                       <button class="three-dots-btn tt-left" [class.tt]="openWorkspaceMenuId !== ws.id"
                         (click)="toggleWorkspaceMenu(ws.id, $event)"
                         [attr.data-tt]="openWorkspaceMenuId !== ws.id ? 'Options' : null">
@@ -838,7 +844,9 @@
                     {{ formatDate(d.created_at) }}
                   </td>
                   <td class="col-actions" (click)="$event.stopPropagation()">
-                    <div class="action-menu-wrap">
+                    <div class="action-menu-wrap"
+                         [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
+                         [style.position]="openMenuId === d.id ? 'relative' : 'static'">
                       <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
                         (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"

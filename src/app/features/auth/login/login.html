@@ -7,12 +7,13 @@
     <div class="brand-content">
       <div class="logo" routerLink="/" style="cursor: pointer;">
         <app-icons name="db-diagram-logo" size="80"></app-icons>
-        <span>DB Nexus</span>
+        <span class="dbnexus-text">dbNexus</span>
       </div>
 
       <h1 class="slogan">Design. Visualize. Document.</h1>
       <p class="description">
-        Create, edit, and explore relational database structures seamlessly using a modern DBML editor, interactive canvas, and powerful workspace collaboration.
+        Create, edit, and explore relational database structures seamlessly using a modern DBML editor, interactive
+        canvas, and powerful workspace collaboration.
       </p>
 
       <div class="features-list">
@@ -74,12 +75,11 @@
 
           <!-- Username Input -->
           <div class="input-group">
-            <label for="username">Username or Email</label>
+            <label for="username"> Email</label>
             <div class="input-wrapper" [class.has-error]="usernameError">
               <app-icons class="input-icon" name="user" size="20"></app-icons>
-              <input id="username" name="username" type="text" placeholder="Enter your username or email"
-                [(ngModel)]="username" (ngModelChange)="usernameError = ''" [disabled]="isLoading" required
-                autocomplete="username" />
+              <input id="username" name="username" type="text" placeholder="Enter your  email" [(ngModel)]="username"
+                (ngModelChange)="usernameError = ''" [disabled]="isLoading" required autocomplete="username" />
             </div>
             <div class="field-error-text" *ngIf="usernameError">
               <span>{{ usernameError }}</span>

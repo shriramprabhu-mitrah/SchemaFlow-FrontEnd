@@ -154,7 +154,7 @@
                   {{ (plan.plan_type === 'organization' || plan.is_per_seat) ? 'per member / month' : 'per month' }}
                 </span>
                 <div class="annual-billed-label" *ngIf="isAnnual"
-                  style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
+                  style="font-size: 11px; margin-top: 4px;">
                   Billed annually (₹{{ (plan.price_annual || plan.price_monthly * 10) * 12 }}/yr)
                 </div>
               </ng-container>
@@ -193,6 +193,9 @@
             </div>
 
             <div class="card-action" style="margin-top: 14px;">
+              <div class="no-card-required" *ngIf="shouldShowNoCardRequired(plan)">
+                No credit card required
+              </div>
               <app-button variant="none"
                 [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient'))))"
                 [disabled]="isCtaDisabled(plan)" (onClick)="selectPlan(plan)">

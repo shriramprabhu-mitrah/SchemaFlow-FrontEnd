@@ -497,6 +497,20 @@
 .card-action {
   width: 100% !important;
 
+  .no-card-required {
+    font-size: 12px !important;
+    color: #10b981 !important;
+    text-align: center !important;
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+    line-height: 1.2 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   app-button {
     display: block !important;
     width: 100% !important;
@@ -952,6 +966,12 @@ body.light-theme .pricing-container {
     .plan-icon {
       background: #f1f5f9 !important;
       border: 1px solid #e2e8f0 !important;
+    }
+
+    .card-action {
+      .no-card-required {
+        color: #10b981 !important;
+      }
     }
 
     .card-features {

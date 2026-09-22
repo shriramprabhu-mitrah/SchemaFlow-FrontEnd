@@ -7,11 +7,13 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { Router } from '@angular/router';
 
 import { ButtonComponent } from '../../../../shared/button/button';
+import { SidebarComponent } from '../sidebar/sidebar';
+import { DiagramInspectorComponent } from '../diagram-inspector/diagram-inspector';
 
 @Component({
   selector: 'app-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent],
   templateUrl: './editor.html',
 })
 export class EditorComponent implements OnInit, OnDestroy {
@@ -49,6 +51,10 @@ export class EditorComponent implements OnInit, OnDestroy {
     return this.auth.isLoggedIn();
   }
 
+  isSampleDiagram(): boolean {
+    return this.svc.diagramName === 'Sample Diagram';
+  }
+
   goToLogin(): void {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       if (this.svc.code.trim()) {
@@ -63,15 +69,25 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
   ngAfterViewInit(): void {
     this.codeSub = this.svc.code$.subscribe(val => {
-
       this.displayCode = val;
 
-      this.highlight.nativeElement.innerHTML =
-        this.colorize(val);
+      const ta = document.getElementById('codearea') as HTMLTextAreaElement;
+      if (ta && ta.value !== val) {
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        ta.value = val;
+        try {
+          ta.setSelectionRange(Math.min(start, val.length), Math.min(end, val.length));
+        } catch {}
+      }
+
+      if (this.highlight?.nativeElement) {
+        this.highlight.nativeElement.innerHTML =
+          this.colorize(val);
+      }
 
       this.svc.updateGutter();
-      this.cdr.markForCheck();
-
+      this.cdr.detectChanges();
     });
   }
 
@@ -121,12 +137,35 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.svc.code = val;
     this.onCodeInput();
   }
-  
+
   onCursorEvent(e: Event): void {
     const ta = e.target as HTMLTextAreaElement;
     this.emitCursor(ta);
   }
-  
+
+  onCodeAreaBlur(): void {
+    if (
+      this.isLoggedIn &&
+      !this.svc.isDiagramNameEmpty() &&
+      this.svc.hasUnsavedChanges() &&
+      !this.svc.showVersionHistory() &&
+      this.svc.canSaveDiagram(false) &&
+      this.svc.validateDiagramName(false) &&
+      this.svc.editorErrors().length === 0
+    ) {
+      if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
+        this.svc.emitCollabChange();
+      } else {
+        this.svc.saveDiagram().subscribe({
+          error: () => {}
+        });
+      }
+    } else if (!this.svc.hasUnsavedChanges()) {
+      this.svc.saveErrorOccurred = false;
+      this.svc.dbmlValidationError = null;
+    }
+  }
+
   private emitCursor(ta: HTMLTextAreaElement): void {
     if (this.svc.diagramWorkspaceType() !== 'Team') return;
     const pos = ta.selectionStart;
@@ -134,7 +173,7 @@ export class EditorComponent implements OnInit, OnDestroy {
     const linesBefore = textBefore.split('\n');
     const line = linesBefore.length;
     const col = linesBefore[linesBefore.length - 1].length;
-    
+
     const id = this.svc.diagramId();
     if (id) {
       this.svc.socketService.sendCursor(id, line, col);
@@ -145,12 +184,16 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   onCodeInput(): void {
     this.svc.updateGutter();
-    this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+    if (this.highlight?.nativeElement) {
+      this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+    }
     clearTimeout(this.renderTimer);
     this.renderTimer = setTimeout(() => {
       this.svc.parseAndLayout();
       this.svc.updateEditorErrors();
-      this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+      if (this.highlight?.nativeElement) {
+        this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+      }
     }, 150);
   }
 
@@ -159,8 +202,10 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.editorScrollTop = ta.scrollTop;
     this.svc.gutterTransform = `translateY(-${ta.scrollTop}px)`;
     this.backdropTransform = `translate(-${ta.scrollLeft}px, -${ta.scrollTop}px)`;
-    this.highlight.nativeElement.scrollTop = ta.scrollTop;
-    this.highlight.nativeElement.scrollLeft = ta.scrollLeft;
+    if (this.highlight?.nativeElement) {
+      this.highlight.nativeElement.scrollTop = ta.scrollTop;
+      this.highlight.nativeElement.scrollLeft = ta.scrollLeft;
+    }
   }
 
   onCodeAreaMouseMove(e: MouseEvent): void {
@@ -272,23 +317,23 @@ export class EditorComponent implements OnInit, OnDestroy {
     if (text.endsWith('\n')) {
       text += ' ';
     }
-    
+
     // Inject remote cursors
     if (this.svc.diagramWorkspaceType() === 'Team') {
       const cursors = this.svc.remoteCursors();
       const lines = text.split('\n');
-      
+
       for (const userId of Object.keys(cursors)) {
         const c = cursors[Number(userId)];
         if (c && c.line > 0 && c.line <= lines.length) {
           const lineIdx = c.line - 1;
           const lineText = lines[lineIdx];
-          
+
           // Account for editor padding: 16px top, 52px left. Font is 15px with 1.62 line height (24.3px).
           // Monospace char width for 15px is typically exactly 9px (15 * 0.6).
           const topPos = 16 + (lineIdx * 24.3);
           const leftPos = 52 + (c.col * 9);
-          
+
           const cursorHtml = `
             <span class="remote-cursor" style="position: absolute; left: ${leftPos}px; top: ${topPos}px; height: 20px; border-left: 2px solid ${c.color}; z-index: 10; pointer-events: none;">
               <span style="position: absolute; top: -18px; left: 0px; background-color: ${c.color}; color: white; font-size: 10px; line-height: 1; padding: 3px 5px; border-radius: 3px; border-bottom-left-radius: 0; white-space: nowrap; font-family: system-ui, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">

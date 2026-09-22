@@ -1,64 +1,96 @@
-<div id="editor-pane">
-  <div id="editor-toolbar">
-    <div class="toolbar-title">
-      <span class="dot" [class.error-dot]="svc.editorErrors().length > 0"></span> DBML
-      <span class="error-badge" *ngIf="svc.editorErrors().length > 0">
-        {{ svc.editorErrors().length }} error{{ svc.editorErrors().length > 1 ? 's' : '' }}
+<div class="editor-shell">
+  <!-- Sidebar docked on the left near editor -->
+  <app-sidebar [class.collapsed]="svc.sidebarCollapsed()"></app-sidebar>
+
+  <!-- Sidebar Toggle Button placed on the vertical divider line -->
+  <button type="button"
+          class="sidebar-line-toggle-btn tt tt-right"
+          [class.collapsed]="svc.sidebarCollapsed()"
+          [attr.aria-label]="svc.sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+          [attr.data-tt]="svc.sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+          (click)="svc.toggleActivitySidebar()">
+    <svg class="toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="8 7 3 12 8 17"></polyline>
+      <polyline points="16 7 21 12 16 17"></polyline>
+    </svg>
+  </button>
+
+  <div id="editor-pane" *ngIf="!svc.sidebarInspectorTab()">
+    <div id="editor-toolbar">
+      <div class="toolbar-title">
+        <span class="dot" [class.error-dot]="svc.editorErrors().length > 0"></span> DBML
+        <span class="readonly-badge" *ngIf="!isLoggedIn || svc.isReadOnly || isSampleDiagram()">Read-Only</span>
+        <span class="error-badge" *ngIf="svc.editorErrors().length > 0">
+          {{ svc.editorErrors().length }} error{{ svc.editorErrors().length > 1 ? 's' : '' }}
+        </span>
+      </div>
+      <app-button type="button" variant="none" customClass="editor-pane-action"
+        [tooltip]="svc.paneMode() === 'editor' ? 'Restore split view' : 'Expand editor'"
+        tooltipPosition="left"
+        (onClick)="svc.paneMode() === 'editor' ? svc.setPaneMode('split') : svc.setPaneMode('editor')">
+        <svg *ngIf="svc.paneMode() === 'split'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <polyline points="15 3 21 3 21 9" />
+          <polyline points="9 21 3 21 3 15" />
+          <line x1="21" y1="3" x2="14" y2="10" />
+          <line x1="3" y1="21" x2="10" y2="14" />
+        </svg>
+        <svg *ngIf="svc.paneMode() === 'editor'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <polyline points="4 14 10 14 10 20" />
+          <polyline points="20 10 14 10 14 4" />
+          <line x1="14" y1="10" x2="21" y2="3" />
+          <line x1="10" y1="14" x2="3" y2="21" />
+        </svg>
+      </app-button>
+    </div>
+    <div class="editor-alert-banner" *ngIf="!isLoggedIn || isSampleDiagram()">
+      <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      <span class="alert-text" *ngIf="!isLoggedIn">
+        Read-Only Mode &bull; <a class="alert-link" (click)="goToLogin()">Sign in</a> to save and manage your diagrams.
+      </span>
+      <span class="alert-text" *ngIf="isLoggedIn && isSampleDiagram()">
+        Read-Only Mode &bull; Sample diagrams are view-only.
       </span>
     </div>
-    <app-button type="button" variant="none" customClass="editor-pane-action"
-      [tooltip]="svc.paneMode() === 'editor' ? 'Restore split view' : 'Expand editor'"
-      tooltipPosition="left"
-      (onClick)="svc.paneMode() === 'editor' ? svc.setPaneMode('split') : svc.setPaneMode('editor')">
-      <svg *ngIf="svc.paneMode() === 'split'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-        <polyline points="15 3 21 3 21 9" />
-        <polyline points="9 21 3 21 3 15" />
-        <line x1="21" y1="3" x2="14" y2="10" />
-        <line x1="3" y1="21" x2="10" y2="14" />
-      </svg>
-      <svg *ngIf="svc.paneMode() === 'editor'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-        <polyline points="4 14 10 14 10 20" />
-        <polyline points="20 10 14 10 14 4" />
-        <line x1="14" y1="10" x2="21" y2="3" />
-        <line x1="10" y1="14" x2="3" y2="21" />
-      </svg>
-    </app-button>
-  </div>
-  <div class="editor-alert-banner" *ngIf="!isLoggedIn">
-    <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-      <line x1="12" y1="9" x2="12" y2="13"></line>
-      <line x1="12" y1="17" x2="12.01" y2="17"></line>
-    </svg>
-    <span class="alert-text">
-      <a class="alert-link" (click)="goToLogin()">Sign in</a> to save and manage your diagrams.
-    </span>
-  </div>
-  <div id="editor-scroll">
-    <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
-    <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
-    <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
-      [readonly]="svc.isReadOnly"
-      (click)="onCursorEvent($event)" (keyup)="onCursorEvent($event)"
-      (mousemove)="onCodeAreaMouseMove($event)" (mouseleave)="onCodeAreaMouseLeave()"
-      (input)="onTextInput($event)" (scroll)="onEditorScroll($event)"></textarea>
+    <div id="editor-scroll">
+      <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
+      <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
+      <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
+        [readonly]="!isLoggedIn || svc.isReadOnly || isSampleDiagram()"
+        (click)="onCursorEvent($event)" (keyup)="onCursorEvent($event)"
+        (mousemove)="onCodeAreaMouseMove($event)" (mouseleave)="onCodeAreaMouseLeave()"
+        (blur)="onCodeAreaBlur()"
+        (input)="onTextInput($event)" (scroll)="onEditorScroll($event)"></textarea>
 
-    <!-- Overview Ruler Error Markers (as in Image 2 right margin) -->
-    <div class="editor-overview-ruler" *ngIf="svc.editorErrors().length > 0">
-      <div *ngFor="let err of svc.editorErrors()"
-           class="ruler-error-marker"
-           [style.top.px]="getRulerTop(err.line)"
-           [title]="err.message"
-           (click)="jumpToLine(err.line)">
+      <!-- Overview Ruler Error Markers (as in Image 2 right margin) -->
+      <div class="editor-overview-ruler" *ngIf="svc.editorErrors().length > 0">
+        <div *ngFor="let err of svc.editorErrors()"
+             class="ruler-error-marker"
+             [style.top.px]="getRulerTop(err.line)"
+             [title]="err.message"
+             (click)="jumpToLine(err.line)">
+        </div>
+      </div>
+
+      <!-- Floating Error Tooltip Card -->
+      <div class="editor-error-tooltip" *ngIf="hoveredError"
+           [style.left.px]="hoverPos.x" [style.top.px]="hoverPos.y">
+        <span class="error-tooltip-icon">✕</span>
+        <span class="error-tooltip-msg">{{ hoveredError.message }}</span>
       </div>
     </div>
-
-    <!-- Floating Error Tooltip Card -->
-    <div class="editor-error-tooltip" *ngIf="hoveredError"
-         [style.left.px]="hoverPos.x" [style.top.px]="hoverPos.y">
-      <span class="error-tooltip-icon">✕</span>
-      <span class="error-tooltip-msg">{{ hoveredError.message }}</span>
-    </div>
   </div>
+
+  <!-- Diagram Inspector Component (Tables / Refs View) -->
+  <app-diagram-inspector *ngIf="svc.sidebarInspectorTab()"
+    [activeTab]="svc.sidebarInspectorTab()!"
+    (tabChange)="svc.sidebarInspectorTab.set($event)"
+    (close)="svc.sidebarInspectorTab.set(null)"
+    style="flex: 1; display: flex; flex-direction: column; overflow: hidden; height: 100%;">
+  </app-diagram-inspector>
+
 </div>

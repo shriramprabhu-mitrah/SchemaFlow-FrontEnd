@@ -3,17 +3,17 @@
 
 <head>
   <meta charset="utf-8">
-  <title>DB Nexus - Database Schema Design Tool</title>
+  <title>dbNexus - Database Schema Design Tool</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Primary Meta Tags (Fallbacks for search engines) -->
-  <meta name="title" content="DB Nexus - Database Schema Design Tool">
+  <meta name="title" content="dbNexus - Database Schema Design Tool">
   <meta name="description"
     content="Design, document, and collaborate on database schemas with ease. A simple and powerful tool for developers and teams.">
   <meta name="keywords"
     content="database diagram, db diagram, schema design, ER diagram, database schema tool, SQL export, DBML, database design collaboration, entity relationship diagram, postgresql visualizer, mysql schema builder, online database designer, visual database tool, software architecture tool">
-  <meta name="author" content="DB Nexus">
+  <meta name="author" content="dbNexus">
   <meta name="robots" content="index, follow">
 
   <!-- Google Site Verification -->
@@ -22,21 +22,52 @@
   <!-- Open Graph / Facebook (Fallbacks) -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://dbnexus.up.railway.app/">
-  <meta property="og:title" content="DB Nexus - Database Schema Design Tool">
+  <meta property="og:title" content="dbNexus - Database Schema Design Tool">
   <meta property="og:description"
     content="Design, document, and collaborate on database schemas with ease. A simple and powerful tool for developers and teams.">
 
   <!-- Twitter (Fallbacks) -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://dbnexus.up.railway.app/">
-  <meta name="twitter:title" content="DB Nexus - Database Schema Design Tool">
+  <meta name="twitter:title" content="dbNexus - Database Schema Design Tool">
   <meta name="twitter:description"
     content="Design, document, and collaborate on database schemas with ease. A simple and powerful tool for developers and teams.">
 
   <link rel="icon" type="image/svg+xml" href="assets/icons/db-diagram-logo.svg">
+
+  <!-- Instant Theme Initializer to prevent theme flicker / FOUT -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('theme');
+        var theme = (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light';
+        var root = document.documentElement;
+        if (theme === 'light') {
+          root.classList.add('light-theme');
+          root.setAttribute('data-theme', 'light');
+        } else {
+          root.classList.remove('light-theme');
+          root.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 
 <body>
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('theme');
+        var theme = (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light';
+        if (theme === 'light') {
+          document.body.classList.add('light-theme');
+        } else {
+          document.body.classList.remove('light-theme');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <app-root></app-root>
 </body>
 

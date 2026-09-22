@@ -68,10 +68,11 @@ ngAfterViewInit(): void {
     const clickedInside = element.contains(event.target as Node) ||
       !document.body.contains(event.target as Node);
 
-    // Also check if they clicked the toggle button in the canvas controls
-    // to prevent double-toggling (panel opening and immediately closing)
+    // Also check if they clicked the toggle button or layout control toolbar
+    // to prevent double-toggling or premature layout-control repositioning before click registers
     const clickedToggleButton = (event.target as HTMLElement).closest('[data-tt="Diagram Views"], [data-tt="Search / Diagram Views"]') ||
-      (event.target as HTMLElement).closest('.group-by-trigger');
+      (event.target as HTMLElement).closest('.group-by-trigger') ||
+      (event.target as HTMLElement).closest('#layout-control');
 
     if (!clickedInside && !clickedToggleButton) {
       this.svc.showDiagramViews = false;

@@ -316,6 +316,8 @@ app-upgrade-modal {
           font-size: 10.5px !important;
           margin-top: 2px !important;
           min-height: 16px !important;
+          color: #10b981 !important;
+          font-weight: 600 !important;
         }
       }
 
@@ -340,6 +342,20 @@ app-upgrade-modal {
 
       .card-action {
         margin-top: 14px !important;
+
+        .no-card-required {
+          font-size: 12px !important;
+          color: #10b981 !important;
+          text-align: center !important;
+          margin-top: 0 !important;
+          margin-bottom: 8px !important;
+          font-weight: 600 !important;
+          letter-spacing: 0.01em !important;
+          line-height: 1.2 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
 
         button.btn-card-cta {
           padding: 8px 16px !important;
@@ -474,7 +490,13 @@ body.light-theme {
       .currency { color: #334155 !important; }
       .price-amount { color: #0f172a !important; }
       .price-period { color: #64748b !important; }
-      .annual-billed-label { color: #64748b !important; }
+      .annual-billed-label { color: #10b981 !important; font-weight: 600 !important; }
+
+      .card-action {
+        .no-card-required {
+          color: #10b981 !important;
+        }
+      }
 
       .plan-icon {
         background: #f1f5f9 !important;
