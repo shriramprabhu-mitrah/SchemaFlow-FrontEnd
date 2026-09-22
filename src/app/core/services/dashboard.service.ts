@@ -2554,6 +2554,9 @@ export class DashboardService {
   }
 
   updateRelationInCode(ref: RefDef, newFromTable: string, newFromCol: string, newToTable: string, newToCol: string): void {
+    if (newFromTable === newToTable && newFromCol === newToCol) {
+      return;
+    }
     this.deleteConnectionInCode(ref);
     this.addRelation(newFromTable, newFromCol, newToTable, newToCol);
   }
@@ -2848,6 +2851,13 @@ export class DashboardService {
   }
 
   addRelation(fromTable: string, fromCol: string, toTable: string, toCol: string): boolean {
+    if (!fromTable || !fromCol || !toTable || !toCol) {
+      return false;
+    }
+    if (fromTable === toTable && fromCol === toCol) {
+      return false;
+    }
+
     const fromTab = this.tables.find((t) => t.name === fromTable);
     const toTab = this.tables.find((t) => t.name === toTable);
     const fromColObj = fromTab?.columns.find((c) => c.name === fromCol);
