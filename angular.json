@@ -42,10 +42,10 @@
               "allowedHosts": []
             },
             "server": "src/main.server.ts",
-            "outputMode": "server",
             "ssr": {
               "entry": "src/server.ts"
-            }
+            },
+            "prerender": false
           },
           "configurations": {
             "production": {
@@ -121,8 +121,7 @@
             }
           },
           "options": {
-            "host": "0.0.0.0",
-            "disableHostCheck": true
+            "host": "0.0.0.0"
           },
           "defaultConfiguration": "development"
         },
