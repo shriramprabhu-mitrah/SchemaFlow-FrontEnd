@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectorRef, OnInit, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectorRef, OnInit, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DashboardService, TableDef, Column, RefDef } from '../../../../core/services/dashboard.service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-diagram-inspector',
@@ -10,13 +11,15 @@ import { DashboardService, TableDef, Column, RefDef } from '../../../../core/ser
   templateUrl: './diagram-inspector.html',
   styleUrls: ['./diagram-inspector.scss']
 })
-export class DiagramInspectorComponent implements OnInit {
+export class DiagramInspectorComponent implements OnInit, OnDestroy {
   @Input() activeTab: 'tables' | 'refs' = 'tables';
   @Output() tabChange = new EventEmitter<'tables' | 'refs'>();
   @Output() close = new EventEmitter<void>();
 
   tableFilter = '';
   refFilter = '';
+
+  private destroy$ = new Subject<void>();
 
   expandedTables = new Set<string>();
   expandedRefs = new Set<number>();
@@ -68,6 +71,29 @@ export class DiagramInspectorComponent implements OnInit {
     if (this.svc.refs.length > 0) {
       this.expandedRefs.add(0);
     }
+
+    this.svc.redraw$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+      });
+
+    this.svc.forceRedraw$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+      });
+
+    this.svc.code$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   @HostListener('document:click')
@@ -157,6 +183,12 @@ export class DiagramInspectorComponent implements OnInit {
     const newName = (this.newTableNameVal || '').trim();
     this.editingTableName = null;
     if (!newName || newName === oldName) {
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (this.svc.tables.some(t => t.name.toLowerCase() === newName.toLowerCase())) {
+      this.svc.showToast(`Table name "${newName}" already exists.`, 3000, 'error');
       this.cdr.markForCheck();
       return;
     }

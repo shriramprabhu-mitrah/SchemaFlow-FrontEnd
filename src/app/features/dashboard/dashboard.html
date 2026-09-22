@@ -92,4 +92,10 @@
   <!-- Full-page Diagram Loader Component -->
   <app-loader *ngIf="svc.isDiagramLoading()" 
               text="Loading Diagram..."></app-loader>
+
+  <!-- API Error Toast (editor pane, bottom) — always in DOM for correct positioning -->
+  <app-toast location="editor"></app-toast>
+
+  <!-- Canvas / General Toast (top-right, above canvas) -->
+  <app-toast location="canvas"></app-toast>
 </div>
