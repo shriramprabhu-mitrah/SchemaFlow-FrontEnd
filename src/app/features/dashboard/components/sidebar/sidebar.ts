@@ -185,14 +185,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
-    if (this.hasDbmlErrors()) {
-      this.svc.showToast('Cannot export diagram with syntax errors. Please fix errors first.', 3000, 'error');
-      return;
-    }
-    if (this.isDiagramEmpty()) {
-      this.svc.showToast('Diagram is empty. Nothing to export.', 3000, 'error');
-      return;
-    }
     this.exportMenuOpen = !this.exportMenuOpen;
     if (this.exportMenuOpen) {
       this.importMenuOpen = false;
@@ -204,6 +196,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   exportFormat(format: 'pdf' | 'png' | 'svg', e?: Event): void {
     if (e) e.stopPropagation();
+    if (this.hasDbmlErrors()) {
+      return;
+    }
     this.exportMenuOpen = false;
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       return;
@@ -224,6 +219,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   exportSQL(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
     if (e) e.stopPropagation();
+    if (this.hasDbmlErrors()) {
+      return;
+    }
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       return;
     }
