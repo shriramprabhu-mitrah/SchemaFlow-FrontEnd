@@ -5041,6 +5041,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           this.svc.showToast(`Column renamed to "${val}" successfully.`, 2500, 'success');
         }
       } else if (this.inlineEdit.kind === 'table' && val !== this.inlineEdit.tableName) {
+        if (this.svc.tables.some(t => t.name.toLowerCase() === val.toLowerCase())) {
+          this.svc.showToast(`Table name "${val}" already exists.`, 3000, 'error');
+          this.inlineEdit.visible = false;
+          return;
+        }
         this.svc.renameTableInCode(this.inlineEdit.tableName, val);
         this.svc.showToast(`Table renamed to "${val}" successfully.`, 2500, 'success');
       }

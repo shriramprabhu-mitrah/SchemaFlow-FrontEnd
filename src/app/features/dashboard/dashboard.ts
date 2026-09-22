@@ -15,6 +15,7 @@ import { DiffCheckerComponent } from './components/diff-checker/diff-checker';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { Subscription, Observable } from 'rxjs';
+import { Toast } from '../../shared/toaster/toast/toast';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,7 +29,8 @@ import { Subscription, Observable } from 'rxjs';
     // DocsComponent, // Commented out as requested
     DiffCheckerComponent,
     ButtonComponent,
-    LoaderComponent
+    LoaderComponent,
+    Toast
   ],
   templateUrl: './dashboard.html',
 })

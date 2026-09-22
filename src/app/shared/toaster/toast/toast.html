@@ -1,43 +1,51 @@
-<div *ngIf="svc.toastMessage() as msg" class="dbml-toast" [ngStyle]="getToastStyle()"
-  [ngClass]="{ 
-    'toast-error': svc.toastType() === 'error', 
-    'toast-success': svc.toastType() === 'success',
-    'toast-info': svc.toastType() === 'info',
-    'dashboard-toast': isDashboard,
-    'admin-toast': !isDashboard
-  }">
+<div *ngIf="shouldShow()"
+  class="dbml-toast"
+  [class.toast-error]="svc.toastType() === 'error'"
+  [class.toast-success]="svc.toastType() === 'success'"
+  [class.toast-info]="svc.toastType() === 'info'"
+  [class.toast-dark]="isDark()"
+  [class.toast-light]="!isDark()"
+  [class.toast-editor]="location === 'editor'"
+  [class.toast-canvas]="location === 'canvas'"
+  [ngStyle]="location === 'editor' ? editorStyle() : {}">
 
-  <div class="toast-content">
-    <!-- Old Icons (dashboard) -->
-    <svg *ngIf="svc.toastType() === 'success' && isDashboard" class="toast-icon" viewBox="0 0 24 24">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-    </svg>
+  <!-- CANVAS toast: title + message + × -->
+  <ng-container *ngIf="location === 'canvas'">
+    <div class="toast-header">
+      <span class="toast-title">
+        {{ svc.toastType() === 'success' ? 'Success' : svc.toastType() === 'error' ? 'Error' : 'Info' }}
+      </span>
+      <button class="toast-dismiss" (click)="dismiss()" aria-label="Dismiss">×</button>
+    </div>
+    <div class="toast-body">{{ svc.toastMessage() }}</div>
+  </ng-container>
 
-    <svg *ngIf="svc.toastType() === 'error' && isDashboard" class="toast-icon" viewBox="0 0 24 24">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-    </svg>
+  <!-- EDITOR toast: icon + message + × (keep unchanged) -->
+  <ng-container *ngIf="location === 'editor'">
+    <div class="toast-content">
+      <svg *ngIf="svc.toastType() === 'success'" class="toast-icon" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
+      </svg>
+      <svg *ngIf="svc.toastType() === 'error'" class="toast-icon" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <svg *ngIf="svc.toastType() === 'info'" class="toast-icon" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span class="toast-text">{{ svc.toastMessage() }}</span>
+      <button class="toast-dismiss" (click)="dismiss()" aria-label="Dismiss">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="toast-progress"></div>
+  </ng-container>
 
-    <svg *ngIf="svc.toastType() === 'info' && isDashboard" class="toast-icon" viewBox="0 0 24 24">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-    </svg>
-
-    <!-- New Icons (admin) -->
-    <svg *ngIf="svc.toastType() === 'error' && !isDashboard" class="toast-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
-
-    <svg *ngIf="svc.toastType() === 'success' && !isDashboard" class="toast-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-
-    <svg *ngIf="svc.toastType() === 'info' && !isDashboard" class="toast-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="16" x2="12" y2="12"/>
-      <line x1="12" y1="8" x2="12.01" y2="8"/>
-    </svg>
-
-    <span class="toast-text">{{ msg }}</span>
-  </div>
 </div>

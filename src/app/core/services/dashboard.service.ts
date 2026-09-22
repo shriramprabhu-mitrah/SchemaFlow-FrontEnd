@@ -716,6 +716,7 @@ export class DashboardService {
   // user immediately rather than fail silently in the auto-save pipeline.
   readonly toastMessage = signal<string | null>(null);
   readonly toastType = signal<'success' | 'error' | 'info'>('success');
+  readonly toastLocation = signal<'editor' | 'canvas'>('canvas');
   private toastTimeout: ReturnType<typeof setTimeout> | undefined;
   private invalidRefDeletionTimeout: any = null;
   readonly editorErrors = signal<EditorError[]>([]);
@@ -992,7 +993,7 @@ export class DashboardService {
           this.updateEditorErrors();
           this.checkInvalidRefsTimeout();
           const errMsg = error?.error?.message || error?.message || 'DBML Validation Failed';
-          this.showToast(errMsg, 4000, 'error');
+          this.showToast(errMsg, 4000, 'error', 'editor');
 
           return EMPTY;
         })
@@ -1011,7 +1012,7 @@ export class DashboardService {
       if (errorList.length > 0) {
         const firstErrMessage = typeof errorList[0] === 'string' ? errorList[0] : errorList[0]?.message;
         if (firstErrMessage) {
-          this.showToast(firstErrMessage, 5000, 'error');
+          this.showToast(firstErrMessage, 5000, 'error', 'editor');
         }
       } else {
         const currentMsg = this.toastMessage();
@@ -1150,8 +1151,12 @@ export class DashboardService {
     this.canvasFitRequested$.next();
   }
 
-  showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success'): void {
+  showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success', location: 'editor' | 'canvas' = 'canvas'): void {
+    if (type === 'error') {
+      location = 'editor';
+    }
     this.toastType.set(type);
+    this.toastLocation.set(location);
     this.toastMessage.set(message);
     if (this.toastTimeout) {
       clearTimeout(this.toastTimeout);
@@ -1662,8 +1667,14 @@ export class DashboardService {
 
     const tableRe = /Table\s+([A-Za-z0-9_.]+)\s*\{([\s\S]*?)\}/g;
     let m: RegExpExecArray | null;
+    const seenTables = new Set<string>();
     while ((m = tableRe.exec(text)) !== null) {
       const name = m[1];
+      const nameLower = name.toLowerCase();
+      if (seenTables.has(nameLower)) {
+        continue;
+      }
+      seenTables.add(nameLower);
       const body = m[2];
       const cols: Column[] = [];
       body.split('\n').forEach((line) => {

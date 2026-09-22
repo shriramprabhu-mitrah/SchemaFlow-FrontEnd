@@ -72,8 +72,9 @@ export class EditorComponent implements OnInit, OnDestroy {
 
       this.displayCode = val;
 
-      this.highlight.nativeElement.innerHTML =
-        this.colorize(val);
+      if (this.highlight?.nativeElement) {
+        this.highlight.nativeElement.innerHTML = this.colorize(val);
+      }
 
       this.svc.updateGutter();
       this.cdr.markForCheck();
@@ -174,12 +175,16 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   onCodeInput(): void {
     this.svc.updateGutter();
-    this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+    if (this.highlight?.nativeElement) {
+      this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+    }
     clearTimeout(this.renderTimer);
     this.renderTimer = setTimeout(() => {
       this.svc.parseAndLayout();
       this.svc.updateEditorErrors();
-      this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+      if (this.highlight?.nativeElement) {
+        this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
+      }
     }, 150);
   }
 
@@ -188,8 +193,10 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.editorScrollTop = ta.scrollTop;
     this.svc.gutterTransform = `translateY(-${ta.scrollTop}px)`;
     this.backdropTransform = `translate(-${ta.scrollLeft}px, -${ta.scrollTop}px)`;
-    this.highlight.nativeElement.scrollTop = ta.scrollTop;
-    this.highlight.nativeElement.scrollLeft = ta.scrollLeft;
+    if (this.highlight?.nativeElement) {
+      this.highlight.nativeElement.scrollTop = ta.scrollTop;
+      this.highlight.nativeElement.scrollLeft = ta.scrollLeft;
+    }
   }
 
   onCodeAreaMouseMove(e: MouseEvent): void {
