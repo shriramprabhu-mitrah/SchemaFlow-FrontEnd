@@ -1387,9 +1387,11 @@ export class DashboardService {
             const c1 = typeMatches[0][2];
             const t2 = typeMatches[1][1];
             const c2 = typeMatches[1][2];
-            const refIdx = lines.findIndex(l =>
-              l.includes(t1) && l.includes(c1) && (l.includes(t2) || l.includes('Ref'))
-            );
+            const refIdx = lines.findIndex(l => {
+              const hasPair1 = (l.includes(`${t1}.${c1}`) || (l.includes(t1) && l.includes(c1)));
+              const hasPair2 = (l.includes(`${t2}.${c2}`) || (l.includes(t2) && l.includes(c2)));
+              return hasPair1 && hasPair2;
+            });
             if (refIdx !== -1 && !errors.some(e => e.line === refIdx + 1)) {
               errors.push({
                 line: refIdx + 1,
@@ -1503,25 +1505,6 @@ export class DashboardService {
       return true;
     }
 
-    // Check if there are editor errors for this ref's line or tokens
-    const errors = this.editorErrors();
-    if (errors && errors.length > 0) {
-      if (ref.lineNumber && errors.some(e => e.line === ref.lineNumber)) {
-        return true;
-      }
-      const refToken1 = `${ref.fromTable}.${ref.fromCol}`;
-      const refToken2 = `${ref.toTable}.${ref.toCol}`;
-      const hasError = errors.some(e => {
-        if (e.token && (e.token === refToken1 || e.token === refToken2)) return true;
-        if (e.message) {
-          if (e.message.includes(ref.fromTable) && e.message.includes(ref.fromCol)) return true;
-          if (e.message.includes(ref.toTable) && e.message.includes(ref.toCol)) return true;
-        }
-        return false;
-      });
-      if (hasError) return true;
-    }
-
     const backendErrors = this.getValidationErrors();
     if (this.dbmlValidationError) {
       const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
@@ -1562,9 +1545,6 @@ export class DashboardService {
           return true;
         }
       }
-
-      if (msg.includes(ref.fromTable) && msg.includes(ref.fromCol)) return true;
-      if (msg.includes(ref.toTable) && msg.includes(ref.toCol)) return true;
     }
 
     return false;
