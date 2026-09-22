@@ -627,12 +627,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const trunkXByAnchor: Record<string, number> = {};
     this.svc.refs.forEach((ref, i) => {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) return;
-      if (this.isRefInvalid(ref)) return;
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return;
 
+      const isInvalid = this.isRefInvalid(ref);
       const ortho = this.makeOrthogonal(path);
-      const color = ref.color || (isLight ? '#94a3b8' : '#70c8c3');
+      const color = isInvalid ? '#ef4444' : (ref.color || (isLight ? '#94a3b8' : '#70c8c3'));
+      const dashAttr = isInvalid ? ' stroke-dasharray="6,4"' : '';
 
       let pathD = `M ${ortho[0].x} ${ortho[0].y}`;
       ortho.slice(1).forEach(pt => {
@@ -640,7 +641,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       // Base connection line (stroke-width="1.8")
-      svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+      svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.8"${dashAttr} stroke-linejoin="round" stroke-linecap="round"/>`;
 
       // Draw endpoints markers
       const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
@@ -1611,9 +1612,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) {
         return null;
       }
-      if (this.isRefInvalid(ref)) {
-        return null;
-      }
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return null;
 
@@ -2147,7 +2145,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const anchorUsage = this.buildAnchorUsage();
 
     for (let i = 0; i < this.svc.refs.length; i++) {
-      if (this.isRefInvalid(this.svc.refs[i])) continue;
       const path = this.getConnectionPath(this.svc.refs[i], geometry, undefined, i, anchorUsage);
       if (!path) continue;
 
