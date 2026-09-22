@@ -1639,8 +1639,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
 
+      const isInvalid = this.isRefInvalid(ref);
       const isActive =
         this.forceHighlightConnections ||
+        isInvalid ||
         (!this.drawingClean && (
           this.svc.showAllConnections ||
           i === this.svc.hoveredConnectionIndex ||
@@ -1653,7 +1655,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Determine priority: selected/dragging gets highest priority (3), hovered gets (2), active gets (1), normal gets (0)
       let priority = 0;
-      if (isSelected || isDraggingCurrent) {
+      if (isSelected || isDraggingCurrent || isInvalid) {
         priority = 3;
       } else if (isHovered) {
         priority = 2;
@@ -1902,6 +1904,53 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.textBaseline = 'middle';
         ctx.fillText('!', pt.x, pt.y);
         ctx.restore();
+
+        // If target table does not exist on canvas, draw an indicator pill with missing table name
+        if (!geometry[ref.toTable] && ortho.length >= 2) {
+          const endPt = ortho[ortho.length - 1];
+          ctx.save();
+          ctx.setLineDash([]);
+          const label = `! ${ref.toTable}.${ref.toCol}`;
+          ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+          const tw = ctx.measureText(label).width;
+          const pw = tw + 18;
+          const ph = 22;
+          const px = endPt.x + 2;
+          const py = endPt.y - ph / 2;
+          this.roundRectPath(ctx, px, py, pw, ph, 4, true);
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, px + 8, py + ph / 2);
+          ctx.restore();
+        } else if (!geometry[ref.fromTable] && ortho.length >= 2) {
+          const startPt = ortho[0];
+          ctx.save();
+          ctx.setLineDash([]);
+          const label = `! ${ref.fromTable}.${ref.fromCol}`;
+          ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+          const tw = ctx.measureText(label).width;
+          const pw = tw + 18;
+          const ph = 22;
+          const px = startPt.x - pw - 2;
+          const py = startPt.y - ph / 2;
+          this.roundRectPath(ctx, px, py, pw, ph, 4, true);
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, px + 8, py + ph / 2);
+          ctx.restore();
+        }
       }
 
       const showToolbar = i === this.svc.selectedConnectionIndex || isDraggingCurrent;
@@ -2185,9 +2234,49 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   ): PathPoint[] | null {
     let a = geometry[ref.fromTable];
     let b = geometry[ref.toTable];
-    if (!a || !b) return null;
+    if (!a && !b) return null;
+
+    if (a && !b) {
+      const stubX = a.x + a.width + 130;
+      const stubY = a.y + (a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
+      b = {
+        name: ref.toTable,
+        columns: [],
+        x: stubX,
+        y: stubY - this.svc.HEADER_H / 2,
+        width: 100,
+        height: 36,
+        colY: { [ref.toCol]: this.svc.HEADER_H / 2 },
+        color: '#ef4444'
+      };
+    } else if (!a && b) {
+      const stubX = b.x - 130;
+      const stubY = b.y + (b.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+      a = {
+        name: ref.fromTable,
+        columns: [],
+        x: stubX - 100,
+        y: stubY - this.svc.HEADER_H / 2,
+        width: 100,
+        height: 36,
+        colY: { [ref.fromCol]: this.svc.HEADER_H / 2 },
+        color: '#ef4444'
+      };
+    }
+
     if (ref.fromTable === ref.toTable && ref.fromCol === ref.toCol) {
-      return null;
+      const colYOffset = a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2;
+      const startX = a.x + a.width;
+      const startY = a.y + colYOffset;
+      const loopW = 55;
+      const loopH = 26;
+      return [
+        { x: startX, y: startY },
+        { x: startX + loopW, y: startY - loopH },
+        { x: startX + loopW + 20, y: startY },
+        { x: startX + loopW, y: startY + loopH },
+        { x: startX, y: startY }
+      ];
     }
 
     // Check if both tables belong to the same collapsed table group

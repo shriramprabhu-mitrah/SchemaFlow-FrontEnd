@@ -375,7 +375,6 @@ export class HeaderComponent implements OnInit {
     this.svc.diagramName = name;
     if (!name) {
       el.textContent = '';
-      this.svc.showToast('Diagram name should not be empty', 4000, 'error');
       return;
     }
 
@@ -403,8 +402,12 @@ export class HeaderComponent implements OnInit {
   }
 
   onStatusIconClick(): void {
-    if (this.svc.isDiagramNameEmpty()) {
-      this.svc.showToast('Diagram name should not be empty', 4000, 'error');
+    if (this.svc.isDiagramNameEmpty() || this.svc.isDiagramNameDuplicate()) {
+      return;
+    }
+    if (this.svc.hasUnsavedChanges() && this.svc.saveErrorOccurred) {
+      const msg = typeof this.svc.dbmlValidationError === 'string' ? this.svc.dbmlValidationError : 'Save failed';
+      this.svc.showToast(msg, 4000, 'error');
     }
   }
 
