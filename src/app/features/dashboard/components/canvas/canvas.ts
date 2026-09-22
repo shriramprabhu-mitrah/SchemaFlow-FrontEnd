@@ -247,7 +247,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     effect(() => {
       this.svc.theme();
       this.svc.hiddenTables(); // Track hiddenTables signal so canvas redraws on visibility changes
+      this.svc.paneMode(); // Track paneMode changes to trigger a resize
+
       if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          this.resizeCanvasToDisplaySize();
+          this.scheduleDraw();
+        }, 20); // Small delay to let Angular/DOM layout update
         this.scheduleDraw();
       }
     });

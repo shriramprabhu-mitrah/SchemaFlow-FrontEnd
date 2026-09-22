@@ -3,17 +3,18 @@
   [class.panning]="isPanning" [class.dragging]="draggingTable !== null" [style.display]="svc.showDocs ? 'none' : ''">
 
   <div *ngIf="svc.isReadOnly"
-    style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 1000; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); backdrop-filter: blur(4px);"
+    style="position: absolute; top: 24px; transform: translateX(-50%); max-width: 600px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 1000; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); backdrop-filter: blur(4px);"
+    [style.left]="svc.showDiagramViews ? 'calc(50% - 162px)' : '50%'"
     [style.backgroundColor]="svc.theme() === 'light' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.15)'"
     [style.color]="svc.theme() === 'light' ? '#b45309' : '#fcd34d'"
     [style.border]="svc.theme() === 'light' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(245, 158, 11, 0.4)'">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="12" y1="8" x2="12" y2="12"></line>
       <line x1="12" y1="16" x2="12.01" y2="16"></line>
     </svg>
-    You are viewing this diagram in Read-Only mode. You cannot make structural changes, but you can move tables around.
+    <span style="line-height: 1.4;">You are viewing this diagram in Read-Only mode. You cannot make structural changes, but you can move tables around.</span>
   </div>
 
   <div id="canvas-wrap" #canvasWrap>
