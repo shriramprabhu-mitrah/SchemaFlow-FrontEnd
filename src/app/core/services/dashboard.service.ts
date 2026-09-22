@@ -1266,16 +1266,7 @@ export class DashboardService {
           const toColObj = toTabObj?.columns.find(c => c.name === toCol);
 
           if (fromColObj && toColObj && !(fromTab === toTab && fromCol === toCol)) {
-            const fromEligible = fromColObj.pk || fromColObj.unique;
-            const toEligible = toColObj.pk || toColObj.unique;
-
-            if (!fromEligible && !toEligible) {
-              errors.push({
-                line: idx + 1,
-                token: `${fromTab}.${fromCol}`,
-                message: `Foreign key reference must point to a primary key or unique field`
-              });
-            } else if (!this.areTypesCompatible(fromColObj.type, toColObj.type)) {
+            if (!this.areTypesCompatible(fromColObj.type, toColObj.type)) {
               errors.push({
                 line: idx + 1,
                 token: `${fromTab}.${fromCol}`,
@@ -1289,19 +1280,23 @@ export class DashboardService {
 
     // Check parsed.refs directly for any additional invalid relationships (including inline refs)
     parsed.refs.forEach((ref) => {
-      if (this.isRefInvalid(ref)) {
+      const fromTabObj = parsed.tables.find(t => t.name === ref.fromTable);
+      const toTabObj = parsed.tables.find(t => t.name === ref.toTable);
+      const fromColObj = fromTabObj?.columns?.find(c => c.name === ref.fromCol);
+      const toColObj = toTabObj?.columns?.find(c => c.name === ref.toCol);
+      
+      let msg = null;
+      if (!fromTabObj || !toTabObj) {
+        msg = `Table for reference not found`;
+      } else if (!fromColObj || !toColObj) {
+        msg = `Column for reference not found`;
+      } else if (!this.areTypesCompatible(fromColObj.type, toColObj.type)) {
+        msg = `Type mismatch in foreign key reference: '${ref.fromTable}.${ref.fromCol}' is '${fromColObj.type}' but '${ref.toTable}.${ref.toCol}' is '${toColObj.type}'.`;
+      }
+
+      if (msg) {
         const lineNum = ref.lineNumber || (lines.findIndex(l => l.includes(`${ref.fromTable}.${ref.fromCol}`) && l.includes(`${ref.toTable}.${ref.toCol}`)) + 1);
         if (lineNum > 0 && !errors.some(e => e.line === lineNum)) {
-          const fromTabObj = parsed.tables.find(t => t.name === ref.fromTable);
-          const toTabObj = parsed.tables.find(t => t.name === ref.toTable);
-          const fromColObj = fromTabObj?.columns.find(c => c.name === ref.fromCol);
-          const toColObj = toTabObj?.columns.find(c => c.name === ref.toCol);
-          let msg = `Invalid relationship between "${ref.fromTable}.${ref.fromCol}" and "${ref.toTable}.${ref.toCol}"`;
-          if (fromColObj && toColObj && !this.areTypesCompatible(fromColObj.type, toColObj.type)) {
-            msg = `Type mismatch in foreign key reference: '${ref.fromTable}.${ref.fromCol}' is '${fromColObj.type}' but '${ref.toTable}.${ref.toCol}' is '${toColObj.type}'.`;
-          } else if (fromColObj && toColObj && !(fromColObj.pk || fromColObj.unique) && !(toColObj.pk || toColObj.unique)) {
-            msg = `Foreign key reference must point to a primary key or unique field`;
-          }
           errors.push({
             line: lineNum,
             token: `${ref.fromTable}.${ref.fromCol}`,
@@ -1499,14 +1494,8 @@ export class DashboardService {
     const toColObj = toTab.columns?.find((c) => c.name === ref.toCol);
     if (!fromColObj || !toColObj) return true;
 
-    const fromEligible = fromColObj.pk || fromColObj.unique;
-    const toEligible = toColObj.pk || toColObj.unique;
-
-    // Local check 1: FK reference MUST point to a primary key or unique column on at least one side
-    if (!fromEligible && !toEligible) {
-      return true;
-    }
-
+    // Local check 1 (REMOVED): DBML conceptual relationships do not strictly require a column-level PK/Unique flag. 
+    // Table-level indexes might define PKs, and diagramming tools often allow loose relationships.
     // Local check 2: Data types of connected columns must be compatible (e.g. varchar vs int is invalid)
     if (!this.areTypesCompatible(fromColObj.type, toColObj.type)) {
       return true;

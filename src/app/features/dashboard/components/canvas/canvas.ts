@@ -2799,7 +2799,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
     const iconHit = this.findConnectionIconAt(wp.x, wp.y);
-    if (iconHit && !this.svc.isReadOnly) {
+    if (iconHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       const ref = this.svc.refs[iconHit.refIndex];
       if (!ref) return;
 
@@ -2829,7 +2829,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const anchorUsage = this.buildAnchorUsage();
 
     const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
-    if (endpointHit && !this.svc.isReadOnly) {
+    if (endpointHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       const ref = this.svc.refs[endpointHit.refIndex];
       this.reconnectDraft = {
         refIndex: endpointHit.refIndex,
@@ -2845,7 +2845,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
-    if (cornerHit && !this.svc.isReadOnly) {
+    if (cornerHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       this.materializeWaypoints(this.svc.refs[cornerHit.refIndex], geometry, cornerHit.refIndex, anchorUsage);
       this.isDraggingWaypoint = true;
       this.dragConnectionIndex = cornerHit.refIndex;
@@ -2856,7 +2856,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
-    if (midpointHit && !this.svc.isReadOnly) {
+    if (midpointHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       const ref = this.svc.refs[midpointHit.refIndex];
       const waypoints = this.materializeWaypoints(ref, geometry, midpointHit.refIndex, anchorUsage);
       waypoints.splice(midpointHit.insertAt, 0, { x: wp.x, y: wp.y });
@@ -2869,7 +2869,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const columnHit = this.findColumnAt(wp.x, wp.y);
-    if (columnHit && !this.svc.isReadOnly) {
+    if (columnHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       this.connectionDraft = {
         fromTable: columnHit.table.name,
         fromColumn: columnHit.column.name,
@@ -2893,10 +2893,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const lineHit = this.findHoveredConnectionIndex(wp.x, wp.y, geometry);
-    this.svc.selectedConnectionIndex = lineHit;
-    if (lineHit !== -1) {
-      this.selectedConnectionPoint = wp;
+    if (!this.svc.isReadOnly && !this.isSampleDiagram()) {
+      this.svc.selectedConnectionIndex = lineHit;
+      if (lineHit !== -1) {
+        this.selectedConnectionPoint = wp;
+      } else {
+        this.selectedConnectionPoint = null;
+      }
     } else {
+      this.svc.selectedConnectionIndex = -1;
       this.selectedConnectionPoint = null;
     }
     // A drag on any non-table/non-column area pans the infinite workspace only if using Middle Click or the Hand Tool.
