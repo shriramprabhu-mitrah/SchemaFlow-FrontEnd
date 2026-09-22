@@ -1035,8 +1035,8 @@ app-version-history {
 .type-menu {
   position: fixed;
   z-index: 99999;
-  width: 150px;
-  margin-top: 4px;
+  min-width: 140px;
+  margin: 0 !important;
   max-height: 180px;
   overflow-y: auto;
   display: flex;
@@ -1046,13 +1046,6 @@ app-version-history {
   background: #18233a;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
   padding: 4px 0;
-}
-
-/* Pop upwards for the last 2 rows (even if it's the only row) to avoid bottom overlap */
-.table-column:nth-last-child(-n+2) .type-menu,
-.table-column:nth-last-child(-n+2) .constraint-menu {
-  margin-top: 0 !important;
-  transform: translateY(calc(-100% - 38px)) !important;
 }
 
 /* Context-menu style rows (matches the "Can view" style dropdown):
@@ -1188,10 +1181,9 @@ app-version-history {
 .constraint-menu {
   position: fixed;
   z-index: 99999;
-  margin-top: 4px;
-  margin-left: -50px;
-  width: 160px;
-  max-height: 180px;
+  margin: 0 !important;
+  width: 180px;
+  max-height: 220px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;

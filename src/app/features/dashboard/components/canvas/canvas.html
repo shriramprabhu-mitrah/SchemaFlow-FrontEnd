@@ -377,13 +377,19 @@
               (input)="tableModal.error = ''" [disabled]="isReadOnly" [readonly]="isReadOnly" />
             <div class="type-dropdown">
               <input aria-label="Column data type" placeholder="varchar" [(ngModel)]="column.type" autocomplete="off"
-                (focus)="!isReadOnly && openTypeDropdown(i, $event)" (click)="$event.stopPropagation()"
+                (focus)="!isReadOnly && openTypeDropdown(i, $event)"
+                (click)="!isReadOnly && openTypeDropdown(i, $event); $event.stopPropagation()"
                 [disabled]="isReadOnly" [readonly]="isReadOnly" />
               <app-button *ngIf="!isReadOnly" variant="none" customClass="type-trigger-arrow"
                 (onClick)="toggleTypeDropdown(i, $event)">
                 <app-icons name="chevron-down" size="14"></app-icons>
               </app-button>
-              <div class="type-menu" *ngIf="!isReadOnly && typeDropdownIndex === i" (click)="$event.stopPropagation()">
+              <div class="type-menu" *ngIf="!isReadOnly && typeDropdownIndex === i"
+                   [style.top.px]="typeDropdownPos.top"
+                   [style.left.px]="typeDropdownPos.left"
+                   [style.width.px]="typeDropdownPos.width"
+                   [style.transform]="typeDropdownPos.transform"
+                   (click)="$event.stopPropagation()">
                 <app-button variant="none" class="type-menu-item" [class.selected]="opt === column.type"
                   *ngFor="let opt of datatypeOptions" (onClick)="selectDataType(column, opt)">
                   <span class="type-menu-label">{{ opt }}</span>
@@ -401,7 +407,10 @@
                     size="14"></app-icons></span>
               </app-button>
               <div class="constraint-menu" *ngIf="!isReadOnly && constraintDropdownIndex === i"
-                (click)="$event.stopPropagation()">
+                   [style.top.px]="constraintDropdownPos.top"
+                   [style.left.px]="constraintDropdownPos.left"
+                   [style.transform]="constraintDropdownPos.transform"
+                   (click)="$event.stopPropagation()">
                 <div class="constraint-item">
                   <label><input type="checkbox" [(ngModel)]="column.fk" /> Foreign key</label>
                   <div *ngIf="column.fk" class="fk-selector-wrap">
