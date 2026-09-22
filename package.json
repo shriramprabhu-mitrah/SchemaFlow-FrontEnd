@@ -12,7 +12,7 @@
     "build": "ng build",
     "build:iis": "ng build --configuration iis && node scripts/prepare-iis-build.js iis",
     "build:iisdev": "ng build --configuration iisdev && node scripts/prepare-iis-build.js iisdev",
-    "postbuild": "node scripts/inject-env.js",
+    "postbuild": "node scripts/inject-env.js && node scripts/generate-startup.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "generate:icons": "node generate-icons.js",

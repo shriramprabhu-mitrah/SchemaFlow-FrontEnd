@@ -165,6 +165,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   };
   constraintDropdownIndex: number | null = null;
   typeDropdownIndex: number | null = null;
+  typeDropdownPos = { top: 0, left: 0, width: 0, transform: 'none' };
+  constraintDropdownPos = { top: 0, left: 0, transform: 'none' };
   fkTableDropdownOpen: boolean = false;
   fkColDropdownOpen: boolean = false;
   groupDropdownVisible = false;
@@ -3297,7 +3299,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.connectionDraft && e) {
       const wp = this.worldPointFromEvent(e);
       const columnHit = this.findColumnAt(wp.x, wp.y);
-      if (columnHit) {
+      if (
+        columnHit &&
+        !(
+          this.connectionDraft.fromTable === columnHit.table.name &&
+          this.connectionDraft.fromColumn === columnHit.column.name
+        )
+      ) {
         this.svc.addRelation(
           this.connectionDraft.fromTable,
           this.connectionDraft.fromColumn,
@@ -3317,7 +3325,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         const newToTable = this.reconnectDraft.isSource ? ref.toTable : columnHit.table.name;
         const newToCol = this.reconnectDraft.isSource ? ref.toCol : columnHit.column.name;
 
-        this.svc.updateRelationInCode(ref, newFromTable, newFromCol, newToTable, newToCol);
+        if (!(newFromTable === newToTable && newFromCol === newToCol)) {
+          this.svc.updateRelationInCode(ref, newFromTable, newFromCol, newToTable, newToCol);
+        }
       }
     }
 
@@ -3912,7 +3922,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     let overlap = true;
     let attempts = 0;
     while (overlap && attempts < 15) {
-      overlap = Object.values(this.svc.tablePositions).some((pos: { x: number, y: number }) => 
+      overlap = Object.values(this.svc.tablePositions).some((pos: { x: number, y: number }) =>
         Math.abs(pos.x - x) < 30 && Math.abs(pos.y - y) < 30
       );
       if (overlap) {
@@ -4039,18 +4049,28 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleConstraintDropdown(index: number, event?: any): void {
     if (event) event.stopPropagation();
-    this.constraintDropdownIndex = this.constraintDropdownIndex === index ? null : index;
-    this.typeDropdownIndex = null;
-    this.fkTableDropdownOpen = false;
-    this.fkColDropdownOpen = false;
+    if (this.constraintDropdownIndex === index) {
+      this.constraintDropdownIndex = null;
+    } else {
+      this.constraintDropdownIndex = index;
+      this.typeDropdownIndex = null;
+      this.fkTableDropdownOpen = false;
+      this.fkColDropdownOpen = false;
+      this.updateConstraintDropdownPos(event, index);
+    }
   }
 
   toggleTypeDropdown(index: number, event?: any): void {
     if (event) event.stopPropagation();
-    this.typeDropdownIndex = this.typeDropdownIndex === index ? null : index;
-    this.constraintDropdownIndex = null;
-    this.fkTableDropdownOpen = false;
-    this.fkColDropdownOpen = false;
+    if (this.typeDropdownIndex === index) {
+      this.typeDropdownIndex = null;
+    } else {
+      this.typeDropdownIndex = index;
+      this.constraintDropdownIndex = null;
+      this.fkTableDropdownOpen = false;
+      this.fkColDropdownOpen = false;
+      this.updateTypeDropdownPos(event, index);
+    }
   }
 
   openTypeDropdown(index: number, event?: any): void {
@@ -4059,6 +4079,68 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.constraintDropdownIndex = null;
     this.fkTableDropdownOpen = false;
     this.fkColDropdownOpen = false;
+    this.updateTypeDropdownPos(event, index);
+  }
+
+  private updateTypeDropdownPos(event?: any, index?: number): void {
+    let trigger: HTMLElement | null = null;
+    if (event) {
+      const target = (event.target || event.currentTarget) as HTMLElement;
+      if (target) {
+        trigger = target.closest('.type-dropdown') as HTMLElement || target;
+      }
+    }
+    if (!trigger && index !== undefined) {
+      const containers = document.querySelectorAll('.table-modal .type-dropdown');
+      if (containers[index]) {
+        trigger = containers[index] as HTMLElement;
+      }
+    }
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const dropdownHeight = 180;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpwards = spaceBelow < dropdownHeight + 10 && rect.top > dropdownHeight;
+
+    this.typeDropdownPos = {
+      top: openUpwards ? Math.round(rect.top - 4) : Math.round(rect.bottom + 4),
+      left: Math.round(rect.left),
+      width: Math.round(rect.width || 150),
+      transform: openUpwards ? 'translateY(-100%)' : 'none'
+    };
+  }
+
+  private updateConstraintDropdownPos(event?: any, index?: number): void {
+    let trigger: HTMLElement | null = null;
+    if (event) {
+      const target = (event.target || event.currentTarget) as HTMLElement;
+      if (target) {
+        trigger = target.closest('.constraint-dropdown') as HTMLElement || target;
+      }
+    }
+    if (!trigger && index !== undefined) {
+      const containers = document.querySelectorAll('.table-modal .constraint-dropdown');
+      if (containers[index]) {
+        trigger = containers[index] as HTMLElement;
+      }
+    }
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const dropdownHeight = 220;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpwards = spaceBelow < dropdownHeight + 10 && rect.top > dropdownHeight;
+
+    const menuWidth = 180;
+    let left = Math.round(rect.right - menuWidth);
+    if (left < 10) left = Math.round(rect.left);
+
+    this.constraintDropdownPos = {
+      top: openUpwards ? Math.round(rect.top - 4) : Math.round(rect.bottom + 4),
+      left: Math.max(10, left),
+      transform: openUpwards ? 'translateY(-100%)' : 'none'
+    };
   }
 
   selectDataType(column: any, type: string): void {
@@ -5214,7 +5296,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       return;
     }
-    
+
     if (this.svc.saveErrorOccurred || this.svc.editorErrors().length > 0) {
       this.svc.showToast('Please fix the errors before creating more notes.', 4000, 'error');
       return;
