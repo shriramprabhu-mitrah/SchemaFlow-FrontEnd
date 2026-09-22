@@ -16,6 +16,21 @@ const allowedHosts = extraHosts.includes('*')
   : ['*.railway.app', 'localhost', '127.0.0.1', ...extraHosts];
 
 const app = express();
+
+/**
+ * Guard against invalid HTTP header values (e.g. Angular HttpHeaders internal 'lazyInit: undefined')
+ */
+app.use((req, res, next) => {
+  const originalSetHeader = res.setHeader;
+  res.setHeader = function (name: string, value: any) {
+    if (value === undefined || name === 'lazyInit' || name === 'lazyUpdate') {
+      return this;
+    }
+    return originalSetHeader.call(this, name, value);
+  };
+  next();
+});
+
 const angularApp = new AngularNodeAppEngine({
   allowedHosts,
   trustProxyHeaders: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto'],
