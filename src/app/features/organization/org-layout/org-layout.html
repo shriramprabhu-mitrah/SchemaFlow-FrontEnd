@@ -6,7 +6,7 @@
       <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
         [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
         <app-icons name="db-diagram-logo" size="48" class="brand-icon-wrap"></app-icons>
-        <span class="brand-text brand-text-flex" *ngIf="!sidebarCollapsed">DB Nexus</span>
+        <span class="brand-text brand-text-flex dbnexus-text" *ngIf="!sidebarCollapsed">dbNexus</span>
       </a>
       <!-- Close button visible on mobile -->
       <button class="collapse-btn mobile-close-btn" *ngIf="!sidebarCollapsed" (click)="toggleSidebar()">
@@ -42,7 +42,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">General</span>
       </a>
 
-      <a *ngIf="isOwner" routerLink="/organization/subscription" routerLinkActive="active" class="nav-item"
+      <a *ngIf="isOwner && showPremiumRoutes" routerLink="/organization/subscription" routerLinkActive="active" class="nav-item"
         [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
         [attr.data-tt]="sidebarCollapsed ? 'Subscription' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -53,7 +53,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Subscription</span>
       </a>
 
-      <a routerLink="/organization/members" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
+      <a *ngIf="showPremiumRoutes" routerLink="/organization/members" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
         [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Members' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
@@ -65,7 +65,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Members</span>
       </a>
 
-      <a routerLink="/organization/audit-logs" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
+      <a *ngIf="showPremiumRoutes" routerLink="/organization/audit-logs" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
         [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Audit Logs' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round">

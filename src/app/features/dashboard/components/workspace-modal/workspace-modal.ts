@@ -346,8 +346,14 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.activeDiagramDeleted = false;
     this.openMenuId = null;
     this.svc.requestSplitView();
+    const perm = this.selectedWorkspace ? this.getWorkspacePermission(this.selectedWorkspace) : undefined;
     const fallbackWs = this.selectedWorkspace
-      ? { id: this.selectedWorkspace.id, name: this.selectedWorkspace.name }
+      ? {
+          id: this.selectedWorkspace.id,
+          name: this.selectedWorkspace.name,
+          type: this.selectedWorkspace.type,
+          permission: perm
+        }
       : null;
     this.svc.loadDiagram(id, fallbackWs).subscribe({
       next: () => {
@@ -975,8 +981,19 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   toggleMemberDropdown(index: number, e: Event): void {
     if (e) e.stopPropagation();
-    this.activeMemberDropdownIndex = this.activeMemberDropdownIndex === index ? null : index;
+    if (this.activeMemberDropdownIndex === index) {
+      this.activeMemberDropdownIndex = null;
+      return;
+    }
+    this.activeMemberDropdownIndex = index;
     this.cdr.detectChanges();
+    setTimeout(() => {
+      const dropdownWrap = (e?.target as HTMLElement)?.closest('.member-permission-dropdown-wrap');
+      const menuDropdown = dropdownWrap?.querySelector('.permission-dropdown-menu');
+      if (menuDropdown) {
+        menuDropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
   }
 
   changeMemberPermission(index: number, permission: PermissionType, e?: Event): void {
@@ -1073,6 +1090,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.openWorkspaceMenuId = id;
     this.openMenuId = null;
     this.cdr.detectChanges();
+    setTimeout(() => {
+      const menuWrap = (e.target as HTMLElement).closest('.action-menu-wrap');
+      const menuDropdown = menuWrap?.querySelector('.action-menu-dropdown');
+      if (menuDropdown) {
+        menuDropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
 
     // If members for this workspace are already cached, use cached permission
     if (this.cachedMembersMap.has(id)) {
@@ -1464,7 +1488,20 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   toggleRowMenu(id: number, e: Event): void {
     e.stopPropagation();
-    this.openMenuId = this.openMenuId === id ? null : id;
+    if (this.openMenuId === id) {
+      this.openMenuId = null;
+      return;
+    }
+    this.openMenuId = id;
+    this.openWorkspaceMenuId = null;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      const menuWrap = (e.target as HTMLElement).closest('.action-menu-wrap');
+      const menuDropdown = menuWrap?.querySelector('.action-menu-dropdown');
+      if (menuDropdown) {
+        menuDropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
   }
 
   showDeleteDiagramConfirm(diagram: any, e: Event): void {

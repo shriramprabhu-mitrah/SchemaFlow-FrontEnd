@@ -1,0 +1,214 @@
+<div class="diff-checker-container">
+  <!-- TOP TOOLBAR: BACK TO DIAGRAM, TITLE, EDIT / VIEW DIFF BUTTONS, AND CLEAR BUTTON -->
+  <header class="diff-toolbar">
+    <div class="diff-toolbar-left">
+      <button type="button" class="btn-back-diagram tt tt-bottom-left" (click)="exitDiffChecker()" data-tt="Back to Diagram" aria-label="Back to Diagram">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <div class="diff-title-wrap">
+        <span class="diff-title">SQL Compare</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: SEPARATE EDIT & VIEW DIFF BUTTONS, CLEAR BUTTON -->
+    <div class="diff-toolbar-right">
+      <div class="toolbar-mode-group">
+        <button type="button" 
+                class="btn-mode-toggle tt tt-bottom" 
+                [class.active]="viewMode === 'edit'" 
+                (click)="setViewMode('edit')"
+                data-tt="Switch to Edit mode"
+                aria-label="Switch to Edit mode">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <span>Edit</span>
+        </button>
+        <button type="button" 
+                class="btn-mode-toggle tt tt-bottom" 
+                [class.active]="viewMode === 'diff'" 
+                (click)="setViewMode('diff')"
+                data-tt="Switch to Code mode"
+                aria-label="Switch to Code mode">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="7" height="16" rx="1.5"></rect>
+            <rect x="14" y="4" width="7" height="16" rx="1.5"></rect>
+            <line x1="6.5" y1="9" x2="7.5" y2="9"></line>
+            <line x1="6.5" y1="13" x2="7.5" y2="13"></line>
+            <line x1="16.5" y1="9" x2="18.5" y2="9"></line>
+            <line x1="16.5" y1="13" x2="18.5" y2="13"></line>
+          </svg>
+          <span>Compare</span>
+        </button>
+      </div>
+
+      <button type="button" class="btn-clear-blue tt tt-bottom" (click)="clearAll()" data-tt="Clear both inputs" aria-label="Clear both inputs">
+        Clear
+      </button>
+    </div>
+  </header>
+
+  <!-- PANE SUB-HEADERS MATCHING IMAGES 1, 2, 3, 4 -->
+  <div class="diff-headers-bar">
+    <!-- LEFT HEADER: History Tag | ⊝ X removals | Y lines | Copy -->
+    <div class="sub-header sub-header-left">
+      <div class="sub-header-meta">
+        <span class="pane-tag pane-tag-history">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span>History</span>
+        </span>
+        <div class="stat-badge stat-removal">
+          <svg class="stat-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>{{ diffResult.stats.deletions }} {{ diffResult.stats.deletions === 1 ? 'removal' : 'removals' }}</span>
+        </div>
+      </div>
+
+      <div class="sub-header-actions">
+        <span class="line-count-label" *ngIf="leftText">{{ getLineCount(leftText) }} {{ getLineCount(leftText) === 1 ? 'line' : 'lines' }}</span>
+        <button type="button" class="link-btn btn-copy tt tt-bottom" [class.copied]="copiedSide === 'left'" (click)="copyText('left')" [attr.data-tt]="copiedSide === 'left' ? 'Copied!' : 'Copy to clipboard'" [attr.aria-label]="copiedSide === 'left' ? 'Copied!' : 'Copy to clipboard'">
+          <svg *ngIf="copiedSide !== 'left'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <svg *ngIf="copiedSide === 'left'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>{{ copiedSide === 'left' ? 'Copied' : 'Copy' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CENTER DIVIDER -->
+    <div class="sub-header-divider"></div>
+
+    <!-- RIGHT HEADER: Latest Tag | ⊕ X additions | Y lines | Copy -->
+    <div class="sub-header sub-header-right">
+      <div class="sub-header-meta">
+        <span class="pane-tag pane-tag-latest">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>Latest</span>
+        </span>
+        <div class="stat-badge stat-addition">
+          <svg class="stat-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>{{ diffResult.stats.additions }} {{ diffResult.stats.additions === 1 ? 'addition' : 'additions' }}</span>
+        </div>
+      </div>
+
+      <div class="sub-header-actions">
+        <span class="line-count-label" *ngIf="rightText">{{ getLineCount(rightText) }} {{ getLineCount(rightText) === 1 ? 'line' : 'lines' }}</span>
+        <button type="button" class="link-btn btn-copy tt tt-bottom-right" [class.copied]="copiedSide === 'right'" (click)="copyText('right')" [attr.data-tt]="copiedSide === 'right' ? 'Copied!' : 'Copy to clipboard'" [attr.aria-label]="copiedSide === 'right' ? 'Copied!' : 'Copy to clipboard'">
+          <svg *ngIf="copiedSide !== 'right'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <svg *ngIf="copiedSide === 'right'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>{{ copiedSide === 'right' ? 'Copied' : 'Copy' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN COMPARISON WORKSPACE -->
+  <main class="diff-main-workspace">
+    <!-- LEFT PANE -->
+    <div class="diff-column-pane left-column" (paste)="onPanePaste($event, 'left')">
+      <!-- EDITABLE TEXTAREA (in Edit Mode) -->
+      <div class="editor-input-wrap" *ngIf="viewMode === 'edit'">
+        <textarea #leftTextarea
+                  class="code-textarea border-area"
+                  wrap="soft"
+                  [ngModel]="leftText"
+                  (ngModelChange)="onLeftChange($event)"
+                  placeholder="Paste or type original code / text here..."
+                  spellcheck="false"></textarea>
+      </div>
+
+      <!-- DIFF VIEW (in Diff Mode) -->
+      <div class="diff-display-viewport" #leftScroll (scroll)="onScroll('left')" *ngIf="viewMode === 'diff'">
+        <div class="diff-lines-flow">
+          <div *ngFor="let row of diffResult.sideBySideRows; let idx = index"
+               class="diff-code-line diff-state-{{ row.left.type }}"
+               [class.has-gap]="row.left.type === 'empty'">
+            <span class="code-gutter">
+              <span class="gutter-num">{{ row.left.lineNum || '' }}</span>
+              <span class="gutter-sign" *ngIf="row.left.type === 'removed' || row.left.type === 'modified'">-</span>
+            </span>
+            <span class="code-text">
+              <ng-container *ngIf="row.left.tokens && row.left.tokens.length > 0">
+                <span *ngFor="let token of row.left.tokens" class="diff-token token-{{ token.type }}">{{ token.text }}</span>
+              </ng-container>
+              <ng-container *ngIf="!row.left.tokens || row.left.tokens.length === 0">
+                {{ row.left.text }}
+              </ng-container>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERTICAL BORDER DIVIDER -->
+    <div class="diff-column-divider"></div>
+
+    <!-- RIGHT PANE -->
+    <div class="diff-column-pane right-column" (paste)="onPanePaste($event, 'right')">
+      <!-- EDITABLE TEXTAREA (in Edit Mode) -->
+      <div class="editor-input-wrap" *ngIf="viewMode === 'edit'">
+        <textarea #rightTextarea
+                  class="code-textarea border-area"
+                  wrap="soft"
+                  [ngModel]="rightText"
+                  (ngModelChange)="onRightChange($event)"
+                  placeholder="Paste or type modified code / text here..."
+                  spellcheck="false"></textarea>
+      </div>
+
+      <!-- DIFF VIEW (in Diff Mode) -->
+      <div class="diff-display-viewport" #rightScroll (scroll)="onScroll('right')" *ngIf="viewMode === 'diff'">
+        <div class="diff-lines-flow">
+          <div *ngFor="let row of diffResult.sideBySideRows; let idx = index"
+               class="diff-code-line diff-state-{{ row.right.type }}"
+               [class.has-gap]="row.right.type === 'empty'">
+            <span class="code-gutter">
+              <span class="gutter-num">{{ row.right.lineNum || '' }}</span>
+              <span class="gutter-sign" *ngIf="row.right.type === 'added' || row.right.type === 'modified'">+</span>
+            </span>
+            <span class="code-text">
+              <ng-container *ngIf="row.right.tokens && row.right.tokens.length > 0">
+                <span *ngFor="let token of row.right.tokens" class="diff-token token-{{ token.type }}">{{ token.text }}</span>
+              </ng-container>
+              <ng-container *ngIf="!row.right.tokens || row.right.tokens.length === 0">
+                {{ row.right.text }}
+              </ng-container>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- OVERVIEW RULER / RIGHT MARGIN INDICATORS -->
+      <div class="diff-overview-ruler" *ngIf="overviewMarkers.length > 0 && viewMode === 'diff'">
+        <div *ngFor="let marker of overviewMarkers"
+             class="ruler-line marker-{{ marker.type }}"
+             [style.top.%]="marker.topPct">
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

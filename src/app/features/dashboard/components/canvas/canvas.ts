@@ -9,6 +9,7 @@ import { DiagramViews } from '../diagram-views/diagram-views';
 import { VersionHistoryComponent } from '../version-history/version-history';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-canvas',
@@ -91,6 +92,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private forceHighlightConnections = false;
 
   private wheelListener!: (e: WheelEvent) => void;
+  private scrollListener!: () => void;
 
   // ---- Sticky note drag/resize state ----
   private draggingNote: DiagramNote | null = null;
@@ -233,22 +235,38 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       connectionIndex: -1,
       groupName: null
     };
+  private contextMenuOpenedAt = 0;
 
   constructor(
     public svc: DashboardService,
     private cdr: ChangeDetectorRef,
     public entitlementService: EntitlementService,
-    public auth: AuthService
+    public auth: AuthService,
+    private router: Router
   ) {
     effect(() => {
       this.svc.theme();
       this.svc.hiddenTables(); // Track hiddenTables signal so canvas redraws on visibility changes
+      this.svc.paneMode(); // Track paneMode changes to trigger a resize
+
       if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          this.resizeCanvasToDisplaySize();
+          this.scheduleDraw();
+        }, 20); // Small delay to let Angular/DOM layout update
         this.scheduleDraw();
       }
     });
   }
 
+
+  isSampleDiagram(): boolean {
+    return this.svc.diagramName === 'Sample Diagram';
+  }
+
+  get isReadOnly(): boolean {
+    return this.svc.isReadOnly;
+  }
 
   private getDiagramBounds(): { minX: number; minY: number; maxX: number; maxY: number } {
     let minX = Infinity;
@@ -269,7 +287,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.svc.tables.forEach((t) => (geometry[t.name] = t));
 
     // 2. Include all group bounds
-    if (this.svc.groups) {
+    if (this.svc.groups && this.entitlementService.canUseFeature('table_group')) {
       this.svc.groups.forEach((g) => {
         const bounds = this.getGroupBounds(g, geometry);
         if (bounds) {
@@ -599,7 +617,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     svgContent += `<rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="${bgColor}"/>`; // background
 
     // 1. Draw Groups
-    if (this.svc.groups) {
+    if (this.svc.groups && this.entitlementService.canUseFeature('table_group')) {
       this.svc.groups.forEach((g) => {
         const bounds = this.getGroupBounds(g, geometry);
         if (!bounds) return;
@@ -618,8 +636,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return;
 
+      const isInvalid = this.isRefInvalid(ref);
       const ortho = this.makeOrthogonal(path);
-      const color = ref.color || (isLight ? '#94a3b8' : '#70c8c3');
+      const color = isInvalid ? '#ef4444' : (ref.color || (isLight ? '#94a3b8' : '#70c8c3'));
+      const dashAttr = isInvalid ? ' stroke-dasharray="6,4"' : '';
 
       let pathD = `M ${ortho[0].x} ${ortho[0].y}`;
       ortho.slice(1).forEach(pt => {
@@ -627,7 +647,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       // Base connection line (stroke-width="1.8")
-      svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+      svgContent += `<path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.8"${dashAttr} stroke-linejoin="round" stroke-linecap="round"/>`;
 
       // Draw endpoints markers
       const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
@@ -830,6 +850,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.subscriptions.add(this.entitlementService.entitlements$.subscribe(() => {
+      this.scheduleDraw();
       this.cdr.detectChanges();
     }));
 
@@ -841,12 +862,26 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Redraw subscription from service
     this.subscriptions.add(this.svc.redraw$.subscribe(() => {
+      if (this.contextMenu.visible && this.contextMenu.targetType !== 'empty') {
+        const tableExists = this.contextMenu.table ? this.svc.tables.some(t => t.name === this.contextMenu.table?.name) : false;
+        const groupExists = this.contextMenu.groupName ? this.svc.groups.some(g => g.name === this.contextMenu.groupName) : false;
+        if (!tableExists && !groupExists) {
+          this.contextMenu.visible = false;
+        }
+      }
       if (typeof window !== 'undefined') {
         this.scheduleDraw();
       }
     }));
     // Force redraw for immediate visibility changes (bypasses rafPending guard)
     this.subscriptions.add(this.svc.forceRedraw$.subscribe(() => {
+      if (this.contextMenu.visible && this.contextMenu.targetType !== 'empty') {
+        const tableExists = this.contextMenu.table ? this.svc.tables.some(t => t.name === this.contextMenu.table?.name) : false;
+        const groupExists = this.contextMenu.groupName ? this.svc.groups.some(g => g.name === this.contextMenu.groupName) : false;
+        if (!tableExists && !groupExists) {
+          this.contextMenu.visible = false;
+        }
+      }
       if (typeof window !== 'undefined' && this.ctx) {
         this.draw();
       }
@@ -856,12 +891,27 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.hasFitted = false;
       this.fitCanvasAfterLayout();
     }));
+
+    this.svc.onDiagramViewsToggled = (isOpen: boolean) => {
+      if (isOpen) {
+        this.showLayoutMenu = false;
+        this.contextMenu.visible = false;
+        this.colorPicker.visible = false;
+        this.activeNoteMenuId = null;
+        this.showDetailLevelMenu = false;
+        this.cdr.detectChanges();
+      }
+    };
   }
 
   ngAfterViewInit(): void {
     if (typeof window === 'undefined') return;
 
     this.wheelListener = (e: WheelEvent) => {
+      if (this.contextMenu.visible) {
+        this.contextMenu.visible = false;
+        this.scheduleDraw();
+      }
       if (this.colorPicker.visible) {
         this.colorPicker.visible = false;
         this.cdr.detectChanges();
@@ -875,6 +925,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
     window.addEventListener('wheel', this.wheelListener, { passive: false });
+
+    this.scrollListener = () => {
+      if (this.contextMenu.visible) {
+        this.contextMenu.visible = false;
+        this.scheduleDraw();
+      }
+      if (this.colorPicker.visible) {
+        this.colorPicker.visible = false;
+        this.cdr.detectChanges();
+      }
+      if (this.activeNoteMenuId !== null) {
+        this.activeNoteMenuId = null;
+        this.cdr.detectChanges();
+      }
+    };
+    window.addEventListener('scroll', this.scrollListener, { capture: true, passive: true });
 
     this.resizeCanvasToDisplaySize();
     this.resizeObserver = new ResizeObserver(() => {
@@ -890,8 +956,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (typeof window !== 'undefined' && this.wheelListener) {
-      window.removeEventListener('wheel', this.wheelListener);
+    if (typeof window !== 'undefined') {
+      if (this.wheelListener) {
+        window.removeEventListener('wheel', this.wheelListener);
+      }
+      if (this.scrollListener) {
+        window.removeEventListener('scroll', this.scrollListener, { capture: true } as any);
+      }
     }
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
@@ -900,6 +971,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resizeObserver?.disconnect();
     this.subscriptions.unsubscribe();
     if (this.fitTimer) clearTimeout(this.fitTimer);
+    if (this.svc.onDiagramViewsToggled) {
+      this.svc.onDiagramViewsToggled = undefined;
+    }
   }
 
   private resizeCanvasToDisplaySize(): void {
@@ -1021,7 +1095,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.restore();
 
     if (this.contextMenu.visible && !this.drawingClean) {
-      this.drawContextMenu(ctx);
+      if (this.contextMenu.targetType !== 'empty') {
+        const tableExists = this.contextMenu.table ? this.svc.tables.some(t => t.name === this.contextMenu.table?.name) : false;
+        const groupExists = this.contextMenu.groupName ? this.svc.groups.some(g => g.name === this.contextMenu.groupName) : false;
+        if (!tableExists && !groupExists) {
+          this.contextMenu.visible = false;
+        }
+      }
+      if (this.contextMenu.visible) {
+        this.drawContextMenu(ctx);
+      }
     }
   }
 
@@ -1099,6 +1182,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isTableGroupCollapsed(tableName: string): boolean {
+    if (!this.entitlementService.canUseFeature('table_group')) return false;
     const baseName = tableName.includes('.') ? tableName.split('.')[1] : tableName;
     const group = this.svc.groups.find(
       (g) => g.tables.includes(tableName) || g.tables.includes(baseName)
@@ -1166,6 +1250,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private drawTableGroups(ctx: CanvasRenderingContext2D, geometry: Record<string, TableDef>): void {
     this.groupColorIcons = [];
+    if (!this.entitlementService.canUseFeature('table_group')) return;
     if (!this.svc.groups || this.svc.groups.length === 0) return;
 
     const isLight = this.svc.theme() === 'light';
@@ -1554,8 +1639,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
 
+      const isInvalid = this.isRefInvalid(ref);
       const isActive =
         this.forceHighlightConnections ||
+        isInvalid ||
         (!this.drawingClean && (
           this.svc.showAllConnections ||
           i === this.svc.hoveredConnectionIndex ||
@@ -1568,7 +1655,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Determine priority: selected/dragging gets highest priority (3), hovered gets (2), active gets (1), normal gets (0)
       let priority = 0;
-      if (isSelected || isDraggingCurrent) {
+      if (isSelected || isDraggingCurrent || isInvalid) {
         priority = 3;
       } else if (isHovered) {
         priority = 2;
@@ -1600,7 +1687,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.save();
 
       // CLIP: Exclude any groups that this connection does NOT belong to
-      if (this.svc.groups && this.svc.groups.length > 0) {
+      if (this.svc.groups && this.svc.groups.length > 0 && this.entitlementService.canUseFeature('table_group')) {
         ctx.beginPath();
         const limit = 100000;
         ctx.rect(-limit, -limit, limit * 2, limit * 2);
@@ -1817,6 +1904,53 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.textBaseline = 'middle';
         ctx.fillText('!', pt.x, pt.y);
         ctx.restore();
+
+        // If target table does not exist on canvas, draw an indicator pill with missing table name
+        if (!geometry[ref.toTable] && ortho.length >= 2) {
+          const endPt = ortho[ortho.length - 1];
+          ctx.save();
+          ctx.setLineDash([]);
+          const label = `! ${ref.toTable}.${ref.toCol}`;
+          ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+          const tw = ctx.measureText(label).width;
+          const pw = tw + 18;
+          const ph = 22;
+          const px = endPt.x + 2;
+          const py = endPt.y - ph / 2;
+          this.roundRectPath(ctx, px, py, pw, ph, 4, true);
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, px + 8, py + ph / 2);
+          ctx.restore();
+        } else if (!geometry[ref.fromTable] && ortho.length >= 2) {
+          const startPt = ortho[0];
+          ctx.save();
+          ctx.setLineDash([]);
+          const label = `! ${ref.fromTable}.${ref.fromCol}`;
+          ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+          const tw = ctx.measureText(label).width;
+          const pw = tw + 18;
+          const ph = 22;
+          const px = startPt.x - pw - 2;
+          const py = startPt.y - ph / 2;
+          this.roundRectPath(ctx, px, py, pw, ph, 4, true);
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, px + 8, py + ph / 2);
+          ctx.restore();
+        }
       }
 
       const showToolbar = i === this.svc.selectedConnectionIndex || isDraggingCurrent;
@@ -2100,7 +2234,50 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   ): PathPoint[] | null {
     let a = geometry[ref.fromTable];
     let b = geometry[ref.toTable];
-    if (!a || !b) return null;
+    if (!a && !b) return null;
+
+    if (a && !b) {
+      const stubX = a.x + a.width + 130;
+      const stubY = a.y + (a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
+      b = {
+        name: ref.toTable,
+        columns: [],
+        x: stubX,
+        y: stubY - this.svc.HEADER_H / 2,
+        width: 100,
+        height: 36,
+        colY: { [ref.toCol]: this.svc.HEADER_H / 2 },
+        color: '#ef4444'
+      };
+    } else if (!a && b) {
+      const stubX = b.x - 130;
+      const stubY = b.y + (b.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+      a = {
+        name: ref.fromTable,
+        columns: [],
+        x: stubX - 100,
+        y: stubY - this.svc.HEADER_H / 2,
+        width: 100,
+        height: 36,
+        colY: { [ref.fromCol]: this.svc.HEADER_H / 2 },
+        color: '#ef4444'
+      };
+    }
+
+    if (ref.fromTable === ref.toTable && ref.fromCol === ref.toCol) {
+      const colYOffset = a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2;
+      const startX = a.x + a.width;
+      const startY = a.y + colYOffset;
+      const loopW = 55;
+      const loopH = 26;
+      return [
+        { x: startX, y: startY },
+        { x: startX + loopW, y: startY - loopH },
+        { x: startX + loopW + 20, y: startY },
+        { x: startX + loopW, y: startY + loopH },
+        { x: startX, y: startY }
+      ];
+    }
 
     // Check if both tables belong to the same collapsed table group
     const fromBase = ref.fromTable.includes('.') ? ref.fromTable.split('.')[1] : ref.fromTable;
@@ -2549,7 +2726,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     // TableGroup header hit test for dragging or toggling collapse state
-    if (this.svc.groups && this.svc.groups.length > 0) {
+    if (this.svc.groups && this.svc.groups.length > 0 && this.entitlementService.canUseFeature('table_group')) {
       let groupHitName: string | null = null;
       const geometry: Record<string, TableDef> = {};
       this.svc.tables.forEach((t) => (geometry[t.name] = t));
@@ -2622,7 +2799,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
     const iconHit = this.findConnectionIconAt(wp.x, wp.y);
-    if (iconHit && !this.svc.isReadOnly) {
+    if (iconHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       const ref = this.svc.refs[iconHit.refIndex];
       if (!ref) return;
 
@@ -2652,7 +2829,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const anchorUsage = this.buildAnchorUsage();
 
     const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
-    if (endpointHit && !this.svc.isReadOnly) {
+    if (endpointHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       const ref = this.svc.refs[endpointHit.refIndex];
       this.reconnectDraft = {
         refIndex: endpointHit.refIndex,
@@ -2668,7 +2845,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
-    if (cornerHit && !this.svc.isReadOnly) {
+    if (cornerHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       this.materializeWaypoints(this.svc.refs[cornerHit.refIndex], geometry, cornerHit.refIndex, anchorUsage);
       this.isDraggingWaypoint = true;
       this.dragConnectionIndex = cornerHit.refIndex;
@@ -2679,7 +2856,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
-    if (midpointHit && !this.svc.isReadOnly) {
+    if (midpointHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       const ref = this.svc.refs[midpointHit.refIndex];
       const waypoints = this.materializeWaypoints(ref, geometry, midpointHit.refIndex, anchorUsage);
       waypoints.splice(midpointHit.insertAt, 0, { x: wp.x, y: wp.y });
@@ -2692,7 +2869,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const columnHit = this.findColumnAt(wp.x, wp.y);
-    if (columnHit && !this.svc.isReadOnly) {
+    if (columnHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
       this.connectionDraft = {
         fromTable: columnHit.table.name,
         fromColumn: columnHit.column.name,
@@ -2716,10 +2893,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const lineHit = this.findHoveredConnectionIndex(wp.x, wp.y, geometry);
-    this.svc.selectedConnectionIndex = lineHit;
-    if (lineHit !== -1) {
-      this.selectedConnectionPoint = wp;
+    if (!this.svc.isReadOnly && !this.isSampleDiagram()) {
+      this.svc.selectedConnectionIndex = lineHit;
+      if (lineHit !== -1) {
+        this.selectedConnectionPoint = wp;
+      } else {
+        this.selectedConnectionPoint = null;
+      }
     } else {
+      this.svc.selectedConnectionIndex = -1;
       this.selectedConnectionPoint = null;
     }
     // A drag on any non-table/non-column area pans the infinite workspace only if using Middle Click or the Hand Tool.
@@ -2800,6 +2982,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.svc.selectedConnectionIndex = -1;
     }
 
+    if (this.contextMenu.visible && (this.isPanning || this.draggingTable || this.draggingGroup || this.isDraggingWaypoint || this.connectionDraft || this.reconnectDraft)) {
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+    }
+
     if (this.draggingGroup) {
       const dx = wp.x - this.dragGroupStartMouse.x;
       const dy = wp.y - this.dragGroupStartMouse.y;
@@ -2872,7 +3059,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.hoveredGroupColorIcon = groupIconHit ? groupIconHit.groupName : null;
 
     let groupUnderCursor: string | null = null;
-    if (this.svc.groups && this.svc.groups.length > 0) {
+    if (this.svc.groups && this.svc.groups.length > 0 && this.entitlementService.canUseFeature('table_group')) {
       for (const g of this.svc.groups) {
         const groupTables = this.svc.tables.filter((t) => g.tables.includes(t.name) && !this.svc.isTableHidden(t.name));
         if (groupTables.length === 0) continue;
@@ -3219,6 +3406,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.contextMenu.visible) {
       this.contextMenu.visible = false;
+      this.scheduleDraw();
     }
 
     this.svc.selectedConnectionIndex = -1;
@@ -3273,12 +3461,24 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.scheduleDraw();
       return;
     }
-
     const tableHit = this.findTableAt(wp.x, wp.y);
     if (tableHit) {
       this.contextMenu.visible = false;
       this.scheduleDraw();
       return;
+    }
+
+    if (this.svc.groups && this.svc.groups.length > 0) {
+      for (const g of this.svc.groups) {
+        const bounds = this.getGroupBounds(g, geometry);
+        if (bounds) {
+          if (wp.x >= bounds.x && wp.x <= bounds.x + bounds.w && wp.y >= bounds.y && wp.y <= bounds.y + bounds.h) {
+            this.contextMenu.visible = false;
+            this.scheduleDraw();
+            return;
+          }
+        }
+      }
     }
 
     this.contextMenuWorldPoint = wp;
@@ -3449,13 +3649,47 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scheduleDraw();
   }
 
-  toggleLayoutMenu(): void {
+  toggleDiffChecker(): void {
+    this.showLayoutMenu = false;
+    this.svc.toggleDiffChecker();
+    if (this.svc.showDiffChecker()) {
+      this.router.navigate([], { queryParams: { view: 'diff' } });
+    } else {
+      const id = this.svc.diagramId();
+      if (id) {
+        this.router.navigate([], { queryParams: { id } });
+      } else {
+        this.router.navigate([], { queryParams: {} });
+      }
+    }
+  }
+
+  toggleLayoutMenu(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.isReadOnly) return;
     this.showLayoutMenu = !this.showLayoutMenu;
     if (this.showLayoutMenu) {
+      this.svc.showDiagramViews = false;
       this.contextMenu.visible = false;
       this.activeNoteMenuId = null;
       this.colorPicker.visible = false;
     }
+    this.cdr.detectChanges();
+  }
+
+  toggleDiagramViews(focusSearch: boolean = false, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (!this.entitlementService.canUseFeature('digram_view')) {
+      this.svc.showUpgradeModal();
+      return;
+    }
+    this.showLayoutMenu = false;
+    this.svc.toggleDiagramViews(focusSearch);
+    this.cdr.detectChanges();
   }
 
   triggerLayoutConfirm(direction: 'vertical' | 'horizontal'): void {
@@ -3552,7 +3786,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('drag position', JSON.stringify(this.svc.tablePositions));
       }
-      
+
       // Clear the snapshot so next auto-layout will capture the fresh manual state
       this.previousTablePositions = null;
       if (typeof localStorage !== 'undefined') {
@@ -3575,7 +3809,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.svc.view.x = this.previousViewState.x;
       this.svc.view.y = this.previousViewState.y;
       this.svc.view.scale = this.previousViewState.scale;
-      
+
       // Clear previous view state
       this.previousViewState = null;
       if (typeof localStorage !== 'undefined') {
@@ -3672,8 +3906,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   createTable(): void {
     const rect = this.canvasWrapRef.nativeElement.getBoundingClientRect();
-    const x = (rect.width / 2 - this.svc.view.x) / this.svc.view.scale - this.svc.CARD_W / 2;
-    const y = (rect.height / 2 - this.svc.view.y) / this.svc.view.scale - 70;
+    let x = (rect.width / 2 - this.svc.view.x) / this.svc.view.scale - this.svc.CARD_W / 2;
+    let y = (rect.height / 2 - this.svc.view.y) / this.svc.view.scale - 70;
+
+    let overlap = true;
+    let attempts = 0;
+    while (overlap && attempts < 15) {
+      overlap = Object.values(this.svc.tablePositions).some((pos: { x: number, y: number }) => 
+        Math.abs(pos.x - x) < 30 && Math.abs(pos.y - y) < 30
+      );
+      if (overlap) {
+        x += 30;
+        y += 30;
+        attempts++;
+      }
+    }
+
     this.pendingNewTablePosition = { x, y };
 
     const defaultName = this.svc.generateNextTableName();
@@ -3843,8 +4091,40 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.fkColDropdownOpen = false;
   }
 
+  @HostListener('document:mousedown', ['$event'])
+  onDocumentMouseDown(event: MouseEvent): void {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.contextMenuOpenedAt < 250) {
+      return;
+    }
+    if (this.contextMenu.visible && !this.isPointInsideContextMenu(event.clientX, event.clientY)) {
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+    }
+  }
+
+  @HostListener('document:contextmenu', ['$event'])
+  onDocumentContextMenu(event: MouseEvent): void {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.contextMenuOpenedAt < 250) {
+      return;
+    }
+    if (this.contextMenu.visible && event.target !== this.canvasRef?.nativeElement) {
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - this.contextMenuOpenedAt >= 250) {
+      if (this.contextMenu.visible && !this.isPointInsideContextMenu(event.clientX, event.clientY)) {
+        this.contextMenu.visible = false;
+        this.scheduleDraw();
+      }
+    }
+
     this.typeDropdownIndex = null;
     this.constraintDropdownIndex = null;
     this.groupDropdownVisible = false;
@@ -3854,8 +4134,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showDetailLevelMenu = false;
 
     const target = event.target as HTMLElement;
-    const isInsideLayoutControl = target.closest('#layout-control');
-    if (!isInsideLayoutControl) {
+    const isInsideLayoutMenu = target.closest('.layout-menu');
+    const isLayoutButton = target.closest('#layout-menu-button');
+    if (!isInsideLayoutMenu && !isLayoutButton) {
       this.showLayoutMenu = false;
     }
   }
@@ -4302,6 +4583,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private isPointInsideContextMenu(clientX: number, clientY: number): boolean {
+    if (!this.contextMenu.visible || !this.canvasRef?.nativeElement) return false;
+    const rect = this.canvasRef.nativeElement.getBoundingClientRect();
+    const sx = clientX - rect.left;
+    const sy = clientY - rect.top;
+    const items = this.getContextMenuItems();
+    if (!items.length) return false;
+    const menuHeight = items.length * this.menuItemHeight;
+    return (
+      sx >= this.contextMenu.x &&
+      sx <= this.contextMenu.x + this.menuWidth &&
+      sy >= this.contextMenu.y &&
+      sy <= this.contextMenu.y + menuHeight
+    );
+  }
+
   private openContextMenu(
     sx: number,
     sy: number,
@@ -4342,6 +4639,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.contextMenu.x = Math.max(6, Math.min(sx, maxX));
     this.contextMenu.y = Math.max(6, Math.min(sy, maxY));
     this.contextMenu.visible = true;
+    this.contextMenuOpenedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
     this.scheduleDraw();
   }
@@ -4379,7 +4677,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const itemY = y + i * this.menuItemHeight;
       const isDanger = label.toLowerCase().startsWith('delete');
       const table = this.contextMenu.table;
-      const isTableInGroup = (this.contextMenu.targetType === 'tableHeader' && table)
+      const isTableInGroup = (this.contextMenu.targetType === 'tableHeader' && table && this.entitlementService.canUseFeature('table_group'))
         ? this.svc.groups.some(g => g.tables.includes(table.name))
         : false;
       const column = this.contextMenu.column;
@@ -4541,7 +4839,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const index = Math.floor((sy - this.contextMenu.y) / this.menuItemHeight);
       const label = items[index];
       const table = this.contextMenu.table;
-      const isTableInGroup = (this.contextMenu.targetType === 'tableHeader' && table)
+      const isTableInGroup = (this.contextMenu.targetType === 'tableHeader' && table && this.entitlementService.canUseFeature('table_group'))
         ? this.svc.groups.some(g => g.tables.includes(table.name))
         : false;
       const column = this.contextMenu.column;
@@ -4553,6 +4851,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!isDisabled) {
         this.handleContextMenuClick(label);
       }
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+      return true;
+    }
+
+    const wp = this.worldPointFromEvent(e);
+    // If clicking on the same group icon or table settings icon that opened the menu, close it and consume click (toggle)
+    const groupIcon = this.findGroupColorIconAt(wp.x, wp.y);
+    if (this.contextMenu.targetType === 'groupHeader' && groupIcon && groupIcon.groupName === this.contextMenu.groupName) {
+      this.contextMenu.visible = false;
+      this.scheduleDraw();
+      return true;
+    }
+
+    const tableIcon = this.findTableHeaderIconAt(wp.x, wp.y);
+    if (this.contextMenu.targetType === 'tableHeader' && tableIcon && tableIcon.tableName === this.contextMenu.table?.name) {
       this.contextMenu.visible = false;
       this.scheduleDraw();
       return true;
@@ -4705,7 +5019,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const table = this.contextMenu.table;
     if (!table) return;
 
-    const isTableInGroup = this.svc.groups.some(g => g.tables.includes(table.name));
+    const isTableInGroup = this.entitlementService.canUseFeature('table_group') && this.svc.groups.some(g => g.tables.includes(table.name));
     const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
 
     if (label === 'Edit Table') {
@@ -4827,6 +5141,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           this.svc.showToast(`Column renamed to "${val}" successfully.`, 2500, 'success');
         }
       } else if (this.inlineEdit.kind === 'table' && val !== this.inlineEdit.tableName) {
+        if (this.svc.tables.some(t => t.name.toLowerCase() === val.toLowerCase())) {
+          this.svc.showToast(`Table name "${val}" already exists.`, 3000, 'error');
+          this.inlineEdit.visible = false;
+          return;
+        }
         this.svc.renameTableInCode(this.inlineEdit.tableName, val);
         this.svc.showToast(`Table renamed to "${val}" successfully.`, 2500, 'success');
       }
@@ -4895,12 +5214,31 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       return;
     }
+    
+    if (this.svc.saveErrorOccurred || this.svc.editorErrors().length > 0) {
+      this.svc.showToast('Please fix the errors before creating more notes.', 4000, 'error');
+      return;
+    }
+
     const canvas = this.canvasRef?.nativeElement;
     const w = canvas ? canvas.clientWidth : 800;
     const h = canvas ? canvas.clientHeight : 600;
     // Convert screen center to world coordinates
-    const worldX = Math.round((w / 2 - this.svc.view.x) / this.svc.view.scale - 100);
-    const worldY = Math.round((h / 2 - this.svc.view.y) / this.svc.view.scale - 75);
+    let worldX = Math.round((w / 2 - this.svc.view.x) / this.svc.view.scale - 100);
+    let worldY = Math.round((h / 2 - this.svc.view.y) / this.svc.view.scale - 75);
+
+    // Shift position if it overlaps perfectly with an existing note
+    let overlap = true;
+    let offsetAttempts = 0;
+    while (overlap && offsetAttempts < 15) {
+      overlap = this.svc.notes && this.svc.notes.some((n: any) => Math.abs(n.posx - worldX) < 10 && Math.abs(n.posy - worldY) < 10);
+      if (overlap) {
+        worldX += 30; // Shift down and right
+        worldY += 30;
+        offsetAttempts++;
+      }
+    }
+
     this.svc.addNote(worldX, worldY);
     this.cdr.detectChanges();
   }
@@ -5056,7 +5394,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   commitEditNoteName(): void {
-    if (this.editingNoteId !== null && this.editNoteNameValue.trim()) {
+    if (this.editingNoteId !== null) {
       this.svc.updateNote(this.editingNoteId, { name: this.editNoteNameValue.trim() });
     }
     this.editingNoteId = null;

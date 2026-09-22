@@ -113,6 +113,37 @@ app-share-modal {
   }
 }
 
+.share-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  color: #f87171;
+  font-size: 12.5px;
+  line-height: 1.4;
+
+  svg {
+    flex-shrink: 0;
+    color: #ef4444;
+  }
+}
+
+.switch-toggle.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Shared typography */
 .section-desc {
   margin: 0 0 6px 0;
@@ -454,6 +485,16 @@ body.light-theme & {
   .modal-tabs-header {
     border-bottom-color: rgba(0, 0, 0, 0.08);
     background: #f8fafc;
+  }
+
+  .share-error-banner {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #dc2626;
+
+    svg {
+      color: #dc2626;
+    }
   }
 
   .tab-item {

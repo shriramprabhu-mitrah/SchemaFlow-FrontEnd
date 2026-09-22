@@ -52,6 +52,15 @@ export class ShareModalComponent implements OnInit {
   showLinkTypeDropdown = false;
   */
 
+  hasDbmlErrors(): boolean {
+    return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;
+  }
+
+  isDiagramEmpty(): boolean {
+    const code = this.svc.code;
+    return !code || code.trim() === '' || this.svc.tables.length === 0;
+  }
+
   constructor(
     public svc: DashboardService,
     private appConfig: AppConfigService,
@@ -66,11 +75,13 @@ export class ShareModalComponent implements OnInit {
       this.isPublic = this.svc.isDiagramPublic;
       this.password = this.svc.diagramPassword;
       this.showPassword = false;
-      /*
-      if (!this.isPublic && this.activeTab === 'embedding') {
-        this.activeTab = 'sharing';
+
+      if ((!this.svc.publicToken || this.svc.publicToken === 'TOKEN_PENDING') && this.diagramId) {
+        const d = this.svc.diagrams().find(item => item.id === this.diagramId);
+        if (d && ((d as any).publictoken || (d as any).publicToken)) {
+          this.svc.publicToken = (d as any).publictoken || (d as any).publicToken;
+        }
       }
-      */
     }
   }
 
@@ -114,6 +125,16 @@ export class ShareModalComponent implements OnInit {
   saveSharingSettings(): void {
     if (!this.diagramId) return;
     
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
+
     if (this.isPublic) {
       this.password = ''; // Clear password when making it public
     } else if (!this.password) {
@@ -140,6 +161,16 @@ export class ShareModalComponent implements OnInit {
 
   sendEmails(): void {
     if (!this.diagramId) return;
+
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
     
     // Parse emails from input
     const rawEmails = this.emailsInput.split(/[\s,]+/).map(e => e.trim()).filter(e => e.length > 0);
@@ -208,10 +239,19 @@ export class ShareModalComponent implements OnInit {
   */
 
   copyToClipboard(text: string, type: 'link' | 'embed'): void {
+    if (this.hasDbmlErrors()) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (this.isDiagramEmpty()) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
         if (type === 'link') {
           this.linkCopied = true;
+          this.svc.showToast('Link copied to clipboard!', 2000, 'success');
           this.cdr.detectChanges();
           setTimeout(() => {
             this.linkCopied = false;

@@ -308,25 +308,25 @@
               <div class="custom-select-menu" *ngIf="activeEntDropdownId === ent.feature_id"
                 style="z-index:99999!important">
                 <div class="custom-select-option" [class.active]="ent.value === 'true' || ent.value === true"
-                  (click)="ent.value = 'true'; activeEntDropdownId = null">
+                  (click)="setEntitlementValue(ent, 'true'); activeEntDropdownId = null">
                   Enabled
                 </div>
                 <div class="custom-select-option" [class.active]="ent.value === 'false' || ent.value === false"
-                  (click)="ent.value = 'false'; activeEntDropdownId = null">
+                  (click)="setEntitlementValue(ent, 'false'); activeEntDropdownId = null">
                   Disabled
                 </div>
               </div>
             </div>
-            <input class="form-input" [(ngModel)]="ent.value"
+            <input class="form-input" [(ngModel)]="ent.value" (ngModelChange)="onEntitlementFieldChange(ent)"
               style="width:140px;padding:4px 8px;font-size:13px;height:30px" *ngIf="ent.value_type !== 'boolean'"
               placeholder="Value">
           </td>
           <td>
-            <input class="form-input" type="number" [(ngModel)]="ent.limit_value"
+            <input class="form-input" type="number" [(ngModel)]="ent.limit_value" (ngModelChange)="onEntitlementFieldChange(ent)"
               style="width:120px;padding:5px 8px;font-size:13px;height:32px" placeholder="Unlimited">
           </td>
           <td>
-            <input class="form-input" [(ngModel)]="ent.display_text"
+            <input class="form-input" [(ngModel)]="ent.display_text" (ngModelChange)="onEntitlementFieldChange(ent)"
               style="width:220px;padding:5px 8px;font-size:13px;height:32px" [placeholder]="getFeaturePlaceholder(ent)">
           </td>
         </tr>
@@ -337,7 +337,7 @@
     </table>
 
     <!-- Workspace-Style Pagination Bar for Entitlements -->
-    <div class="pagination-container" *ngIf="totalFeatureCount > 0">
+    <div class="pagination-container" *ngIf="totalFeatureCount > 0 && !loadingEntitlements">
       <div class="pagination-info">
         {{ featurePaginationStartIndex }}-{{ featurePaginationEndIndex }} of {{ totalFeatureCount }} Items
       </div>
@@ -377,10 +377,12 @@
     </div>
 
     <div class="table-footer-bar" *ngIf="!loadingEntitlements">
-      <button class="btn-secondary" (click)="closeEntitlementsView()">Cancel</button>
-      <button class="btn-primary" [disabled]="savingEntitlements" (click)="saveEntitlements()">
-        {{ savingEntitlements ? 'Saving...' : 'Save Features' }}
-      </button>
+      <div class="footer-actions" style="display:flex;align-items:center;gap:10px;margin-left:auto">
+        <button class="btn-secondary" (click)="closeEntitlementsView()">Cancel</button>
+        <button class="btn-primary" [disabled]="savingEntitlements" (click)="saveEntitlements()">
+          {{ savingEntitlements ? 'Saving...' : 'Save Features' }}
+        </button>
+      </div>
     </div>
   </div>
 

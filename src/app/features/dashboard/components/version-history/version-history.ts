@@ -16,6 +16,7 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
   isLoading = false;
   error: string | null = null;
   showConfirmModal = false;
+  activeMenuVersion: any = null;
 
   private originalState: any = null;
   private revertSub?: any;
@@ -46,6 +47,7 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
       groupColors: JSON.parse(JSON.stringify(this.svc.groupColors || {})),
       groupIds: JSON.parse(JSON.stringify(this.svc.groupIds || {})),
       tableColorsMap: JSON.parse(JSON.stringify(this.svc.tableColorsMap || {})),
+      notes: JSON.parse(JSON.stringify(this.svc.notes || [])),
       view: { ...this.svc.view }
     };
 
@@ -56,6 +58,7 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.revertSub) this.revertSub.unsubscribe();
     if (this.closeSub) this.closeSub.unsubscribe();
+    this.activeMenuVersion = null;
     this.svc.selectedVersion.set(null);
   }
 
@@ -103,6 +106,7 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
   }
 
   selectVersion(version: any): void {
+    this.activeMenuVersion = null;
     this.selectedVersion = version;
     this.svc.selectedVersion.set(version);
 
@@ -154,17 +158,19 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
   }
 
   close(): void {
+    this.activeMenuVersion = null;
     this.svc.selectedVersion.set(null);
     // Restore the live original diagram state on exit
     if (this.originalState) {
-      this.svc.code = this.originalState.code;
       this.svc.diagramName = this.originalState.diagramName;
       this.svc.tablePositions = this.originalState.tablePositions;
       this.svc.refColors = this.originalState.refColors;
       this.svc.groupColors = this.originalState.groupColors;
       this.svc.groupIds = this.originalState.groupIds;
       this.svc.tableColorsMap = this.originalState.tableColorsMap;
+      this.svc.notes = this.originalState.notes;
       this.svc.view = this.originalState.view;
+      this.svc.code = this.originalState.code;
       this.svc.updateGutter();
       this.svc.parseAndLayout();
       this.svc.requestCanvasFit();
@@ -205,11 +211,55 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
     });
   }
 
+  toggleMenu(event: Event, version: any): void {
+    event.stopPropagation();
+    this.activeMenuVersion = this.activeMenuVersion === version ? null : version;
+    this.cdr.detectChanges();
+  }
+
   restoreFromRow(event: Event, version: any): void {
     event.stopPropagation(); // Prevent selectVersion preview trigger
+    this.activeMenuVersion = null;
     this.selectedVersion = version;
     this.svc.selectedVersion.set(version);
     this.showConfirmModal = true;
+    this.cdr.detectChanges();
+  }
+
+  compareFromRow(event: Event, version: any): void {
+    event.stopPropagation();
+    this.activeMenuVersion = null;
+
+    const currentId = this.svc.diagramId();
+    const versionId = version?.parsedId ?? version?.id ?? version?.versionId ?? version?.versionid ?? version?.historyId;
+
+    if (!currentId || !versionId) {
+      console.warn('Cannot compare version: missing diagramId or versionId', { currentId, versionId, version });
+      this.svc.showToast('Unable to compare: missing version ID.', 3000, 'error');
+      this.cdr.detectChanges();
+      return;
+    }
+
+    console.log(`[VersionHistory] Requesting compare for diagram ${currentId} and version ${versionId}...`);
+    this.svc.showToast('Fetching comparison...', 2000, 'info');
+    this.svc.compareDiagramVersion(currentId, versionId).subscribe({
+      next: (res: any) => {
+        console.log('[VersionHistory] Compare version API response:', res);
+        const data = res?.data ?? res;
+        const historyDbml = data?.historyDbml ?? data?.history_dbml ?? data?.historyCode ?? version?.diagramDbml ?? version?.diagram_dbml ?? version?.dbml ?? version?.code ?? '';
+        const latestDbml = data?.latestDbml ?? data?.latest_dbml ?? data?.latestCode ?? this.originalState?.code ?? this.svc.code ?? '';
+
+        this.close();
+        this.svc.openDiffChecker(historyDbml, latestDbml, 'diff');
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[VersionHistory] Failed to compare version:', err);
+        this.svc.showToast(err?.error?.message || 'Failed to compare version.', 4000, 'error');
+        this.cdr.detectChanges();
+      }
+    });
+    this.cdr.detectChanges();
   }
 
 
@@ -248,6 +298,12 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
   onClickOutside(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     
+    // Close 3-dots action menu if click is outside of it
+    if (this.activeMenuVersion && !target.closest('.history-menu-container')) {
+      this.activeMenuVersion = null;
+      this.cdr.detectChanges();
+    }
+
     // 1. If Version History is not open, do nothing
     if (!this.svc.showVersionHistory()) return;
 

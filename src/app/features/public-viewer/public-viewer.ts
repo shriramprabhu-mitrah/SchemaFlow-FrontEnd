@@ -98,6 +98,7 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
     this.svc.isPublicViewer = false;
     // Reset service state if leaving
     this.svc.paneMode.set('split');
+    this.svc.syncThemeFromStorage();
   }
 
   loadDiagram(): void {

@@ -69,6 +69,39 @@
               ],
               "outputHashing": "all"
             },
+            "iis": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environment/environment.ts",
+                  "with": "src/environment/environment.iis.ts"
+                }
+              ],
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2MB",
+                  "maximumError": "4MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "128kB",
+                  "maximumError": "256kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "iisdev": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environment/environment.ts",
+                  "with": "src/environment/environment.iisdev.ts"
+                }
+              ],
+              "optimization": false,
+              "sourceMap": true,
+              "extractLicenses": false,
+              "outputHashing": "all"
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -87,7 +120,10 @@
               "buildTarget": "db-diagram:build:development"
             }
           },
-          "options": {},
+          "options": {
+            "host": "0.0.0.0",
+            "disableHostCheck": true
+          },
           "defaultConfiguration": "development"
         },
         "test": {

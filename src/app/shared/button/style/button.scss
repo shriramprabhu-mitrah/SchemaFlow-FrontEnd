@@ -12,10 +12,10 @@
   background: transparent;
   color: #e6eef9;
 
-  &.disabled {
-    opacity: 0.5;
+  &.disabled,
+  &[disabled] {
+    opacity: 0.38;
     cursor: not-allowed;
-    pointer-events: none;
   }
 }
 

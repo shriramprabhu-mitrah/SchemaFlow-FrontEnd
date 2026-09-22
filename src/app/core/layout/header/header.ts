@@ -51,7 +51,16 @@ export class HeaderComponent implements OnInit {
   showSampleSubmenu = false;
   showWorkspaceSubmenu = false;
   workspaceModalOpen = false;
-  shareModalOpen = false;
+  get shareModalOpen(): boolean {
+    return this.svc.shareModalVisible();
+  }
+  set shareModalOpen(val: boolean) {
+    if (val && this.svc.showVersionHistory()) {
+      this.svc.closeVersionHistory$.next();
+      this.svc.showVersionHistory.set(false);
+    }
+    this.svc.shareModalVisible.set(val);
+  }
   upgradeModalOpen = false;
   upgradeFeatureKey = '';
   workspaceModalTab: 'my-diagrams' | 'shared' | 'create-workspace' | 'my-workspaces' | 'edit-workspace' | 'view-members' = 'my-diagrams';
@@ -157,6 +166,14 @@ export class HeaderComponent implements OnInit {
     this.svc.showUpgradeModal$.subscribe((featureKey: string) => {
       this.upgradeFeatureKey = featureKey || '';
       this.upgradeModalOpen = true;
+      this.cdr.detectChanges();
+    });
+    this.svc.openShareModal$.subscribe(() => {
+      this.openShareModal();
+      this.cdr.detectChanges();
+    });
+    this.svc.openImportModal$.subscribe((dialect: any) => {
+      this.openImportModal(dialect);
       this.cdr.detectChanges();
     });
   }
@@ -308,6 +325,7 @@ export class HeaderComponent implements OnInit {
     const el = e.target as HTMLDivElement;
     const name = this.getDiagramNameFromEl(el);
     this.svc.diagramName = name;
+    this.svc.saveErrorOccurred = false;
 
     if (this.diagramNameDebounce) {
       clearTimeout(this.diagramNameDebounce);
@@ -320,7 +338,8 @@ export class HeaderComponent implements OnInit {
           this.svc.diagramName &&
           !this.svc.isDiagramNameEmpty() &&
           this.svc.canSaveDiagram(false) &&
-          this.svc.validateDiagramName(false)
+          this.svc.validateDiagramName(false) &&
+          !this.svc.saveErrorOccurred
         ) {
           if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
             this.svc.emitCollabChange();
@@ -329,6 +348,19 @@ export class HeaderComponent implements OnInit {
           }
         }
       }, 1000);
+    }
+  }
+
+  onDiagramNameFocus(e: FocusEvent): void {
+    const el = e.target as HTMLDivElement;
+    if (this.getDiagramNameFromEl(el) === 'Untitled Diagram') {
+      setTimeout(() => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }, 0);
     }
   }
 
@@ -343,14 +375,14 @@ export class HeaderComponent implements OnInit {
     this.svc.diagramName = name;
     if (!name) {
       el.textContent = '';
-      this.svc.showToast('Diagram name should not be empty', 4000, 'error');
       return;
     }
 
     if (
       name !== this.svc.originalDiagramName &&
       this.svc.canSaveDiagram(false) &&
-      this.svc.validateDiagramName(false)
+      this.svc.validateDiagramName(false) &&
+      !this.svc.saveErrorOccurred
     ) {
       if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
         this.svc.emitCollabChange();
@@ -370,8 +402,12 @@ export class HeaderComponent implements OnInit {
   }
 
   onStatusIconClick(): void {
-    if (this.svc.isDiagramNameEmpty()) {
-      this.svc.showToast('Diagram name should not be empty', 4000, 'error');
+    if (this.svc.isDiagramNameEmpty() || this.svc.isDiagramNameDuplicate()) {
+      return;
+    }
+    if (this.svc.hasUnsavedChanges() && this.svc.saveErrorOccurred) {
+      const msg = typeof this.svc.dbmlValidationError === 'string' ? this.svc.dbmlValidationError : 'Save failed';
+      this.svc.showToast(msg, 4000, 'error');
     }
   }
 
@@ -867,8 +903,20 @@ export class HeaderComponent implements OnInit {
   }
 
   openShareModal(): void {
+    if (this.svc.showVersionHistory()) {
+      this.svc.closeVersionHistory$.next();
+      this.svc.showVersionHistory.set(false);
+    }
     if (!this.isLoggedIn) {
       this.svc.showToast('Please sign in to share your diagrams', 3000, 'error');
+      return;
+    }
+    if (this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null) {
+      this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
+      return;
+    }
+    if (!this.svc.code || this.svc.code.trim() === '' || this.svc.tables.length === 0) {
+      this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
       return;
     }
     if (!this.entitlementService.canUseFeature('share_diagram')) {
@@ -878,21 +926,40 @@ export class HeaderComponent implements OnInit {
       return;
     }
 
-    const name = (this.svc.diagramName || '').trim().toLowerCase();
-    const isUnsaved = !this.svc.diagramId() || !name;
-
-    this.svc.showDiscardButton.set(false); // Hide the Discard button when prompting before share
-
-    // If the diagram is unsaved/sample, prompt to save it first
-    if (isUnsaved) {
-      this.svc.forceUnsavedChangesCheck(() => {
-        this.shareModalOpen = true;
-      });
+    // Existing diagram: auto-save in background if there are unsaved edits, and open share modal immediately
+    if (this.svc.diagramId() != null) {
+      if (this.svc.hasUnsavedChanges() && this.svc.canSaveDiagram(false)) {
+        this.svc.saveDiagram().subscribe({
+          error: (err) => console.warn('Auto-save before share failed:', err)
+        });
+      }
+      this.shareModalOpen = true;
+      this.cdr.detectChanges();
       return;
     }
 
-    this.runWithUnsavedChangesCheck(() => {
-      this.shareModalOpen = true;
+    // Unsaved diagram: save it first so backend generates ID & publicToken, then open modal
+    const currentName = (this.svc.diagramName || '').trim();
+    if (!currentName) {
+      this.svc.diagramName = 'Untitled Diagram';
+    }
+
+    if (!this.svc.canSaveDiagram(true)) {
+      return;
+    }
+
+    this.svc.saveDiagram().subscribe({
+      next: () => {
+        this.shareModalOpen = true;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        if (err?.status === 403) {
+          this.svc.showUpgradeModal('create_diagrams');
+        } else {
+          this.svc.showToast('Failed to save diagram before sharing.', 3000, 'error');
+        }
+      }
     });
   }
 
@@ -955,7 +1022,7 @@ export class HeaderComponent implements OnInit {
       this.svc.updateOriginalState();
       
       this.router.navigate([], {
-        queryParams: { sample: 'true', id: null },
+        queryParams: { sample: type, id: null },
         queryParamsHandling: 'merge'
       });
     });

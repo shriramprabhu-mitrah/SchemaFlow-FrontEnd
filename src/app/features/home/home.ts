@@ -6,6 +6,7 @@ import { Icons } from '../../core/component/icons/icons';
 import { ButtonComponent } from '../../shared/button/button';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { SeoService } from '../../core/services/seo.service';
+import { InteractivePreviewComponent } from './components/interactive-preview/interactive-preview';
 
 interface HeroTable {
   name: string;
@@ -17,7 +18,7 @@ interface HeroTable {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, InteractivePreviewComponent],
   templateUrl: './home.html',
 })
 export class HomeComponent implements OnInit {
@@ -66,7 +67,7 @@ export class HomeComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private router: Router,
-    private svc: DashboardService,
+    public svc: DashboardService,
     private seoService: SeoService
   ) { }
 
@@ -92,6 +93,7 @@ export class HomeComponent implements OnInit {
 
     if (typeof window !== 'undefined') {
       this.isLoggedIn = this.auth.isLoggedIn();
+      this.svc.syncThemeFromStorage();
     }
   }
 
