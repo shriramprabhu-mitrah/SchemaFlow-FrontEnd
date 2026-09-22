@@ -143,42 +143,51 @@
   </div>
   <!-- <div class="divider" *ngIf="!isProfilePage"></div> -->
   <div class="diagram-title-controls" *ngIf="!isProfilePage">
-    <div class="diagram-name-wrapper" [class.has-error]="svc.hasUnsavedError()"
-      *ngIf="hasEffectiveEditPermission() && isLoggedIn && !isSampleDiagram()">
-      <div style="display: flex; align-items: center; margin-right: 8px; cursor: default;" class="tt tt-bottom"
-        [attr.data-tt]="svc.getSaveStatusTooltip()"
-        (click)="onStatusIconClick()">
-        <!-- Danger symbol (shown when there is a save error or invalid name) -->
-        <svg *ngIf="svc.hasUnsavedError()" width="18" height="18" viewBox="0 0 24 24" fill="none"
-          xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; cursor: pointer;">
-          <path
-            d="M12 2.25c.57 0 1.1.31 1.38.81l9.25 16.25A1.6 1.6 0 0 1 21.25 21.75H2.75a1.6 1.6 0 0 1-1.38-2.44l9.25-16.25c.28-.5.81-.81 1.38-.81z"
-            fill="#ef4444" />
-          <path d="M12 8.5v5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
-          <circle cx="12" cy="17" r="1.25" fill="#ffffff" />
-        </svg>
+    <div class="diagram-name-container" *ngIf="hasEffectiveEditPermission() && isLoggedIn && !isSampleDiagram()">
+      <div class="diagram-name-wrapper" [class.has-error]="svc.hasUnsavedError()">
+        <div style="display: flex; align-items: center; margin-right: 8px; cursor: default;" class="tt tt-bottom"
+          [attr.data-tt]="svc.getSaveStatusTooltip()"
+          (click)="onStatusIconClick()">
+          <!-- Danger symbol (shown when there is a save error or invalid name) -->
+          <svg *ngIf="svc.hasUnsavedError()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; cursor: pointer;">
+            <path
+              d="M12 2.25c.57 0 1.1.31 1.38.81l9.25 16.25A1.6 1.6 0 0 1 21.25 21.75H2.75a1.6 1.6 0 0 1-1.38-2.44l9.25-16.25c.28-.5.81-.81 1.38-.81z"
+              fill="#ef4444" />
+            <path d="M12 8.5v5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+            <circle cx="12" cy="17" r="1.25" fill="#ffffff" />
+          </svg>
 
-        <!-- Loading spinner (shown ONLY when actively saving, and no unsaved error) -->
-        <svg *ngIf="!svc.hasUnsavedError() && svc.isSaving()" width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-          style="color: var(--text-secondary, #9ca3af); animation: spin 1.5s linear infinite; stroke-dasharray: 2 6; flex-shrink: 0;">
-          <circle cx="12" cy="12" r="9"></circle>
-        </svg>
+          <!-- Loading spinner (shown ONLY when actively saving, and no unsaved error) -->
+          <svg *ngIf="!svc.hasUnsavedError() && svc.isSaving()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            style="color: var(--text-secondary, #9ca3af); animation: spin 1.5s linear infinite; stroke-dasharray: 2 6; flex-shrink: 0;">
+            <circle cx="12" cy="12" r="9"></circle>
+          </svg>
 
-        <!-- Saved cloud (shown when NOT saving, and no unsaved error) -->
-        <svg *ngIf="!svc.hasUnsavedError() && !svc.isSaving()" width="18" height="18" viewBox="0 0 24 24" fill="none"
-          xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;">
-          <path
-            d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
-            fill="#22c55e"></path>
-          <polyline points="7.5 13.5 10.5 16.5 16.5 10" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"
-            stroke-linejoin="round" fill="none"></polyline>
-        </svg>
+          <!-- Saved cloud (shown when NOT saving, and no unsaved error) -->
+          <svg *ngIf="!svc.hasUnsavedError() && !svc.isSaving()" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;">
+            <path
+              d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+              fill="#22c55e"></path>
+            <polyline points="7.5 13.5 10.5 16.5 16.5 10" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round" fill="none"></polyline>
+          </svg>
+        </div>
+        <div #diagramNameEl class="diagram-name" [class.is-empty]="svc.isDiagramNameEmpty()" contenteditable="true"
+          spellcheck="false" placeholder="Untitled Diagram" (input)="onDiagramNameInput($event)"
+          (focus)="onDiagramNameFocus($event)"
+          (blur)="onDiagramNameBlur($event)" (keydown)="onDiagramNameKeydown($event)"></div>
       </div>
-      <div #diagramNameEl class="diagram-name" [class.is-empty]="svc.isDiagramNameEmpty()" contenteditable="true"
-        spellcheck="false" placeholder="Untitled Diagram" (input)="onDiagramNameInput($event)"
-        (focus)="onDiagramNameFocus($event)"
-        (blur)="onDiagramNameBlur($event)" (keydown)="onDiagramNameKeydown($event)"></div>
+      <div class="diagram-title-error-banner" *ngIf="svc.isDiagramNameInvalid()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
+          <path d="M12 2.25c.57 0 1.1.31 1.38.81l9.25 16.25A1.6 1.6 0 0 1 21.25 21.75H2.75a1.6 1.6 0 0 1-1.38-2.44l9.25-16.25c.28-.5.81-.81 1.38-.81z" fill="#ef4444"/>
+          <path d="M12 8.5v5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="12" cy="17" r="1.25" fill="#ffffff"/>
+        </svg>
+        <span>{{ svc.getDiagramNameErrorMessage() }}</span>
+      </div>
     </div>
     <div class="diagram-name-wrapper" *ngIf="!hasEffectiveEditPermission() || !isLoggedIn || isSampleDiagram()">
       <div #diagramNameEl class="diagram-name" contenteditable="false" spellcheck="false"

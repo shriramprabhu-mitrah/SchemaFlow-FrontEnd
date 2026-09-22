@@ -69,16 +69,25 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
   ngAfterViewInit(): void {
     this.codeSub = this.svc.code$.subscribe(val => {
-
       this.displayCode = val;
 
+      const ta = document.getElementById('codearea') as HTMLTextAreaElement;
+      if (ta && ta.value !== val) {
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        ta.value = val;
+        try {
+          ta.setSelectionRange(Math.min(start, val.length), Math.min(end, val.length));
+        } catch {}
+      }
+
       if (this.highlight?.nativeElement) {
-        this.highlight.nativeElement.innerHTML = this.colorize(val);
+        this.highlight.nativeElement.innerHTML =
+          this.colorize(val);
       }
 
       this.svc.updateGutter();
-      this.cdr.markForCheck();
-
+      this.cdr.detectChanges();
     });
   }
 

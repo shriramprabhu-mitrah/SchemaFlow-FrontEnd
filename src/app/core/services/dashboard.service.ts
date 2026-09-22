@@ -568,7 +568,6 @@ export class DashboardService {
 
   hasUnsavedError(): boolean {
     if (this.isDiagramNameInvalid()) return true;
-    if (this.editorErrors().length > 0) return true;
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) return true;
     return false;
   }
@@ -576,15 +575,17 @@ export class DashboardService {
   getSaveStatusTooltip(): string {
     if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
     if (this.isDiagramNameDuplicate()) return 'Diagram name already exists';
-    if (this.editorErrors().length > 0) {
-      const first = this.editorErrors()[0];
-      return first?.message || 'DBML has syntax or relationship errors';
-    }
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) {
       return typeof this.dbmlValidationError === 'string' ? this.dbmlValidationError : 'Save failed';
     }
     if (this.isSaving()) return 'Saving...';
     return 'Saved';
+  }
+
+  getDiagramNameErrorMessage(): string {
+    if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
+    if (this.isDiagramNameDuplicate()) return `A diagram named "${this.diagramName}" already exists. Please choose a different title.`;
+    return '';
   }
 
   get diagramName(): string {
@@ -718,7 +719,7 @@ export class DashboardService {
   readonly toastType = signal<'success' | 'error' | 'info'>('success');
   readonly toastLocation = signal<'editor' | 'canvas'>('canvas');
   private toastTimeout: ReturnType<typeof setTimeout> | undefined;
-  private invalidRefDeletionTimeout: any = null;
+  private invalidRefTimers = new Map<string, { timer: any; startTime: number }>();
   readonly editorErrors = signal<EditorError[]>([]);
 
   showDbdocsInstructions = false;
@@ -1152,6 +1153,7 @@ export class DashboardService {
   }
 
   showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success', location: 'editor' | 'canvas' = 'canvas'): void {
+    if (typeof window === 'undefined') return;
     if (type === 'error') {
       location = 'editor';
     }
@@ -1510,6 +1512,21 @@ export class DashboardService {
       return true;
     }
 
+    // Local check 3: Check if DBML editor marks this ref's line as an error
+    if (ref.lineNumber && this.editorErrors().some(e => e.line === ref.lineNumber)) {
+      return true;
+    }
+
+    const lines = (this.code || '').split('\n');
+    const refLineIndex = lines.findIndex(l => {
+      const hasFrom = l.includes(ref.fromTable) && l.includes(ref.fromCol);
+      const hasTo = l.includes(ref.toTable) && l.includes(ref.toCol);
+      return hasFrom && hasTo && /Ref/i.test(l);
+    });
+    if (refLineIndex !== -1 && this.editorErrors().some(e => e.line === refLineIndex + 1)) {
+      return true;
+    }
+
     const backendErrors = this.getValidationErrors();
     if (this.dbmlValidationError) {
       const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
@@ -1521,9 +1538,9 @@ export class DashboardService {
 
     for (const err of backendErrors) {
       const msg = typeof err === 'string' ? err : err?.message ?? '';
+      if (!msg) continue;
 
-      // Match Type mismatch error message:
-      // "Type mismatch in foreign key reference: 'Categories.CategoryName' is 'varchar' but 'Warehouses.WarehouseId' is 'int'."
+      // Match Type mismatch error message
       const typeMismatchMatches = [...msg.matchAll(/['"]([^'"]+)\.([^'"]+)['"]/g)];
       if (typeMismatchMatches.length >= 2) {
         const t1Table = typeMismatchMatches[0][1];
@@ -1550,6 +1567,12 @@ export class DashboardService {
           return true;
         }
       }
+
+      // Match general backend error mentioning tables involved in this ref (e.g. Can't find table "null"."table_5")
+      if (msg.includes(`"${ref.fromTable}"`) || msg.includes(`'${ref.fromTable}'`) ||
+          msg.includes(`"${ref.toTable}"`) || msg.includes(`'${ref.toTable}'`)) {
+        return true;
+      }
     }
 
     return false;
@@ -1570,9 +1593,6 @@ export class DashboardService {
     }
 
     if (this.isDiagramNameEmpty()) {
-      if (showToast) {
-        this.showToast('Diagram name should not be empty', 4000, 'error');
-      }
       return false;
     }
 
@@ -1607,9 +1627,6 @@ export class DashboardService {
     const name = (this.diagramName || '').trim();
 
     if (!name) {
-      if (showToast) {
-        this.showToast('Diagram name should not be empty', 4000, 'error');
-      }
       return false;
     }
 
@@ -1619,9 +1636,6 @@ export class DashboardService {
         (d) => d.id !== currentId && d.name.trim().toLowerCase() === name.toLowerCase()
       );
       if (duplicate) {
-        if (showToast) {
-          this.showToast(`A diagram named "${name}" already exists. Please choose a different title.`, 4000, 'error');
-        }
         return false;
       }
     }
@@ -1731,7 +1745,7 @@ export class DashboardService {
       tables.push({ name, columns: cols });
     }
 
-    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\s*(<->|<>|>|<|-)\s*([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)/g;
+    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/g;
     while ((m = refRe.exec(text)) !== null) {
       const matchIndex = m.index;
       const lineNumber = text.substring(0, matchIndex).split('\n').length;
@@ -2473,6 +2487,19 @@ export class DashboardService {
       }
     }
 
+    if (newCode === this.code) {
+      const lines = this.code.split('\n');
+      const idx = lines.findIndex(l => {
+        const hasF = l.includes(ref.fromTable);
+        const hasT = l.includes(ref.toTable);
+        return hasF && hasT && /Ref/i.test(l);
+      });
+      if (idx !== -1) {
+        lines.splice(idx, 1);
+        newCode = lines.join('\n');
+      }
+    }
+
     const wasDeleted = newCode !== this.code;
     if (wasDeleted) {
       this.code = newCode;
@@ -2487,37 +2514,54 @@ export class DashboardService {
     return wasDeleted;
   }
 
+  getRefKey(ref: RefDef): string {
+    return `${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}#${ref.relType || ''}#${ref.lineNumber || 0}`;
+  }
+
   checkInvalidRefsTimeout(): void {
-    const invalidRefs = this.refs.filter((ref) => this.isRefInvalid(ref));
-    if (invalidRefs.length > 0) {
-      if (!this.invalidRefDeletionTimeout) {
-        this.invalidRefDeletionTimeout = setTimeout(() => {
-          this.invalidRefDeletionTimeout = null;
-          const currentInvalidRefs = this.refs.filter((ref) => this.isRefInvalid(ref));
-          if (currentInvalidRefs.length === 0) return;
+    if (typeof window === 'undefined') return;
+    const currentInvalid = this.refs.filter((ref) => this.isRefInvalid(ref));
+    const currentInvalidKeys = new Set(currentInvalid.map((r) => this.getRefKey(r)));
 
-          let anyDeleted = false;
-          currentInvalidRefs.forEach((ref) => {
-            if (this.deleteConnectionInCode(ref)) {
-              anyDeleted = true;
-            }
-          });
-
-          if (anyDeleted) {
-            this.selectedConnectionIndex = -1;
-            this.hoveredConnectionIndex = -1;
-            this.updateGutter();
-            this.parseAndLayout();
-            this.showToast('Invalid relationship connection removed automatically after 5s.', 4000, 'error');
-          }
-        }, 5000);
-      }
-    } else {
-      if (this.invalidRefDeletionTimeout) {
-        clearTimeout(this.invalidRefDeletionTimeout);
-        this.invalidRefDeletionTimeout = null;
+    // Clear timers for refs that are no longer invalid (e.g. user fixed or deleted them)
+    for (const [key, entry] of this.invalidRefTimers.entries()) {
+      if (!currentInvalidKeys.has(key)) {
+        clearTimeout(entry.timer);
+        this.invalidRefTimers.delete(key);
       }
     }
+
+    // Ensure each invalid ref gets its own dedicated 5-second timer from the moment it is detected
+    currentInvalid.forEach((ref) => {
+      const key = this.getRefKey(ref);
+      if (!this.invalidRefTimers.has(key)) {
+        // Show toaster message immediately upon detecting invalid connection
+        let errMsg = `Invalid relationship between "${ref.fromTable}.${ref.fromCol}" and "${ref.toTable}.${ref.toCol}".`;
+        if (ref.fromTable === ref.toTable && ref.fromCol === ref.toCol) {
+          errMsg = `Cannot create relationship from "${ref.fromTable}.${ref.fromCol}" to itself.`;
+        } else if (!this.tables.some(t => t.name === ref.fromTable)) {
+          errMsg = `Table "${ref.fromTable}" does not exist.`;
+        } else if (!this.tables.some(t => t.name === ref.toTable)) {
+          errMsg = `Table "${ref.toTable}" does not exist.`;
+        }
+        this.showToast(errMsg, 5000, 'error');
+
+        const timer = setTimeout(() => {
+          this.invalidRefTimers.delete(key);
+          if (this.isRefInvalid(ref)) {
+            if (this.deleteConnectionInCode(ref)) {
+              this.selectedConnectionIndex = -1;
+              this.hoveredConnectionIndex = -1;
+              this.updateGutter();
+              this.parseAndLayout();
+              this.showToast('Invalid relationship connection removed automatically after 5s.', 4000, 'error');
+            }
+          }
+        }, 5000);
+
+        this.invalidRefTimers.set(key, { timer, startTime: Date.now() });
+      }
+    });
   }
 
   updateRelationInCode(ref: RefDef, newFromTable: string, newFromCol: string, newToTable: string, newToCol: string): void {
@@ -2844,7 +2888,7 @@ export class DashboardService {
           ref.toCol === fromCol)
     );
 
-    if (exists || (fromTable === toTable && fromCol === toCol)) {
+    if (exists) {
       return false;
     }
 
@@ -3026,10 +3070,10 @@ export class DashboardService {
           const currentWsName = this.activeWorkspaceName;
           const currentWsType = this.diagramWorkspaceType();
 
-          if (this.invalidRefDeletionTimeout) {
-            clearTimeout(this.invalidRefDeletionTimeout);
-            this.invalidRefDeletionTimeout = null;
+          for (const entry of this.invalidRefTimers.values()) {
+            clearTimeout(entry.timer);
           }
+          this.invalidRefTimers.clear();
           this.editorErrors.set([]);
           this.socketService.disconnect();
           this.activeRoomUsers.set([]);
@@ -3805,7 +3849,6 @@ export class DashboardService {
     }
 
     if (this.isDiagramNameEmpty()) {
-      this.showToast('Diagram name should not be empty', 4000, 'error');
       return throwError(() => new Error('Diagram name should not be empty'));
     }
 
@@ -4035,10 +4078,10 @@ export class DashboardService {
   }
 
   clearDiagram(preserveDiagramId = false): void {
-    if (this.invalidRefDeletionTimeout) {
-      clearTimeout(this.invalidRefDeletionTimeout);
-      this.invalidRefDeletionTimeout = null;
+    for (const entry of this.invalidRefTimers.values()) {
+      clearTimeout(entry.timer);
     }
+    this.invalidRefTimers.clear();
     this.editorErrors.set([]);
     this.socketService.disconnect();
     this.activeRoomUsers.set([]);
