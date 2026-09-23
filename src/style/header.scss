@@ -1019,6 +1019,8 @@ app-docs {
       font-weight: 600;
       min-width: 150px;
       max-width: 280px;
+      min-height: 20px;
+      line-height: 20px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1028,13 +1030,18 @@ app-docs {
       border: none;
       padding: 0;
 
-      &:empty::before,
-      &.is-empty::before {
+      &:empty:not(:focus)::before,
+      &.is-empty:not(:focus)::before {
         content: attr(placeholder);
         color: #5a6b8c;
         font-weight: normal;
         opacity: 0.65;
         pointer-events: none;
+      }
+
+      &:focus::before {
+        display: none !important;
+        content: none !important;
       }
     }
   }
@@ -2328,8 +2335,8 @@ html.light-theme {
         .diagram-name {
           color: #0f172a;
 
-          &:empty::before,
-          &.is-empty::before {
+          &:empty:not(:focus)::before,
+          &.is-empty:not(:focus)::before {
             color: #94a3b8;
           }
         }

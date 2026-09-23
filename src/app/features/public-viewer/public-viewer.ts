@@ -121,7 +121,10 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
   }
 
   unlock(): void {
-    if (!this.password) return;
+    if (!this.password || !this.password.trim()) {
+      this.error = 'Password cannot be empty or contain only spaces.';
+      return;
+    }
     this.unlocking = true;
     this.error = null;
 

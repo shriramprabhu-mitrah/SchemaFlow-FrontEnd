@@ -176,36 +176,38 @@
           <input type="text" class="form-input" [value]="editForm.email" disabled>
         </div>
 
-        <div class="form-group mb-16">
-          <label class="form-label">Select Plan</label>
-          <div class="custom-select-container">
-            <button type="button" class="custom-select-btn" [class.open]="showPlanDropdown" style="height:36px" (click)="showPlanDropdown = !showPlanDropdown; showBillingDropdown = false; $event.stopPropagation()">
-              <span>{{ editForm.planName }}</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div class="custom-select-menu" *ngIf="showPlanDropdown" (click)="$event.stopPropagation()">
-              <div class="custom-select-option" *ngFor="let p of allPlans" [class.active]="editForm.planId === p.plan_id" [class.disabled]="p.disabled" [style.opacity]="p.disabled ? 0.5 : 1" [style.pointer-events]="p.disabled ? 'none' : 'auto'" (click)="editForm.planId = p.plan_id; editForm.planName = p.name; showPlanDropdown = false">
-                {{ p.name }}
+        <div class="form-row mb-16" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Select Plan</label>
+            <div class="custom-select-container" style="width: 100%; display: block;">
+              <button type="button" class="custom-select-btn" [class.open]="showPlanDropdown" style="height: 36px; width: 100%;" (click)="showPlanDropdown = !showPlanDropdown; showBillingDropdown = false; $event.stopPropagation()">
+                <span>{{ editForm.planName }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showPlanDropdown" (click)="$event.stopPropagation()">
+                <div class="custom-select-option" *ngFor="let p of allPlans" [class.active]="editForm.planId === p.plan_id" [class.disabled]="p.disabled" [style.opacity]="p.disabled ? 0.5 : 1" [style.pointer-events]="p.disabled ? 'none' : 'auto'" (click)="editForm.planId = p.plan_id; editForm.planName = p.name; showPlanDropdown = false">
+                  {{ p.name }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="form-group mb-16">
-          <label class="form-label">Billing Cycle</label>
-          <div class="custom-select-container">
-            <button type="button" class="custom-select-btn" [class.open]="showBillingDropdown" style="height:36px" (click)="showBillingDropdown = !showBillingDropdown; showPlanDropdown = false; $event.stopPropagation()">
-              <span>{{ editForm.billingCycle === 'annual' ? 'Yearly' : (editForm.billingCycle === 'trial' ? 'Trial (45 Days)' : 'Monthly') }}</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <div class="custom-select-menu" *ngIf="showBillingDropdown" (click)="$event.stopPropagation()">
-              <div class="custom-select-option" [class.active]="editForm.billingCycle === 'monthly'" (click)="editForm.billingCycle = 'monthly'; showBillingDropdown = false">Monthly</div>
-              <div class="custom-select-option" [class.active]="editForm.billingCycle === 'annual'" (click)="editForm.billingCycle = 'annual'; showBillingDropdown = false">Yearly</div>
-              <div class="custom-select-option" [class.active]="editForm.billingCycle === 'trial'" [class.disabled]="disableTrialOption" [style.opacity]="disableTrialOption ? 0.5 : 1" [style.pointer-events]="disableTrialOption ? 'none' : 'auto'" (click)="editForm.billingCycle = 'trial'; showBillingDropdown = false">Trial (45 Days)</div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Billing Cycle</label>
+            <div class="custom-select-container" style="width: 100%; display: block;">
+              <button type="button" class="custom-select-btn" [class.open]="showBillingDropdown" style="height: 36px; width: 100%;" (click)="showBillingDropdown = !showBillingDropdown; showPlanDropdown = false; $event.stopPropagation()">
+                <span>{{ editForm.billingCycle === 'annual' ? 'Yearly' : (editForm.billingCycle === 'trial' ? 'Trial (45 Days)' : 'Monthly') }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showBillingDropdown" (click)="$event.stopPropagation()">
+                <div class="custom-select-option" [class.active]="editForm.billingCycle === 'monthly'" (click)="editForm.billingCycle = 'monthly'; showBillingDropdown = false">Monthly</div>
+                <div class="custom-select-option" [class.active]="editForm.billingCycle === 'annual'" (click)="editForm.billingCycle = 'annual'; showBillingDropdown = false">Yearly</div>
+                <div class="custom-select-option" [class.active]="editForm.billingCycle === 'trial'" [class.disabled]="disableTrialOption" [style.opacity]="disableTrialOption ? 0.5 : 1" [style.pointer-events]="disableTrialOption ? 'none' : 'auto'" (click)="editForm.billingCycle = 'trial'; showBillingDropdown = false">Trial (45 Days)</div>
+              </div>
             </div>
           </div>
         </div>

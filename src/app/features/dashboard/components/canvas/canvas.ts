@@ -3154,8 +3154,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           ? this.svc.groups.some(g => g.tables.includes(table.name))
           : false;
         const column = this.contextMenu.column;
-        const isDisabled = (label === 'Change Color' && isTableInGroup) ||
-          (label === 'Edit Column' && column && (column.pk || column.fk));
+        const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
+        const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+          (label === 'Edit Column' && column && (column.pk || column.fk)) ||
+          (label === 'Edit Table' && isRestrictedTableGroup);
 
         if (isDisabled) {
           canvas.style.cursor = 'not-allowed';
@@ -4764,9 +4766,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = (label === 'Change Color' && isTableInGroup) ||
+      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
-        ((label === 'Edit Table' || label === 'Delete Table') && isRestrictedTableGroup);
+        (label === 'Edit Table' && isRestrictedTableGroup);
 
       if (isDisabled) {
         ctx.fillStyle = isLight ? '#9ca3af' : '#4b5563';
@@ -4926,9 +4928,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = (label === 'Change Color' && isTableInGroup) ||
+      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
-        ((label === 'Edit Table' || label === 'Delete Table') && isRestrictedTableGroup);
+        (label === 'Edit Table' && isRestrictedTableGroup);
 
       if (!isDisabled) {
         this.handleContextMenuClick(label);
@@ -5476,9 +5478,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   commitEditNoteName(): void {
-    if (this.editingNoteId !== null) {
-      this.svc.updateNote(this.editingNoteId, { name: this.editNoteNameValue.trim() });
+     if (this.editingNoteId !== null) {
+      const trimmedName = (this.editNoteNameValue || '').trim();
+      if (trimmedName && this.svc.isNoteNameDuplicate(trimmedName, this.editingNoteId)) {
+        this.svc.showToast(`Sticky note name "${trimmedName}" already exists.`, 4000, 'error');
+        this.editingNoteId = null;
+        this.cdr.detectChanges();
+        return;
+      }
+      if (trimmedName) {
+        this.svc.updateNote(this.editingNoteId, { name: trimmedName });
+      }
     }
+
     this.editingNoteId = null;
     this.cdr.detectChanges();
   }

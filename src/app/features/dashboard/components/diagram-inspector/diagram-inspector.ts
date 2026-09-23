@@ -138,6 +138,9 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
     } else {
       this.expandedTables.add(name);
     }
+    this.activeFieldMenu = null;
+    this.activeTypeDropdown = null;
+    this.activeMenuTable = null;
     this.cdr.markForCheck();
   }
 
@@ -154,6 +157,9 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
     } else {
       this.collapsedFieldsTables.add(tableName);
     }
+    this.activeFieldMenu = null;
+    this.activeTypeDropdown = null;
+    this.activeMenuTable = null;
     this.cdr.markForCheck();
   }
 
@@ -357,6 +363,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
     e.stopPropagation();
     this.activeMenuTable = this.activeMenuTable === tableName ? null : tableName;
     this.activeFieldMenu = null;
+    this.activeTypeDropdown = null;
   }
 
   toggleFieldMenu(tableName: string, fieldName: string, e: Event): void {
@@ -365,6 +372,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
       this.activeFieldMenu = null;
     } else {
       this.activeFieldMenu = { table: tableName, field: fieldName };
+      this.activeTypeDropdown = null;
     }
     this.activeMenuTable = null;
   }
