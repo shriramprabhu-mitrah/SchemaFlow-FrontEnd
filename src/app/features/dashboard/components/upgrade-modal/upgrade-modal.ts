@@ -180,7 +180,10 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   get displayedPlans(): any[] {
-    if (this._featureKey === 'create_workspaces' || this._featureKey === 'version_history' || this.isOrganization) {
+    if (this.isOrganization) {
+      return this.plans.filter(p => p.slug === 'team');
+    }
+    if (this._featureKey === 'create_workspaces') {
       return this.plans.filter(p => p.slug === 'team');
     }
     // Otherwise, show only the two individual plans (Free & Premium)

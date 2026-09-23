@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../../environment/environment';
 
 declare var gtag: any;
@@ -8,12 +9,18 @@ declare var gtag: any;
 })
 export class GoogleAnalyticsService {
   private gTagId: string | undefined;
+  private isBrowser: boolean;
 
-  constructor() {
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    this.isBrowser = isPlatformBrowser(platformId);
     this.gTagId = environment.googleAnalyticsMeasurementId;
   }
 
   initializeGtagJs() {
+    if (!this.isBrowser || typeof document === 'undefined') {
+      return;
+    }
+
     if (this.gTagId) {
       const script = document.createElement('script');
       script.src = `https://www.googletagmanager.com/gtag/js?id=${this.gTagId}`;

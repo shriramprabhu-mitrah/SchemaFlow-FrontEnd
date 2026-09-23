@@ -16,25 +16,21 @@
     <button *ngIf="!auth.isOrganizationAccount() || auth.isOrganizationAdmin()" class="upgrade-btn-banner" (click)="svc.showUpgradeModal()">Upgrade Now</button>
   </div>
 
-  <div id="body" #bodyEl [class.editor-fullscreen]="paneMode === 'editor'"
-    [class.canvas-fullscreen]="paneMode === 'canvas'"
+  <div id="body" #bodyEl [class.editor-fullscreen]="paneMode === 'editor' || svc.showDocs"
+    [class.canvas-fullscreen]="paneMode === 'canvas' && !svc.showDocs"
     [class.diff-active]="svc.showDiffChecker()">
 
     <!-- NORMAL VIEW: EDITOR + CANVAS + DOCS -->
     <ng-container *ngIf="!svc.showDiffChecker()">
-      <!-- EDITOR -->
-      <app-editor [style.width.%]="paneMode === 'split' ? svc.editorWidthPct() : 100"
-        [style.display]="paneMode === 'canvas' ? 'none' : 'block'"></app-editor>
+      <!-- EDITOR (expands to full page when showDocs is true) -->
+      <app-editor [style.width.%]="(paneMode === 'split' && !svc.showDocs) ? svc.editorWidthPct() : 100"
+        [style.display]="(paneMode === 'canvas' && !svc.showDocs) ? 'none' : 'block'"></app-editor>
 
-      <div id="resizer" [class]="paneMode" (mousedown)="onResizerMouseDown($event)"></div>
+      <div id="resizer" *ngIf="!svc.showDocs" [class]="paneMode" (mousedown)="onResizerMouseDown($event)"></div>
 
       <!-- CANVAS -->
-      <app-canvas
+      <app-canvas *ngIf="!svc.showDocs"
         [style.display]="paneMode === 'editor' ? 'none' : 'block'"></app-canvas>
-
-      <!-- DOCS PANE (Commented out as requested)
-      <app-docs *ngIf="svc.showDocs && paneMode !== 'editor' && paneMode !== 'canvas'"></app-docs>
-      -->
     </ng-container>
 
     <!-- DIFF CHECKER VIEW -->

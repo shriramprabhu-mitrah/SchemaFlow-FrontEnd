@@ -116,7 +116,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
   }
 
-  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare'): boolean {
+  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     switch (item) {
       case 'import':
@@ -129,6 +129,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return !this.hasFeatureAccess('version_history');
       case 'tables':
       case 'refs':
+      case 'docs':
         return !this.hasFeatureAccess('document_view');
       case 'compare':
         return !this.hasFeatureAccess('code_compare');
@@ -141,6 +142,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleImportMenu(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -154,6 +156,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openImportDialect(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -181,6 +184,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleExportMenu(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -280,6 +284,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openShare(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -312,11 +317,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleVersionHistory(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (this.svc.shareModalVisible()) {
       this.svc.shareModalVisible.set(false);
     }
+    this.svc.showDocs = false;
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
     }
@@ -338,8 +345,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleInspector(tab: 'tables' | 'refs', e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
+    this.svc.showDocs = false;
 
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
@@ -380,6 +389,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
+    this.svc.showDocs = false;
 
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
@@ -406,6 +416,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
+    this.svc.showDocs = false;
     if (this.svc.shareModalVisible()) {
       this.svc.shareModalVisible.set(false);
     }
@@ -427,8 +438,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  // ============ VIEW DOCS (Commented out as requested) ============
-  /*
+  // ============ VIEW DOCS ============
+  
   toggleDocs(e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
@@ -448,11 +459,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     this.svc.showDocs = !this.svc.showDocs;
     if (this.svc.showDocs) {
-      this.svc.requestSplitView();
+      this.svc.sidebarInspectorTab.set(null);
+      if (this.svc.showDiffChecker()) {
+        this.svc.closeDiffChecker();
+      }
+      if (this.svc.showVersionHistory()) {
+        this.svc.showVersionHistory.set(false);
+      }
     }
     this.cdr.markForCheck();
   }
-  */
+  
 
   // ============ AUTH / SIGNOUT ============
 

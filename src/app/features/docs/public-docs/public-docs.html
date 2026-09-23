@@ -2,21 +2,21 @@
 
   <!-- Top Header Navigation -->
   <header class="public-docs-header">
-    <div class="header-left">
-      <a routerLink="/" class="brand-link">
-        <app-icons name="db-diagram-logo" size="28"></app-icons>
-        <span class="brand-title dbnexus-text">dbNexus <span class="docs-tag">Docs</span></span>
-      </a>
+    <div class="header-brand" routerLink="/" style="cursor: pointer;">
+      <app-icons name="db-diagram-logo" size="56"></app-icons>
+      <span class="brand-text">dbNexus </span><span class="docs-tag">Docs</span>
     </div>
 
     <div class="header-right">
       <!-- Search Bar -->
       <div class="search-box-wrap">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" [(ngModel)]="searchQuery" placeholder="Search documentation, topics, DBML syntax..." class="search-input" />
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search documentation, topics, DBML syntax..."
+          class="search-input" />
         <button type="button" class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''">✕</button>
 
         <!-- Live Search Results Dropdown -->
@@ -78,7 +78,8 @@
         <div *ngFor="let sec of sections" class="nav-section" [class.expanded]="isSectionExpanded(sec.id)">
           <div class="section-title-bar" (click)="toggleSection(sec.id)">
             <span class="sec-title-text">{{ sec.title }}</span>
-            <svg class="chevron-icon" [class.rotated]="!isSectionExpanded(sec.id)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="chevron-icon" [class.rotated]="!isSectionExpanded(sec.id)" width="14" height="14"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </div>
@@ -156,10 +157,8 @@
       <div class="toc-sticky-container">
         <div class="toc-header">On This Page</div>
         <ul class="toc-list">
-          <li *ngFor="let item of tocItems" 
-              [class.toc-h2]="item.level === 2" 
-              [class.toc-h3]="item.level === 3"
-              [class.active-toc-item]="activeTocId === item.id">
+          <li *ngFor="let item of tocItems" [class.toc-h2]="item.level === 2" [class.toc-h3]="item.level === 3"
+            [class.active-toc-item]="activeTocId === item.id">
             <a href="javascript:void(0)" (click)="scrollToToc(item.id, $event)">{{ item.text }}</a>
           </li>
         </ul>

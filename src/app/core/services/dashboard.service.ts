@@ -520,7 +520,13 @@ export class DashboardService {
     }
   }
 
-  showDocs = false;
+  showDocsSignal = signal<boolean>(false);
+  get showDocs(): boolean {
+    return this.showDocsSignal();
+  }
+  set showDocs(val: boolean) {
+    this.showDocsSignal.set(val);
+  }
   showDiffChecker = signal<boolean>(false);
   diffCheckerData: { leftText: string; rightText: string; viewMode: 'edit' | 'diff' } = {
     leftText: '',
@@ -566,8 +572,13 @@ export class DashboardService {
 
   readonly isDiagramNameInvalid = computed(() => this.isDiagramNameEmpty() || this.isDiagramNameDuplicate());
 
+  hasDbmlError(): boolean {
+    return this.editorErrors().length > 0 || this.getValidationErrors().length > 0 || this.dbmlValidationError != null;
+  }
+
   hasUnsavedError(): boolean {
     if (this.isDiagramNameInvalid()) return true;
+    if (this.hasDbmlError()) return true;
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) return true;
     return false;
   }
@@ -575,6 +586,22 @@ export class DashboardService {
   getSaveStatusTooltip(): string {
     if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
     if (this.isDiagramNameDuplicate()) return 'Diagram name already exists';
+    if (this.editorErrors().length > 0) {
+      const first = this.editorErrors()[0];
+      const count = this.editorErrors().length;
+      const suffix = count > 1 ? ` (+${count - 1} more)` : '';
+      return `DBML error: ${first.message}${suffix}`;
+    }
+    const valErrors = this.getValidationErrors();
+    if (valErrors.length > 0) {
+      const firstMessage = typeof valErrors[0] === 'string' ? valErrors[0] : valErrors[0]?.message ?? 'Invalid DBML syntax';
+      const suffix = valErrors.length > 1 ? ` (+${valErrors.length - 1} more)` : '';
+      return `DBML error: ${firstMessage}${suffix}`;
+    }
+    if (this.dbmlValidationError != null) {
+      const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
+      return typeof errObj === 'string' ? errObj : errObj?.message || 'DBML Validation Failed';
+    }
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) {
       return typeof this.dbmlValidationError === 'string' ? this.dbmlValidationError : 'Save failed';
     }
@@ -721,6 +748,13 @@ export class DashboardService {
   private toastTimeout: ReturnType<typeof setTimeout> | undefined;
   private invalidRefTimers = new Map<string, { timer: any; startTime: number }>();
   readonly editorErrors = signal<EditorError[]>([]);
+  readonly showErrorsCard = signal<boolean>(false);
+
+  closeErrorsCard(): void {
+    if (this.showErrorsCard()) {
+      this.showErrorsCard.set(false);
+    }
+  }
 
   showDbdocsInstructions = false;
   showCanvasPlaceholder = true;
@@ -1015,6 +1049,8 @@ export class DashboardService {
         if (firstErrMessage) {
           this.showToast(firstErrMessage, 5000, 'error', 'editor');
         }
+      } else if (this.editorErrors().length > 0) {
+        this.showToast(this.editorErrors()[0].message, 5000, 'error', 'editor');
       } else {
         const currentMsg = this.toastMessage();
         if (
@@ -1023,6 +1059,7 @@ export class DashboardService {
           (currentMsg.startsWith('(') ||
             currentMsg.includes('Foreign key reference') ||
             currentMsg.includes('Table') ||
+            currentMsg.includes('Note') ||
             currentMsg.includes('Syntax error') ||
             currentMsg.includes('DBML'))
         ) {
@@ -1306,8 +1343,9 @@ export class DashboardService {
       }
     });
 
-    // 3. Check Note definitions with invalid names (spaces, quotes, or invalid identifiers)
-    lines.forEach((lineText, idx) => {
+
+ // 3. Check Note definitions with invalid names or duplicate names
+ const seenNotes = new Map<string, number>();    lines.forEach((lineText, idx) => {
       const trimmed = lineText.trim();
       if (/^Note\b/i.test(trimmed)) {
         const headerMatch = lineText.match(/^[ \t]*Note\s+([^{]*?)(?:\{|$)/i);
@@ -1325,11 +1363,48 @@ export class DashboardService {
               message: 'Expected Table Group, comment, end of input, enum, project, references, table, or whitespace but "N" found.'
             });
           }
+          else if (isValidIdentifier) {
+            const lower = unquoted.toLowerCase();
+            if (seenNotes.has(lower)) {
+              if (!errors.some(e => e.line === idx + 1)) {
+                errors.push({
+                  line: idx + 1,
+                  token: unquoted,
+                  message: `Note '${unquoted}' already exists`
+                });
+              }
+            } else {
+              seenNotes.set(lower, idx + 1);
+            }
+          }
+
         }
       }
     });
 
-    // 4. Integrate backend validation errors
+    // 4. Check TableGroup definitions for empty groups (groups with no tables)
+    const emptyGroupRegex = /^[ \t]*TableGroup\s+(?:["']?([A-Za-z0-9_]+)["']?)\s*(?:\[color:\s*([^\]]+)\])?\s*\{([\s\S]*?)\}/gim;
+    let groupMatch: RegExpExecArray | null;
+    while ((groupMatch = emptyGroupRegex.exec(code)) !== null) {
+      const groupName = groupMatch[1];
+      const body = groupMatch[3];
+      const tableNames = body
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('//'));
+      if (tableNames.length === 0) {
+        const lineNum = code.substring(0, groupMatch.index).split('\n').length;
+        if (!errors.some(e => e.line === lineNum)) {
+          errors.push({
+            line: lineNum,
+            token: groupName,
+            message: `TableGroup "${groupName}" must contain at least one table.`
+          });
+        }
+      }
+    }
+
+    // 5. Integrate backend validation errors
     const backendErrors = this.getValidationErrors();
     if (this.dbmlValidationError) {
       const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
@@ -1444,7 +1519,11 @@ export class DashboardService {
   }
 
   updateEditorErrors(): void {
-    this.editorErrors.set(this.computeEditorErrors());
+    const errs = this.computeEditorErrors();
+    this.editorErrors.set(errs);
+    if (errs.length === 0) {
+      this.showErrorsCard.set(false);
+    }
   }
 
   getValidationError(): string | null {
@@ -1784,6 +1863,7 @@ export class DashboardService {
     let nm: RegExpExecArray | null;
     while ((nm = noteRe.exec(text)) !== null) {
       const name = (nm[1] || nm[2] || nm[3] || '').trim().replace(/^["']|["']$/g, '');
+      if (!name) continue;
       let rawText = (nm[4] || '').trim();
       if (rawText.startsWith("'''") && rawText.endsWith("'''")) {
         rawText = rawText.slice(3, -3);
@@ -1791,7 +1871,10 @@ export class DashboardService {
         rawText = rawText.slice(1, -1);
       }
       const noteText = rawText.replace(/''/g, "'");
-      parsedNotes.push({ name, text: noteText });
+      // Deduplicate by name (keep first occurrence only)
+      if (!parsedNotes.some(n => n.name === name)) {
+        parsedNotes.push({ name, text: noteText });
+      }
     }
 
     return { tables, refs, groups, notes: parsedNotes };
@@ -1882,7 +1965,15 @@ export class DashboardService {
     }
 
     const canUseTableGroup = this.entitlementService.canUseFeature('table_group');
-    const groups = canUseTableGroup ? (parsed.groups || []) : [];
+    let groups = canUseTableGroup ? (parsed.groups || []) : [];
+
+    // Deduplicate groups by name (keep first occurrence) to prevent overlapping on canvas
+    const seenGroupNames = new Set<string>();
+    groups = groups.filter(g => {
+      if (seenGroupNames.has(g.name)) return false;
+      seenGroupNames.add(g.name);
+      return true;
+    });
 
     // Automatically position newly added/chosen tables inside the group's existing visual bounds
     groups.forEach((g) => {
@@ -4495,13 +4586,21 @@ export class DashboardService {
   /** Flag to prevent re-entrant DBML sync loops */
   private _syncingNotesToCode = false;
 
-  /** Auto-generate next note name: note_1, note_2, … */
+   /** Check if a note name is already taken by another note */
+  isNoteNameDuplicate(name: string, excludeNoteId?: number): boolean {
+    if (!name || !name.trim()) return false;
+    const target = name.trim().toLowerCase();
+    return this.notes.some(n => n.id !== excludeNoteId && (n.name || '').trim().toLowerCase() === target);
+  }
+
+  /** Auto-generate next note name: note_1, note_2, … guaranteed unique */
   private nextNoteName(): string {
-    const nums = this.notes
-      .map(n => { const m = n.name?.match(/^note_(\d+)$/); return m ? +m[1] : 0; })
-      .filter(n => n > 0);
-    const max = nums.length > 0 ? Math.max(...nums) : 0;
-    return `note_${max + 1}`;
+    const existingNames = new Set(this.notes.map(n => (n.name || '').trim().toLowerCase()));
+    let n = 1;
+    while (existingNames.has(`note_${n}`)) {
+      n++;
+    }
+    return `note_${n}`;
   }
 
   /** Add a new sticky note at the given canvas position */

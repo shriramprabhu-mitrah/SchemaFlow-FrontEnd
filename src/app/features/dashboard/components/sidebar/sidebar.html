@@ -251,7 +251,7 @@
 
     <!-- DBML Code Button -->
     <div class="activity-nav-item dbml-item tt tt-right"
-      [class.active]="svc.sidebarInspectorTab() === null && !svc.showDiffChecker()" (click)="showDbmlEditor($event)"
+      [class.active]="svc.sidebarInspectorTab() === null && !svc.showDiffChecker() && !svc.showDocs" (click)="showDbmlEditor($event)"
       [attr.data-tt]="!isLoggedIn || isSampleDiagram() ? 'DBML Code Editor (Read-Only)' : 'DBML Code Editor'"
       aria-label="DBML Code Editor">
       <div class="nav-icon-box">
@@ -285,7 +285,7 @@
 
     <!-- Tables Button -->
     <div class="activity-nav-item tables-item tt tt-right" *ngIf="!isCanViewOnly"
-      [class.active]="svc.sidebarInspectorTab() === 'tables' && !svc.showDiffChecker()"
+      [class.active]="svc.sidebarInspectorTab() === 'tables' && !svc.showDiffChecker() && !svc.showDocs"
       [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleInspector('tables', $event)"
       [attr.data-tt]="!isLoggedIn ? 'Sign in to access Tables' : (isSampleDiagram() ? 'Tables disabled for sample diagrams' : 'Tables')"
       aria-label="Tables">
@@ -305,7 +305,7 @@
 
     <!-- Refs / Relationships Button -->
     <div class="activity-nav-item refs-item tt tt-right"
-      [class.active]="svc.sidebarInspectorTab() === 'refs' && !svc.showDiffChecker()"
+      [class.active]="svc.sidebarInspectorTab() === 'refs' && !svc.showDiffChecker() && !svc.showDocs"
       [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleInspector('refs', $event)"
       [attr.data-tt]="!isLoggedIn ? 'Sign in to access Relationships' : (isSampleDiagram() ? 'Relationships disabled for sample diagrams' : 'Relationships')"
       aria-label="Relationships">
@@ -322,11 +322,14 @@
         </svg>
       </div>
       <span class="nav-label">Refs</span>
-    </div>
-
-    <!-- View Docs Button (Commented out as requested)
-    <div class="activity-nav-item docs-item" [class.active]="svc.showDocs"
-      (click)="toggleDocs($event)" [attr.title]="svc.showDocs ? 'View Diagram' : 'View Docs'">
+    </div>  
+    <!-- View Docs Button -->
+    <div class="activity-nav-item docs-item tt tt-right" [class.active]="svc.showDocs"
+      [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleDocs($event)"
+      [attr.data-tt]="!isLoggedIn ? 'Sign in to access Docs' : (isSampleDiagram() ? 'Docs disabled for sample diagrams' : (svc.showDocs ? 'View Diagram' : 'View Docs'))"
+      [attr.aria-label]="svc.showDocs ? 'View Diagram' : 'View Docs'">
+      <app-icons *ngIf="showCrown('docs')" class="sidebar-crown-badge" name="premium-crown" size="10"
+        color="#f59e0b"></app-icons>
       <div class="nav-icon-box">
         <svg *ngIf="!svc.showDocs" class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -344,12 +347,10 @@
           <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
           <path d="M10 6.5h4M17.5 10v4M14 17.5h-4M6.5 14v-4" stroke-dasharray="2 2"></path>
         </svg>
-        <app-icons *ngIf="!entitlementService.orgHasFeature('document_view')" name="premium-crown" size="12" color="#f59e0b"
-          style="position: absolute; top: -3px; right: -5px; pointer-events: none;"></app-icons>
       </div>
       <span class="nav-label">{{ svc.showDocs ? 'Diagram' : 'View Docs' }}</span>
     </div>
-    -->
+  
   </div>
 
   <!-- Flexible Spacer pushing Sign Out to the bottom -->

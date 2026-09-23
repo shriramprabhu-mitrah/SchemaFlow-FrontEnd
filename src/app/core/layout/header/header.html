@@ -1,15 +1,19 @@
 <div id="topbar">
-  <div class="brand" (click)="goToHome()" style="cursor: pointer;">
+  <div class="header-brand" (click)="goToHome()" style="cursor: pointer;">
+    <app-icons name="db-diagram-logo" size="56"></app-icons>
+    <span class="brand-text" *ngIf="isProfilePage">dbNexus</span>
+  </div>
+  <!-- <div class="brand" (click)="goToHome()" style="cursor: pointer;">
     <app-icons name="db-diagram-logo" size="56"></app-icons>
     <span class="brand-title dbnexus-text" *ngIf="isProfilePage">dbNexus</span>
-  </div>
+  </div> -->
 
   <!-- PERSONAL DROPDOWN CONTROL (Image 1 & 2) -->
   <div class="personal-dropdown-wrap" *ngIf="!isProfilePage">
     <button class="personal-trigger-btn tt tt-bottom" (click)="togglePersonalMenu($event)"
       [class.active]="personalMenuOpen" [class.not-logged-in]="!isLoggedIn"
       [attr.data-tt]="isLoggedIn ? 'Open Workspace' : 'Please sign in to access workspace options'">
-      <span class="personal-label">{{ (svc.diagramWorkspaceType() | titlecase) || 'Personal' }}</span>
+      <span class="personal-label">{{ (svc.diagramWorkspaceType() | titlecase) || 'Personal' }}dddddddd</span>
       <svg class="chevron" [class.open]="personalMenuOpen" width="12" height="12" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
         (click)="openPersonalDropdown($event)">
@@ -45,8 +49,8 @@
             (click)="entitlementService.orgHasFeature('create_workspaces') ? openWorkspaceModal('my-workspaces') : openUpgradeModal('create_workspaces'); closePersonalMenu(); closeWorkspaceSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Team Workspace
-              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
-                color="#f59e0b"></app-icons>
+              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('create_workspaces')"
+                name="premium-crown" size="14" color="#f59e0b"></app-icons>
             </span>
             <svg *ngIf="(svc.diagramWorkspaceType() | titlecase) === 'Team'" width="14" height="14" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="3"
@@ -92,8 +96,8 @@
           <div class="submenu-item" (click)="createSampleDiagram('group'); closePersonalMenu(); closeSampleSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Modular Schema (Table Group Diagram)
-              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('table_group')" name="premium-crown" size="14"
-                color="#f59e0b"></app-icons>
+              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('table_group')" name="premium-crown"
+                size="14" color="#f59e0b"></app-icons>
             </span>
           </div>
         </div>
@@ -135,8 +139,9 @@
         <span class="item-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
             with Me</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14"
-            color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('share_diagram')" name="premium-crown"
+            size="14" color="#f59e0b"
+            style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </span>
       </button>
     </div>
@@ -146,8 +151,7 @@
     <div class="diagram-name-container" *ngIf="hasEffectiveEditPermission() && isLoggedIn && !isSampleDiagram()">
       <div class="diagram-name-wrapper" [class.has-error]="svc.hasUnsavedError()">
         <div style="display: flex; align-items: center; margin-right: 8px; cursor: default;" class="tt tt-bottom"
-          [attr.data-tt]="svc.getSaveStatusTooltip()"
-          (click)="onStatusIconClick()">
+          [attr.data-tt]="svc.getSaveStatusTooltip()" (click)="onStatusIconClick()">
           <!-- Danger symbol (shown when there is a save error or invalid name) -->
           <svg *ngIf="svc.hasUnsavedError()" width="18" height="18" viewBox="0 0 24 24" fill="none"
             xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; cursor: pointer;">
@@ -177,14 +181,16 @@
         </div>
         <div #diagramNameEl class="diagram-name" [class.is-empty]="svc.isDiagramNameEmpty()" contenteditable="true"
           spellcheck="false" placeholder="Untitled Diagram" (input)="onDiagramNameInput($event)"
-          (focus)="onDiagramNameFocus($event)"
-          (blur)="onDiagramNameBlur($event)" (keydown)="onDiagramNameKeydown($event)"></div>
+          (focus)="onDiagramNameFocus($event)" (blur)="onDiagramNameBlur($event)"
+          (keydown)="onDiagramNameKeydown($event)"></div>
       </div>
       <div class="diagram-title-error-banner" *ngIf="svc.isDiagramNameInvalid()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
-          <path d="M12 2.25c.57 0 1.1.31 1.38.81l9.25 16.25A1.6 1.6 0 0 1 21.25 21.75H2.75a1.6 1.6 0 0 1-1.38-2.44l9.25-16.25c.28-.5.81-.81 1.38-.81z" fill="#ef4444"/>
-          <path d="M12 8.5v5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
-          <circle cx="12" cy="17" r="1.25" fill="#ffffff"/>
+          <path
+            d="M12 2.25c.57 0 1.1.31 1.38.81l9.25 16.25A1.6 1.6 0 0 1 21.25 21.75H2.75a1.6 1.6 0 0 1-1.38-2.44l9.25-16.25c.28-.5.81-.81 1.38-.81z"
+            fill="#ef4444" />
+          <path d="M12 8.5v5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+          <circle cx="12" cy="17" r="1.25" fill="#ffffff" />
         </svg>
         <span>{{ svc.getDiagramNameErrorMessage() }}</span>
       </div>
@@ -316,7 +322,8 @@
         Import from
         <span class="dialect-badge"
           [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : 'sqlserver-badge'">
-          {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect === 'sqlite' ? 'SQLite' : 'SQL Server' }}
+          {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect ===
+          'sqlite' ? 'SQLite' : 'SQL Server' }}
         </span>
       </div>
       <button class="close-modal-btn" id="import-modal-close-btn" (click)="closeImportModal()">&times;</button>
