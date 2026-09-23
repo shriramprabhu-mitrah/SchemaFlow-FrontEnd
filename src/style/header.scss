@@ -723,6 +723,7 @@ app-docs {
     .brand-title {
       color: #f1f5f9;
     }
+
     svg {
       opacity: 1;
       filter: none;
@@ -1011,7 +1012,7 @@ app-docs {
       border-color: rgba(239, 68, 68, 0.5);
       background: rgba(239, 68, 68, 0.06);
     }
-    
+
     .diagram-name {
       font-size: 14px;
       color: rgb(255, 255, 255);
@@ -2227,6 +2228,7 @@ html.light-theme {
         .brand-title {
           color: #0f172a;
         }
+
         svg {
           opacity: 1;
           filter: none;
@@ -2418,7 +2420,7 @@ html.light-theme {
               background-color: #cbd5e1;
             }
 
-            input:checked + .slider-round {
+            input:checked+.slider-round {
               background-color: #2563eb;
             }
           }
@@ -2674,11 +2676,12 @@ html.light-theme {
     }
   }
 }
+
 .active-users-container {
   display: flex;
   align-items: center;
   margin-right: 12px;
-  
+
   .avatar-circle {
     width: 28px;
     height: 28px;
@@ -2696,11 +2699,11 @@ html.light-theme {
     z-index: 1;
     transition: transform 0.2s, z-index 0.2s;
     cursor: pointer;
-    
+
     &:first-child {
       margin-left: 0;
     }
-    
+
     &:hover {
       z-index: 10;
       transform: translateY(-2px);
@@ -2787,7 +2790,7 @@ body.light-theme {
           }
         }
 
-        input:checked + .slider-round {
+        input:checked+.slider-round {
           background-color: #2563eb !important;
         }
       }
@@ -2854,8 +2857,33 @@ body.light-theme {
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+
+
+  .brand-text {
+    background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  app-icons {
+    color: #3ec5c1;
   }
 }
