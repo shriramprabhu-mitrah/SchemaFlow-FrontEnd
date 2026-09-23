@@ -520,7 +520,13 @@ export class DashboardService {
     }
   }
 
-  showDocs = false;
+  showDocsSignal = signal<boolean>(false);
+  get showDocs(): boolean {
+    return this.showDocsSignal();
+  }
+  set showDocs(val: boolean) {
+    this.showDocsSignal.set(val);
+  }
   showDiffChecker = signal<boolean>(false);
   diffCheckerData: { leftText: string; rightText: string; viewMode: 'edit' | 'diff' } = {
     leftText: '',

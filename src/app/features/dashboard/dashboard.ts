@@ -6,7 +6,6 @@ import { DashboardService } from '../../core/services/dashboard.service';
 import { HeaderComponent } from '../../core/layout/header/header';
 import { EditorComponent } from './components/editor/editor';
 import { CanvasComponent } from './components/canvas/canvas';
-import { DocsComponent } from './components/docs/docs';
 import { ButtonComponent } from '../../shared/button/button';
 import { LoaderComponent } from '../../shared/loader/loader';
 import { DiagramViews } from '../dashboard/components/diagram-views/diagram-views';
@@ -26,7 +25,6 @@ import { Toast } from '../../shared/toaster/toast/toast';
     HeaderComponent,
     EditorComponent,
     CanvasComponent,
-    // DocsComponent, // Commented out as requested
     DiffCheckerComponent,
     ButtonComponent,
     LoaderComponent,

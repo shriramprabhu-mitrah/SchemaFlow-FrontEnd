@@ -9,11 +9,12 @@ import { Router } from '@angular/router';
 import { ButtonComponent } from '../../../../shared/button/button';
 import { SidebarComponent } from '../sidebar/sidebar';
 import { DiagramInspectorComponent } from '../diagram-inspector/diagram-inspector';
+import { DocsComponent } from '../docs/docs';
 
 @Component({
   selector: 'app-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent, DocsComponent],
   templateUrl: './editor.html',
 })
 export class EditorComponent implements OnInit, OnDestroy {
