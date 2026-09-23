@@ -31,6 +31,20 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   private codeSub?: Subscription;
 
+  get showErrorsCard(): boolean {
+    return this.svc.showErrorsCard();
+  }
+  set showErrorsCard(val: boolean) {
+    this.svc.showErrorsCard.set(val);
+  }
+  errorGroupsExpanded: Record<string, boolean> = {
+    'All Error': true,
+    'SYNTAX': true,
+    'RELATIONSHIP': true
+  };
+
+  private prevErrorsCount = 0;
+
   constructor(
     public svc: DashboardService,
     private readonly auth: AuthService,
@@ -40,7 +54,11 @@ export class EditorComponent implements OnInit, OnDestroy {
     // Re-render cursors and error squiggles whenever remoteCursors or editorErrors signal changes
     effect(() => {
       this.svc.remoteCursors();
-      this.svc.editorErrors();
+      const errs = this.svc.editorErrors();
+      if (errs.length === 0) {
+        this.showErrorsCard = false;
+      }
+      this.prevErrorsCount = errs.length;
       if (this.highlight?.nativeElement) {
         this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
       }
@@ -89,10 +107,17 @@ export class EditorComponent implements OnInit, OnDestroy {
       this.svc.updateGutter();
       this.cdr.detectChanges();
     });
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', this.onDocumentClickCapture, true);
+    }
   }
 
   ngOnDestroy(): void {
     this.codeSub?.unsubscribe();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('click', this.onDocumentClickCapture, true);
+    }
   }
 
   highlightCode(code: string): string {
@@ -245,6 +270,81 @@ export class EditorComponent implements OnInit, OnDestroy {
     ta.focus();
     ta.setSelectionRange(pos, pos + (lines[line - 1]?.length || 0));
     ta.scrollTop = Math.max(0, (line - 3) * 24.3);
+  }
+
+  jumpToError(err: EditorError): void {
+    const ta = document.getElementById('codearea') as HTMLTextAreaElement;
+    if (!ta) return;
+    const lines = this.displayCode.split('\n');
+    let pos = 0;
+    const targetLine = Math.max(1, Math.min(err.line, lines.length));
+    for (let i = 0; i < targetLine - 1 && i < lines.length; i++) {
+      pos += lines[i].length + 1;
+    }
+    const colOffset = Math.max(0, (err.column || 1) - 1);
+    const lineLen = lines[targetLine - 1]?.length || 0;
+    const startPos = pos + Math.min(colOffset, lineLen);
+    const endPos = pos + lineLen;
+
+    ta.focus();
+    ta.setSelectionRange(startPos, endPos > startPos ? endPos : startPos + 1);
+    ta.scrollTop = Math.max(0, (targetLine - 3) * 24.3);
+  }
+
+  toggleErrorsCard(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.showErrorsCard = !this.showErrorsCard;
+    this.cdr.markForCheck();
+  }
+
+  private onDocumentClickCapture = (event: MouseEvent): void => {
+    if (!this.showErrorsCard) return;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    if (
+      target.closest('.editor-errors-card') ||
+      target.closest('.error-badge') ||
+      target.closest('.dot.error-dot')
+    ) {
+      return;
+    }
+    this.showErrorsCard = false;
+    this.cdr.markForCheck();
+  };
+
+  toggleGroup(name: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.errorGroupsExpanded[name] = !this.isGroupExpanded(name);
+  }
+
+  isGroupExpanded(name: string): boolean {
+    return this.errorGroupsExpanded[name] !== false;
+  }
+
+  getErrorGroups(): { name: string; errors: EditorError[] }[] {
+    const errors = this.svc.editorErrors();
+    if (!errors || errors.length === 0) return [];
+
+    const map = new Map<string, EditorError[]>();
+    errors.forEach(err => {
+      let category = 'All error';
+      if (/foreign\s*key|relationship|type\s*mismatch/i.test(err.message)) {
+        category = 'RELATIONSHIP';
+      } else if (/expected|expect\s+an|unexpected|syntax/i.test(err.message)) {
+        category = 'All error';
+      }
+      if (!map.has(category)) {
+        map.set(category, []);
+      }
+      map.get(category)!.push(err);
+    });
+
+    return Array.from(map.entries()).map(([name, errs]) => ({
+      name,
+      errors: errs
+    }));
   }
 
   escapeHtmlBasic(str: string): string {

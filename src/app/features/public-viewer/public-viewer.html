@@ -44,7 +44,7 @@
         </div>
         <div class="error-text mt-2" *ngIf="error" style="text-align: center;">{{ error }}</div>
 
-        <button class="btn default signbtn mt-4" (click)="unlock()" [disabled]="unlocking || !password">
+        <button class="btn default signbtn mt-4" (click)="unlock()" [disabled]="unlocking || !password || !password.trim()">
           {{ unlocking ? 'Unlocking...' : 'Unlock Diagram' }}
         </button>
       </div>

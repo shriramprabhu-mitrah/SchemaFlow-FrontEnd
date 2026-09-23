@@ -141,6 +141,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleImportMenu(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -154,6 +155,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openImportDialect(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -181,6 +183,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleExportMenu(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -280,6 +283,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openShare(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -312,6 +316,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleVersionHistory(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (this.svc.shareModalVisible()) {
@@ -338,6 +343,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleInspector(tab: 'tables' | 'refs', e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
 

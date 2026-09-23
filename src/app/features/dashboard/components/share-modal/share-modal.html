@@ -64,7 +64,10 @@
           <label class="section-desc mb-2">Password</label>
           <div class="password-input-wrapper" style="position: relative; display: flex; align-items: center;">
             <input [type]="showPassword ? 'text' : 'password'" class="db-input w-100" style="padding-right: 40px;"
+              [class.input-error]="passwordError"
               placeholder="Enter password to protect this diagram" [(ngModel)]="password"
+              (input)="onPasswordInput()"
+              (keydown.enter)="saveSharingSettings()"
               [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
             <button type="button" class="password-toggle-btn"
               (click)="showPassword = !showPassword" [disabled]="hasDbmlErrors() || isDiagramEmpty()"
@@ -82,6 +85,14 @@
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
             </button>
+          </div>
+          <div class="field-error-text" *ngIf="passwordError">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{{ passwordError }}</span>
           </div>
         </div>
 

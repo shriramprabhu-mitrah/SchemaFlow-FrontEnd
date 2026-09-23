@@ -1180,6 +1180,11 @@ app-org-layout {
       width: 100% !important;
       table-layout: auto !important;
     }
+
+    .form-group .custom-select-container {
+      width: 100%;
+      display: block;
+    }
   }
 
   .confirmation-card-modal {

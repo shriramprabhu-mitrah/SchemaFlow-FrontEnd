@@ -94,9 +94,10 @@ export class HeaderComponent implements OnInit {
     private zone: NgZone
   ) {
     effect(() => {
-      // Access diagramId and diagramNameSignal to register dependencies
+      // Access diagramId, diagramNameSignal, and editorErrors to register dependencies
       this.svc.diagramId();
       this.svc.diagramNameSignal();
+      this.svc.editorErrors();
 
       const nameEl = this._diagramNameEl?.nativeElement ?? document.querySelector('.diagram-name') as HTMLDivElement;
       if (nameEl && document.activeElement !== nameEl) {
@@ -404,6 +405,19 @@ export class HeaderComponent implements OnInit {
   onStatusIconClick(): void {
     if (this.svc.isDiagramNameEmpty() || this.svc.isDiagramNameDuplicate()) {
       return;
+    }
+    if (this.svc.hasDbmlError()) {
+      const first = this.svc.editorErrors()[0];
+      if (first) {
+        this.svc.showToast(`Cannot save: ${first.message}`, 4000, 'error');
+        return;
+      }
+      const valErrors = this.svc.getValidationErrors();
+      if (valErrors.length > 0) {
+        const msg = typeof valErrors[0] === 'string' ? valErrors[0] : valErrors[0]?.message ?? 'Invalid DBML syntax';
+        this.svc.showToast(`Cannot save: ${msg}`, 4000, 'error');
+        return;
+      }
     }
     if (this.svc.hasUnsavedChanges() && this.svc.saveErrorOccurred) {
       const msg = typeof this.svc.dbmlValidationError === 'string' ? this.svc.dbmlValidationError : 'Save failed';
