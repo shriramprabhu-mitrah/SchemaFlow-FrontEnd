@@ -25,6 +25,7 @@ export class ShareModalComponent implements OnInit {
   
   isPublic = true;
   password = '';
+  passwordError: string | null = null;
   emailsInput = '';
   sendingEmails = false;
   savingStatus = false;
@@ -74,6 +75,7 @@ export class ShareModalComponent implements OnInit {
     if (changes['visible'] && this.visible) {
       this.isPublic = this.svc.isDiagramPublic;
       this.password = this.svc.diagramPassword;
+      this.passwordError = null;
       this.showPassword = false;
 
       if ((!this.svc.publicToken || this.svc.publicToken === 'TOKEN_PENDING') && this.diagramId) {
@@ -88,6 +90,7 @@ export class ShareModalComponent implements OnInit {
   closeModal(): void {
     this.isPublic = true;
     this.password = '';
+    this.passwordError = null;
     this.emailsInput = '';
     this.activeTab = 'sharing';
     this.invitePermission = 'can view';
@@ -120,6 +123,13 @@ export class ShareModalComponent implements OnInit {
 
   togglePublicStatus(): void {
     this.isPublic = !this.isPublic;
+    this.passwordError = null;
+  }
+
+  onPasswordInput(): void {
+    if (this.passwordError) {
+      this.passwordError = null;
+    }
   }
 
   saveSharingSettings(): void {
@@ -137,9 +147,16 @@ export class ShareModalComponent implements OnInit {
 
     if (this.isPublic) {
       this.password = ''; // Clear password when making it public
-    } else if (!this.password) {
-      this.svc.showToast('Password is required for protected sharing.', 3000, 'error');
+      this.passwordError = null;
+    } else if (!this.password || !this.password.trim()) {
+      if (this.password && !this.password.trim()) {
+        this.passwordError = 'Password cannot contain only spaces.';
+      } else {
+        this.passwordError = 'Password is required for protected sharing.';
+      }
       return;
+    } else {
+      this.passwordError = null;
     }
 
     this.savingStatus = true;
@@ -148,6 +165,7 @@ export class ShareModalComponent implements OnInit {
         this.savingStatus = false;
         this.svc.isDiagramPublic = this.isPublic;
         this.svc.diagramPassword = this.password;
+        this.passwordError = null;
         this.cdr.detectChanges();
         this.svc.showToast('Sharing settings updated successfully.', 3000, 'success');
       },

@@ -253,6 +253,22 @@ select.db-input option {
   color: #ffffff;
 }
 
+.db-input.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4) !important;
+}
+
+.field-error-text {
+  color: #f87171;
+  font-size: 11.5px;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
 .flex-grow {
   flex-grow: 1;
 }
@@ -554,6 +570,15 @@ body.light-theme & {
   select.db-input option {
     background-color: #ffffff;
     color: #0f172a;
+  }
+
+  .db-input.input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25) !important;
+  }
+
+  .field-error-text {
+    color: #dc2626;
   }
 
   .code-input {

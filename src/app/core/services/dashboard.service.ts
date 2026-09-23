@@ -566,8 +566,13 @@ export class DashboardService {
 
   readonly isDiagramNameInvalid = computed(() => this.isDiagramNameEmpty() || this.isDiagramNameDuplicate());
 
+  hasDbmlError(): boolean {
+    return this.editorErrors().length > 0 || this.getValidationErrors().length > 0 || this.dbmlValidationError != null;
+  }
+
   hasUnsavedError(): boolean {
     if (this.isDiagramNameInvalid()) return true;
+    if (this.hasDbmlError()) return true;
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) return true;
     return false;
   }
@@ -575,6 +580,22 @@ export class DashboardService {
   getSaveStatusTooltip(): string {
     if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
     if (this.isDiagramNameDuplicate()) return 'Diagram name already exists';
+    if (this.editorErrors().length > 0) {
+      const first = this.editorErrors()[0];
+      const count = this.editorErrors().length;
+      const suffix = count > 1 ? ` (+${count - 1} more)` : '';
+      return `DBML error: ${first.message}${suffix}`;
+    }
+    const valErrors = this.getValidationErrors();
+    if (valErrors.length > 0) {
+      const firstMessage = typeof valErrors[0] === 'string' ? valErrors[0] : valErrors[0]?.message ?? 'Invalid DBML syntax';
+      const suffix = valErrors.length > 1 ? ` (+${valErrors.length - 1} more)` : '';
+      return `DBML error: ${firstMessage}${suffix}`;
+    }
+    if (this.dbmlValidationError != null) {
+      const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
+      return typeof errObj === 'string' ? errObj : errObj?.message || 'DBML Validation Failed';
+    }
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) {
       return typeof this.dbmlValidationError === 'string' ? this.dbmlValidationError : 'Save failed';
     }
@@ -721,6 +742,13 @@ export class DashboardService {
   private toastTimeout: ReturnType<typeof setTimeout> | undefined;
   private invalidRefTimers = new Map<string, { timer: any; startTime: number }>();
   readonly editorErrors = signal<EditorError[]>([]);
+  readonly showErrorsCard = signal<boolean>(false);
+
+  closeErrorsCard(): void {
+    if (this.showErrorsCard()) {
+      this.showErrorsCard.set(false);
+    }
+  }
 
   showDbdocsInstructions = false;
   showCanvasPlaceholder = true;
@@ -1444,7 +1472,11 @@ export class DashboardService {
   }
 
   updateEditorErrors(): void {
-    this.editorErrors.set(this.computeEditorErrors());
+    const errs = this.computeEditorErrors();
+    this.editorErrors.set(errs);
+    if (errs.length === 0) {
+      this.showErrorsCard.set(false);
+    }
   }
 
   getValidationError(): string | null {
