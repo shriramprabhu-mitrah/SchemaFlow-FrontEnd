@@ -87,6 +87,11 @@
     "subscriptions": "http://localhost:4000/api/admin/subscriptions",
     "subscriptionById": "http://localhost:4000/api/admin/subscriptions/{id}",
     "auditLogs": "http://localhost:4000/api/admin/audit-logs",
-    "enquiries": "http://localhost:4000/api/admin/enquiries"
+    "enquiries": "http://localhost:4000/api/admin/enquiries",
+    "aiProviders": "http://localhost:4007/api/ai/admin/providers",
+    "aiProviderManage": "http://localhost:4007/api/ai/providers",
+    "aiProviderById": "http://localhost:4007/api/ai/providers/{id}",
+    "aiModels": "http://localhost:4007/api/ai/admin/models",
+    "aiModelById": "http://localhost:4007/api/ai/models/{id}"
   }
 }

@@ -628,6 +628,13 @@ app-org-layout {
     font-weight: 500;
   }
 
+  .base-url-text {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #e2e8f0;
+    word-break: break-all;
+  }
+
   .data-table td.actions-cell,
   .data-table td:last-child {
     overflow: visible !important;
@@ -2061,6 +2068,13 @@ body.light-theme {
     font-size: 13px !important;
     color: #334155 !important;
     font-weight: 500 !important;
+  }
+
+  .base-url-text {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #334155 !important;
+    word-break: break-all;
   }
 
   .user-email-text {

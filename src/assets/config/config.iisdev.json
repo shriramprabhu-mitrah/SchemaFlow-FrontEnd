@@ -86,6 +86,11 @@
     "subscriptions": "http://192.168.1.201:3001/api/admin/subscriptions",
     "subscriptionById": "http://192.168.1.201:3001/api/admin/subscriptions/{id}",
     "auditLogs": "http://192.168.1.201:3001/api/admin/audit-logs",
-    "enquiries": "http://192.168.1.201:3001/api/admin/enquiries"
+    "enquiries": "http://192.168.1.201:3001/api/admin/enquiries",
+    "aiProviders": "http://localhost:4007/api/ai/admin/providers",
+    "aiProviderManage": "http://localhost:4007/api/ai/providers",
+    "aiProviderById": "http://localhost:4007/api/ai/providers/{id}",
+    "aiModels": "http://localhost:4007/api/ai/admin/models",
+    "aiModelById": "http://localhost:4007/api/ai/models/{id}"
   }
 }
