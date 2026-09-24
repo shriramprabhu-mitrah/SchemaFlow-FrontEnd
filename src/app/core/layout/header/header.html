@@ -13,7 +13,7 @@
     <button class="personal-trigger-btn tt tt-bottom" (click)="togglePersonalMenu($event)"
       [class.active]="personalMenuOpen" [class.not-logged-in]="!isLoggedIn"
       [attr.data-tt]="isLoggedIn ? 'Open Workspace' : 'Please sign in to access workspace options'">
-      <span class="personal-label">{{ (svc.diagramWorkspaceType() | titlecase) || 'Personal' }}dddddddd</span>
+      <span class="personal-label">{{ (svc.diagramWorkspaceType() | titlecase) || 'Personal' }}</span>
       <svg class="chevron" [class.open]="personalMenuOpen" width="12" height="12" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
         (click)="openPersonalDropdown($event)">

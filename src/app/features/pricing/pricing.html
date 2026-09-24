@@ -364,47 +364,7 @@
     </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer class="nexus-footer-premium">
-    <div class="footer-top">
-      <div class="footer-brand-section">
-        <div class="footer-logo">
-          <app-icons name="db-diagram-logo" size="32" color="#3ec5c1"></app-icons>
-          <span class="logo-text">dbNexus</span>
-        </div>
-        <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers. Built for the
-          modern web.</p>
-      </div>
-
-      <div class="footer-links-container">
-        <div class="footer-col">
-          <h4>Product</h4>
-          <a class="footer-link" (click)="onCreateDiagram()">Schema Designer</a>
-          <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
-          <a class="footer-link" routerLink="/pricing">Pricing Options</a>
-          <a class="footer-link" routerLink="/diff">SQL Compare</a>
-        </div>
-
-        <div class="footer-col">
-          <h4>Resources</h4>
-          <a class="footer-link" routerLink="/docs" target="_blank">Documentation</a>
-          <a class="footer-link" routerLink="/docs/dbml-editor" target="_blank">DBML Reference</a>
-          <a class="footer-link" routerLink="/docs/create-your-first-diagram" target="_blank">API Guides</a>
-        </div>
-
-        <div class="footer-col">
-          <h4>Company</h4>
-          <a class="footer-link" routerLink="/docs/privacy-policy">Privacy Policy</a>
-          <a class="footer-link" routerLink="/docs/terms-of-service">Terms of Service</a>
-          <a class="footer-link" href="mailto:support@dbnexus.com">Contact Us</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <p class="copyright">&copy; 2026 dbNexus. All rights reserved.</p>
-    </div>
-  </footer>
+  <app-footer></app-footer>
 
   <!-- Contact Sales Modal -->
   <app-contact-sales-modal [visible]="showContactModal" (close)="closeContactModal()"></app-contact-sales-modal>

@@ -17,7 +17,7 @@ export class GoogleAnalyticsService {
   }
 
   initializeGtagJs() {
-    if (!this.isBrowser || typeof document === 'undefined') {
+    if (!this.isBrowser || typeof document === 'undefined' || !environment.production) {
       return;
     }
 
