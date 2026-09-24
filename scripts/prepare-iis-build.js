@@ -41,4 +41,42 @@ if (apiUrl) {
   }
 }
 
+// 4. Ensure Angular SSR App Engine Manifest is set in server chunks (both minified and unminified)
+const serverDir = path.join(distRoot, 'server');
+if (fs.existsSync(serverDir)) {
+  const defaultManifestCode = ` = { basePath: '/', allowedHosts: [], supportedLocales: { 'en-US': '' }, entryPoints: { '': () => import('./main.server.mjs') } };`;
+  const files = fs.readdirSync(serverDir);
+  for (const file of files) {
+    if (file.endsWith('.mjs')) {
+      const filePath = path.join(serverDir, file);
+      let content = fs.readFileSync(filePath, 'utf-8');
+      if (content.includes('Angular app engine manifest is not set')) {
+        // Match both minified (e.g., "var yf;function Dx(){if(!yf)throw...") and unminified
+        const match = content.match(/if\s*\(!([a-zA-Z0-9_$]+)\)\s*throw\s+new\s+Error\([^)]*Angular app engine manifest is not set/);
+        if (match && match[1]) {
+          const varName = match[1];
+          // Check if already initialized
+          const isInitialized = new RegExp(`(?:var|let|const)\\s+${varName}\\s*=`).test(content);
+          if (!isInitialized) {
+            // Replace "var varName;" or "let varName;" with initialization
+            const declRegex = new RegExp(`(?:var|let)\\s+${varName};`);
+            if (declRegex.test(content)) {
+              content = content.replace(declRegex, `var ${varName}${defaultManifestCode}`);
+              fs.writeFileSync(filePath, content);
+              console.log(`✔ Initialized manifest variable '${varName}' in server/${file}`);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 5. Run generate-startup.js to ensure server.mjs header patch is applied
+const generateStartupPath = path.join(__dirname, 'generate-startup.js');
+if (fs.existsSync(generateStartupPath)) {
+  require('./generate-startup.js');
+}
+
 console.log(`\n✅ IIS [${targetEnv}] Build ready at dist/db-diagram/ with web.config & server_entry.js`);
+

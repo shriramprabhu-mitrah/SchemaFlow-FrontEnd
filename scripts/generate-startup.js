@@ -33,7 +33,7 @@ function patchServer() {
     const files = fs.readdirSync(serverDir);
     let targetChunkName = null;
     let targetChunkPath = null;
-    let varName = 'yf';
+    let varName = null;
 
     for (const file of files) {
         if (file.startsWith('chunk-') && file.endsWith('.mjs')) {
@@ -42,17 +42,21 @@ function patchServer() {
             if (content.includes('Angular app engine manifest is not set')) {
                 targetChunkName = file;
                 targetChunkPath = filePath;
-                const match = content.match(/if\s*\(!([a-zA-Z0-9_$]+)\)\s*throw\s+new\s+Error\([^)]*Angular app engine manifest is not set/);
-                if (match && match[1]) {
-                    varName = match[1];
+                const idx = content.indexOf('Angular app engine manifest is not set');
+                if (idx !== -1) {
+                    const snippet = content.slice(Math.max(0, idx - 250), idx);
+                    const match = snippet.match(/if\s*\(!\s*([a-zA-Z0-9_$]+)\s*\)/);
+                    if (match && match[1]) {
+                        varName = match[1];
+                    }
                 }
                 break;
             }
         }
     }
 
-    if (!targetChunkPath) {
-        console.warn('[patch-server] Could not locate chunk file containing Angular app engine manifest check.');
+    if (!targetChunkPath || !varName) {
+        console.warn('[patch-server] Could not locate chunk file or variable containing Angular app engine manifest check.');
         return;
     }
 
