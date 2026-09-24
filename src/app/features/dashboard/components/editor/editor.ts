@@ -376,9 +376,10 @@ export class EditorComponent implements OnInit, OnDestroy {
       '<span class="attribute">$1</span>'
     );
 
+    // Highlight datatypes only when they appear as column types (after column name), not when used as column or table names
     text = text.replace(
-      /\b(integer|varchar|text|timestamp|date|decimal|boolean|float|datetime|int|bigint)\b/g,
-      '<span class="datatype">$1</span>'
+      /^(\s*(?:["'`][^"'`]+["'`]|[A-Za-z0-9_.]+)\s+)(integer|varchar|text|timestamp|date|decimal|boolean|float|datetime|int|bigint|objectid|json|bson|array|uuid|map|mixed)\b/gim,
+      '$1<span class="datatype">$2</span>'
     );
 
     // Highlight numbers and commas inside parentheses, e.g., (100) or (10,2)
