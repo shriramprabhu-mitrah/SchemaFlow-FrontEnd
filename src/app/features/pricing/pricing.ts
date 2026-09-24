@@ -277,6 +277,73 @@ export class PricingComponent implements OnInit {
     return ent.value === 'true' || ent.value === true || (ent.limit_value && Number(ent.limit_value) > 0);
   }
 
+  isBooleanFeature(featureKey: string): boolean {
+    // Check across all plans if this feature acts as a boolean
+    for (const plan of this.displayedPlans) {
+      const ent = (plan.entitlements || []).find((e: any) => e.feature_key === featureKey);
+      if (ent) {
+        if (ent.limit_value !== null && ent.limit_value !== undefined && ent.limit_value !== 0) return false;
+        if (ent.display_text && ent.display_text !== '-' && ent.display_text !== '—') return false;
+      }
+    }
+    return true;
+  }
+
+  get allFeatures(): any[] {
+    const featuresMap = new Map<string, any>();
+    for (const plan of this.displayedPlans) {
+      if (plan.entitlements) {
+        for (const ent of plan.entitlements) {
+          if (!featuresMap.has(ent.feature_key)) {
+            featuresMap.set(ent.feature_key, ent);
+          }
+        }
+      }
+    }
+    return Array.from(featuresMap.values());
+  }
+
+  get groupedFeatures(): { category: string; features: any[] }[] {
+    const groupMap = new Map<string, any[]>();
+    for (const plan of this.displayedPlans) {
+      if (plan.entitlements) {
+        for (const ent of plan.entitlements) {
+          const cat = ent.category || ent.feature_category || 'Features';
+          if (!groupMap.has(ent.feature_key)) {
+            if (!groupMap.get(cat)) {
+              // use category as the key
+            }
+          }
+        }
+      }
+    }
+
+    // Rebuild: collect unique features per category preserving order
+    const categoryOrder: string[] = [];
+    const categoryFeatureMap = new Map<string, Map<string, any>>();
+
+    for (const plan of this.displayedPlans) {
+      if (plan.entitlements) {
+        for (const ent of plan.entitlements) {
+          const cat = ent.category || ent.feature_category || 'Features';
+          if (!categoryFeatureMap.has(cat)) {
+            categoryFeatureMap.set(cat, new Map<string, any>());
+            categoryOrder.push(cat);
+          }
+          const featureMap = categoryFeatureMap.get(cat)!;
+          if (!featureMap.has(ent.feature_key)) {
+            featureMap.set(ent.feature_key, ent);
+          }
+        }
+      }
+    }
+
+    return categoryOrder.map(cat => ({
+      category: cat,
+      features: Array.from(categoryFeatureMap.get(cat)!.values())
+    }));
+  }
+
   /** CTA button label depending on audience + plan type + login state */
   getCtaLabel(plan: any): string {
     if (plan.slug === 'enterprise') return 'Contact Sales';
