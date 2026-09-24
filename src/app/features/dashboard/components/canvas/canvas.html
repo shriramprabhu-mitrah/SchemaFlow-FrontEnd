@@ -63,7 +63,7 @@
             [style.font-size.px]="11 * svc.view.scale" [style.line-height.px]="14 * svc.view.scale">{{ note.name
             }}</span>
           <input *ngIf="editingNoteId === note.id" class="sticky-note-name-input" [(ngModel)]="editNoteNameValue"
-            [style.color]="note.textColor || '#000000'" [style.font-size.px]="11 * svc.view.scale"
+            maxlength="15" [style.color]="note.textColor || '#000000'" [style.font-size.px]="11 * svc.view.scale"
             [style.height.px]="18 * svc.view.scale" [style.padding]="'0 ' + (4 * svc.view.scale) + 'px'"
             [style.border-radius.px]="3 * svc.view.scale" (mousedown)="$event.stopPropagation()"
             (keydown.enter)="commitEditNoteName()" (keydown.escape)="cancelEditNoteName()" (blur)="commitEditNoteName()"
@@ -179,7 +179,7 @@
   <!-- edit column input -->
   <input *ngIf="inlineEdit.visible && !isReadOnly" class="inline-edit-input" [style.left.px]="inlineEdit.x"
     [style.top.px]="inlineEdit.y" [style.width.px]="inlineEdit.width" [style.height.px]="inlineEdit.height"
-    [(ngModel)]="inlineEdit.value" (keydown.enter)="commitInlineEdit()" (keydown.escape)="cancelInlineEdit()"
+    [(ngModel)]="inlineEdit.value" maxlength="15" (keydown.enter)="commitInlineEdit()" (keydown.escape)="cancelInlineEdit()"
     (blur)="commitInlineEdit()" (mousedown)="$event.stopPropagation()" />
 
   <div id="create-table-control" *ngIf="!svc.isPublicViewer"
@@ -338,7 +338,7 @@
       <div class="group-fields-wrap" *ngIf="tableModal.isGroup && !isReadOnly">
         <label class="table-name-field">Group name
           <div class="group-dropdown-wrap">
-            <input placeholder="Enter group name" [(ngModel)]="tableModal.groupName" (input)="tableModal.error = ''"
+            <input placeholder="Enter group name" [(ngModel)]="tableModal.groupName" maxlength="15" (input)="tableModal.error = ''"
               autocomplete="off" (focus)="openGroupDropdown($event)" (click)="$event.stopPropagation()"
               [style.border-bottom-left-radius]="groupDropdownVisible ? '0px' : '8px'"
               [style.border-bottom-right-radius]="groupDropdownVisible ? '0px' : '8px'" />
@@ -358,7 +358,7 @@
       </div>
 
       <label class="table-name-field">Table name
-        <input [(ngModel)]="tableModal.name" (input)="tableModal.error = ''" [disabled]="isReadOnly"
+        <input [(ngModel)]="tableModal.name" maxlength="15" (input)="tableModal.error = ''" [disabled]="isReadOnly"
           [readonly]="isReadOnly" />
       </label>
       <div class="table-columns-heading">
@@ -373,13 +373,13 @@
         <div class="table-columns-list" #tableColumnsList (scroll)="closeAllDropdowns()">
           <div class="table-column" *ngFor="let column of tableModal.columns; let i = index">
             <span class="column-number">{{ i + 1 }}</span>
-            <input aria-label="Column name" placeholder="column_name" [(ngModel)]="column.name"
+            <input aria-label="Column name" placeholder="column_name" [(ngModel)]="column.name" maxlength="15"
               (input)="tableModal.error = ''" [disabled]="isReadOnly" [readonly]="isReadOnly" />
             <div class="type-dropdown">
               <input aria-label="Column data type" placeholder="varchar" [(ngModel)]="column.type" autocomplete="off"
                 (focus)="!isReadOnly && openTypeDropdown(i, $event)"
                 (click)="!isReadOnly && openTypeDropdown(i, $event); $event.stopPropagation()"
-                [disabled]="isReadOnly" [readonly]="isReadOnly" />
+                [disabled]="isReadOnly" readonly style="cursor: pointer;" />
               <app-button *ngIf="!isReadOnly" variant="none" customClass="type-trigger-arrow"
                 (onClick)="toggleTypeDropdown(i, $event)">
                 <app-icons name="chevron-down" size="14"></app-icons>
@@ -497,7 +497,7 @@
       <!-- Group Name Field -->
       <label class="table-name-field">
         Group name
-        <input [(ngModel)]="groupModal.name" (input)="groupModal.error = ''" placeholder="Enter group name"
+        <input [(ngModel)]="groupModal.name" maxlength="15" (input)="groupModal.error = ''" placeholder="Enter group name"
           [disabled]="isReadOnly" [readonly]="isReadOnly" />
       </label>
 
