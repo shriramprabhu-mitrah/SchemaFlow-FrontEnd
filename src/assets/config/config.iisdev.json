@@ -48,6 +48,10 @@
     "plans": "http://192.168.1.201:3001/api/pricing/plans",
     "profileUpgrade": "http://192.168.1.201:3001/api/profile/subscription/upgrade"
   },
+  "paymentApiUrls": {
+    "createSubscription": "http://192.168.1.201:3001/api/payments/create-subscription",
+    "verifySubscription": "http://192.168.1.201:3001/api/payments/verify-subscription"
+  },
   "organizationApiUrls": {
     "organizations": "http://192.168.1.201:3001/api/organizations",
     "organizationById": "http://192.168.1.201:3001/api/organizations/{id}",

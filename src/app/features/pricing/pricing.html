@@ -66,7 +66,7 @@
     <h1 class="hero-headline">Choose the right plan for your database designs</h1>
     <p class="hero-subtext">Scale up as you need more diagram capacity, team workspaces, or version history.</p>
     <!-- BILLING TOGGLE -->
-    <div class="billing-toggle-wrapper">
+    <div class="billing-toggle-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
       <div class="billing-toggle-container">
         <button id="btn-toggle-monthly" class="toggle-btn" [class.active]="!isAnnual" (click)="toggleBilling(false)">
           Monthly billing
@@ -147,15 +147,14 @@
             <div style="display: flex; align-items: baseline;gap: 4px;">
               <div class="price-val-row">
                 <ng-container *ngIf="isEligibleForTrial()">
-                  <span class="currency" style="opacity: 0.6;">₹</span>
+                  <span class="currency" style="opacity: 0.6;">{{ getCurrencySymbol() }}</span>
                   <span class="price-amount" style="opacity: 0.6;">
-                    <s>{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) : plan.price_monthly }}</s>
+                    <s>{{ getPrice(plan) }}</s>
                   </span>
                 </ng-container>
                 <ng-container *ngIf="!isEligibleForTrial()">
-                  <span class="currency">₹</span>
-                  <span class="price-amount">{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) :
-                    plan.price_monthly }}</span>
+                  <span class="currency">{{ getCurrencySymbol() }}</span>
+                  <span class="price-amount">{{ getPrice(plan) }}</span>
                 </ng-container>
               </div>
               <span class="price-period" style="font-size: 14px; opacity: 0.7;">
@@ -163,7 +162,7 @@
               </span>
             </div>
             <div class="annual-billed-label" [style.visibility]="isAnnual ? 'visible' : 'hidden'">
-              Billed annually (₹{{ (plan.price_annual || plan.price_monthly * 10) * 12 }}/yr{{ (plan.plan_type ===
+              Billed annually ({{ getCurrencySymbol() }}{{ $any(getPrice(plan)) * 12 }}/yr{{ (plan.plan_type ===
               'organization' || plan.is_per_seat) ? ' per member' : '' }})
             </div>
           </ng-container>
@@ -235,101 +234,29 @@
           </tr>
         </thead>
         <tbody>
-          <!-- CATEGORY 1: DIAGRAMS & CANVASES -->
-          <tr class="category-row">
-            <td [attr.colspan]="displayedPlans.length + 1">Diagrams & Editor capabilities</td>
-          </tr>
-          <tr>
-            <td class="feature-col">Create diagrams</td>
-            <td *ngFor="let plan of displayedPlans">{{ getFeatureValue(plan, 'create_diagrams') }}</td>
-          </tr>
-          <tr>
-            <td class="feature-col">Edit diagram</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'edit_diagram')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'edit_diagram')">—</span>
-            </td>
-          </tr>
-          <tr>
-            <td class="feature-col">Customize canvas</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'customize_canvas')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'customize_canvas')">—</span>
-            </td>
-          </tr>
-          <tr>
-            <td class="feature-col">Table group colors</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'table_group')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'table_group')">—</span>
-            </td>
-          </tr>
+          <ng-container *ngFor="let group of groupedFeatures">
+            <!-- Category header row -->
+            <tr class="category-row">
+              <td [attr.colspan]="displayedPlans.length + 1">{{ group.category }}</td>
+            </tr>
+            <!-- Feature rows within the category -->
+            <tr *ngFor="let feature of group.features">
+              <td class="feature-col">{{ getFeatureName(feature) }}</td>
+              <td *ngFor="let plan of displayedPlans">
 
-          <!-- CATEGORY 2: IMPORT & EXPORT -->
-          <tr class="category-row">
-            <td [attr.colspan]="displayedPlans.length + 1">Import & Export Engine</td>
-          </tr>
-          <tr>
-            <td class="feature-col">Import as SQL</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'import_sql')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'import_sql')">—</span>
-            </td>
-          </tr>
-          <tr>
-            <td class="feature-col">Export as PNG, SVG, PDF</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'export_image')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'export_image')">—</span>
-            </td>
-          </tr>
-          <tr>
-            <td class="feature-col">Export as SQL and diagram</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'export_sql')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'export_sql')">—</span>
-            </td>
-          </tr>
+                <ng-container *ngIf="isBooleanFeature(feature.feature_key)">
+                  <app-icons *ngIf="isFeatureEnabled(plan, feature.feature_key)" name="check-valid" size="16"
+                    [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
+                  <span *ngIf="!isFeatureEnabled(plan, feature.feature_key)">—</span>
+                </ng-container>
 
-          <!-- CATEGORY 3: VIEWS & HISTORY -->
-          <tr class="category-row">
-            <td [attr.colspan]="displayedPlans.length + 1">Document views & history</td>
-          </tr>
-          <tr>
-            <td class="feature-col">Document view & Diagram view</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'document_view')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'document_view')">—</span>
-            </td>
-          </tr>
-          <tr>
-            <td class="feature-col">Version history</td>
-            <td *ngFor="let plan of displayedPlans">
-              <app-icons *ngIf="isFeatureEnabled(plan, 'version_history')" name="check-valid" size="16"
-                [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-              <span *ngIf="!isFeatureEnabled(plan, 'version_history')">—</span>
-            </td>
-          </tr>
+                <ng-container *ngIf="!isBooleanFeature(feature.feature_key)">
+                  {{ getFeatureValue(plan, feature.feature_key) }}
+                </ng-container>
 
-          <!-- CATEGORY 4: WORKSPACES & COLLABORATION -->
-          <tr class="category-row">
-            <td [attr.colspan]="displayedPlans.length + 1">Workspaces & Collaboration</td>
-          </tr>
-          <tr>
-            <td class="feature-col">Workspace Isolation</td>
-            <td *ngFor="let plan of displayedPlans">{{ getFeatureValue(plan, 'workspace_types') }}</td>
-          </tr>
-          <tr>
-            <td class="feature-col">Workspace Member Limit</td>
-            <td *ngFor="let plan of displayedPlans">{{ getFeatureValue(plan, 'workspace_members') }}</td>
-          </tr>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>
@@ -364,47 +291,7 @@
     </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer class="nexus-footer-premium">
-    <div class="footer-top">
-      <div class="footer-brand-section">
-        <div class="footer-logo">
-          <app-icons name="db-diagram-logo" size="32" color="#3ec5c1"></app-icons>
-          <span class="logo-text">dbNexus</span>
-        </div>
-        <p class="footer-slogan">Sleek, collaborative database blueprinting platforms for developers. Built for the
-          modern web.</p>
-      </div>
-
-      <div class="footer-links-container">
-        <div class="footer-col">
-          <h4>Product</h4>
-          <a class="footer-link" (click)="onCreateDiagram()">Schema Designer</a>
-          <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
-          <a class="footer-link" routerLink="/pricing">Pricing Options</a>
-          <a class="footer-link" routerLink="/diff">SQL Compare</a>
-        </div>
-
-        <div class="footer-col">
-          <h4>Resources</h4>
-          <a class="footer-link" routerLink="/docs" target="_blank">Documentation</a>
-          <a class="footer-link" routerLink="/docs/dbml-editor" target="_blank">DBML Reference</a>
-          <a class="footer-link" routerLink="/docs/create-your-first-diagram" target="_blank">API Guides</a>
-        </div>
-
-        <div class="footer-col">
-          <h4>Company</h4>
-          <a class="footer-link" routerLink="/docs/privacy-policy">Privacy Policy</a>
-          <a class="footer-link" routerLink="/docs/terms-of-service">Terms of Service</a>
-          <a class="footer-link" href="mailto:support@dbnexus.com">Contact Us</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <p class="copyright">&copy; 2026 dbNexus. All rights reserved.</p>
-    </div>
-  </footer>
+  <app-footer></app-footer>
 
   <!-- Contact Sales Modal -->
   <app-contact-sales-modal [visible]="showContactModal" (close)="closeContactModal()"></app-contact-sales-modal>

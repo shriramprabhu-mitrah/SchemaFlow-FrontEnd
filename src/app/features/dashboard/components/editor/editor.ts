@@ -360,13 +360,13 @@ export class EditorComponent implements OnInit, OnDestroy {
     text = this.escapeHtmlBasic(text);
 
     text = text.replace(
-      /\b(TableGroup|Table|Ref|Note)\b/g,
+      /\b(TableGroup|Table|Ref|Note)\b/gi,
       '<span class="keyword">$1</span>'
     );
 
     // Highlight the names after TableGroup in orange (preserving original quotes and text length)
     text = text.replace(
-      /(<span class="keyword">TableGroup<\/span>)\s+("[A-Za-z0-9_]+"|[A-Za-z0-9_]+)/g,
+      /(<span class="keyword">TableGroup<\/span>)\s+("[A-Za-z0-9_]+"|[A-Za-z0-9_]+)/gi,
       '$1 <span class="groupName">$2</span>'
     );
 
