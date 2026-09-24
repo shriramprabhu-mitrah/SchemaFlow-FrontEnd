@@ -154,7 +154,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  openImportDialect(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
+  openImportDialect(dialect: SqlDialect, e?: Event): void {
     if (e) e.stopPropagation();
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
@@ -172,7 +172,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  openImportModal(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
+  openImportModal(dialect: SqlDialect, e?: Event): void {
     this.openImportDialect(dialect, e);
   }
 
@@ -221,7 +221,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  exportSQL(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
+  exportSQL(dialect: SqlDialect, e?: Event): void {
     if (e) e.stopPropagation();
     if (this.hasDbmlErrors()) {
       return;

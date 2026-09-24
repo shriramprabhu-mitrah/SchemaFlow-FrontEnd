@@ -73,6 +73,20 @@
           <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
             size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
         </button>
+
+        <!-- MongoDB (NoSQL) -->
+        <button class="flyout-item" id="import-mongodb-btn"
+          (click)="openImportDialect('mongodb', $event)"
+          [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
+          <span class="db-icon mongodb-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C11.5 4.5 9 8 9 12c0 3.5 2 6.5 3 8 1-1.5 3-4.5 3-8 0-4-2.5-7.5-3-10z" />
+            </svg>
+          </span>
+          <span class="item-name">MongoDB (NoSQL)</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
+            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button>
       </div>
     </div>
 
@@ -198,6 +212,19 @@
             </svg>
           </span>
           <span class="item-name">SQLite</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
+            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button>
+
+        <!-- MongoDB (NoSQL) -->
+        <button class="flyout-item" (click)="exportSQL('mongodb', $event)"
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          <span class="db-icon mongodb-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C11.5 4.5 9 8 9 12c0 3.5 2 6.5 3 8 1-1.5 3-4.5 3-8 0-4-2.5-7.5-3-10z" />
+            </svg>
+          </span>
+          <span class="item-name">MongoDB (NoSQL)</span>
           <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
             size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
         </button>
