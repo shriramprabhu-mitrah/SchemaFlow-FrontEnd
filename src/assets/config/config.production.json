@@ -49,6 +49,10 @@
     "plans": "API_URL/api/pricing/plans",
     "profileUpgrade": "API_URL/api/profile/subscription/upgrade"
   },
+  "paymentApiUrls": {
+    "createSubscription": "API_URL/api/payments/create-subscription",
+    "verifySubscription": "API_URL/api/payments/verify-subscription"
+  },
   "organizationApiUrls": {
     "organizations": "API_URL/api/organizations",
     "organizationById": "API_URL/api/organizations/{id}",

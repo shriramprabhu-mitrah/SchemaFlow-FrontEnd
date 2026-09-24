@@ -315,22 +315,30 @@ export class AuthService {
     this.currentPlanSlug = slug;
     if (isPlatformBrowser(this.platformId) && slug) {
       localStorage.setItem('current_plan_slug', slug);
+      localStorage.setItem('cachedPlanSlug', slug);
     }
   }
 
   getCurrentPlanSlug(): string | null {
     if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('current_plan_slug');
+      return localStorage.getItem('current_plan_slug') || localStorage.getItem('cachedPlanSlug') || this.currentPlanSlug;
     }
-    return null;
+    return this.currentPlanSlug;
   }
 
   getCurrentPlanStatus(): string {
+    if (isPlatformBrowser(this.platformId)) {
+      return localStorage.getItem('current_plan_status') || localStorage.getItem('cachedPlanStatus') || this.currentPlanStatus;
+    }
     return this.currentPlanStatus;
   }
 
   setCurrentPlanStatus(status: string): void {
     this.currentPlanStatus = status;
+    if (isPlatformBrowser(this.platformId) && status) {
+      localStorage.setItem('current_plan_status', status);
+      localStorage.setItem('cachedPlanStatus', status);
+    }
   }
 
   setEntitlements(entitlements: any[]): void {

@@ -12,6 +12,7 @@ import { EntitlementService } from '../../core/services/entitlement.service';
 import { SeoService } from '../../core/services/seo.service';
 import { ContactSalesModalComponent } from '../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 import { Footer } from '../../shared/components/footer/footer';
+import { environment } from '../../../environment/environment';
 
 @Component({
   selector: 'app-pricing',
@@ -34,6 +35,8 @@ export class PricingComponent implements OnInit {
   currentPlanStatus = 'active';
   hasUsedTrial = false;
   showPlanSwitchAlert = false;
+
+  selectedCurrency = 'INR';
 
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
@@ -64,7 +67,7 @@ export class PricingComponent implements OnInit {
           this.currentPlanSlug = res.data.purchasedPlan.slug || 'free';
           this.currentPlanStatus = res.data.purchasedPlan.status || 'active';
           this.hasUsedTrial = res.data.hasUsedTrial || false;
-          
+
           if (typeof window !== 'undefined') {
             localStorage.setItem('cachedPlanSlug', this.currentPlanSlug);
             localStorage.setItem('cachedPlanStatus', this.currentPlanStatus);
@@ -118,7 +121,7 @@ export class PricingComponent implements OnInit {
                 this.currentPlanSlug = res.data.purchasedPlan.slug || 'free';
                 this.currentPlanStatus = res.data.purchasedPlan.status || 'active';
                 this.hasUsedTrial = res.data.hasUsedTrial || false;
-                
+
                 if (typeof window !== 'undefined') {
                   localStorage.setItem('cachedPlanSlug', this.currentPlanSlug);
                   localStorage.setItem('cachedPlanStatus', this.currentPlanStatus);
@@ -192,13 +195,18 @@ export class PricingComponent implements OnInit {
     this.isAnnual = annual;
   }
 
+  getCurrencySymbol(): string {
+    return '₹';
+  }
+
   getPrice(plan: any): string {
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
+    const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 12;
+
     if (monthlyPrice === 0) return 'Free';
 
-    const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 10;
     const price = this.isAnnual ? annualPrice : monthlyPrice;
-    return '₹' + price;
+    return price.toString();
   }
 
   getPeriod(plan: any): string {
@@ -209,7 +217,7 @@ export class PricingComponent implements OnInit {
   getFeatureName(ent: any): string {
     if (ent.display_text) return ent.display_text;
     if (ent.feature_name) return ent.feature_name;
-    
+
     if (ent.feature_key) {
       const formatted = ent.feature_key.replace(/_/g, ' ');
       return formatted.charAt(0).toUpperCase() + formatted.slice(1);
@@ -287,7 +295,7 @@ export class PricingComponent implements OnInit {
 
 
     // --- Logged-in user ---
-    if (this.currentPlanSlug && this.currentPlanSlug === plan.slug) {
+    if (this.currentPlanSlug && this.currentPlanSlug === plan.slug && this.currentPlanStatus !== 'expired') {
       if (this.currentPlanStatus === 'trial') {
         return 'Current Plan (Free trial for 45 days)';
       }
@@ -378,17 +386,17 @@ export class PricingComponent implements OnInit {
   isCtaDisabled(plan: any): boolean {
     if (!this.isLoggedIn) return false;
     if (this.currentPlanStatus === 'expired') return false;
-    
+
     // If they are on this exact plan (active or trial), disable the button
     if (this.currentPlanSlug && this.currentPlanSlug === plan.slug) {
       return true;
     }
-    
+
     // If they are on any paid plan (not free), disable the free plan button
     if (plan.slug === 'free' && this.currentPlanSlug && this.currentPlanSlug !== 'free') {
       return true;
     }
-    
+
     return false;
   }
 
@@ -411,19 +419,14 @@ export class PricingComponent implements OnInit {
       return;
     }
 
-    if (this.isTrialExpired() && plan.slug !== 'free') {
-      this.openContactModal();
-      return;
-    }
-
     if (this.auth.isOrganizationMember() && plan.slug !== 'free' && plan.slug !== this.currentPlanSlug) {
       this.contactModalMessage = 'You are a team member and cannot modify the organization plan. Please contact your administrator or sales.';
       this.showContactModal = true;
       return;
     }
 
-    if ((this.hasUsedTrial || (this.currentPlanStatus === 'active' && this.currentPlanSlug !== 'free')) && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
-      this.contactModalMessage = 'To upgrade to a new plan, you need to deactivate the ongoing plan. Please contact sales.';
+    if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
+      this.contactModalMessage = 'To switch to a different plan, you need to cancel your ongoing plan first. Please contact sales.';
       this.showContactModal = true;
       return;
     }
@@ -448,7 +451,16 @@ export class PricingComponent implements OnInit {
       this.upgrading = true;
       this.cdr.detectChanges();
       this.orgService.upgrade(orgId, plan.slug).subscribe({
-        next: () => {
+        next: (res) => {
+          console.log('ORG UPGRADE RESPONSE:', res);
+          const localSubId = res.data?.subscription_id || res.subscription_id;
+
+          // Check if the plan requires payment (status will be 'expired' or pending)
+          if (res.data?.status === 'expired' && localSubId) {
+            this.initiateRazorpayPayment(localSubId, plan);
+            return;
+          }
+
           this.auth.getUserFeatures().subscribe();
           this.upgrading = false;
           this.svc.showToast('Subscription updated successfully!', 3000, 'success');
@@ -476,26 +488,32 @@ export class PricingComponent implements OnInit {
     }
     this.upgrading = true;
     this.cdr.detectChanges();
-    this.http.post<any>(upgradeUrl, { planSlug: plan.slug }, { withCredentials: true }).subscribe({
-      next: () => {
+    this.http.post<any>(upgradeUrl, { planSlug: plan.slug, currency: this.selectedCurrency }, { withCredentials: true }).subscribe({
+      next: (res) => {
+        const localSubId = res.data?.subscription_id;
+
+        // Check if the plan is paid (no trial) and requires Razorpay
+        if (res.data?.status === 'expired' && localSubId) {
+          this.initiateRazorpayPayment(localSubId, plan);
+          return;
+        }
+
+        // If it's a free trial or free plan, just succeed
         this.auth.getUserFeatures().subscribe();
         this.upgrading = false;
         this.svc.showToast(`Upgraded to ${plan.name} successfully!`, 3000, 'success');
-        
+
         // Proactively update localStorage so the reload is perfectly seamless
         if (typeof window !== 'undefined') {
           localStorage.setItem('cachedPlanSlug', plan.slug);
-          // If we upgraded to a free trial, status is trial. If we bought a plan, it's active.
-          // The backend determines this, but 'trial' is a safe guess if no money was involved initially, or 'active'.
-          // To be safe, we just leave status as is or 'active', the API will correct it in 50ms.
-          // But we DO know they used the trial now if they just started one!
           if (plan.slug !== 'free') {
-             localStorage.setItem('cachedHasUsedTrial', 'true');
+            localStorage.setItem('cachedHasUsedTrial', 'true');
           }
         }
 
         if ((this.auth as any).setCurrentPlanSlug) {
           (this.auth as any).setCurrentPlanSlug(plan.slug);
+          (this.auth as any).setCurrentPlanStatus(res.data?.status || 'trial');
         }
         this.cdr.detectChanges();
         setTimeout(() => window.location.reload(), 1000);
@@ -513,7 +531,118 @@ export class PricingComponent implements OnInit {
       }
     });
   }
+
+  private loadRazorpayScript(): Promise<boolean> {
+    return new Promise(resolve => {
+      if (typeof window === 'undefined') {
+        return resolve(false);
+      }
+      if ((window as any).Razorpay) {
+        return resolve(true);
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
+  private initiateRazorpayPayment(localSubId: string, plan: any): void {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000';
+    const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
+    const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
+
+    const planType = `${plan.slug}_${this.isAnnual ? 'yearly' : 'monthly'}`;
+
+    this.http.post<any>(createSubUrl, {
+      planType: planType,
+      currency: this.selectedCurrency,
+      subscriptionId: localSubId
+    }, { withCredentials: true }).subscribe({
+      next: async (res) => {
+        const rpSubId = res.subscription_id;
+        if (!rpSubId) {
+          this.upgrading = false;
+          this.svc.showToast('Failed to generate payment gateway link.', 4000, 'error');
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const isLoaded = await this.loadRazorpayScript();
+        if (!isLoaded) {
+          this.upgrading = false;
+          this.svc.showToast('Failed to load payment gateway.', 4000, 'error');
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const razorpayKey = res.key_id || environment.razorpayKeyId || this.appConfig.environment?.appConfig?.razorpayKeyId;
+        if (!razorpayKey) {
+          this.upgrading = false;
+          this.svc.showToast('Payment gateway configuration error.', 4000, 'error');
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const options = {
+          key: razorpayKey,
+          subscription_id: rpSubId,
+          name: "DB Nexus",
+          description: `${plan.name} Subscription`,
+          handler: (response: any) => {
+            this.upgrading = true; // Keep loading while verifying
+            this.http.post<any>(verifySubUrl, {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_subscription_id: response.razorpay_subscription_id,
+              razorpay_signature: response.razorpay_signature
+            }, { withCredentials: true }).subscribe({
+              next: () => {
+                this.upgrading = false;
+                this.svc.showToast(`Payment successful! Welcome to ${plan.name}.`, 3000, 'success');
+
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('cachedPlanSlug', plan.slug);
+                  localStorage.setItem('cachedHasUsedTrial', 'true');
+                }
+                if ((this.auth as any).setCurrentPlanSlug) {
+                  (this.auth as any).setCurrentPlanSlug(plan.slug);
+                }
+                this.cdr.detectChanges();
+                setTimeout(() => window.location.reload(), 1500);
+              },
+              error: () => {
+                this.upgrading = false;
+                this.svc.showToast('Payment successful, but verification failed. Please contact support.', 5000, 'error');
+                this.cdr.detectChanges();
+              }
+            });
+          },
+          theme: {
+            color: "#2563eb"
+          },
+          modal: {
+            ondismiss: () => {
+              this.upgrading = false;
+              this.svc.showToast('Payment cancelled.', 3000, 'error');
+              this.cdr.detectChanges();
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (response: any) => {
+          this.upgrading = false;
+          this.svc.showToast('Payment failed: ' + response.error.description, 4000, 'error');
+          this.cdr.detectChanges();
+        });
+        rzp.open();
+      },
+      error: (err) => {
+        this.upgrading = false;
+        this.svc.showToast('Error initiating checkout. Please try again.', 4000, 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
 }
-
-
-
