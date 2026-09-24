@@ -7,6 +7,7 @@ import { ButtonComponent } from '../../shared/button/button';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { SeoService } from '../../core/services/seo.service';
 import { InteractivePreviewComponent } from './components/interactive-preview/interactive-preview';
+import { Footer } from '../../shared/components/footer/footer';
 
 interface HeroTable {
   name: string;
@@ -18,7 +19,7 @@ interface HeroTable {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, InteractivePreviewComponent],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, InteractivePreviewComponent, Footer],
   templateUrl: './home.html',
 })
 export class HomeComponent implements OnInit {

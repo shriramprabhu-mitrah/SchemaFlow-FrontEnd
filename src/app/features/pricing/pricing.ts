@@ -11,11 +11,12 @@ import { OrganizationService } from '../organization/services/organization.servi
 import { EntitlementService } from '../../core/services/entitlement.service';
 import { SeoService } from '../../core/services/seo.service';
 import { ContactSalesModalComponent } from '../../shared/components/modals/contact-sales-modal/contact-sales-modal';
+import { Footer } from '../../shared/components/footer/footer';
 
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent, Footer],
   templateUrl: './pricing.html',
 })
 export class PricingComponent implements OnInit {
