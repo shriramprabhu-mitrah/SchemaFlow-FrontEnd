@@ -1747,7 +1747,15 @@ export class DashboardService {
     const refs: RefDef[] = [];
     const groups: { name: string; color: string; tables: string[] }[] = [];
 
-    const tableRe = /Table\s+([A-Za-z0-9_.]+)\s*\{([\s\S]*?)\}/g;
+    // Normalize keyword casing: table→Table, ref→Ref, tablegroup→TableGroup, note→Note
+    // This preserves user content (column names, values) while fixing keyword case
+    text = text
+      .replace(/^(\s*)tablegroup(\s)/gim, '$1TableGroup$2')
+      .replace(/^(\s*)table(\s)/gim, '$1Table$2')
+      .replace(/^(\s*)ref(\s*:)/gim, '$1Ref$2')
+      .replace(/^(\s*)note(\s)/gim, '$1Note$2');
+
+    const tableRe = /Table\s+([A-Za-z0-9_.]+)\s*\{([\s\S]*?)\}/gi;
     let m: RegExpExecArray | null;
     const seenTables = new Set<string>();
     while ((m = tableRe.exec(text)) !== null) {
@@ -1813,7 +1821,7 @@ export class DashboardService {
       tables.push({ name, columns: cols });
     }
 
-    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/g;
+    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/gi;
     while ((m = refRe.exec(text)) !== null) {
       const matchIndex = m.index;
       const lineNumber = text.substring(0, matchIndex).split('\n').length;
@@ -1842,7 +1850,7 @@ export class DashboardService {
       });
     }
 
-    const groupRe = /TableGroup\s+(?:["']?([A-Za-z0-9_]+)["']?)\s*(?:\[color:\s*([^\]]+)\])?\s*\{([\s\S]*?)\}/gi;
+    const groupRe = /TableGroup\s+(?:["']?([A-Za-z0-9_ ]+)["']?)\s*(?:\[color:\s*([^\]]+)\])?\s*\{([\s\S]*?)\}/gi;
     let gm: RegExpExecArray | null;
     while ((gm = groupRe.exec(text)) !== null) {
       const name = gm[1];
@@ -1858,7 +1866,7 @@ export class DashboardService {
     }
 
     // Parse Note blocks: Note noteName { 'content' }
-    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|'([^']+)'|([^\r\n{]+)))?\s*\{([\s\S]*?)\}/gm;
+    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|'([^']+)'|([^\r\n{]+)))?\s*\{([\s\S]*?)\}/gim;
     const parsedNotes: { name: string; text: string }[] = [];
     let nm: RegExpExecArray | null;
     while ((nm = noteRe.exec(text)) !== null) {
