@@ -66,7 +66,7 @@
     <h1 class="hero-headline">Choose the right plan for your database designs</h1>
     <p class="hero-subtext">Scale up as you need more diagram capacity, team workspaces, or version history.</p>
     <!-- BILLING TOGGLE -->
-    <div class="billing-toggle-wrapper">
+    <div class="billing-toggle-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
       <div class="billing-toggle-container">
         <button id="btn-toggle-monthly" class="toggle-btn" [class.active]="!isAnnual" (click)="toggleBilling(false)">
           Monthly billing
@@ -147,15 +147,14 @@
             <div style="display: flex; align-items: baseline;gap: 4px;">
               <div class="price-val-row">
                 <ng-container *ngIf="isEligibleForTrial()">
-                  <span class="currency" style="opacity: 0.6;">₹</span>
+                  <span class="currency" style="opacity: 0.6;">{{ getCurrencySymbol() }}</span>
                   <span class="price-amount" style="opacity: 0.6;">
-                    <s>{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) : plan.price_monthly }}</s>
+                    <s>{{ getPrice(plan) }}</s>
                   </span>
                 </ng-container>
                 <ng-container *ngIf="!isEligibleForTrial()">
-                  <span class="currency">₹</span>
-                  <span class="price-amount">{{ isAnnual ? (plan.price_annual || plan.price_monthly * 10) :
-                    plan.price_monthly }}</span>
+                  <span class="currency">{{ getCurrencySymbol() }}</span>
+                  <span class="price-amount">{{ getPrice(plan) }}</span>
                 </ng-container>
               </div>
               <span class="price-period" style="font-size: 14px; opacity: 0.7;">
@@ -163,7 +162,7 @@
               </span>
             </div>
             <div class="annual-billed-label" [style.visibility]="isAnnual ? 'visible' : 'hidden'">
-              Billed annually (₹{{ (plan.price_annual || plan.price_monthly * 10) * 12 }}/yr{{ (plan.plan_type ===
+              Billed annually ({{ getCurrencySymbol() }}{{ $any(getPrice(plan)) * 12 }}/yr{{ (plan.plan_type ===
               'organization' || plan.is_per_seat) ? ' per member' : '' }})
             </div>
           </ng-container>

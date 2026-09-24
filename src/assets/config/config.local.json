@@ -49,6 +49,10 @@
     "plans": "http://localhost:4000/api/pricing/plans",
     "profileUpgrade": "http://localhost:4000/api/profile/subscription/upgrade"
   },
+  "paymentApiUrls": {
+    "createSubscription": "http://localhost:4000/api/payments/create-subscription",
+    "verifySubscription": "http://localhost:4000/api/payments/verify-subscription"
+  },
   "organizationApiUrls": {
     "organizations": "http://localhost:4000/api/organizations",
     "organizationById": "http://localhost:4000/api/organizations/{id}",
