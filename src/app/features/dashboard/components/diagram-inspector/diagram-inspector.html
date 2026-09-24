@@ -39,6 +39,7 @@
               <input *ngIf="editingTableName === table.name"
                 class="table-rename-input"
                 [(ngModel)]="newTableNameVal"
+                maxlength="15"
                 (click)="$event.stopPropagation()"
                 (keydown.enter)="finishRenameTable(table.name)"
                 (keydown.escape)="cancelRenameTable()"
@@ -107,6 +108,7 @@
                   <input type="text"
                     class="field-input field-name"
                     [value]="col.name"
+                    maxlength="15"
                     (blur)="onFieldNameBlur(table, col, $event)"
                     placeholder="Field name" />
 
