@@ -27,6 +27,7 @@ export class AdminLayoutComponent {
     { path: '/admin/organizations', icon: 'organizations', label: 'Organizations' },
     { path: '/admin/users', icon: 'users', label: 'Users' },
     { path: '/admin/subscriptions', icon: 'subscriptions', label: 'Subscriptions' },
+    { path: '/admin/transactions', icon: 'transactions', label: 'Transactions' },
     { path: '/admin/enquiries', icon: 'enquiries', label: 'Enquiries' },
     { path: '/admin/audit-logs', icon: 'audit', label: 'Audit Logs' },
     { path: '/admin/docs', icon: 'documentation', label: 'Documentation' },

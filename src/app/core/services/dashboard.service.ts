@@ -744,7 +744,7 @@ export class DashboardService {
   // user immediately rather than fail silently in the auto-save pipeline.
   readonly toastMessage = signal<string | null>(null);
   readonly toastType = signal<'success' | 'error' | 'info'>('success');
-  readonly toastLocation = signal<'editor' | 'canvas'>('canvas');
+  readonly toastLocation = signal<'editor' | 'canvas' | 'global'>('canvas');
   private toastTimeout: ReturnType<typeof setTimeout> | undefined;
   private invalidRefTimers = new Map<string, { timer: any; startTime: number }>();
   readonly editorErrors = signal<EditorError[]>([]);
@@ -1189,9 +1189,9 @@ export class DashboardService {
     this.canvasFitRequested$.next();
   }
 
-  showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success', location: 'editor' | 'canvas' = 'canvas'): void {
+  showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success', location: 'editor' | 'canvas' | 'global' = 'canvas'): void {
     if (typeof window === 'undefined') return;
-    if (type === 'error') {
+    if (type === 'error' && location !== 'global') {
       location = 'editor';
     }
     this.toastType.set(type);
@@ -1200,7 +1200,9 @@ export class DashboardService {
     if (this.toastTimeout) {
       clearTimeout(this.toastTimeout);
     }
-    this.toastTimeout = setTimeout(() => this.toastMessage.set(null), duration);
+    this.toastTimeout = setTimeout(() => {
+      this.toastMessage.set(null);
+    }, duration);
   }
 
   setPaneMode(val: 'split' | 'editor' | 'canvas'): void {

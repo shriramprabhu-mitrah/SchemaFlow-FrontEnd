@@ -1,0 +1,216 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>Transaction Management</h1>
+      <p class="text-muted" style="margin:4px 0 0">View and manage all transactions and refunds</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh-custom" (click)="loadTransactions()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.32-9.26l5.08 5.08" />
+        </svg>
+        <span style="margin-left: 6px">Refresh</span>
+      </button>
+      <div class="search-box-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-input" placeholder="Search transactions..." [(ngModel)]="search" (input)="onSearch()">
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div><span>Loading transactions...</span>
+  </div>
+
+  <div class="data-table-wrap" *ngIf="!loading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:5%">
+            <span class="sort-header-clickable" style="cursor: default;">
+              <span>S.NO</span>
+            </span>
+          </th>
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('created_at')">
+              <span>DATE</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'created_at'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:20%">
+            <span class="sort-header-clickable" style="cursor: default;">
+              <span>USER / ORG</span>
+            </span>
+          </th>
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('amount')">
+              <span>AMOUNT</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'amount'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('provider_payment_id')">
+              <span>PAYMENT ID</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'provider_payment_id'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:15%">
+            <span class="sort-header-clickable" (click)="sortBy('provider_subscription_id')">
+              <span>SUBSCRIPTION ID</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'provider_subscription_id'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('status')">
+              <span>STATUS</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'status'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <!-- <th style="width:10%;text-align:right">
+            <span>ACTIONS</span>
+          </th> -->
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of transactions; let i = index">
+          <td>{{ paginationStartIndex + i }}</td>
+          <td>{{ t.created_at | date:'medium' }}</td>
+          <td>
+            <div class="user-cell">
+              <div class="user-email-text" style="font-weight: 500;">{{ t.email || 'N/A' }}</div>
+              <div class="text-muted" style="font-size: 12px; margin-top: 2px;">{{ t.org_name || 'Individual' }}</div>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 500;">
+              {{ t.amount | currency:getCurrency(t.currency) }}
+            </div>
+          </td>
+          <td>
+            <span class="text-muted" style="font-family: monospace; font-size: 13px;">{{ t.provider_payment_id || '-'
+              }}</span>
+          </td>
+          <td>
+            <span class="text-muted" style="font-family: monospace; font-size: 13px;">{{ t.provider_subscription_id ||
+              '-' }}</span>
+          </td>
+          <td>
+            <span class="badge"
+              [ngClass]="{'badge-active': t.status === 'success' || t.status === 'active', 'badge-trial': t.status === 'pending', 'badge-danger': t.status === 'failed', 'badge-inactive': t.status === 'refunded'}">
+              {{ t.status | titlecase }}
+            </span>
+          </td>
+          <!-- <td style="text-align:right">
+            <button class="btn-sm btn-danger" [disabled]="t.status !== 'success'" [style.opacity]="t.status !== 'success' ? '0.5' : '1'" [style.cursor]="t.status !== 'success' ? 'not-allowed' : 'pointer'" (click)="refundTransaction(t)">Refund</button>
+          </td> -->
+        </tr>
+        <tr *ngIf="transactions.length === 0">
+          <td colspan="8" class="empty-table-cell">No transactions found</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Workspace-Style Pagination Bar -->
+    <div class="pagination-container" *ngIf="totalFilteredCount > 0">
+      <div class="pagination-info">
+        {{ paginationStartIndex }}-{{ paginationEndIndex }} of {{ totalFilteredCount }} Items
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn tt tt-top" [disabled]="currentPage === 1" (click)="setPage(1)"
+          data-tt="First Page">«</button>
+        <button class="page-btn tt tt-top" [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)"
+          data-tt="Previous Page">‹</button>
+        <button class="page-btn" *ngFor="let p of totalPages" [class.active]="p === currentPage" (click)="setPage(p)">{{
+          p }}</button>
+        <button class="page-btn tt tt-top" [disabled]="currentPage === totalPagesCount"
+          (click)="setPage(currentPage + 1)" data-tt="Next Page">›</button>
+        <button class="page-btn tt tt-top" [disabled]="currentPage === totalPagesCount"
+          (click)="setPage(totalPagesCount)" data-tt="Last Page">»</button>
+      </div>
+      <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger"
+            (click)="showLimitDropdown = !showLimitDropdown; $event.stopPropagation()">
+            <span>{{ pageSize }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showLimitDropdown"
+            (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="pageSize === 10"
+              (click)="pageSize = 10; onLimitChange(); showLimitDropdown = false">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="pageSize === 25"
+              (click)="pageSize = 25; onLimitChange(); showLimitDropdown = false">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="pageSize === 50"
+              (click)="pageSize = 50; onLimitChange(); showLimitDropdown = false">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="pageSize === 100"
+              (click)="pageSize = 100; onLimitChange(); showLimitDropdown = false">100</button>
+          </div>
+        </div>
+        <span class="limit-label">items per page</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Card Modal -->
+  <div class="premium-modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
+    <div class="premium-modal-card" (click)="$event.stopPropagation()">
+      <div class="premium-modal-icon-wrap">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <h3 class="premium-modal-title">Confirm Refund</h3>
+      <p class="premium-modal-text">
+        Are you sure you want to refund this transaction? This action cannot be undone.
+        <strong>Amount: {{ transactionToRefund?.amount | currency:getCurrency(transactionToRefund?.currency) }}</strong>
+      </p>
+      <div style="display:flex; gap:16px; justify-content:center">
+        <button class="premium-btn-cancel" [disabled]="isRefunding" (click)="closeConfirmModal()">Cancel</button>
+        <button class="premium-btn-danger" [disabled]="isRefunding" (click)="executeRefund()">
+          {{ isRefunding ? 'Processing...' : 'Refund' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="premium-modal-overlay" *ngIf="showSuccessModal" (click)="closeSuccessModal()">
+    <div class="premium-modal-card" (click)="$event.stopPropagation()">
+      <div class="premium-modal-icon-wrap"
+        style="background: rgba(16, 185, 129, 0.1); color: #10b981; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.05);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h3 class="premium-modal-title">Refund Successful</h3>
+      <p class="premium-modal-text">
+        The transaction has been successfully refunded and access has been instantly revoked.
+      </p>
+      <div style="display:flex; justify-content:center">
+        <button class="premium-btn-danger"
+          style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);"
+          (click)="closeSuccessModal()">Got it</button>
+      </div>
+    </div>
+  </div>
+</div>
