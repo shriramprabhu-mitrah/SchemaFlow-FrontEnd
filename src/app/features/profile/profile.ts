@@ -9,6 +9,7 @@ import { LoaderComponent } from '../../shared/loader/loader';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { AppConfigService } from '../../core/services/app-config.service';
+import { CancellationModalComponent } from '../../shared/components/modals/cancellation-modal/cancellation-modal';
 
 export type ProfileTab = 'general' | 'subscription' | 'preferences';
 
@@ -35,6 +36,7 @@ export class ProfileComponent {
   planSlug = signal<'free' | 'premium' | 'team'>('free');
   planStatus = signal<string>('active');
   apiPlans = signal<any[]>([]);
+  subscriptionId = signal<number | null>(null);
 
   // Avatar State
   previewUrl = signal<SafeUrl | null>(null);
@@ -47,6 +49,10 @@ export class ProfileComponent {
   showSuccessMessage = signal<boolean>(false);
   showErrorMessage = signal<boolean>(false);
   errorMessage = signal<string>('');
+
+  // Contact Sales Modal
+  showContactModal = false;
+  contactModalMessage = '';
 
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
@@ -152,6 +158,10 @@ export class ProfileComponent {
       next: (res) => {
         const plan = res?.data?.purchasedPlan || res?.data?.plan || res?.data?.activePlan;
         if (plan) {
+          if (plan.subscription_id || plan.id) {
+            this.subscriptionId.set(plan.subscription_id || plan.id);
+          }
+
           const rawSlug = (plan.slug || plan.name || '').toLowerCase();
           if (rawSlug.includes('team')) {
             this.planSlug.set('team');
@@ -311,5 +321,51 @@ export class ProfileComponent {
 
   goBack(): void {
     this.location.back();
+  }
+
+  showCancelModal = false;
+
+  requestCancellation(): void {
+    const subId = this.subscriptionId();
+    if (!subId) {
+      this.errorMessage.set('Could not find active subscription to cancel.');
+      this.showErrorMessage.set(true);
+      setTimeout(() => this.showErrorMessage.set(false), 3000);
+      return;
+    }
+    this.showCancelModal = true;
+  }
+
+  closeCancelModal(): void {
+    this.showCancelModal = false;
+  }
+
+  executeCancellation(): void {
+    const subId = this.subscriptionId();
+    if (!subId) return;
+
+    this.closeCancelModal();
+    this.isLoading.set(true);
+    this.loadingText.set('Cancelling subscription...');
+    const url = this.appConfig.environment?.apiConfig?.baseUrl ? `${this.appConfig.environment.apiConfig.baseUrl}/api/payments/cancel-subscription` : 'http://localhost:4000/api/payments/cancel-subscription';
+    
+    this.http.post<any>(url, { subscriptionId: subId }, { withCredentials: true }).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        this.closeCancelModal(); // Close the modal
+        // We use dashService toast, no need for the local success message overlap
+        this.dashService.showToast(res.message || 'Your auto renewal will be canceled at the end of the billing cycle.', 4000, 'success');
+        this.fetchActivePlan();
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.closeCancelModal(); // Close the modal
+        this.dashService.showToast(err.error?.error || 'Failed to cancel auto renewal.', 4000, 'error');
+      }
+    });
+  }
+
+  closeContactModal(): void {
+    this.showContactModal = false;
   }
 }

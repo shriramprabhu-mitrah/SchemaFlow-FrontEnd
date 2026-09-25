@@ -8,6 +8,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AppConfigService } from '../../../core/services/app-config.service';
 import { Icons } from '../../../core/component/icons/icons';
+import { CancellationModalComponent } from '../../../shared/components/modals/cancellation-modal/cancellation-modal';
 
 @Component({
   selector: 'app-subscription',
@@ -39,6 +40,10 @@ export class SubscriptionComponent implements OnInit {
   showToast = false;
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
+
+  // Contact Sales Modal (for Cancellations/Refunds)
+  showContactModal = false;
+  contactModalMessage = '';
 
   private searchSubject = new Subject<string>();
 
@@ -237,5 +242,45 @@ export class SubscriptionComponent implements OnInit {
       this.showToast = false;
       this.cdr.detectChanges();
     }, 4000);
+  }
+
+  showCancelModal = false;
+
+  requestCancellation(): void {
+    const subId = this.subscription?.id || this.subscription?.subscription_id;
+    if (!subId) {
+      this.triggerToast('Could not find active subscription to cancel.', 'error');
+      return;
+    }
+    this.showCancelModal = true;
+  }
+
+  closeCancelModal(): void {
+    this.showCancelModal = false;
+  }
+
+  executeCancellation(): void {
+    const subId = this.subscription?.id || this.subscription?.subscription_id;
+    if (!subId) return;
+
+    this.closeCancelModal();
+
+    const url = this.appConfig.environment?.apiConfig?.baseUrl ? `${this.appConfig.environment.apiConfig.baseUrl}/api/payments/cancel-subscription` : 'http://localhost:4000/api/payments/cancel-subscription';
+    
+    this.http.post<any>(url, { subscriptionId: subId }, { withCredentials: true }).subscribe({
+      next: (res) => {
+        // Show the message returned by API if any
+        this.triggerToast(res.message || 'Your subscription will be canceled at the end of the billing cycle.', 'success');
+        this.loadSubscription(); // Reload subscription to get updated status
+      },
+      error: (err) => {
+        this.triggerToast(err.error?.error || 'Failed to cancel subscription.', 'error');
+      }
+    });
+  }
+
+  closeContactModal(): void {
+    this.showContactModal = false;
+    this.cdr.detectChanges();
   }
 }
