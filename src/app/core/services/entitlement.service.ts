@@ -331,6 +331,12 @@ export class EntitlementService {
     return true; // default to true if the feature is unknown
   }
 
+  private overallPercentage = 20;
+
+  getOverallPercentage(): number {
+    return this.overallPercentage;
+  }
+
   loadPlans(force = false): Observable<any[]> {
     if (this.plansLoaded && !force && this.plansSubject.value.length > 0) {
       return of(this.plansSubject.value);
@@ -346,6 +352,16 @@ export class EntitlementService {
     }
 
     return this.http.get<any>(url).pipe(
+      tap(res => {
+        if (res?.overall_percentage !== undefined && res?.overall_percentage !== null) {
+          this.overallPercentage = Number(res.overall_percentage) || 20;
+        } else if (res?.data && Array.isArray(res.data)) {
+          const found = res.data.find((p: any) => p.overall_percentage || p.discount_percentage);
+          if (found) {
+            this.overallPercentage = Number(found.overall_percentage || found.discount_percentage) || 20;
+          }
+        }
+      }),
       map(res => res?.data || res || []),
       tap(plans => {
         if (Array.isArray(plans) && plans.length > 0) {

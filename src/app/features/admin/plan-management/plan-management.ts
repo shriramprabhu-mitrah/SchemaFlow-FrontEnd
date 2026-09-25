@@ -56,11 +56,13 @@ export class PlanManagementComponent implements OnInit {
   limit = 10;
   showLimitDropdown = false;
   activeEntDropdownId: number | null = null;
+  activeShowDropdownId: number | null = null;
 
   @HostListener('document:click')
   onDocumentClick() {
     this.showLimitDropdown = false;
     this.activeEntDropdownId = null;
+    this.activeShowDropdownId = null;
   }
 
   sortColumn = 'name';
@@ -149,6 +151,11 @@ export class PlanManagementComponent implements OnInit {
     return this.planEntitlements;
   }
 
+  isShowInPricingEnabled(ent: any): boolean {
+    if (!ent) return false;
+    return ent.show_in_pricing === true || ent.show_in_pricing === 'true' || ent.show_in_pricing === 1 || ent.show_in_pricing === '1';
+  }
+
   isEntitlementChanged(ent: any): boolean {
     if (!ent || !ent.feature_id) return false;
     const entId = Number(ent.feature_id);
@@ -165,7 +172,10 @@ export class PlanManagementComponent implements OnInit {
     const curText = (ent.display_text || '').trim();
     const cleanCurText = (curText === '—' || curText === '-' || curText === 'null') ? '' : curText;
 
-    return (rawVal !== curVal) || (rawLimit !== curLimit) || (cleanRawText !== cleanCurText);
+    const rawShow = raw ? (raw.show_in_pricing === true || raw.show_in_pricing === 'true' || raw.show_in_pricing === 1 || raw.show_in_pricing === '1') : true;
+    const curShow = this.isShowInPricingEnabled(ent);
+
+    return (rawVal !== curVal) || (rawLimit !== curLimit) || (cleanRawText !== cleanCurText) || (rawShow !== curShow);
   }
 
   syncCurrentPageToEdits(): void {
@@ -184,7 +194,8 @@ export class PlanManagementComponent implements OnInit {
           value_type: ent.value_type,
           value: String(ent.value ?? 'false'),
           limit_value: isNaN(curLimit as number) ? null : curLimit,
-          display_text: cleanCurText
+          display_text: cleanCurText,
+          show_in_pricing: this.isShowInPricingEnabled(ent)
         });
       } else {
         this.editedEntitlementsMap.delete(fId);
@@ -200,6 +211,12 @@ export class PlanManagementComponent implements OnInit {
   setEntitlementValue(ent: any, val: string): void {
     if (!ent) return;
     ent.value = val;
+    this.onEntitlementFieldChange(ent);
+  }
+
+  setShowInPricing(ent: any, val: boolean): void {
+    if (!ent) return;
+    ent.show_in_pricing = val;
     this.onEntitlementFieldChange(ent);
   }
 
@@ -404,6 +421,8 @@ export class PlanManagementComponent implements OnInit {
       const rawText = (existing?.display_text || '').trim();
       const cleanText = (rawText === '—' || rawText === '-' || rawText === 'null') ? '' : rawText;
 
+      const rawShow = existing ? this.isShowInPricingEnabled(existing) : true;
+
       if (edited) {
         return {
           feature_id: fId,
@@ -412,7 +431,8 @@ export class PlanManagementComponent implements OnInit {
           value_type: f.value_type,
           value: edited.value,
           limit_value: edited.limit_value,
-          display_text: edited.display_text
+          display_text: edited.display_text,
+          show_in_pricing: edited.show_in_pricing !== undefined ? edited.show_in_pricing : rawShow
         };
       }
 
@@ -425,13 +445,15 @@ export class PlanManagementComponent implements OnInit {
         value_type: f.value_type,
         value: existing?.value || 'false',
         limit_value: isNaN(exLimit as number) ? null : exLimit,
-        display_text: cleanText
+        display_text: cleanText,
+        show_in_pricing: rawShow
       };
     }).filter(item => item !== null);
   }
 
   formErrors = { name: '', slug: '' };
 
+  /*
   onDiscountOrMonthlyChange(): void {
     const monthly = parseFloat(this.form.price_monthly) || 0;
     const discountRaw = this.form.discount_percentage;
@@ -445,6 +467,7 @@ export class PlanManagementComponent implements OnInit {
       this.form.price_annual = Math.round(monthly);
     }
   }
+  */
 
   openCreate(): void {
     this.editMode = false;
@@ -475,6 +498,7 @@ export class PlanManagementComponent implements OnInit {
     this.editMode = true;
     this.form = { ...plan };
 
+    /*
     const monthly = parseFloat(this.form.price_monthly || '0');
     const annual = parseFloat(this.form.price_annual || '0');
 
@@ -486,6 +510,7 @@ export class PlanManagementComponent implements OnInit {
     } else {
       this.form.discount_percentage = 0;
     }
+    */
 
     this.formErrors = { name: '', slug: '' };
     this.showModal = true;
@@ -646,7 +671,8 @@ export class PlanManagementComponent implements OnInit {
           feature_id: Number(r.feature_id),
           value: String(r.value ?? 'false'),
           limit_value: (r.limit_value === null || r.limit_value === undefined || r.limit_value === '') ? null : (isNaN(Number(r.limit_value)) ? null : Number(r.limit_value)),
-          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt,
+          show_in_pricing: this.isShowInPricingEnabled(r)
         });
       }
     }
@@ -660,7 +686,8 @@ export class PlanManagementComponent implements OnInit {
           feature_id: Number(e.feature_id),
           value: String(e.value ?? 'false'),
           limit_value: (e.limit_value === null || e.limit_value === undefined || e.limit_value === '') ? null : (isNaN(Number(e.limit_value)) ? null : Number(e.limit_value)),
-          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt,
+          show_in_pricing: this.isShowInPricingEnabled(e)
         });
       }
     }
@@ -673,7 +700,8 @@ export class PlanManagementComponent implements OnInit {
         feature_id: Number(id),
         value: String(e.value ?? 'false'),
         limit_value: (e.limit_value === null || e.limit_value === undefined || e.limit_value === '') ? null : (isNaN(Number(e.limit_value)) ? null : Number(e.limit_value)),
-        display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+        display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt,
+        show_in_pricing: this.isShowInPricingEnabled(e)
       });
     }
 

@@ -167,6 +167,92 @@
 }
 
 /* =========================================
+   DATABASE INTEGRATION SECTION (Clean Row)
+   ========================================= */
+.db-marquee-section {
+  padding: 32px 0;
+  background: transparent !important;
+  border: none !important;
+
+  html[data-theme="dark"] &,
+  body.dark-theme &,
+  .dark-theme & {
+    background: transparent !important;
+    border: none !important;
+  }
+}
+
+.db-marquee-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.db-marquee-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.db-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #64748b;
+  text-transform: uppercase;
+  margin: 0;
+
+  html[data-theme="dark"] &,
+  body.dark-theme &,
+  .dark-theme & {
+    color: #cbd5e1 !important;
+  }
+}
+
+.db-static-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: wrap;
+  padding: 0 24px;
+}
+
+.db-logo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 6px 12px;
+  transition: transform 0.2s ease;
+  user-select: none;
+  cursor: pointer;
+
+  app-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.db-name {
+  font-size: 21px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+
+  html[data-theme="dark"] &,
+  body.dark-theme &,
+  .dark-theme & {
+    color: #f8fafc !important;
+  }
+}
+
+/* =========================================
    THE PROBLEM SECTION (Pain of the Past)
    ========================================= */
 .problem-section-solid {
@@ -689,6 +775,60 @@
   line-height: 1.6;
   color: #64748b;
   max-width: 320px;
+}
+
+.footer-social-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 28px;
+}
+
+.social-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  app-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  &:hover {
+    color: #0a66c2;
+    transform: translateY(-2px);
+
+    app-icons {
+      color: #0a66c2;
+    }
+  }
+
+  html[data-theme="dark"] &,
+  body.dark-theme &,
+  .dark-theme & {
+    color: #cbd5e1 !important;
+
+    app-icons {
+      color: #cbd5e1 !important;
+    }
+
+    &:hover {
+      color: #38bdf8 !important;
+
+      app-icons {
+        color: #38bdf8 !important;
+      }
+    }
+  }
 }
 
 .footer-links-container {

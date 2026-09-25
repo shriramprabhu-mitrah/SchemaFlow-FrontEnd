@@ -2,6 +2,20 @@
 
 ---
 
+## [1.2.0] - 2026-09-25
+
+### Added
+- NoSQL database integration and support
+- Razorpay payment gateway integration
+
+### Changed
+- Annual pricing input made directly editable in admin plan management
+- Dynamic rendering of overall discount percentage from API
+
+### Fixed
+- Upgrade modal plan card layout to align action CTA buttons directly under price section
+- Visual rendering and logo fixes for MongoDB, MySQL, and SQLite3 logos
+
 ## [1.1.0] - 2026-09-22
 
 ### Added

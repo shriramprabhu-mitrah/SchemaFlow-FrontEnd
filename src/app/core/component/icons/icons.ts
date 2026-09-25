@@ -35,9 +35,12 @@ export class Icons {
       return;
     }
 
-    let replacedMarkup = svgMarkup
-      .replace(/stroke="(?!none\b)[^"]*"/g, `stroke="${this.color}"`)
-      .replace(/fill="(?!none\b)[^"]*"/g, `fill="${this.color}"`);
+    let replacedMarkup = svgMarkup;
+    if (this.color && this.color !== 'preserve' && this.color !== 'original' && this.color !== 'none') {
+      replacedMarkup = svgMarkup
+        .replace(/stroke="(?!none\b)[^"]*"/g, `stroke="${this.color}"`)
+        .replace(/fill="(?!none\b)[^"]*"/g, `fill="${this.color}"`);
+    }
 
     // Parse the <svg> opening tag specifically to inject/update width and height
     const svgTagMatch = replacedMarkup.match(/<svg([^>]*)>/);
@@ -46,7 +49,17 @@ export class Icons {
       // Remove any existing width or height attributes from the <svg> tag specifically
       attrs = attrs.replace(/(?<=\s|^)width="[^"]*"\s*/g, '').replace(/(?<=\s|^)height="[^"]*"\s*/g, '');
       // Add the new width and height attributes
-      attrs = ` width="${this.sizeAsNumber}" height="${this.sizeAsNumber}"` + (attrs.startsWith(' ') ? attrs : ' ' + attrs);
+      let calculatedWidth = this.sizeAsNumber;
+      const viewBoxMatch = attrs.match(/viewBox=["']\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s*["']/);
+      if (viewBoxMatch) {
+        const vbWidth = parseFloat(viewBoxMatch[3]);
+        const vbHeight = parseFloat(viewBoxMatch[4]);
+        if (vbWidth > 0 && vbHeight > 0) {
+          calculatedWidth = Math.round(this.sizeAsNumber * (vbWidth / vbHeight));
+        }
+      }
+
+      attrs = ` width="${calculatedWidth}" height="${this.sizeAsNumber}"` + (attrs.startsWith(' ') ? attrs : ' ' + attrs);
       replacedMarkup = replacedMarkup.replace(/<svg[^>]*>/, `<svg${attrs}>`);
     }
 
