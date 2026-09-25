@@ -22,7 +22,7 @@ export class ShareModalComponent implements OnInit {
   get diagramName(): string {
     return this.svc.diagramName || 'Untitled Diagram';
   }
-  
+
   isPublic = true;
   password = '';
   passwordError: string | null = null;
@@ -30,11 +30,11 @@ export class ShareModalComponent implements OnInit {
   sendingEmails = false;
   savingStatus = false;
   showPassword = false;
-  
+
   activeTab: 'sharing' | 'embedding' = 'sharing';
   invitePermission = 'can view';
   sharePermission = 'Viewer';
-  
+
   linkCopied = false;
   /*
   embedCopied = false;
@@ -66,7 +66,7 @@ export class ShareModalComponent implements OnInit {
     public svc: DashboardService,
     private appConfig: AppConfigService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
   }
@@ -126,6 +126,13 @@ export class ShareModalComponent implements OnInit {
     this.passwordError = null;
   }
 
+  onPasswordKeyDown(event: KeyboardEvent): void {
+    const input = event.target as HTMLInputElement;
+    if (event.key === ' ' && input?.selectionStart === 0) {
+      event.preventDefault();
+    }
+  }
+
   onPasswordInput(): void {
     if (this.passwordError) {
       this.passwordError = null;
@@ -134,7 +141,7 @@ export class ShareModalComponent implements OnInit {
 
   saveSharingSettings(): void {
     if (!this.diagramId) return;
-    
+
     if (this.hasDbmlErrors()) {
       this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
       return;
@@ -154,6 +161,9 @@ export class ShareModalComponent implements OnInit {
       } else {
         this.passwordError = 'Password is required for protected sharing.';
       }
+      return;
+    } else if (this.password.startsWith(' ') || this.password.endsWith(' ')) {
+      this.passwordError = 'Password cannot  end with a space.';
       return;
     } else {
       this.passwordError = null;
@@ -189,19 +199,19 @@ export class ShareModalComponent implements OnInit {
       this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
       return;
     }
-    
+
     // Parse emails from input
     const rawEmails = this.emailsInput.split(/[\s,]+/).map(e => e.trim()).filter(e => e.length > 0);
-    
+
     if (rawEmails.length === 0) {
       this.svc.showToast('Please enter at least one valid email address.', 3000, 'error');
       return;
     }
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const invalidEmails = rawEmails.filter(email => !emailRegex.test(email));
-    
+
     if (invalidEmails.length > 0) {
       this.svc.showToast(`Invalid email(s): ${invalidEmails.join(', ')}`, 3000, 'error');
       return;
