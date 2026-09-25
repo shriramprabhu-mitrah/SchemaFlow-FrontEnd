@@ -63,7 +63,7 @@
             <button id="btn-modal-toggle-annual" class="toggle-btn" [class.active]="isAnnual"
               (click)="toggleBilling(true)">
               Annual billing
-              <span class="discount-badge">Save up to 42%</span>
+              <span class="discount-badge">Save up to {{ overallPercentage }}%</span>
             </button>
           </div>
         </div>
@@ -172,12 +172,52 @@
               </ng-container>
             </div>
 
+            <div class="card-action" style="margin-bottom: 15px;">
+              <app-button variant="none"
+                [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient'))))"
+                [disabled]="isCtaDisabled(plan)" (onClick)="selectPlan(plan)">
+                {{ getCtaLabel(plan) }}
+              </app-button>
+              <div class="no-card-required" *ngIf="shouldShowNoCardRequired(plan)">
+                No credit card required
+              </div>
+            </div>
+
+            <div class="card-key-specs" *ngIf="getKeySpecs(plan).length > 0">
+              <div class="key-spec-item" *ngFor="let spec of getKeySpecs(plan)">
+                <svg *ngIf="spec.icon === 'diagram'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                  <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                  <path d="M10 7h4v7"></path>
+                </svg>
+                <svg *ngIf="spec.icon === 'user'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <svg *ngIf="spec.icon === 'users'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M9 21v-2a4 4 0 0 0-4-4H3a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                </svg>
+                <svg *ngIf="spec.icon === 'doc'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>{{ spec.text }}</span>
+              </div>
+            </div>
+
+            <div class="card-divider"></div>
+
             <div class="card-features">
               <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
                 <li *ngFor="let ent of getVisibleEntitlements(plan)"
                   style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #cbd5e1;">
                   <app-icons name="check-valid" size="16" [color]="plan.highlight_color || '#3ec5c1'"></app-icons>
-                  <span>{{ ent.display_text || ent.feature_name }}</span>
+                  <span>{{ getFeatureName(ent) }}</span>
                 </li>
               </ul>
               <button *ngIf="hasMoreFeatures(plan)" type="button" class="btn-show-features"
@@ -190,15 +230,34 @@
               </button>
             </div>
 
-            <div class="card-action" style="margin-top: 14px;">
-              <div class="no-card-required" *ngIf="shouldShowNoCardRequired(plan)">
-                No credit card required
+            <!-- ADD-ONS SECTION -->
+            <div class="card-addons-section" *ngIf="plan.slug === 'premium' || plan.slug === 'pro' || plan.slug === 'team' || plan.slug === 'business' || plan.slug === 'organization'">
+              <div class="card-addons-divider"></div>
+              <div class="addons-header">Add-ons:</div>
+              <div class="addons-list">
+                <div class="addon-item" *ngIf="plan.slug === 'team' || plan.slug === 'business' || plan.slug === 'organization'">
+                  <div class="addon-left">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>Extra user</span>
+                  </div>
+                  <div class="addon-price">₹129/mo</div>
+                </div>
+                <div class="addon-item">
+                  <div class="addon-left">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span>Extra paid doc project</span>
+                  </div>
+                  <div class="addon-price">₹199/mo</div>
+                </div>
               </div>
-              <app-button variant="none"
-                [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient'))))"
-                [disabled]="isCtaDisabled(plan)" (onClick)="selectPlan(plan)">
-                {{ getCtaLabel(plan) }}
-              </app-button>
             </div>
           </div>
         </div>
