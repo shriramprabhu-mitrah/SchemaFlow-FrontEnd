@@ -472,6 +472,12 @@ body.light-theme {
     border: 1px solid rgba(239, 68, 68, 0.15) !important;
   }
 
+  .mongodb-badge {
+    background: rgba(16, 185, 129, 0.08) !important;
+    color: #059669 !important;
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+  }
+
   // Upload SQL File Button Light Theme overrides
   .upload-sql-btn.default,
   .upload-sql-btn.btn {
@@ -1892,6 +1898,12 @@ canvas {
   background: rgba(232, 96, 96, 0.15);
   color: #e86060;
   border: 1px solid rgba(232, 96, 96, 0.25);
+}
+
+.mongodb-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .close-modal-btn {

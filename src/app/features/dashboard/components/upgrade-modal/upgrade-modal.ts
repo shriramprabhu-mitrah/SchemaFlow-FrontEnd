@@ -11,6 +11,7 @@ import { OrganizationService } from '../../../organization/services/organization
 import { timeout } from 'rxjs';
 import { ContactSalesModalComponent } from '../../../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
+import { environment } from '../../../../../environment/environment';
 
 @Component({
   selector: 'app-upgrade-modal',
@@ -84,6 +85,8 @@ export class UpgradeModalComponent implements OnInit {
   hasUsedTrial = false;
   showPlanSwitchAlert = false;
   showContactModal = false;
+  upgrading = false;
+  selectedCurrency = 'INR';
 
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
@@ -200,11 +203,16 @@ export class UpgradeModalComponent implements OnInit {
 
   getPrice(plan: any): string {
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
+    const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 12;
+
     if (monthlyPrice === 0) return 'Free';
 
-    const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 10;
     const price = this.isAnnual ? annualPrice : monthlyPrice;
-    return '₹' + price;
+    return price.toString();
+  }
+
+  getCurrencySymbol(): string {
+    return '₹';
   }
 
   getPeriod(plan: any): string {
@@ -272,7 +280,12 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   getCtaLabel(plan: any): string {
-    if (this.isLoggedIn && this.currentPlanSlug && this.currentPlanSlug === plan.slug && this.currentPlanStatus === 'active') return 'Current Plan';
+    if (this.isLoggedIn && this.currentPlanSlug && this.currentPlanSlug === plan.slug && this.currentPlanStatus !== 'expired') {
+      if (this.currentPlanStatus === 'trial') {
+        return 'Current Plan (Free trial for 45 days)';
+      }
+      return 'Current Plan';
+    }
 
     if (plan.slug === 'enterprise') return 'Contact Sales';
 
@@ -296,7 +309,6 @@ export class UpgradeModalComponent implements OnInit {
 
   isCtaDisabled(plan: any): boolean {
     if (!this.isLoggedIn) return false;
-    if (this.currentPlanStatus === 'trial') return false;
     if (this.currentPlanStatus === 'expired') return false;
     return !!(this.currentPlanSlug && this.currentPlanSlug === plan.slug);
   }
@@ -360,13 +372,8 @@ export class UpgradeModalComponent implements OnInit {
       return;
     }
 
-    if (this.currentPlanStatus === 'expired' && plan.slug !== 'free') {
-      this.showContactModal = true;
-      return;
-    }
-
-    if ((this.hasUsedTrial || (this.currentPlanStatus === 'active' && this.currentPlanSlug !== 'free')) && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
-      this.contactModalMessage = 'To upgrade to a new plan, you need to deactivate the ongoing plan. Please contact sales.';
+    if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
+      this.contactModalMessage = 'To switch to a different plan, you need to cancel your ongoing plan first. Please contact sales.';
       this.showContactModal = true;
       return;
     }
@@ -393,7 +400,15 @@ export class UpgradeModalComponent implements OnInit {
       // Organization user — call org upgrade API
       this.loading = true;
       this.orgService.upgrade(orgId, plan.slug).subscribe({
-        next: () => {
+        next: (res) => {
+          const localSubId = res.data?.subscription_id || res.subscription_id; 
+
+          // Check if the plan requires payment (status will be 'expired' or pending)
+          if (res.data?.status === 'expired' && localSubId) {
+            this.initiateRazorpayPayment(localSubId, plan);
+            return;
+          }
+
           this.auth.getUserFeatures().subscribe();
           this.loading = false;
           this.svc.showToast('Subscription updated successfully!', 3000, 'success');
@@ -410,37 +425,160 @@ export class UpgradeModalComponent implements OnInit {
           this.cdr.detectChanges();
         }
       });
-    } else {
-      // Individual user — call /api/profile/subscription/upgrade
-      const upgradeUrl = this.appConfig.environment?.pricingApiUrls?.profileUpgrade;
-      if (!upgradeUrl) {
-        this.svc.showToast('Upgrade endpoint not configured.', 4000, 'error');
-        return;
-      }
-      this.loading = true;
-      this.http.post<any>(upgradeUrl, { planSlug: plan.slug }).subscribe({
-        next: () => {
-          this.auth.getUserFeatures().subscribe();
-          this.loading = false;
-          this.svc.showToast('Plan upgraded successfully!', 3000, 'success');
-          if ((this.auth as any).setCurrentPlanSlug) {
-            (this.auth as any).setCurrentPlanSlug(plan.slug);
-          }
-          this.closeModal();
-          setTimeout(() => window.location.reload(), 1000);
-        },
-        error: (err) => {
-          this.loading = false;
-          let errorMsg = 'Failed to upgrade plan. Please try again.';
-          if (err?.error?.message) {
-            errorMsg = err.error.message;
-          } else if (typeof err?.error === 'string') {
-            try { errorMsg = JSON.parse(err.error)?.message || err.error; } catch { errorMsg = err.error; }
-          }
-          this.svc.showToast(errorMsg, 4000, 'error');
-          this.cdr.detectChanges();
-        }
-      });
+      return;
     }
+    // Individual user — call /api/profile/subscription/upgrade
+    const upgradeUrl = this.appConfig.environment?.pricingApiUrls?.profileUpgrade;
+    if (!upgradeUrl) {
+      this.svc.showToast('Upgrade endpoint not configured.', 4000, 'error');
+      return;
+    }
+    this.loading = true;
+    this.http.post<any>(upgradeUrl, { planSlug: plan.slug, currency: this.selectedCurrency }, { withCredentials: true }).subscribe({
+      next: (res) => {
+        const localSubId = res.data?.subscription_id;
+        if (res.data?.status === 'expired' && localSubId) {
+          this.initiateRazorpayPayment(localSubId, plan);
+          return;
+        }
+
+        this.auth.getUserFeatures().subscribe();
+        this.loading = false;
+        this.svc.showToast('Plan upgraded successfully!', 3000, 'success');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cachedPlanSlug', plan.slug);
+          if (plan.slug !== 'free') localStorage.setItem('cachedHasUsedTrial', 'true');
+        }
+        if ((this.auth as any).setCurrentPlanSlug) {
+          (this.auth as any).setCurrentPlanSlug(plan.slug);
+          (this.auth as any).setCurrentPlanStatus(res.data?.status || 'trial');
+        }
+        this.closeModal();
+        setTimeout(() => window.location.reload(), 1000);
+      },
+      error: (err) => {
+        this.loading = false;
+        let errorMsg = 'Failed to upgrade plan. Please try again.';
+        if (err?.error?.message) {
+          errorMsg = err.error.message;
+        } else if (typeof err?.error === 'string') {
+          try { errorMsg = JSON.parse(err.error)?.message || err.error; } catch { errorMsg = err.error; }
+        }
+        this.svc.showToast(errorMsg, 4000, 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private loadRazorpayScript(): Promise<boolean> {
+    return new Promise(resolve => {
+      if (typeof window === 'undefined') {
+        return resolve(false);
+      }
+      if ((window as any).Razorpay) {
+        return resolve(true);
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
+  private initiateRazorpayPayment(localSubId: string, plan: any): void {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000';
+    const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
+    const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
+    const planType = `${plan.slug}_${this.isAnnual ? 'yearly' : 'monthly'}`;
+
+    this.http.post<any>(createSubUrl, {
+      planType: planType,
+      currency: this.selectedCurrency,
+      subscriptionId: localSubId
+    }, { withCredentials: true }).subscribe({
+      next: async (res) => {
+        const rpSubId = res.subscription_id;
+        if (!rpSubId) {
+          this.loading = false;
+          this.svc.showToast('Failed to generate payment gateway link.', 4000, 'error');
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const isLoaded = await this.loadRazorpayScript();
+        if (!isLoaded) {
+          this.loading = false;
+          this.svc.showToast('Failed to load payment gateway.', 4000, 'error');
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const razorpayKey = res.key_id || environment.razorpayKeyId || this.appConfig.environment?.appConfig?.razorpayKeyId;
+        if (!razorpayKey) {
+          this.loading = false;
+          this.svc.showToast('Payment gateway configuration error.', 4000, 'error');
+          this.cdr.detectChanges();
+          return;
+        }
+
+        const options = {
+          key: razorpayKey,
+          subscription_id: rpSubId,
+          name: "DB Nexus",
+          description: `${plan.name} Subscription`,
+          handler: (response: any) => {
+            this.loading = true; // Keep loading while verifying
+            this.http.post<any>(verifySubUrl, {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_subscription_id: response.razorpay_subscription_id,
+              razorpay_signature: response.razorpay_signature
+            }, { withCredentials: true }).subscribe({
+              next: () => {
+                this.loading = false;
+                this.svc.showToast(`Payment successful! Welcome to ${plan.name}.`, 3000, 'success');
+
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('cachedPlanSlug', plan.slug);
+                  localStorage.setItem('cachedHasUsedTrial', 'true');
+                }
+                if ((this.auth as any).setCurrentPlanSlug) {
+                  (this.auth as any).setCurrentPlanSlug(plan.slug);
+                }
+                this.cdr.detectChanges();
+                this.closeModal();
+                setTimeout(() => window.location.reload(), 1500);
+              },
+              error: () => {
+                this.loading = false;
+                this.svc.showToast('Payment successful, but verification failed. Please contact support.', 5000, 'error');
+                this.cdr.detectChanges();
+              }
+            });
+          },
+          theme: { color: "#2563eb" },
+          modal: {
+            ondismiss: () => {
+              this.loading = false;
+              this.svc.showToast('Payment cancelled.', 3000, 'error');
+              this.cdr.detectChanges();
+            }
+          }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (response: any) => {
+          this.loading = false;
+          this.svc.showToast('Payment failed: ' + response.error.description, 4000, 'error');
+          this.cdr.detectChanges();
+        });
+        rzp.open();
+      },
+      error: (err) => {
+        this.loading = false;
+        this.svc.showToast('Error initiating checkout. Please try again.', 4000, 'error');
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

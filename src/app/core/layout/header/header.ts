@@ -723,7 +723,7 @@ export class HeaderComponent implements OnInit {
           if (dbmlVal && dbmlVal.isValid === false) {
             this.importValidated = false;
             this.importValidationError =
-              dbmlVal.errors?.[0] || 'This does not look like valid SQL for the selected dialect.';
+              dbmlVal.errors?.[0] || 'This does not look like valid schema syntax for the selected dialect.';
           } else {
             this.importValidated = true;
             this.importValidationError = null;
@@ -736,7 +736,7 @@ export class HeaderComponent implements OnInit {
       },
       error: (err) => {
         this.importValidated = false;
-        let errorMessage = 'This does not look like valid SQL for the selected dialect.';
+        let errorMessage = 'This does not look like valid schema syntax for the selected dialect.';
         if (err?.error) {
           try {
             const parsed = JSON.parse(err.error);
@@ -781,13 +781,13 @@ export class HeaderComponent implements OnInit {
             return;
           }
           this.svc.forceSetCode(dbml);
-          this.svc.showToast('SQL imported successfully.', 2500);
+          this.svc.showToast('Schema imported successfully.', 2500, 'success');
           this.closeImportModal();
           this.cdr.markForCheck();
         },
         error: (err: any) => {
           console.error('Import failed:', err);
-          let errorMessage = 'Failed to convert SQL. Please check the syntax.';
+          let errorMessage = 'Failed to convert schema. Please check the syntax.';
           if (err?.error) {
             try {
               const parsed = JSON.parse(err.error);

@@ -9,11 +9,12 @@ import { Router } from '@angular/router';
 import { ButtonComponent } from '../../../../shared/button/button';
 import { SidebarComponent } from '../sidebar/sidebar';
 import { DiagramInspectorComponent } from '../diagram-inspector/diagram-inspector';
+import { DocsComponent } from '../docs/docs';
 
 @Component({
   selector: 'app-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent, DocsComponent],
   templateUrl: './editor.html',
 })
 export class EditorComponent implements OnInit, OnDestroy {
@@ -359,13 +360,13 @@ export class EditorComponent implements OnInit, OnDestroy {
     text = this.escapeHtmlBasic(text);
 
     text = text.replace(
-      /\b(TableGroup|Table|Ref|Note)\b/g,
+      /\b(TableGroup|Table|Ref|Note)\b/gi,
       '<span class="keyword">$1</span>'
     );
 
     // Highlight the names after TableGroup in orange (preserving original quotes and text length)
     text = text.replace(
-      /(<span class="keyword">TableGroup<\/span>)\s+("[A-Za-z0-9_]+"|[A-Za-z0-9_]+)/g,
+      /(<span class="keyword">TableGroup<\/span>)\s+("[A-Za-z0-9_]+"|[A-Za-z0-9_]+)/gi,
       '$1 <span class="groupName">$2</span>'
     );
 
@@ -375,9 +376,10 @@ export class EditorComponent implements OnInit, OnDestroy {
       '<span class="attribute">$1</span>'
     );
 
+    // Highlight datatypes only when they appear as column types (after column name), not when used as column or table names
     text = text.replace(
-      /\b(integer|varchar|text|timestamp|date|decimal|boolean|float|datetime|int|bigint)\b/g,
-      '<span class="datatype">$1</span>'
+      /^(\s*(?:["'`][^"'`]+["'`]|[A-Za-z0-9_.]+)\s+)(integer|varchar|text|timestamp|date|decimal|boolean|float|datetime|int|bigint|objectid|json|bson|array|uuid|map|mixed)\b/gim,
+      '$1<span class="datatype">$2</span>'
     );
 
     // Highlight numbers and commas inside parentheses, e.g., (100) or (10,2)

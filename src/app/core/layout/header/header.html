@@ -321,9 +321,9 @@
         </svg>
         Import from
         <span class="dialect-badge"
-          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : 'sqlserver-badge'">
+          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : importDialect === 'mongodb' ? 'mongodb-badge' : 'sqlserver-badge'">
           {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect ===
-          'sqlite' ? 'SQLite' : 'SQL Server' }}
+          'sqlite' ? 'SQLite' : importDialect === 'mongodb' ? 'MongoDB (NoSQL)' : 'SQL Server' }}
         </span>
       </div>
       <button class="close-modal-btn" id="import-modal-close-btn" (click)="closeImportModal()">&times;</button>
@@ -333,7 +333,9 @@
     <div class="import-modal-body">
       <div class="import-modal-label-row"
         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <label class="import-modal-label" style="margin-bottom: 0;">Paste your SQL schema below</label>
+        <label class="import-modal-label" style="margin-bottom: 0;">
+          {{ importDialect === 'mongodb' ? 'Paste your MongoDB, Mongoose, or JSON schema below' : 'Paste your SQL schema below' }}
+        </label>
         <app-button variant="default" (onClick)="fileInput.click()" customClass="upload-sql-btn">
           <div style="display: flex; align-items: center; gap: 6px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -342,15 +344,15 @@
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            Upload SQL File
+            Upload {{ importDialect === 'mongodb' ? 'Schema / JSON' : 'SQL File' }}
           </div>
         </app-button>
-        <input #fileInput type="file" (change)="onSqlFileUpload($event)" accept=".sql,.txt" style="display: none;" />
+        <input #fileInput type="file" (change)="onSqlFileUpload($event)" accept=".sql,.txt,.json,.js,.ts" style="display: none;" />
       </div>
 
       <div class="import-editor-wrap" [class.validated]="importValidated" [class.error]="!!importValidationError">
         <textarea id="import-sql-textarea" class="import-sql-textarea"
-          placeholder="-- Paste your CREATE TABLE statements here..." [value]="importSqlText"
+          [placeholder]="importDialect === 'mongodb' ? '// Paste MongoDB / Mongoose schema, validator, or JSON here...' : '-- Paste your CREATE TABLE statements here...'" [value]="importSqlText"
           (input)="onSqlInput($event)" spellcheck="false" autocomplete="off"></textarea>
 
         <!-- Validation badge inside editor -->
@@ -363,7 +365,7 @@
               stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Valid SQL
+            Valid {{ importDialect === 'mongodb' ? 'Schema' : 'SQL' }}
           </span>
           <span class="status-error" *ngIf="importValidationError && !importValidating">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
@@ -371,7 +373,7 @@
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-            Invalid SQL
+            Invalid {{ importDialect === 'mongodb' ? 'Schema' : 'SQL' }}
           </span>
         </div>
       </div>

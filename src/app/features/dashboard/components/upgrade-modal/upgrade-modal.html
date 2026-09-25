@@ -140,22 +140,20 @@
               <!-- Paid Plan -->
               <ng-container *ngIf="+plan.price_monthly > 0 && plan.slug !== 'enterprise'">
                 <div class="price-val-row">
-                  <span class="currency" *ngIf="!isEligibleForTrial()">₹</span>
+                  <span class="currency" *ngIf="!isEligibleForTrial()">{{ getCurrencySymbol() }}</span>
                   <span class="price-amount">
                     <ng-container *ngIf="isEligibleForTrial()">
-                      <s style="opacity: 0.7; margin-right: 8px;">₹{{ isAnnual ? (plan.price_annual ||
-                        plan.price_monthly * 10) : plan.price_monthly }}</s>
+                      <s style="opacity: 0.7; margin-right: 8px;">{{ getCurrencySymbol() }}{{ getPrice(plan) }}</s>
                     </ng-container>
-                    <ng-container *ngIf="!isEligibleForTrial()">{{ isAnnual ? (plan.price_annual || plan.price_monthly *
-                      10) : plan.price_monthly }}</ng-container>
+                    <ng-container *ngIf="!isEligibleForTrial()">{{ getPrice(plan) }}</ng-container>
                   </span>
                 </div>
                 <span class="price-period">
                   {{ (plan.plan_type === 'organization' || plan.is_per_seat) ? 'per member / month' : 'per month' }}
                 </span>
                 <div class="annual-billed-label" *ngIf="isAnnual"
-                  style="font-size: 11px; margin-top: 4px;">
-                  Billed annually (₹{{ (plan.price_annual || plan.price_monthly * 10) * 12 }}/yr)
+                  style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
+                  Billed annually ({{ getCurrencySymbol() }}{{ $any(getPrice(plan)) * 12 }}/yr)
                 </div>
               </ng-container>
 

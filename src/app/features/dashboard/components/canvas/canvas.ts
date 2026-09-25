@@ -3278,7 +3278,64 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('window:mouseup', ['$event'])
   onWindowMouseUp(e?: MouseEvent): void {
     if (this.draggingGroup) {
+      const droppedGroupName = this.draggingGroup;
       this.draggingGroup = null;
+
+      // Collision check: revert if dropped group overlaps any other group
+      const geometry: Record<string, TableDef> = {};
+      this.svc.tables.forEach((tbl) => (geometry[tbl.name] = tbl));
+
+      const droppedGroup = this.svc.groups.find(gr => gr.name === droppedGroupName);
+      let overlapsOtherGroup = false;
+
+      if (droppedGroup) {
+        const droppedBounds = this.getGroupBounds(droppedGroup, geometry);
+        if (droppedBounds) {
+          for (const otherGroup of this.svc.groups) {
+            if (otherGroup.name === droppedGroupName) continue;
+            const otherBounds = this.getGroupBounds(otherGroup, geometry);
+            if (!otherBounds) continue;
+
+            const overlapX = droppedBounds.x < otherBounds.x + otherBounds.w &&
+              droppedBounds.x + droppedBounds.w > otherBounds.x;
+            const overlapY = droppedBounds.y < otherBounds.y + otherBounds.h &&
+              droppedBounds.y + droppedBounds.h > otherBounds.y;
+
+            if (overlapX && overlapY) {
+              overlapsOtherGroup = true;
+              break;
+            }
+          }
+        }
+
+        if (overlapsOtherGroup) {
+          // Revert all tables in the group back to their drag-start positions
+          droppedGroup.tables.forEach((tableName) => {
+            const startPos = this.dragGroupStartPoints[tableName];
+            if (startPos) {
+              this.svc.tablePositions[tableName] = { x: startPos.x, y: startPos.y };
+              const t = this.svc.tables.find((tt) => tt.name === tableName);
+              if (t) {
+                t.x = startPos.x;
+                t.y = startPos.y;
+              }
+            }
+          });
+          // Revert group position
+          if (this.dragGroupStartGroupPos) {
+            this.svc.groupPositions[droppedGroupName] = {
+              x: this.dragGroupStartGroupPos.x,
+              y: this.dragGroupStartGroupPos.y
+            };
+            this.svc.saveGroupPositions();
+          }
+          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            localStorage.setItem('drag position', JSON.stringify(this.svc.tablePositions));
+          }
+          this.svc.showToast('Groups cannot overlap each other. Move reverted.', 3000, 'error');
+        }
+      }
+
       this.dragGroupStartPoints = {};
       this.dragGroupStartGroupPos = null;
       if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
@@ -3356,6 +3413,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         this.svc.tables.forEach(tbl => (geometry[tbl.name] = tbl));
 
         let overlapsGroup = false;
+        let overlapsGroupAsExpansion = false;
         for (const g of this.svc.groups) {
           if (g.tables.includes(droppedTableName)) continue;
           const bounds = this.getGroupBounds(g, geometry);
@@ -3367,11 +3425,41 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }
 
-        if (overlapsGroup && this.dragTableStartPos) {
+        // Also check: if the dragged table IS inside a group, verify that moving it
+        // doesn't expand that group's boundary to overlap another group
+        if (!overlapsGroup) {
+          const parentGroup = this.svc.groups.find(g => g.tables.includes(droppedTableName));
+          if (parentGroup) {
+            const parentBounds = this.getGroupBounds(parentGroup, geometry);
+            if (parentBounds) {
+              for (const otherGroup of this.svc.groups) {
+                if (otherGroup.name === parentGroup.name) continue;
+                const otherBounds = this.getGroupBounds(otherGroup, geometry);
+                if (!otherBounds) continue;
+                const overlapX = parentBounds.x < otherBounds.x + otherBounds.w &&
+                  parentBounds.x + parentBounds.w > otherBounds.x;
+                const overlapY = parentBounds.y < otherBounds.y + otherBounds.h &&
+                  parentBounds.y + parentBounds.h > otherBounds.y;
+                if (overlapX && overlapY) {
+                  overlapsGroupAsExpansion = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if ((overlapsGroup || overlapsGroupAsExpansion) && this.dragTableStartPos) {
           t.x = this.dragTableStartPos.x;
           t.y = this.dragTableStartPos.y;
           this.svc.tablePositions[droppedTableName] = { x: t.x, y: t.y };
-          this.svc.showToast(`Cannot drop table over a group. Use the group's gear icon to add it.`, 3000, 'error');
+          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            localStorage.setItem('drag position', JSON.stringify(this.svc.tablePositions));
+          }
+          const msg = overlapsGroupAsExpansion
+            ? 'Cannot expand group to overlap another group. Move reverted.'
+            : `Cannot drop table over a group. Use the group's gear icon to add it.`;
+          this.svc.showToast(msg, 3000, 'error');
         }
       }
 
@@ -4327,7 +4415,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveGroupModal(): void {
-    const name = this.groupModal.name.trim();
+    let name = this.groupModal.name.trim();
+    if (name.length > 15) name = name.slice(0, 15);
+    this.groupModal.name = name;
+
     const validName = /^[A-Za-z_][A-Za-z0-9_]*$/;
     if (!validName.test(name)) {
       this.groupModal.error = 'Use letters, numbers, and underscores for the group name.';
@@ -4388,7 +4479,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveTableModal(): void {
-    const name = this.tableModal.name.trim();
+    let name = this.tableModal.name.trim();
+    if (name.length > 15) name = name.slice(0, 15);
+    this.tableModal.name = name;
+
     const validName = /^[A-Za-z_][A-Za-z0-9_]*$/;
     if (!validName.test(name)) {
       this.tableModal.error = 'Use letters, numbers, and underscores for the table name.';
@@ -4398,7 +4492,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.tableModal.error = 'A table needs at least one column.';
       return;
     }
-    const names = this.tableModal.columns.map((column) => column.name.trim());
+    const names = this.tableModal.columns.map((column) => {
+      let colName = column.name.trim();
+      if (colName.length > 15) colName = colName.slice(0, 15);
+      column.name = colName;
+      return colName;
+    });
     if (names.some((columnName) => !validName.test(columnName)) || new Set(names).size !== names.length) {
       this.tableModal.error = 'Column names must be unique and use only letters, numbers, and underscores.';
       return;
@@ -4413,7 +4512,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (this.tableModal.isGroup) {
-      const gName = this.tableModal.groupName.trim();
+      let gName = this.tableModal.groupName.trim();
+      if (gName.length > 15) gName = gName.slice(0, 15);
+      this.tableModal.groupName = gName;
       if (!gName) {
         this.tableModal.error = 'Group name is required when Group option is selected.';
         return;
@@ -5216,7 +5317,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   commitInlineEdit(): void {
     if (!this.inlineEdit.visible) return;
-    const val = this.inlineEdit.value.trim();
+    let val = this.inlineEdit.value.trim();
+    if (val.length > 15) {
+      val = val.slice(0, 15);
+    }
 
     if (val) {
       if (this.inlineEdit.kind === 'column' && this.inlineEdit.originalColumnName) {
@@ -5478,8 +5582,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   commitEditNoteName(): void {
-     if (this.editingNoteId !== null) {
-      const trimmedName = (this.editNoteNameValue || '').trim();
+    if (this.editingNoteId !== null) {
+      let trimmedName = (this.editNoteNameValue || '').trim();
+      if (trimmedName.length > 15) {
+        trimmedName = trimmedName.slice(0, 15);
+      }
       if (trimmedName && this.svc.isNoteNameDuplicate(trimmedName, this.editingNoteId)) {
         this.svc.showToast(`Sticky note name "${trimmedName}" already exists.`, 4000, 'error');
         this.editingNoteId = null;
