@@ -432,6 +432,20 @@ export class PlanManagementComponent implements OnInit {
 
   formErrors = { name: '', slug: '' };
 
+  onDiscountOrMonthlyChange(): void {
+    const monthly = parseFloat(this.form.price_monthly) || 0;
+    const discountRaw = this.form.discount_percentage;
+
+    if (discountRaw !== null && discountRaw !== undefined && discountRaw !== '') {
+      const discount = parseFloat(discountRaw) || 0;
+      const validDiscount = Math.max(0, Math.min(100, discount));
+      const annual = monthly - (monthly * (validDiscount / 100));
+      this.form.price_annual = Math.round(annual);
+    } else {
+      this.form.price_annual = Math.round(monthly);
+    }
+  }
+
   openCreate(): void {
     this.editMode = false;
     this.form = {
@@ -439,6 +453,7 @@ export class PlanManagementComponent implements OnInit {
       slug: '',
       description: '',
       plan_type: 'individual',   // 'individual' | 'organization' | 'both'
+      discount_percentage: 0,
       price_monthly: 0,
       price_annual: 0,
       is_per_seat: false,        // true = per-user billing (org plans)
@@ -459,6 +474,19 @@ export class PlanManagementComponent implements OnInit {
   openEdit(plan: any): void {
     this.editMode = true;
     this.form = { ...plan };
+
+    const monthly = parseFloat(this.form.price_monthly || '0');
+    const annual = parseFloat(this.form.price_annual || '0');
+
+    if (this.form.discount_percentage !== undefined && this.form.discount_percentage !== null) {
+      this.form.discount_percentage = parseFloat(this.form.discount_percentage) || 0;
+    } else if (monthly > 0 && annual >= 0 && annual <= monthly) {
+      const calculatedDiscount = ((monthly - annual) / monthly) * 100;
+      this.form.discount_percentage = Math.round(calculatedDiscount * 100) / 100;
+    } else {
+      this.form.discount_percentage = 0;
+    }
+
     this.formErrors = { name: '', slug: '' };
     this.showModal = true;
   }
