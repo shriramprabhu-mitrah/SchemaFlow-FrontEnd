@@ -17,6 +17,13 @@
     <span style="line-height: 1.4;">You are viewing this diagram in Read-Only mode. You cannot make structural changes, but you can move tables around.</span>
   </div>
 
+  <!-- Top Diff Legend (as shown in user's image) -->
+  <div class="canvas-diff-legend" *ngIf="svc.aiDiffReviewActive()">
+    <span class="legend-item added"><span class="legend-dash dash-added">---</span> Added</span>
+    <span class="legend-item modified"><span class="legend-dash dash-modified">---</span> Modified</span>
+    <span class="legend-item deleted"><span class="legend-dash dash-deleted">---</span> Deleted</span>
+  </div>
+
   <div id="canvas-wrap" #canvasWrap>
     <canvas #canvas (mousedown)="onCanvasMouseDown($event)" (contextmenu)="onCanvasContextMenu($event)"
       (mouseleave)="onCanvasMouseLeave()"></canvas>

@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { DashboardService, EditorError } from '../../../../core/services/dashboard.service';
+import { DashboardService, EditorError, DiffReviewLine } from '../../../../core/services/dashboard.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { Router } from '@angular/router';
 
@@ -10,11 +10,12 @@ import { ButtonComponent } from '../../../../shared/button/button';
 import { SidebarComponent } from '../sidebar/sidebar';
 import { DiagramInspectorComponent } from '../diagram-inspector/diagram-inspector';
 import { DocsComponent } from '../docs/docs';
+import { AiChatComponent } from '../ai-chat/ai-chat';
 
 @Component({
   selector: 'app-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent, DocsComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent, DocsComponent, AiChatComponent],
   templateUrl: './editor.html',
 })
 export class EditorComponent implements OnInit, OnDestroy {
@@ -29,6 +30,11 @@ export class EditorComponent implements OnInit, OnDestroy {
   editorScrollTop = 0;
   hoveredError: EditorError | null = null;
   hoverPos = { x: 0, y: 0 };
+
+  // AI Chat panel resizer state
+  isResizingAiChat = false;
+  private aiResizerStartX = 0;
+  private aiResizerStartWidth = 380;
 
   private codeSub?: Subscription;
 
@@ -50,7 +56,8 @@ export class EditorComponent implements OnInit, OnDestroy {
     public svc: DashboardService,
     private readonly auth: AuthService,
     private readonly router: Router,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly elRef: ElementRef
   ) {
     // Re-render cursors and error squiggles whenever remoteCursors or editorErrors signal changes
     effect(() => {
@@ -83,6 +90,40 @@ export class EditorComponent implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
+  onAiResizerMouseDown(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isResizingAiChat = true;
+    this.aiResizerStartX = event.clientX;
+    const aiChatEl = this.elRef?.nativeElement?.querySelector('app-ai-chat') as HTMLElement | null;
+    this.aiResizerStartWidth = aiChatEl ? aiChatEl.offsetWidth : (this.svc.aiChatWidth() ?? 380);
+    if (typeof document !== 'undefined') {
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+  }
+
+  @HostListener('window:mousemove', ['$event'])
+  onWindowMouseMove(event: MouseEvent): void {
+    if (this.isResizingAiChat) {
+      const deltaX = event.clientX - this.aiResizerStartX;
+      this.svc.setAiChatWidth(this.aiResizerStartWidth + deltaX);
+      this.cdr.detectChanges();
+    }
+  }
+
+  @HostListener('window:mouseup')
+  onWindowMouseUp(): void {
+    if (this.isResizingAiChat) {
+      this.isResizingAiChat = false;
+      if (typeof document !== 'undefined') {
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+      this.cdr.detectChanges();
+    }
+  }
+
   ngOnInit(): void {
 
   }
@@ -97,7 +138,7 @@ export class EditorComponent implements OnInit, OnDestroy {
         ta.value = val;
         try {
           ta.setSelectionRange(Math.min(start, val.length), Math.min(end, val.length));
-        } catch {}
+        } catch { }
       }
 
       if (this.highlight?.nativeElement) {
@@ -183,7 +224,7 @@ export class EditorComponent implements OnInit, OnDestroy {
         this.svc.emitCollabChange();
       } else {
         this.svc.saveDiagram().subscribe({
-          error: () => {}
+          error: () => { }
         });
       }
     } else if (!this.svc.hasUnsavedChanges()) {
@@ -487,5 +528,54 @@ export class EditorComponent implements OnInit, OnDestroy {
     }
 
     return lineHtml;
+  }
+
+  isLastLineOfPendingHunk(index: number, line: DiffReviewLine): boolean {
+    if (!line.hunkId) return false;
+    const hunk = this.svc.aiDiffHunks().find(h => h.id === line.hunkId);
+    if (!hunk || hunk.status !== 'pending') return false;
+
+    const lines = this.svc.aiDiffLines();
+    const nextLine = lines[index + 1];
+    return !nextLine || nextLine.hunkId !== line.hunkId;
+  }
+
+  get pendingHunks(): any[] {
+    return this.svc.aiDiffHunks().filter(h => h.status === 'pending');
+  }
+
+  get currentPendingHunkIndex(): number {
+    const pending = this.pendingHunks;
+    const currHunkId = this.svc.currentActiveHunkId();
+    const idx = pending.findIndex(h => h.id === currHunkId);
+    return idx >= 0 ? idx : 0;
+  }
+
+  prevHunk(): void {
+    const curr = this.currentPendingHunkIndex;
+    if (curr > 0) {
+      this.scrollToPendingHunk(curr - 1);
+    }
+  }
+
+  nextHunk(): void {
+    const pending = this.pendingHunks;
+    const curr = this.currentPendingHunkIndex;
+    if (curr < pending.length - 1) {
+      this.scrollToPendingHunk(curr + 1);
+    }
+  }
+
+  scrollToPendingHunk(index: number): void {
+    const pending = this.pendingHunks;
+    const hunk = pending[index];
+    if (hunk) {
+      this.svc.currentActiveHunkId.set(hunk.id);
+      this.svc.activeDiffHunkIndex.set(index);
+      const el = document.querySelector(`[data-hunk-id="${hunk.id}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   }
 }

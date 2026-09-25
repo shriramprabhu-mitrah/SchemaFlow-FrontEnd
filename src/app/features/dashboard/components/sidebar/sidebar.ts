@@ -385,6 +385,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  toggleAiChat(e?: Event): void {
+    if (e) e.stopPropagation();
+    this.importMenuOpen = false;
+    this.exportMenuOpen = false;
+    if (!this.svc.showAiChat() && this.svc.sidebarInspectorTab()) {
+      this.svc.sidebarInspectorTab.set(null);
+    }
+    this.svc.toggleAiChat();
+    this.cdr.markForCheck();
+  }
+
   showDbmlEditor(e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;

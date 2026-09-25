@@ -177,4 +177,23 @@ export class AdminService {
     const url = template.replace('{id}', id.toString());
     return this.http.delete(url, { withCredentials: true });
   }
+
+  // ── AI Model Config ──
+  getModelConfig(modelId: number | string): Observable<any> {
+    const template = this.urls.aiModelConfig || 'http://localhost:4007/api/ai/models/:modelId/config';
+    const url = template
+      .replace(':modelId', modelId.toString())
+      .replace('{modelId}', modelId.toString())
+      .replace('{id}', modelId.toString());
+    return this.http.get(url, { withCredentials: true });
+  }
+
+  saveModelConfig(modelId: number | string, data: { api_key: string; max_tokens?: number; is_active?: boolean }): Observable<any> {
+    const template = this.urls.aiModelConfig || 'http://localhost:4007/api/ai/models/:modelId/config';
+    const url = template
+      .replace(':modelId', modelId.toString())
+      .replace('{modelId}', modelId.toString())
+      .replace('{id}', modelId.toString());
+    return this.http.put(url, data, { withCredentials: true });
+  }
 }

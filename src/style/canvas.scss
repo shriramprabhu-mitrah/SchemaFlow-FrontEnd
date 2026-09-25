@@ -2635,3 +2635,64 @@ body.light-theme #extra-controls {
     }
   }
 }
+
+/* ============ CANVAS AI DIFF LEGEND ============ */
+.canvas-diff-legend {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+  font-weight: 600;
+  user-select: none;
+  pointer-events: none;
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &.added {
+      color: #10b981;
+      .dash-added {
+        color: #10b981;
+        letter-spacing: -2px;
+        font-weight: 900;
+      }
+    }
+
+    &.modified {
+      color: #f59e0b;
+      .dash-modified {
+        color: #f59e0b;
+        letter-spacing: -2px;
+        font-weight: 900;
+      }
+    }
+
+    &.deleted {
+      color: #ef4444;
+      .dash-deleted {
+        color: #ef4444;
+        letter-spacing: -2px;
+        font-weight: 900;
+      }
+    }
+  }
+}
+
+:host-context(body.dark-theme) .canvas-diff-legend,
+body.dark-theme .canvas-diff-legend {
+  background: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}

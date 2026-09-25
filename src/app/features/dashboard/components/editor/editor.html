@@ -1,48 +1,55 @@
-<div class="editor-shell">
+<div class="editor-shell" [class.ai-chat-open]="svc.showAiChat()">
   <!-- Sidebar docked on the left near editor -->
   <app-sidebar [class.collapsed]="svc.sidebarCollapsed()"></app-sidebar>
 
   <!-- Sidebar Toggle Button placed on the vertical divider line -->
-  <button type="button"
-          class="sidebar-line-toggle-btn tt tt-right"
-          [class.collapsed]="svc.sidebarCollapsed()"
-          [attr.aria-label]="svc.sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-          [attr.data-tt]="svc.sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-          (click)="svc.toggleActivitySidebar()">
-    <svg class="toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+  <button type="button" class="sidebar-line-toggle-btn tt tt-right" [class.collapsed]="svc.sidebarCollapsed()"
+    [attr.aria-label]="svc.sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+    [attr.data-tt]="svc.sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+    (click)="svc.toggleActivitySidebar()">
+    <svg class="toggle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="8 7 3 12 8 17"></polyline>
       <polyline points="16 7 21 12 16 17"></polyline>
     </svg>
   </button>
 
+  <!-- AI Chat Pane (Expandable & Resizable) -->
+  <app-ai-chat *ngIf="svc.showAiChat()" [style.width]="svc.aiChatWidth() ? (svc.aiChatWidth() + 'px') : null"
+    [style.flex]="svc.aiChatWidth() ? ('0 0 ' + svc.aiChatWidth() + 'px') : null" [class.is-resizing]="isResizingAiChat"
+    (close)="svc.closeAiChat()"></app-ai-chat>
+
+  <!-- AI Chat Resizer Divider -->
+  <div class="ai-chat-resizer" *ngIf="svc.showAiChat()" [class.active]="isResizingAiChat"
+    (mousedown)="onAiResizerMouseDown($event)" (dblclick)="svc.toggleAiChatExpand()"
+    title="Drag to resize AI chat (double-click to expand/collapse)">
+    <div class="resizer-handle-pill"></div>
+  </div>
+
   <div id="editor-pane" *ngIf="!svc.sidebarInspectorTab() && !svc.showDocs">
     <div id="editor-toolbar">
       <div class="toolbar-title">
-        <span class="dot"
-              [class.error-dot]="svc.editorErrors().length > 0"
-              (click)="svc.editorErrors().length > 0 ? toggleErrorsCard($event) : null"
-              [title]="svc.editorErrors().length > 0 ? 'Click to view errors' : ''"></span> DBML
+        <span class="dot" [class.error-dot]="svc.editorErrors().length > 0"
+          (click)="svc.editorErrors().length > 0 ? toggleErrorsCard($event) : null"
+          [title]="svc.editorErrors().length > 0 ? 'Click to view errors' : ''"></span> DBML
         <span class="readonly-badge" *ngIf="!isLoggedIn || svc.isReadOnly || isSampleDiagram()">Read-Only</span>
-        <button type="button"
-                class="error-badge"
-                [class.active]="showErrorsCard"
-                *ngIf="svc.editorErrors().length > 0"
-                (click)="toggleErrorsCard($event)"
-                title="Click to view error list">
+        <button type="button" class="error-badge" [class.active]="showErrorsCard" *ngIf="svc.editorErrors().length > 0"
+          (click)="toggleErrorsCard($event)" title="Click to view error list">
           {{ svc.editorErrors().length }} error{{ svc.editorErrors().length > 1 ? 's' : '' }}
         </button>
       </div>
       <app-button type="button" variant="none" customClass="editor-pane-action"
-        [tooltip]="svc.paneMode() === 'editor' ? 'Restore split view' : 'Expand editor'"
-        tooltipPosition="left"
+        [tooltip]="svc.paneMode() === 'editor' ? 'Restore split view' : 'Expand editor'" tooltipPosition="left"
         (onClick)="svc.paneMode() === 'editor' ? svc.setPaneMode('split') : svc.setPaneMode('editor')">
-        <svg *ngIf="svc.paneMode() === 'split'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <svg *ngIf="svc.paneMode() === 'split'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
           <polyline points="15 3 21 3 21 9" />
           <polyline points="9 21 3 21 3 15" />
           <line x1="21" y1="3" x2="14" y2="10" />
           <line x1="3" y1="21" x2="10" y2="14" />
         </svg>
-        <svg *ngIf="svc.paneMode() === 'editor'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <svg *ngIf="svc.paneMode() === 'editor'" viewBox="0 0 24 24" class="icon-svg" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
           <polyline points="4 14 10 14 10 20" />
           <polyline points="20 10 14 10 14 4" />
           <line x1="14" y1="10" x2="21" y2="3" />
@@ -65,28 +72,74 @@
       </span>
     </div>
     <div id="editor-scroll">
-      <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
-      <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
-      <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
-        [readonly]="!isLoggedIn || svc.isReadOnly || isSampleDiagram()"
-        (click)="onCursorEvent($event)" (keyup)="onCursorEvent($event)"
-        (mousemove)="onCodeAreaMouseMove($event)" (mouseleave)="onCodeAreaMouseLeave()"
-        (blur)="onCodeAreaBlur()"
-        (input)="onTextInput($event)" (scroll)="onEditorScroll($event)"></textarea>
+      <!-- Standard Editor Elements (visible when not in diff review) -->
+      <ng-container *ngIf="!svc.aiDiffReviewActive()">
+        <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
+        <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
+        <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
+          [readonly]="!isLoggedIn || svc.isReadOnly || isSampleDiagram()" (click)="onCursorEvent($event)"
+          (keyup)="onCursorEvent($event)" (mousemove)="onCodeAreaMouseMove($event)"
+          (mouseleave)="onCodeAreaMouseLeave()" (blur)="onCodeAreaBlur()" (input)="onTextInput($event)"
+          (scroll)="onEditorScroll($event)"></textarea>
+      </ng-container>
+
+      <!-- Inline AI Diff Review Mode (visible when svc.aiDiffReviewActive() is true) -->
+      <div class="editor-diff-review-view" *ngIf="svc.aiDiffReviewActive()">
+        <div class="diff-lines-container">
+          <div *ngFor="let line of svc.aiDiffLines(); let i = index" class="diff-line-row"
+            [class.line-context]="line.type === 'context'" [class.line-delete]="line.type === 'delete'"
+            [class.line-add]="line.type === 'add'" [id]="'diff-line-' + i" [attr.data-hunk-id]="line.hunkId">
+            <!-- Line gutter / number -->
+            <div class="diff-line-gutter">
+              <span class="gutter-num" *ngIf="line.type === 'context'">{{ line.newLineNum }}</span>
+              <span class="gutter-num gutter-old" *ngIf="line.type === 'delete'">{{ line.oldLineNum }} <span
+                  class="gutter-sign">-</span></span>
+              <span class="gutter-num gutter-new" *ngIf="line.type === 'add'">{{ line.newLineNum }}<span
+                  class="gutter-sign">+</span></span>
+            </div>
+            <!-- Code content -->
+            <div class="diff-line-content" [innerHTML]="colorize(line.text)"></div>
+            <!-- Inline Accept / Reject buttons on last line of each pending hunk -->
+            <div class="diff-hunk-inline-actions" *ngIf="isLastLineOfPendingHunk(i, line)">
+              <button type="button" class="btn-hunk-reject" (click)="svc.rejectAiDiffHunk(line.hunkId!)">Reject</button>
+              <button type="button" class="btn-hunk-accept" (click)="svc.acceptAiDiffHunk(line.hunkId!)">Accept</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Review Toolbar at bottom of Editor Pane -->
+      <div class="diff-review-floating-bar" *ngIf="svc.aiDiffReviewActive()">
+        <div class="hunk-nav">
+          <button type="button" class="nav-arrow" (click)="prevHunk()" [disabled]="currentPendingHunkIndex <= 0"
+            title="Previous change">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </button>
+          <span class="hunk-counter">{{ pendingHunks.length > 0 ? (currentPendingHunkIndex + 1) : 0 }}/{{
+            pendingHunks.length }}</span>
+          <button type="button" class="nav-arrow" (click)="nextHunk()"
+            [disabled]="currentPendingHunkIndex >= pendingHunks.length - 1" title="Next change">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+        <button type="button" class="btn-reject-all" (click)="svc.rejectAllAiDiff()">Reject All</button>
+        <button type="button" class="btn-accept-all" (click)="svc.acceptAllAiDiff()">Accept All</button>
+      </div>
 
       <!-- Overview Ruler Error Markers (as in Image 2 right margin) -->
-      <div class="editor-overview-ruler" *ngIf="svc.editorErrors().length > 0">
-        <div *ngFor="let err of svc.editorErrors()"
-             class="ruler-error-marker"
-             [style.top.px]="getRulerTop(err.line)"
-             [title]="err.message"
-             (click)="jumpToLine(err.line)">
+      <div class="editor-overview-ruler" *ngIf="svc.editorErrors().length > 0 && !svc.aiDiffReviewActive()">
+        <div *ngFor="let err of svc.editorErrors()" class="ruler-error-marker" [style.top.px]="getRulerTop(err.line)"
+          [title]="err.message" (click)="jumpToLine(err.line)">
         </div>
       </div>
 
       <!-- Floating Error Tooltip Card -->
-      <div class="editor-error-tooltip" *ngIf="hoveredError"
-           [style.left.px]="hoverPos.x" [style.top.px]="hoverPos.y">
+      <div class="editor-error-tooltip" *ngIf="hoveredError && !svc.aiDiffReviewActive()" [style.left.px]="hoverPos.x"
+        [style.top.px]="hoverPos.y">
         <span class="error-tooltip-icon">✕</span>
         <span class="error-tooltip-msg">{{ hoveredError.message }}</span>
       </div>
@@ -101,8 +154,10 @@
             <span class="header-title">Errors</span>
             <span class="header-count">{{ svc.editorErrors().length }} in this file</span>
           </div>
-          <button type="button" class="errors-card-close-btn" (click)="toggleErrorsCard($event)" aria-label="Close error card">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <button type="button" class="errors-card-close-btn" (click)="toggleErrorsCard($event)"
+            aria-label="Close error card">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -112,7 +167,9 @@
         <div class="errors-card-body">
           <div class="error-group" *ngFor="let group of getErrorGroups()">
             <div class="error-group-header" (click)="toggleGroup(group.name, $event)">
-              <svg class="group-chevron" [class.rotated]="!isGroupExpanded(group.name)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="group-chevron" [class.rotated]="!isGroupExpanded(group.name)" width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
               <span class="group-name">{{ group.name}}</span>
@@ -135,10 +192,8 @@
   </div>
 
   <!-- Diagram Inspector Component (Tables / Refs View) -->
-  <app-diagram-inspector *ngIf="svc.sidebarInspectorTab() && !svc.showDocs"
-    [activeTab]="svc.sidebarInspectorTab()!"
-    (tabChange)="svc.sidebarInspectorTab.set($event)"
-    (close)="svc.sidebarInspectorTab.set(null)"
+  <app-diagram-inspector *ngIf="svc.sidebarInspectorTab() && !svc.showDocs" [activeTab]="svc.sidebarInspectorTab()!"
+    (tabChange)="svc.sidebarInspectorTab.set($event)" (close)="svc.sidebarInspectorTab.set(null)"
     style="flex: 1; display: flex; flex-direction: column; overflow: hidden; height: 100%;">
   </app-diagram-inspector>
 

@@ -5,6 +5,25 @@ import { AuthService } from './auth.service';
 import { AppConfigService } from './app-config.service';
 import { EntitlementService } from './entitlement.service';
 import { SocketService } from './socket.service';
+import { DiffEngine } from '../../features/dashboard/components/diff-checker/diff-engine';
+
+export interface DiffHunk {
+  id: number;
+  type: 'add' | 'modify' | 'delete';
+  startUnifiedIndex: number;
+  endUnifiedIndex: number;
+  oldLines: string[];
+  newLines: string[];
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
+export interface DiffReviewLine {
+  type: 'context' | 'delete' | 'add';
+  oldLineNum?: number;
+  newLineNum?: number;
+  text: string;
+  hunkId?: number;
+}
 
 export interface Column {
   name: string;
@@ -466,13 +485,15 @@ export class DashboardService {
       }
     }
 
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('active_diagram_code', normalizedValue);
-    }
-    this.queueDbmlValidation();
-    // Persist every code change so canvas and editor stay in sync after page reload
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      localStorage.setItem('dbml_code', value);
+    if (!this.aiDiffReviewActive()) {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem('active_diagram_code', normalizedValue);
+      }
+      this.queueDbmlValidation();
+      // Persist every code change so canvas and editor stay in sync after page reload
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem('dbml_code', value);
+      }
     }
   }
 
@@ -551,6 +572,475 @@ export class DashboardService {
       this.closeDiffChecker();
     } else {
       this.openDiffChecker();
+    }
+  }
+
+  // ============ AI DIFF REVIEW STATE & METHODS ============
+  readonly aiDiffReviewActive = signal<boolean>(false);
+  readonly aiDiffOriginalCode = signal<string>('');
+  readonly aiDiffProposedCode = signal<string>('');
+  readonly aiDiffHunks = signal<DiffHunk[]>([]);
+  readonly aiDiffLines = signal<DiffReviewLine[]>([]);
+  readonly activeDiffHunkIndex = signal<number>(0);
+  readonly currentActiveHunkId = signal<number | null>(null);
+  readonly pendingAiDiffHunks = computed(() => this.aiDiffHunks().filter(h => h.status === 'pending'));
+
+  // Canvas visual diff status (tables and relations)
+  readonly tableDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
+  readonly refDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
+  readonly columnDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
+
+  startAiDiffReview(originalCode: string, proposedCode: string): void {
+    const origNorm = (originalCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const propNorm = (proposedCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    this.aiDiffOriginalCode.set(origNorm);
+    this.aiDiffProposedCode.set(propNorm);
+    this.aiDiffReviewActive.set(true);
+
+    // Compute Myers diff using DiffEngine
+    const diff = DiffEngine.computeDiff(origNorm, propNorm, false);
+    const uLines = diff.unifiedLines;
+
+    const lines: DiffReviewLine[] = [];
+    const hunks: DiffHunk[] = [];
+    let currentHunk: { id: number; oldLines: string[]; newLines: string[]; startIdx: number; endIdx: number } | null = null;
+    let hunkCounter = 0;
+
+    for (const u of uLines) {
+      if (u.type === 'equal') {
+        if (currentHunk !== null) {
+          hunks.push({
+            id: currentHunk.id,
+            type: currentHunk.oldLines.length > 0 && currentHunk.newLines.length > 0 ? 'modify' : (currentHunk.oldLines.length > 0 ? 'delete' : 'add'),
+            startUnifiedIndex: currentHunk.startIdx,
+            endUnifiedIndex: currentHunk.endIdx,
+            oldLines: currentHunk.oldLines,
+            newLines: currentHunk.newLines,
+            status: 'pending'
+          });
+          currentHunk = null;
+        }
+        lines.push({
+          type: 'context',
+          oldLineNum: u.oldLineNum,
+          newLineNum: u.newLineNum,
+          text: u.text
+        });
+      } else if (u.type === 'removed') {
+        if (currentHunk === null) {
+          hunkCounter++;
+          currentHunk = { id: hunkCounter, oldLines: [], newLines: [], startIdx: lines.length, endIdx: lines.length };
+        }
+        currentHunk.oldLines.push(u.text);
+        currentHunk.endIdx = lines.length;
+        lines.push({
+          type: 'delete',
+          oldLineNum: u.oldLineNum,
+          text: u.text,
+          hunkId: currentHunk.id
+        });
+      } else if (u.type === 'added') {
+        if (currentHunk === null) {
+          hunkCounter++;
+          currentHunk = { id: hunkCounter, oldLines: [], newLines: [], startIdx: lines.length, endIdx: lines.length };
+        }
+        currentHunk.newLines.push(u.text);
+        currentHunk.endIdx = lines.length;
+        lines.push({
+          type: 'add',
+          newLineNum: u.newLineNum,
+          text: u.text,
+          hunkId: currentHunk.id
+        });
+      }
+    }
+
+    if (currentHunk !== null) {
+      hunks.push({
+        id: currentHunk.id,
+        type: currentHunk.oldLines.length > 0 && currentHunk.newLines.length > 0 ? 'modify' : (currentHunk.oldLines.length > 0 ? 'delete' : 'add'),
+        startUnifiedIndex: currentHunk.startIdx,
+        endUnifiedIndex: currentHunk.endIdx,
+        oldLines: currentHunk.oldLines,
+        newLines: currentHunk.newLines,
+        status: 'pending'
+      });
+    }
+
+    this.aiDiffHunks.set(hunks);
+    this.aiDiffLines.set(lines);
+    this.activeDiffHunkIndex.set(0);
+    this.currentActiveHunkId.set(hunks.length > 0 ? hunks[0].id : null);
+
+    // Compute table and ref diff statuses for canvas
+    const oldParsed = this.parseDBML(origNorm);
+    const newParsed = this.parseDBML(propNorm);
+
+    const tStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
+    const oldTableMap = new Map(oldParsed.tables.map(t => [t.name.toLowerCase(), t]));
+
+    newParsed.tables.forEach(nt => {
+      const ot = oldTableMap.get(nt.name.toLowerCase());
+      if (!ot) {
+        tStatus[nt.name] = 'added';
+      } else {
+        const otCols = ot.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
+        const ntCols = nt.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
+        if (otCols !== ntCols) {
+          tStatus[nt.name] = 'modified';
+        }
+      }
+    });
+
+    const newTableMap = new Map(newParsed.tables.map(t => [t.name.toLowerCase(), t]));
+    oldParsed.tables.forEach(ot => {
+      if (!newTableMap.has(ot.name.toLowerCase())) {
+        tStatus[ot.name] = 'deleted';
+      }
+    });
+    this.tableDiffStatus.set(tStatus);
+
+    const rStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
+    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
+    newParsed.refs.forEach(nr => {
+      const key = `${nr.fromTable}.${nr.fromCol}>${nr.toTable}.${nr.toCol}`;
+      if (!oldRefKeys.has(key)) {
+        rStatus[key] = 'added';
+      }
+    });
+    const newRefKeys = new Set(newParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
+    oldParsed.refs.forEach(or => {
+      const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
+      if (!newRefKeys.has(key)) {
+        rStatus[key] = 'deleted';
+      }
+    });
+    this.refDiffStatus.set(rStatus);
+
+    const cStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
+    newParsed.tables.forEach(nt => {
+      const ot = oldTableMap.get(nt.name.toLowerCase());
+      if (ot) {
+        const oldColMap = new Map(ot.columns.map(c => [c.name.toLowerCase(), c]));
+        nt.columns.forEach(nc => {
+          const oc = oldColMap.get(nc.name.toLowerCase());
+          const colKey = `${nt.name}.${nc.name}`;
+          if (!oc) {
+            cStatus[colKey] = 'added';
+          } else if (oc.type !== nc.type || oc.pk !== nc.pk || oc.fk !== nc.fk || oc.unique !== nc.unique) {
+            cStatus[colKey] = 'modified';
+          }
+        });
+      }
+    });
+    this.columnDiffStatus.set(cStatus);
+
+    // Render proposed code on canvas so user sees the preview diagram with badges
+    this.code = propNorm;
+    this.showCanvasPlaceholder = !propNorm.trim();
+    this.parseAndLayout();
+    this.requestCanvasFit();
+    this.scheduleDraw();
+  }
+
+  buildAiDiffMergedCode(): string {
+    const lines = this.aiDiffLines();
+    const result: string[] = [];
+
+    for (const line of lines) {
+      if (line.type === 'context' || line.type === 'add') {
+        result.push(line.text);
+      }
+    }
+    return result.join('\n');
+  }
+
+  private renumberDiffLines(lines: DiffReviewLine[]): void {
+    let newLineCounter = 1;
+    let oldLineCounter = 1;
+
+    for (const line of lines) {
+      if (line.type === 'context') {
+        line.newLineNum = newLineCounter++;
+        line.oldLineNum = oldLineCounter++;
+      } else if (line.type === 'add') {
+        line.newLineNum = newLineCounter++;
+      } else if (line.type === 'delete') {
+        line.oldLineNum = oldLineCounter++;
+      }
+    }
+  }
+
+  private updateCanvasDiffStatusForPending(): void {
+    const pendingLines = this.aiDiffLines().filter(l => !!l.hunkId);
+    if (pendingLines.length === 0) {
+      this.tableDiffStatus.set({});
+      this.refDiffStatus.set({});
+      this.columnDiffStatus.set({});
+      return;
+    }
+
+    const origNorm = this.aiDiffOriginalCode();
+    const currentCode = this.code;
+    const oldParsed = this.parseDBML(origNorm);
+    const currParsed = this.parseDBML(currentCode);
+
+    const tStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
+    const oldTableMap = new Map(oldParsed.tables.map(t => [t.name.toLowerCase(), t]));
+
+    const pendingTableNames = new Set<string>();
+    let currentPendingTable: string | null = null;
+    for (const l of this.aiDiffLines()) {
+      const trimmed = l.text.trim();
+      const match = trimmed.match(/^Table\s+([A-Za-z0-9_.]+)/i);
+      if (match) currentPendingTable = match[1].toLowerCase();
+
+      if (l.hunkId && currentPendingTable) {
+        pendingTableNames.add(currentPendingTable);
+      }
+
+      if (trimmed.endsWith('}') && !trimmed.includes('{')) {
+        currentPendingTable = null;
+      }
+    }
+
+    currParsed.tables.forEach(nt => {
+      const nameLower = nt.name.toLowerCase();
+      if (!pendingTableNames.has(nameLower)) return;
+
+      const ot = oldTableMap.get(nameLower);
+      if (!ot) {
+        tStatus[nt.name] = 'added';
+      } else {
+        const otCols = ot.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
+        const ntCols = nt.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
+        if (otCols !== ntCols) {
+          tStatus[nt.name] = 'modified';
+        }
+      }
+    });
+    oldParsed.tables.forEach(ot => {
+      const nameLower = ot.name.toLowerCase();
+      if (!currParsed.tables.some(ct => ct.name.toLowerCase() === nameLower)) {
+        if (pendingTableNames.has(nameLower)) {
+          tStatus[ot.name] = 'deleted';
+        }
+      }
+    });
+    this.tableDiffStatus.set(tStatus);
+
+    const cStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
+    currParsed.tables.forEach(nt => {
+      const nameLower = nt.name.toLowerCase();
+      if (!pendingTableNames.has(nameLower)) return;
+
+      const ot = oldTableMap.get(nameLower);
+      if (ot) {
+        const oldColMap = new Map(ot.columns.map(c => [c.name.toLowerCase(), c]));
+        nt.columns.forEach(nc => {
+          const oc = oldColMap.get(nc.name.toLowerCase());
+          const colKey = `${nt.name}.${nc.name}`;
+          if (!oc) {
+            cStatus[colKey] = 'added';
+          } else if (oc.type !== nc.type || oc.pk !== nc.pk || oc.fk !== nc.fk || oc.unique !== nc.unique) {
+            cStatus[colKey] = 'modified';
+          }
+        });
+      }
+    });
+    this.columnDiffStatus.set(cStatus);
+
+    const rStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
+    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
+    currParsed.refs.forEach(nr => {
+      const key = `${nr.fromTable}.${nr.fromCol}>${nr.toTable}.${nr.toCol}`;
+      if (!oldRefKeys.has(key)) {
+        rStatus[key] = 'added';
+      }
+    });
+    const currRefKeys = new Set(currParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
+    oldParsed.refs.forEach(or => {
+      const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
+      if (!currRefKeys.has(key)) {
+        rStatus[key] = 'deleted';
+      }
+    });
+    this.refDiffStatus.set(rStatus);
+  }
+
+  acceptAiDiffHunk(hunkId: number): void {
+    const hunks = this.aiDiffHunks().map(h => h.id === hunkId ? { ...h, status: 'accepted' as const } : h);
+    this.aiDiffHunks.set(hunks);
+
+    // Update lines: delete lines of accepted hunk are removed; add lines become normal context lines (normal color)!
+    const currentLines = this.aiDiffLines();
+    const updatedLines: DiffReviewLine[] = [];
+    for (const line of currentLines) {
+      if (line.hunkId === hunkId) {
+        if (line.type === 'delete') {
+          // Deletion accepted -> remove line
+          continue;
+        } else if (line.type === 'add') {
+          // Addition accepted -> convert to normal context line (normal color)
+          updatedLines.push({
+            type: 'context',
+            text: line.text
+          });
+        }
+      } else {
+        updatedLines.push(line);
+      }
+    }
+
+    this.renumberDiffLines(updatedLines);
+    this.aiDiffLines.set(updatedLines);
+
+    const merged = this.buildAiDiffMergedCode();
+    this.code = merged;
+    this.parseAndLayout();
+    this.scheduleDraw();
+
+    const pending = hunks.filter(h => h.status === 'pending');
+    if (pending.length === 0) {
+      this.closeAiDiffReview(true);
+      if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
+        this.saveDiagram().subscribe({
+          error: () => {}
+        });
+      }
+      this.showToast('All changes accepted and saved!', 2500, 'success');
+    } else {
+      this.updateCanvasDiffStatusForPending();
+      this.advanceToNextPendingHunk();
+    }
+  }
+
+  rejectAiDiffHunk(hunkId: number): void {
+    const hunks = this.aiDiffHunks().map(h => h.id === hunkId ? { ...h, status: 'rejected' as const } : h);
+    this.aiDiffHunks.set(hunks);
+
+    // Update lines: add lines of rejected hunk are removed; delete lines become normal context lines (normal color)!
+    const currentLines = this.aiDiffLines();
+    const updatedLines: DiffReviewLine[] = [];
+    for (const line of currentLines) {
+      if (line.hunkId === hunkId) {
+        if (line.type === 'add') {
+          // Addition rejected -> remove line
+          continue;
+        } else if (line.type === 'delete') {
+          // Deletion rejected -> restore original line as normal context line (normal color)
+          updatedLines.push({
+            type: 'context',
+            text: line.text
+          });
+        }
+      } else {
+        updatedLines.push(line);
+      }
+    }
+
+    this.renumberDiffLines(updatedLines);
+    this.aiDiffLines.set(updatedLines);
+
+    const merged = this.buildAiDiffMergedCode();
+    this.code = merged;
+    this.parseAndLayout();
+    this.scheduleDraw();
+
+    const pending = hunks.filter(h => h.status === 'pending');
+    if (pending.length === 0) {
+      const anyAccepted = hunks.some(h => h.status === 'accepted');
+      this.closeAiDiffReview(anyAccepted);
+      if (anyAccepted) {
+        if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
+          this.saveDiagram().subscribe({
+            error: () => {}
+          });
+        }
+        this.showToast('Accepted changes saved!', 2500, 'success');
+      } else {
+        const original = this.aiDiffOriginalCode();
+        this.code = original;
+        this.parseAndLayout();
+        this.scheduleDraw();
+        this.showToast('AI changes rejected.', 2500);
+      }
+    } else {
+      this.updateCanvasDiffStatusForPending();
+      this.advanceToNextPendingHunk();
+    }
+  }
+
+  acceptAllAiDiff(): void {
+    const proposed = this.aiDiffProposedCode();
+    this.closeAiDiffReview(true);
+    this.code = proposed;
+    this.showCanvasPlaceholder = !proposed.trim();
+    this.parseAndLayout();
+    this.requestCanvasFit();
+    this.scheduleDraw();
+
+    if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
+      this.saveDiagram().subscribe({
+        error: () => {}
+      });
+    }
+
+    this.showToast('All changes accepted and saved!', 2500, 'success');
+  }
+
+  rejectAllAiDiff(): void {
+    const original = this.aiDiffOriginalCode();
+    this.closeAiDiffReview(false);
+    this.code = original;
+    this.showCanvasPlaceholder = !original.trim();
+    this.parseAndLayout();
+    this.requestCanvasFit();
+    this.scheduleDraw();
+    this.showToast('AI changes rejected.', 2500);
+  }
+
+  private advanceToNextPendingHunk(): void {
+    const pending = this.aiDiffHunks().filter(h => h.status === 'pending');
+    if (pending.length > 0) {
+      const currId = this.currentActiveHunkId();
+      const currIdx = pending.findIndex(h => h.id === currId);
+      const nextIdx = currIdx >= 0 && currIdx < pending.length - 1 ? currIdx + 1 : 0;
+      this.currentActiveHunkId.set(pending[nextIdx].id);
+      this.activeDiffHunkIndex.set(nextIdx);
+    } else {
+      this.currentActiveHunkId.set(null);
+      this.activeDiffHunkIndex.set(0);
+    }
+  }
+
+  closeAiDiffReview(anyAccepted = false): void {
+    this.aiDiffReviewActive.set(false);
+    this.tableDiffStatus.set({});
+    this.refDiffStatus.set({});
+    this.columnDiffStatus.set({});
+    this.aiDiffHunks.set([]);
+    this.aiDiffLines.set([]);
+    this.activeDiffHunkIndex.set(0);
+    this.currentActiveHunkId.set(null);
+
+    if (anyAccepted) {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem('active_diagram_code', this.code);
+        localStorage.setItem('dbml_code', this.code);
+      }
+      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+        this.emitCollabChange();
+      }
+    } else {
+      const orig = this.aiDiffOriginalCode();
+      if (orig !== undefined && orig !== null) {
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+          localStorage.setItem('active_diagram_code', orig);
+          localStorage.setItem('dbml_code', orig);
+        }
+      }
     }
   }
   isReadOnly = false;
@@ -701,7 +1191,70 @@ export class DashboardService {
   readonly _activeWorkspaceName = signal<string>('Personal');
   readonly paneMode = signal<'split' | 'editor' | 'canvas'>('split');
   readonly sidebarCollapsed = signal<boolean>(false);
+  readonly showAiChat = signal<boolean>(false);
+  readonly aiChatWidth = signal<number | null>(null);
+  readonly isAiChatExpanded = signal<boolean>(false);
+  private prevEditorWidthPct: number | null = null;
   workspacesFetched = false;
+
+  toggleAiChat(force?: boolean): void {
+    const next = force !== undefined ? force : !this.showAiChat();
+    this.showAiChat.set(next);
+    if (next) {
+      this.aiChatWidth.set(null);
+      if (this.paneMode() === 'canvas') {
+        this.setPaneMode('split');
+      }
+      if (this.editorWidthPct() < 50) {
+        this.prevEditorWidthPct = this.editorWidthPct();
+        this.editorWidthPct.set(50);
+      }
+    } else {
+      this.aiChatWidth.set(null);
+      if (this.prevEditorWidthPct !== null) {
+        this.editorWidthPct.set(this.prevEditorWidthPct);
+        this.prevEditorWidthPct = null;
+      }
+    }
+  }
+
+  toggleAiChatExpand(): void {
+    if (this.isAiChatExpanded() || this.aiChatWidth() !== null) {
+      this.isAiChatExpanded.set(false);
+      this.aiChatWidth.set(null);
+    } else {
+      this.isAiChatExpanded.set(true);
+      this.aiChatWidth.set(620);
+      if (this.paneMode() === 'split' && this.editorWidthPct() < 60) {
+        this.editorWidthPct.set(60);
+      }
+    }
+  }
+
+  setAiChatWidth(width: number | null): void {
+    if (width === null) {
+      this.aiChatWidth.set(null);
+      this.isAiChatExpanded.set(false);
+      return;
+    }
+    const clamped = Math.max(280, Math.min(width, 850));
+    this.aiChatWidth.set(clamped);
+    if (clamped >= 540) {
+      this.isAiChatExpanded.set(true);
+    } else {
+      this.isAiChatExpanded.set(false);
+    }
+  }
+
+  closeAiChat(): void {
+    this.showAiChat.set(false);
+    this.isAiChatExpanded.set(false);
+    this.aiChatWidth.set(null);
+    if (this.prevEditorWidthPct !== null) {
+      this.editorWidthPct.set(this.prevEditorWidthPct);
+      this.prevEditorWidthPct = null;
+    }
+  }
 
   toggleActivitySidebar(): void {
     this.sidebarCollapsed.set(!this.sidebarCollapsed());
@@ -992,6 +1545,7 @@ export class DashboardService {
     // Debounced auto-save on DBML code changes (1200ms after user stops typing)
     this.code$.pipe(debounceTime(1200)).subscribe(() => {
       if (
+        !this.aiDiffReviewActive() &&
         this.auth.isLoggedIn() &&
         !this.isDiagramNameEmpty() &&
         this.hasUnsavedChanges() &&
@@ -1071,6 +1625,7 @@ export class DashboardService {
     if (typeof window !== 'undefined') {
       setInterval(() => {
         if (
+          !this.aiDiffReviewActive() &&
           this.auth.isLoggedIn() &&
           !this.isDiagramNameEmpty() &&
           this.hasUnsavedChanges() &&
@@ -1658,6 +2213,13 @@ export class DashboardService {
   currentOrgPlanStatus = signal<string>('active');
 
   canSaveDiagram(showToast = true): boolean {
+    if (this.aiDiffReviewActive()) {
+      if (showToast) {
+        this.showToast('Please accept or reject the AI changes before saving.', 3000, 'info');
+      }
+      return false;
+    }
+
     if (this.isReadOnly) {
       return false;
     }
@@ -1960,6 +2522,10 @@ export class DashboardService {
     }
 
     const activeNames = new Set(parsed.tables.map(t => t.name));
+    if (this.aiDiffReviewActive()) {
+      const origParsed = this.parseDBML(this.aiDiffOriginalCode());
+      origParsed.tables.forEach(ot => activeNames.add(ot.name));
+    }
     Object.keys(this.tablePositions).forEach((name) => {
       if (!activeNames.has(name)) {
         delete this.tablePositions[name];
@@ -2208,6 +2774,34 @@ export class DashboardService {
       };
     });
 
+    if (this.aiDiffReviewActive()) {
+      const origParsed = this.parseDBML(this.aiDiffOriginalCode());
+      const deletedTableNames = Object.entries(this.tableDiffStatus())
+        .filter(([_, status]) => status === 'deleted')
+        .map(([name]) => name.toLowerCase());
+
+      origParsed.tables.forEach(ot => {
+        if (deletedTableNames.includes(ot.name.toLowerCase()) && !this.tables.some(t => t.name.toLowerCase() === ot.name.toLowerCase())) {
+          const pos = this.tablePositions[ot.name] || { x: 60, y: 60 };
+          const height = this.getTableHeight(ot.columns);
+          const colY: Record<string, number> = {};
+          ot.columns.forEach((c, idx) => {
+            colY[c.name] = this.HEADER_H + idx * this.ROW_H + this.ROW_H / 2;
+          });
+          this.tables.push({
+            name: ot.name,
+            columns: ot.columns,
+            x: pos.x,
+            y: pos.y,
+            width: this.CARD_W,
+            height,
+            colY,
+            color: '#ef4444'
+          });
+        }
+      });
+    }
+
     const prevByKey = new Map(
       this.refs.map((r) => [
         `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`,
@@ -2275,6 +2869,20 @@ export class DashboardService {
         color: prev?.color ?? persistedColor
       };
     });
+
+    if (this.aiDiffReviewActive()) {
+      const origParsed = this.parseDBML(this.aiDiffOriginalCode());
+      const deletedRefKeys = Object.entries(this.refDiffStatus())
+        .filter(([_, status]) => status === 'deleted')
+        .map(([k]) => k);
+
+      origParsed.refs.forEach((or) => {
+        const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
+        if (deletedRefKeys.includes(key) && !this.refs.some(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}` === key)) {
+          this.refs.push(or);
+        }
+      });
+    }
 
     this.hoveredConnectionIndex = -1;
     this.selectedConnectionIndex = -1;
@@ -3944,7 +4552,7 @@ export class DashboardService {
   }
 
   saveDiagram(): Observable<any> {
-    if (this.isSaving() || this.showVersionHistory()) {
+    if (this.isSaving() || this.showVersionHistory() || this.aiDiffReviewActive()) {
       return EMPTY;
     }
 
@@ -4484,6 +5092,10 @@ export class DashboardService {
   }
 
   hasUnsavedChanges(): boolean {
+    if (this.aiDiffReviewActive()) {
+      return false;
+    }
+
     const isNewAndEmpty = !this.diagramId() && !this.code.trim() && !this.diagramName;
     if (isNewAndEmpty) {
       return false;

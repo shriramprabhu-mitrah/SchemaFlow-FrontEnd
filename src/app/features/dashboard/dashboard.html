@@ -3,34 +3,38 @@
   <app-header></app-header>
 
   <!-- Trial Expired Banner -->
-  <div class="trial-expired-banner" *ngIf="auth.getCurrentPlanStatus() === 'expired' || (entitlementService.hasUsedTrial && (!auth.getCurrentPlanSlug() || auth.getCurrentPlanSlug() === 'free'))">
+  <div class="trial-expired-banner"
+    *ngIf="auth.getCurrentPlanStatus() === 'expired' || (entitlementService.hasUsedTrial && (!auth.getCurrentPlanSlug() || auth.getCurrentPlanSlug() === 'free'))">
     <div class="banner-content">
-      <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
         <line x1="12" y1="9" x2="12" y2="13"></line>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
-      <span *ngIf="auth.isOrganizationAccount() && !auth.isOrganizationAdmin()">Your organization's free trial has been completed. Please contact your admin to upgrade and access premium features.</span>
-      <span *ngIf="!auth.isOrganizationAccount() || auth.isOrganizationAdmin()">Your free trial has been completed. Upgrade to access premium features.</span>
+      <span *ngIf="auth.isOrganizationAccount() && !auth.isOrganizationAdmin()">Your organization's free trial has been
+        completed. Please contact your admin to upgrade and access premium features.</span>
+      <span *ngIf="!auth.isOrganizationAccount() || auth.isOrganizationAdmin()">Your free trial has been completed.
+        Upgrade to access premium features.</span>
     </div>
-    <button *ngIf="!auth.isOrganizationAccount() || auth.isOrganizationAdmin()" class="upgrade-btn-banner" (click)="svc.showUpgradeModal()">Upgrade Now</button>
+    <button *ngIf="!auth.isOrganizationAccount() || auth.isOrganizationAdmin()" class="upgrade-btn-banner"
+      (click)="svc.showUpgradeModal()">Upgrade Now</button>
   </div>
 
   <div id="body" #bodyEl [class.editor-fullscreen]="paneMode === 'editor' || svc.showDocs"
-    [class.canvas-fullscreen]="paneMode === 'canvas' && !svc.showDocs"
-    [class.diff-active]="svc.showDiffChecker()">
+    [class.canvas-fullscreen]="paneMode === 'canvas' && !svc.showDocs" [class.diff-active]="svc.showDiffChecker()">
 
     <!-- NORMAL VIEW: EDITOR + CANVAS + DOCS -->
     <ng-container *ngIf="!svc.showDiffChecker()">
       <!-- EDITOR (expands to full page when showDocs is true) -->
-      <app-editor [style.width.%]="(paneMode === 'split' && !svc.showDocs) ? svc.editorWidthPct() : 100"
+      <app-editor [class.ai-open]="svc.showAiChat()"
+        [style.width.%]="(paneMode === 'split' && !svc.showDocs) ? svc.editorWidthPct() : 100"
         [style.display]="(paneMode === 'canvas' && !svc.showDocs) ? 'none' : 'block'"></app-editor>
 
       <div id="resizer" *ngIf="!svc.showDocs" [class]="paneMode" (mousedown)="onResizerMouseDown($event)"></div>
 
       <!-- CANVAS -->
-      <app-canvas *ngIf="!svc.showDocs"
-        [style.display]="paneMode === 'editor' ? 'none' : 'block'"></app-canvas>
+      <app-canvas *ngIf="!svc.showDocs" [style.display]="paneMode === 'editor' ? 'none' : 'block'"></app-canvas>
     </ng-container>
 
     <!-- DIFF CHECKER VIEW -->
@@ -56,12 +60,14 @@
         <app-button variant="none" customClass="close-btn" (onClick)="svc.confirmCancel()">&times;</app-button>
       </div>
       <div class="modal-body">
-        <p>You have unsaved changes in your diagram <strong>{{ svc.diagramName?.trim() || 'Untitled Diagram' }}</strong>. Would you like to save
+        <p>You have unsaved changes in your diagram <strong>{{ svc.diagramName?.trim() || 'Untitled Diagram'
+            }}</strong>. Would you like to save
           them before leaving?</p>
       </div>
       <div class="modal-footer">
         <app-button variant="default" customClass="signbtn" (onClick)="svc.confirmSave()">Save Changes</app-button>
-        <app-button *ngIf="svc.showDiscardButton()" variant="default" (onClick)="svc.confirmDiscard()">Discard</app-button>
+        <app-button *ngIf="svc.showDiscardButton()" variant="default"
+          (onClick)="svc.confirmDiscard()">Discard</app-button>
         <app-button variant="default" (onClick)="svc.confirmCancel()">Cancel</app-button>
       </div>
     </div>
@@ -86,8 +92,7 @@
   </div>
 
   <!-- Full-page Diagram Loader Component -->
-  <app-loader *ngIf="svc.isDiagramLoading()" 
-              text="Loading Diagram..."></app-loader>
+  <app-loader *ngIf="svc.isDiagramLoading()" text="Loading Diagram..."></app-loader>
 
   <!-- API Error Toast (editor pane, bottom) — always in DOM for correct positioning -->
   <app-toast location="editor"></app-toast>

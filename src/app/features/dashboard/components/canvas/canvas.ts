@@ -1565,7 +1565,27 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
       ctx.textAlign = 'right';
-      ctx.fillText(c.type, t.x + t.width - 12, textY);
+
+      let colDiff: 'added' | 'modified' | 'deleted' | null = null;
+      if (this.svc.aiDiffReviewActive()) {
+        colDiff = this.svc.columnDiffStatus()[`${t.name}.${c.name}`] || null;
+      }
+
+      if (colDiff) {
+        const badgeText = colDiff === 'added' ? ' [Added]' : ' [Modified]';
+        const badgeColor = colDiff === 'added' ? '#10b981' : '#f59e0b';
+
+        ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const badgeWidth = ctx.measureText(badgeText).width;
+        ctx.fillStyle = badgeColor;
+        ctx.fillText(badgeText, t.x + t.width - 12, textY);
+
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
+        ctx.fillText(c.type, t.x + t.width - 12 - badgeWidth - 3, textY);
+      } else {
+        ctx.fillText(c.type, t.x + t.width - 12, textY);
+      }
     });
 
     const hiddenCount = t.columns.length - visibleColumns.length;
@@ -1603,6 +1623,30 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.strokeStyle = isLight ? '#cbd5e1' : 'rgba(255,255,255,0.08)';
     ctx.lineWidth = 1;
     ctx.stroke();
+
+    // AI Diff Review: draw badge and dashed border
+    if (this.svc.aiDiffReviewActive()) {
+      const diffStatus = this.svc.tableDiffStatus()[t.name];
+      if (diffStatus) {
+        const badgeColor = diffStatus === 'added' ? '#10b981' : (diffStatus === 'modified' ? '#f59e0b' : '#ef4444');
+        const badgeText = diffStatus === 'added' ? '[Added]' : (diffStatus === 'modified' ? '[Modified]' : '[Deleted]');
+
+        ctx.save();
+        ctx.fillStyle = badgeColor;
+        ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(badgeText, t.x + t.width / 2, t.y - 6);
+
+        // Dashed border around table
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = badgeColor;
+        ctx.lineWidth = 1.8;
+        this.roundRectPath(ctx, t.x - 2, t.y - 2, t.width + 4, t.height + 4, 3);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   }
 
   isRefInvalid(ref: any): boolean {
@@ -1720,11 +1764,35 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const defaultLineColor = isLight ? '#94a3b8' : '#70c8c3';
       const baseColor = isInvalid ? '#ef4444' : (ref.color || defaultLineColor);
       const activeColor = isInvalid ? '#f87171' : (ref.color || (isLight ? '#3b82f6' : '#70c8c3'));
-      ctx.strokeStyle = isActive ? activeColor : baseColor;
+
+      // AI Diff Review status for this relation
+      let diffStatus: 'added' | 'modified' | 'deleted' | null = null;
+      if (this.svc.aiDiffReviewActive()) {
+        const refKey = `${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}->${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}`;
+        const revKey = `${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}->${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}`;
+        const rDiff = this.svc.refDiffStatus()[refKey] || this.svc.refDiffStatus()[revKey];
+        const fromTDiff = this.svc.tableDiffStatus()[ref.fromTable];
+        const toTDiff = this.svc.tableDiffStatus()[ref.toTable];
+
+        if (rDiff === 'added' || fromTDiff === 'added' || toTDiff === 'added') {
+          diffStatus = 'added';
+        } else if (rDiff === 'modified' || fromTDiff === 'modified' || toTDiff === 'modified') {
+          diffStatus = 'modified';
+        } else if (rDiff === 'deleted' || fromTDiff === 'deleted' || toTDiff === 'deleted') {
+          diffStatus = 'deleted';
+        }
+      }
+
+      const diffColor = diffStatus === 'added' ? '#10b981' : (diffStatus === 'modified' ? '#f59e0b' : '#ef4444');
+      const finalLineColor = diffStatus ? diffColor : (isActive ? activeColor : baseColor);
+
+      ctx.strokeStyle = finalLineColor;
       ctx.lineWidth = this.exporting ? (isActive ? 2.2 : 1.5) : (isActive ? 2.4 : 1.8);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      if (isInvalid) {
+      if (diffStatus) {
+        ctx.setLineDash([6, 4]);
+      } else if (isInvalid) {
         ctx.setLineDash([6, 4]);
       } else {
         ctx.setLineDash([]);
@@ -1742,7 +1810,39 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.fillStyle = isActive ? activeColor : baseColor;
+      // Draw diff badge along the relation line (near the midpoint)
+      if (diffStatus && ortho.length >= 2) {
+        const midIdx = Math.floor((ortho.length - 1) / 2);
+        const p1 = ortho[midIdx];
+        const p2 = ortho[midIdx + 1] || ortho[midIdx];
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+
+        ctx.save();
+        ctx.setLineDash([]);
+        const labelText = diffStatus === 'added' ? '[Added]' : (diffStatus === 'modified' ? '[Modified]' : '[Deleted]');
+        const labelColor = diffColor;
+        ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const textWidth = ctx.measureText(labelText).width;
+
+        ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.94)' : 'rgba(24, 30, 42, 0.94)';
+        ctx.beginPath();
+        const padX = 5;
+        const padY = 2;
+        this.roundRectPath(ctx, midX - textWidth / 2 - padX, midY - 7 - padY, textWidth + padX * 2, 14 + padY * 2, 3);
+        ctx.fill();
+        ctx.strokeStyle = labelColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(labelText, midX, midY);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = finalLineColor;
 
       const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
       const isEndPk = this.svc.isPrimaryKey(ref.toTable, ref.toCol);
@@ -1769,7 +1869,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
         ctx.fillStyle = isLight ? '#ffffff' : '#161f33';
         ctx.fill();
-        ctx.strokeStyle = isActive ? activeColor : baseColor;
+        ctx.strokeStyle = finalLineColor;
         ctx.lineWidth = 1.8;
         ctx.stroke();
       };
@@ -1790,7 +1890,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.moveTo(x1, y1);
         ctx.lineTo(pt.x, pt.y);
         ctx.lineTo(x2, y2);
-        ctx.strokeStyle = isActive ? activeColor : baseColor;
+        ctx.strokeStyle = finalLineColor;
         ctx.lineWidth = isActive ? 2.5 : 1.8;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
