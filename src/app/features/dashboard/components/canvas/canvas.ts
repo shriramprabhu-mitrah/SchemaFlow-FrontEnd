@@ -2677,6 +2677,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (e.button === 2) return;
     if (this.inlineEdit.visible) {
       this.commitInlineEdit();
+      return;
     }
 
 
@@ -3531,58 +3532,14 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCanvasContextMenu(e: MouseEvent): void {
-    if (this.svc.isReadOnly) {
-      e.preventDefault();
-      return;
-    }
     e.preventDefault();
-    if (!this.auth.isLoggedIn()) {
-      this.svc.authModalVisible.set(true);
-      return;
+    if (this.inlineEdit.visible) {
+      this.commitInlineEdit();
     }
-
-    const rect = this.canvasRef.nativeElement.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const wp = this.worldPointFromEvent(e);
-
-    const columnHit = this.findColumnAt(wp.x, wp.y);
-    if (columnHit) {
-      this.openContextMenu(sx, sy, 'column', columnHit.table, columnHit.column, -1);
-      return;
-    }
-
-    const geometry: Record<string, TableDef> = {};
-    this.svc.tables.forEach((t) => (geometry[t.name] = t));
-    const connectionHit = this.findHoveredConnectionIndex(wp.x, wp.y, geometry);
-    if (connectionHit !== -1) {
-      this.svc.selectedConnectionIndex = connectionHit;
+    if (this.contextMenu.visible) {
       this.contextMenu.visible = false;
       this.scheduleDraw();
-      return;
     }
-    const tableHit = this.findTableAt(wp.x, wp.y);
-    if (tableHit) {
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return;
-    }
-
-    if (this.svc.groups && this.svc.groups.length > 0) {
-      for (const g of this.svc.groups) {
-        const bounds = this.getGroupBounds(g, geometry);
-        if (bounds) {
-          if (wp.x >= bounds.x && wp.x <= bounds.x + bounds.w && wp.y >= bounds.y && wp.y <= bounds.y + bounds.h) {
-            this.contextMenu.visible = false;
-            this.scheduleDraw();
-            return;
-          }
-        }
-      }
-    }
-
-    this.contextMenuWorldPoint = wp;
-    this.openContextMenu(sx, sy, 'empty', null, null, -1);
   }
 
   /* ============ COORDINATE HELPERS ============ */
@@ -4752,7 +4709,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private getContextMenuItems(): string[] {
     switch (this.contextMenu.targetType) {
       case 'column':
-        return ['Add Column', 'Edit Column', 'Delete Column'];
+        return [];
       case 'table':
         return [];
       case 'tableHeader':
@@ -4762,7 +4719,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'connection':
         return [];
       case 'empty':
-        return ['Add Table'];
+        return [];
       default:
         return [];
     }
@@ -4796,6 +4753,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.svc.isReadOnly) return;
     if (!this.auth.isLoggedIn()) {
       this.svc.authModalVisible.set(true);
+      return;
+    }
+    if (this.inlineEdit.visible) {
+      this.commitInlineEdit();
       return;
     }
     this.contextMenu.visible = true;
@@ -5288,6 +5249,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (rowIndex === -1) return;
     const rowY = table.y + this.svc.HEADER_H + rowIndex * this.svc.ROW_H;
 
+    this.contextMenu.visible = false;
     this.inlineEdit = {
       visible: true,
       x: table.x * this.svc.view.scale + this.svc.view.x,
@@ -5299,9 +5261,18 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       tableName: table.name,
       originalColumnName: column.name
     };
+    this.scheduleDraw();
+    setTimeout(() => {
+      const el = document.querySelector('.inline-edit-input') as HTMLInputElement | null;
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, 50);
   }
 
   private openInlineEditForTable(table: TableDef): void {
+    this.contextMenu.visible = false;
     this.inlineEdit = {
       visible: true,
       x: table.x * this.svc.view.scale + this.svc.view.x,
@@ -5313,6 +5284,14 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       tableName: table.name,
       originalColumnName: undefined
     };
+    this.scheduleDraw();
+    setTimeout(() => {
+      const el = document.querySelector('.inline-edit-input') as HTMLInputElement | null;
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, 50);
   }
 
   commitInlineEdit(): void {

@@ -1,4 +1,5 @@
 <div id="canvas-pane" #canvasPane (mouseenter)="isMouseOverCanvas = true" (mouseleave)="isMouseOverCanvas = false"
+  (contextmenu)="$event.preventDefault()"
   [class.read-only]="svc.isReadOnly" [class.tool-pan]="svc.tool === 'pan'" [class.tool-select]="svc.tool === 'select'"
   [class.panning]="isPanning" [class.dragging]="draggingTable !== null" [style.display]="svc.showDocs ? 'none' : ''">
 
