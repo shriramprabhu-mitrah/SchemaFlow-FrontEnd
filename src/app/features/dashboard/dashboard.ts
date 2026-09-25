@@ -325,4 +325,25 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   openUpgradeModal(): void {
     this.svc.showUpgradeModal('trial_expired_banner');
   }
+
+  get documentViewEntitlement() {
+    return this.entitlementService.getEntitlement('document_view');
+  }
+
+  unlockDocs(): void {
+    const id = this.svc.diagramId();
+    if (!id) return;
+    const ent = this.documentViewEntitlement;
+    if (ent && ent.used !== undefined && ent.effective_limit !== undefined && ent.used >= ent.effective_limit) {
+      this.svc.showUpgradeModal('document_view');
+      return;
+    }
+    
+    this.svc.unlockDocs(id).subscribe({
+      error: (err: any) => {
+        const errorMsg = err?.error?.message || 'Failed to unlock docs';
+        this.svc.showToast(errorMsg, 3000, 'error');
+      }
+    });
+  }
 }

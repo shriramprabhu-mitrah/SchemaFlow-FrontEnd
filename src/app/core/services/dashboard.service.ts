@@ -69,6 +69,7 @@ export interface DiagramSummary {
   name: string;
   created_at?: string | Date | null;
   updated_at?: string | Date | null;
+  is_doc_unlocked?: boolean;
 }
 
 export interface EditorError {
@@ -527,6 +528,14 @@ export class DashboardService {
   set showDocs(val: boolean) {
     this.showDocsSignal.set(val);
   }
+
+  showDocsPlaceholderSignal = signal<boolean>(false);
+  get showDocsPlaceholder(): boolean {
+    return this.showDocsPlaceholderSignal();
+  }
+  set showDocsPlaceholder(val: boolean) {
+    this.showDocsPlaceholderSignal.set(val);
+  }
   showDiffChecker = signal<boolean>(false);
   diffCheckerData: { leftText: string; rightText: string; viewMode: 'edit' | 'diff' } = {
     leftText: '',
@@ -626,6 +635,25 @@ export class DashboardService {
     }
   }
 
+  unlockDocs(id: number): Observable<any> {
+    const url = `${this.appConfig.environment?.apiConfig?.baseUrl || ''}/api/diagrams/${id}/unlock-docs`;
+    return this.http.post(url, {}).pipe(
+      tap(() => {
+        // Update local diagram state
+        const diagrams = this.diagrams();
+        const diagram = diagrams.find(d => d.id === id);
+        if (diagram) {
+          diagram.is_doc_unlocked = true;
+          this.diagrams.set([...diagrams]);
+        }
+        this.isDocUnlocked.set(true);
+        this.showDocsPlaceholder = false;
+        this.showDocs = true;
+        this.entitlementService.incrementUsage('document_view');
+      })
+    );
+  }
+
   // --- Signals: these three are read directly by templates (header.html),
   // so they need to notify Angular regardless of zone/OnPush/zoneless setup. ---
   diagramId: any = signal<number | null>(null);
@@ -693,6 +721,7 @@ export class DashboardService {
   readonly isDiagramLoading = signal(false);
   readonly isSaving = signal(false);
   readonly diagramWorkspaceType = signal<string>('Personal');
+  readonly isDocUnlocked = signal<boolean>(false);
   readonly diagrams = signal<DiagramSummary[]>([]);
   readonly isLoadingDiagrams = signal(false);
   readonly workspaces = signal<WorkspaceItem[]>([]);
@@ -3126,7 +3155,8 @@ export class DashboardService {
               id,
               name: diagram?.name || diagram?.diagramname || '',
               created_at,
-              updated_at
+              updated_at,
+              is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
             };
           });
 
@@ -3603,6 +3633,8 @@ export class DashboardService {
     } else {
       this.isReadOnly = false;
     }
+    const isUnlocked = diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1;
+    this.isDocUnlocked.set(isUnlocked);
 
     let layout = diagram?.layout;
     if (typeof layout === 'string') {
