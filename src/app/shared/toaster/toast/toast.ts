@@ -12,8 +12,8 @@ import { takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Toast implements OnInit, OnDestroy {
-  /** Which zone this instance renders toasts for: 'editor' | 'canvas' */
-  @Input() location: 'editor' | 'canvas' = 'canvas';
+  /** Which zone this instance renders toasts for: 'editor' | 'canvas' | 'global' */
+  @Input() location: 'editor' | 'canvas' | 'global' = 'canvas';
 
   private destroy$ = new Subject<void>();
 
@@ -53,6 +53,16 @@ export class Toast implements OnInit, OnDestroy {
 
   /** Reactive computed style for editor toast — updates when paneMode or editorWidthPct changes */
   readonly editorStyle = computed(() => {
+    if (this.location === 'global') {
+      return {
+        left: '50%',
+        bottom: '24px',
+        transform: 'translateX(-50%)',
+        width: 'auto',
+        minWidth: '300px',
+        maxWidth: '90vw'
+      };
+    }
     const mode = this.svc.paneMode();
     const pct  = this.svc.editorWidthPct();
     if (mode === 'split') {

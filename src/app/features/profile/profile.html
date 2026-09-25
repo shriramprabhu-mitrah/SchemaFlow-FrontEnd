@@ -266,9 +266,12 @@
               <span class="banner-sub-tag">Currently Active Plan</span>
               <h4 class="banner-title">{{ getPlanBadgeLabel() }} Plan</h4>
             </div>
-            <div class="banner-status">
-              <span class="live-dot"></span>
-              <span>Active</span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="banner-status">
+                <span class="live-dot"></span>
+                <span>Active</span>
+              </div>
+              <button *ngIf="planSlug() !== 'free' && planStatus() === 'active'" class="premium-btn-cancel-renewal" (click)="requestCancellation()">Cancel Auto Renewal</button>
             </div>
           </div>
 
@@ -414,4 +417,29 @@
     </div>
 
   </div>
+
+  <!-- Custom Confirmation Card Modal for Cancellation -->
+  <div class="premium-modal-overlay" *ngIf="showCancelModal" (click)="closeCancelModal()">
+    <div class="premium-modal-card" (click)="$event.stopPropagation()">
+      <div class="premium-modal-icon-wrap" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.05);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+      <h3 class="premium-modal-title">Cancel Auto Renewal</h3>
+      <p class="premium-modal-text">
+        Are you sure you want to cancel your auto renewal?<br/>
+        Your plan will remain active until the end of your billing cycle.
+      </p>
+      <div style="display:flex;gap:16px;justify-content:center">
+        <button class="premium-btn-cancel" (click)="closeCancelModal()">Keep Plan</button>
+        <button class="premium-btn-danger" (click)="executeCancellation()">
+          Cancel Auto Renewal
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
