@@ -20,6 +20,39 @@
     [class.canvas-fullscreen]="paneMode === 'canvas' && !svc.showDocs"
     [class.diff-active]="svc.showDiffChecker()">
 
+    <!-- DOCS PLACEHOLDER OVERLAY -->
+    <div class="digram-view-lock-overlay" *ngIf="svc.showDocsPlaceholder" style="z-index: 1000;">
+      <div class="lock-overlay-content" style="position: relative; padding-top: 48px;">
+        <button class="close-btn" (click)="svc.showDocsPlaceholder = false" style="position: absolute; top: 16px; right: 20px; background: none; border: none; font-size: 26px; cursor: pointer; line-height: 1; padding: 0;">&times;</button>
+        
+        <div class="lock-icon-wrap" style="margin-bottom: 8px;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </div>
+        
+        <h2>Unlock Document View</h2>
+        <p>You can unlock Document View for a limited number of diagrams based on your plan.</p>
+        
+        <div class="usage-stats" *ngIf="documentViewEntitlement" style="width: 100%; margin-top: 4px; margin-bottom: 4px; padding: 20px; border-radius: 12px;">
+          <span style="font-size: 38px; font-weight: 700; display: block; margin-bottom: 6px; line-height: 1;">{{ documentViewEntitlement.used || 0 }} / {{ documentViewEntitlement.effective_limit || 0 }}</span>
+          <p style="margin: 0; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;">Docs Unlocked</p>
+        </div>
+
+        <button class="lock-upgrade-btn" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; margin-top: 8px;"
+                *ngIf="documentViewEntitlement && (documentViewEntitlement.used || 0) < (documentViewEntitlement.effective_limit || 0)"
+                (click)="unlockDocs()">
+          Unlock for this Diagram
+        </button>
+
+        <button class="lock-upgrade-btn" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; margin-top: 8px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;"
+                *ngIf="!documentViewEntitlement || (documentViewEntitlement.used || 0) >= (documentViewEntitlement.effective_limit || 0)"
+                (click)="svc.showUpgradeModal('document_view')">
+          Upgrade to Unlock More
+        </button>
+      </div>
+    </div>
+
     <!-- NORMAL VIEW: EDITOR + CANVAS + DOCS -->
     <ng-container *ngIf="!svc.showDiffChecker()">
       <!-- EDITOR (expands to full page when showDocs is true) -->

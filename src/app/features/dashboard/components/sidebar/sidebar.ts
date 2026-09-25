@@ -129,6 +129,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return !this.hasFeatureAccess('version_history');
       case 'tables':
       case 'refs':
+        return !this.hasFeatureAccess('table_relationships');
       case 'docs':
         return !this.hasFeatureAccess('document_view');
       case 'compare':
@@ -366,8 +367,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
 
     if (!this.auth.isSuperAdmin()) {
-      if (!this.hasFeatureAccess('document_view')) {
-        this.svc.showUpgradeModal('document_view');
+      if (!this.hasFeatureAccess('table_relationships')) {
+        this.svc.showUpgradeModal('table_relationships');
         return;
       }
     }
@@ -451,14 +452,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.isSampleDiagram()) {
       return;
     }
-    if (!this.entitlementService.canUseFeature('document_view')) {
-      if (!this.entitlementService.orgHasFeature('document_view')) {
-        this.svc.showUpgradeModal('document_view');
+    const isCurrentlyActive = this.svc.showDocs || this.svc.showDocsPlaceholder;
+
+    if (isCurrentlyActive) {
+      this.svc.showDocs = false;
+      this.svc.showDocsPlaceholder = false;
+    } else {
+      if (this.svc.isDocUnlocked()) {
+        this.svc.showDocs = true;
+        this.svc.showDocsPlaceholder = false;
+      } else {
+        if (!this.entitlementService.canUseFeature('document_view')) {
+          if (!this.entitlementService.orgHasFeature('document_view')) {
+            this.svc.showUpgradeModal('document_view');
+          }
+          return;
+        }
+        
+        this.svc.showDocs = false;
+        this.svc.showDocsPlaceholder = true;
       }
-      return;
-    }
-    this.svc.showDocs = !this.svc.showDocs;
-    if (this.svc.showDocs) {
+
       this.svc.sidebarInspectorTab.set(null);
       if (this.svc.showDiffChecker()) {
         this.svc.closeDiffChecker();

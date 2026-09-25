@@ -127,21 +127,22 @@ export class HeaderComponent implements OnInit {
       return false;
     }
 
-    // Check current workspace entitlements first (works for both personal and orgs)
+    // Check if the plan is explicitly free or trial
+    const currentPlan = this.auth.getCurrentPlanSlug();
+    if (currentPlan && currentPlan !== 'free') {
+      return true; // Hide the upgrade button for premium users
+    }
+
+    // Fallback to entitlement check if plan slug is unknown
     const ent = this.entitlementService.getEntitlement('create_diagrams');
     if (ent) {
       const limit = ent.effective_limit ?? (ent as any).limit_value;
       if (limit === -1) {
-        return true; // Unlimited diagrams means it's a premium/upgraded plan
-      }
-      if (limit !== undefined && limit !== null && limit !== -1) {
-        return false; // Has a limit, so it's a free plan
+        return true; 
       }
     }
 
-    // Fallback to local storage for personal plan
-    const currentPlan = this.auth.getCurrentPlanSlug();
-    return !!(currentPlan && currentPlan !== 'free');
+    return false;
   }
 
   goToLogin(): void {

@@ -465,6 +465,36 @@ body.light-theme {
       filter: brightness(1.1);
     }
   }
+
+  /* ---- Diagram View Lock Overlay (Light Theme) ---- */
+  .digram-view-lock-overlay {
+    background: rgba(255, 255, 255, 0.75);
+    
+    .lock-overlay-content {
+      background: linear-gradient(135deg, #ffffff, #f8fafc);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+      .lock-icon-wrap {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.05));
+        border: 1px solid rgba(37, 99, 235, 0.25);
+        color: #2563eb;
+      }
+
+      h2 {
+        color: #1e293b;
+      }
+
+      p {
+        color: #475569;
+      }
+
+      .lock-upgrade-btn {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: #ffffff;
+      }
+    }
+  }
 }
 
 /* ---- Diagram View Lock Overlay ---- */
@@ -472,8 +502,8 @@ body.light-theme {
   position: absolute;
   inset: 0;
   z-index: 500;
-  background: rgba(8, 16, 31, 0.82);
-  backdrop-filter: blur(8px);
+  background: rgba(8, 16, 31, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -492,6 +522,14 @@ body.light-theme {
     border-radius: 20px;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
     max-width: 420px;
+
+    .close-btn {
+      color: #98a7c4;
+      transition: color 0.15s ease;
+      &:hover {
+        color: #ffffff;
+      }
+    }
 
     .lock-icon-wrap {
       width: 80px;
@@ -538,6 +576,69 @@ body.light-theme {
       &:hover {
         filter: brightness(1.1);
         transform: translateY(-1px);
+      }
+    }
+
+    .usage-stats {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(62, 197, 193, 0.15);
+      span {
+        color: #e6eef9;
+      }
+      p {
+        color: #3ec5c1;
+      }
+    }
+  }
+}
+
+html.light-theme,
+body.light-theme {
+  .digram-view-lock-overlay {
+    background: rgba(15, 23, 42, 0.3) !important;
+    backdrop-filter: blur(4px) !important;
+
+    .lock-overlay-content {
+      background: linear-gradient(135deg, #ffffff, #f8fafc);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+      .close-btn {
+        color: #64748b;
+        transition: color 0.15s ease;
+        &:hover {
+          color: #0f172a;
+        }
+      }
+
+      .lock-icon-wrap {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.05));
+        border: 1px solid rgba(37, 99, 235, 0.25);
+        color: #2563eb;
+      }
+
+      h2 {
+        color: #1e293b;
+      }
+
+      p {
+        color: #475569;
+      }
+
+      .lock-upgrade-btn {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: #ffffff;
+      }
+
+      .usage-stats {
+        background: rgba(37, 99, 235, 0.05);
+        border: 1px solid rgba(37, 99, 235, 0.15);
+        span {
+          color: #1e293b;
+        }
+        p {
+          color: #2563eb;
+        }
       }
     }
   }
