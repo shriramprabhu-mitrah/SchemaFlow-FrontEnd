@@ -1,4 +1,4 @@
-<div class="docs-table-dropdown-menu" (click)="$event.stopPropagation()">
+<div class="docs-table-dropdown-menu" [class.light]="svc.theme() === 'light'" (click)="$event.stopPropagation()">
   <div class="dropdown-header">
     <div class="dropdown-title-wrap">
       <h2>Select Tables to View</h2>
@@ -36,7 +36,9 @@
   </div>
 
   <div class="dropdown-table-list">
-    <div class="dropdown-table-item" *ngFor="let t of getFilteredDropdownTables()" (click)="onToggleTable(t.name, $event); $event.stopPropagation()">
+    <div class="dropdown-table-item" *ngFor="let t of getFilteredDropdownTables()"
+      [class.is-focused]="isTableFocused(t.name)"
+      (click)="onSelectTable(t.name, $event)">
       <span class="node-icon table-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">

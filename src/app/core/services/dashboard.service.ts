@@ -798,6 +798,7 @@ export class DashboardService {
   selectedConnectionIndex = -1;
   showAllConnections = false;
   hoveredTableName: string | null = null;
+  activeFocusedTable: string | null = null;
 
   view = { x: 40, y: 40, scale: 1 };
   tool: Tool = 'select';

@@ -163,7 +163,7 @@
               </span>
 
               <span class="node-name table-name" [class.dimmed]="isTableHidden(t)"
-                (click)="toggleTableVisibility(t); $event.stopPropagation()" style="cursor: pointer;">{{
+                (click)="onSelectTable(t, $event)" style="cursor: pointer;">{{
                 getTableDisplayName(t) }}</span>
               <span class="spacer"></span>
               <button class="visibility-toggle-btn" (click)="toggleTableVisibility(t); $event.stopPropagation()">
@@ -230,7 +230,7 @@
                     </svg>
                   </span>
                   <span class="node-name table-name" [class.dimmed]="isTableHidden(t)"
-                    (click)="toggleTableVisibility(t); $event.stopPropagation()" style="cursor: pointer;">{{
+                    (click)="onSelectTable(t, $event)" style="cursor: pointer;">{{
                     getTableDisplayName(t) }}</span>
                   <span class="spacer"></span>
                   <button class="visibility-toggle-btn" (click)="toggleTableVisibility(t); $event.stopPropagation()">
