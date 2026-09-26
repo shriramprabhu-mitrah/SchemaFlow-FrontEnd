@@ -310,7 +310,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
       const newBody = body
         .split('\n')
         .map(line => {
-          const m = line.trim().match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_()]+)(.*)/);
+          const m = line.trim().match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+(?:\s*\([^)]*\))?)(.*)/);
           if (m && m[1] === oldColName) {
             const rawAttrs = m[3] || '';
             const attrs: string[] = [];
@@ -319,7 +319,8 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
             if (rawAttrs.includes('increment')) attrs.push('increment');
             if (rawAttrs.includes('unique')) attrs.push('unique');
             const attrStr = attrs.length > 0 ? ` [${attrs.join(', ')}]` : '';
-            return `  ${newColName} ${type}${attrStr}`;
+            const cleanType = type.replace(/\s*\([^)]*\)/g, '').trim();
+            return `  ${newColName} ${cleanType}${attrStr}`;
           }
           return line;
         })

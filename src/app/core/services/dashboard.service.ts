@@ -1805,10 +1805,12 @@ export class DashboardService {
       body.split('\n').forEach((line) => {
         line = line.trim();
         if (!line || line.indexOf('//') === 0) return;
-        const cm = line.match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_()]+)\s*(\[(.*)\])?/);
+        const cm = line.match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+(?:\s*\([^)]*\))?)\s*(\[(.*)\])?/);
         if (cm) {
           const rawAttrs = cm[4] || '';
           const attrsLower = rawAttrs.toLowerCase();
+          const rawType = cm[2] || '';
+          const cleanType = rawType.replace(/\s*\([^)]*\)/g, '').trim();
 
           const defaultMatch = rawAttrs.match(/default:\s*('[^']*'|"[^"]*"|`[^`]*`|[^,\]]+)/i);
           let defaultVal: string | undefined = undefined;
@@ -1840,7 +1842,7 @@ export class DashboardService {
 
           cols.push({
             name: cm[1],
-            type: cm[2],
+            type: cleanType,
             pk: attrsLower.includes('pk') || attrsLower.includes('primary key'),
             notNull: attrsLower.includes('not null'),
             unique: attrsLower.includes('unique'),
@@ -2541,7 +2543,7 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${newName} {\n${columns
-      .map((column) => `  ${column.name} ${column.type}${attributes(column)}`)
+      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
       .join('\n')}\n}`;
 
     // Replace the table block
@@ -2909,7 +2911,7 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${name} {\n${columns
-      .map((column) => `  ${column.name} ${column.type}${attributes(column)}`)
+      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
       .join('\n')}\n}`;
 
     const newRefs: string[] = [];

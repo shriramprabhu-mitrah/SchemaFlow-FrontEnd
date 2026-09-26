@@ -348,15 +348,21 @@ body.light-theme #body {
 
   .modal-body {
     margin-bottom: 10px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
     
     p {
       margin: 0;
       font-size: 13.5px;
       color: #e6eef9;
       line-height: 1.5;
+      word-break: break-word;
+      overflow-wrap: anywhere;
       
       strong {
         color: #3ec5c1;
+        word-break: break-word;
+        overflow-wrap: anywhere;
       }
     }
   }

@@ -4106,7 +4106,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       isNew,
       originalName: table.name,
       name: table.name,
-      columns: table.columns.map((column) => ({ ...column, originalName: column.name })),
+      columns: table.columns.map((column) => ({
+        ...column,
+        originalName: column.name,
+        type: (column.type || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
+      })),
       error: '',
       isGroup: !!currentGroup,
       groupName: currentGroup ? currentGroup.name : '',
@@ -4283,7 +4287,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectDataType(column: any, type: string): void {
-    column.type = type;
+    column.type = type.replace(/\s*\([^)]*\)/g, '').trim();
     this.typeDropdownIndex = null;
   }
 
@@ -4573,7 +4577,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const columns = this.tableModal.columns.map((column, index) => ({
       ...column,
       name: names[index],
-      type: column.type.trim() || 'varchar'
+      type: (column.type.trim() || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
     }));
 
     if (isNew) {

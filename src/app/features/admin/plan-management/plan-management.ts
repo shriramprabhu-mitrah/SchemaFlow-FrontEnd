@@ -206,6 +206,101 @@ export class PlanManagementComponent implements OnInit {
     this.refreshView();
   }
 
+  preventNonNumeric(event: KeyboardEvent, allowDecimal: boolean = true): void {
+    const invalidKeys = ['+', '-', 'e', 'E'];
+    if (invalidKeys.includes(event.key)) {
+      event.preventDefault();
+      return;
+    }
+    const allowedControlKeys = [
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+      'ArrowLeft', 'ArrowRight', 'Home', 'End'
+    ];
+    if (allowedControlKeys.includes(event.key)) {
+      return;
+    }
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+    if (allowDecimal && event.key === '.') {
+      const input = event.target as HTMLInputElement;
+      if (input && input.value.includes('.')) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (!/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  onPriceMonthlyInput(event?: Event): void {
+    if (event && event.target) {
+      const input = event.target as HTMLInputElement;
+      let cleaned = input.value.replace(/[^0-9.]/g, '');
+      const parts = cleaned.split('.');
+      if (parts.length > 2) {
+        cleaned = parts[0] + '.' + parts.slice(1).join('');
+      }
+      if (input.value !== cleaned) {
+        input.value = cleaned;
+      }
+      const num = cleaned === '' ? 0 : Math.max(0, Number(cleaned) || 0);
+      this.form.price_monthly = num;
+    } else {
+      this.form.price_monthly = Math.max(0, Number(this.form.price_monthly) || 0);
+    }
+    this.calculateAnnualPrice();
+  }
+
+  sanitizeDiscountInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let cleaned = input.value.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    let val = cleaned === '' ? 0 : Number(cleaned);
+    if (val > 100) val = 100;
+    if (val < 0) val = 0;
+    if (input.value !== String(val) && cleaned !== input.value) {
+      input.value = String(val);
+    }
+    this.commonSettingsForm.overall_percentage = val;
+  }
+
+  sanitizeTrialPartInput(event: Event, part: 'days' | 'hours' | 'mins'): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let cleaned = input.value.replace(/[^0-9]/g, '');
+    let val = cleaned === '' ? 0 : Math.max(0, parseInt(cleaned, 10) || 0);
+    if (part === 'hours' && val > 23) val = 23;
+    if (part === 'mins' && val > 59) val = 59;
+    
+    if (part === 'days') this.commonTrialDaysPart = val;
+    if (part === 'hours') this.commonTrialHoursPart = val;
+    if (part === 'mins') this.commonTrialMinsPart = val;
+    this.onCommonTrialPartChange();
+  }
+
+  sanitizeNonNegativeInput(event: Event, targetObj?: any, key?: string): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let cleaned = input.value.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    if (input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    const val = cleaned === '' ? 0 : Math.max(0, Number(cleaned) || 0);
+    if (targetObj && key) {
+      targetObj[key] = val;
+    }
+  }
+
   setDiscountPreset(val: number): void {
     this.commonSettingsForm.overall_percentage = val;
   }

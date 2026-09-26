@@ -393,11 +393,11 @@
                    [style.width.px]="typeDropdownPos.width"
                    [style.transform]="typeDropdownPos.transform"
                    (click)="$event.stopPropagation()">
-                <app-button variant="none" class="type-menu-item" [class.selected]="opt === column.type"
-                  *ngFor="let opt of datatypeOptions" (onClick)="selectDataType(column, opt)">
+                <button type="button" class="type-menu-item" [class.selected]="opt === column.type"
+                  *ngFor="let opt of datatypeOptions" (click)="selectDataType(column, opt)">
                   <span class="type-menu-label">{{ opt }}</span>
                   <span class="type-menu-check" *ngIf="opt === column.type">✓</span>
-                </app-button>
+                </button>
               </div>
             </div>
             <div class="constraint-dropdown">
