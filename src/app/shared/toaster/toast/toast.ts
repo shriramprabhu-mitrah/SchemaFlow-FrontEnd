@@ -60,7 +60,7 @@ export class Toast implements OnInit, OnDestroy {
         transform: 'translateX(-50%)',
         width: 'auto',
         minWidth: '300px',
-        maxWidth: '90vw'
+        maxWidth: 'calc(100vw - 24px)'
       };
     }
     const mode = this.svc.paneMode();
@@ -70,7 +70,7 @@ export class Toast implements OnInit, OnDestroy {
         left: '12px',
         bottom: '12px',
         width: `calc(${pct}% - 24px)`,
-        maxWidth: 'none'
+        maxWidth: `calc(${pct}% - 24px)`
       };
     }
     if (mode === 'editor') {
@@ -78,10 +78,17 @@ export class Toast implements OnInit, OnDestroy {
         left: '12px',
         bottom: '12px',
         width: 'calc(100% - 24px)',
-        maxWidth: 'none'
+        maxWidth: 'calc(100% - 24px)'
       };
     }
-    // canvas mode: editor is hidden, so hide this toast too
-    return { display: 'none' };
+    // canvas mode: center at bottom so errors are still visible
+    return {
+      left: '50%',
+      bottom: '24px',
+      transform: 'translateX(-50%)',
+      width: 'auto',
+      minWidth: 'min(max-content, calc(100vw - 24px))',
+      maxWidth: 'calc(100vw - 24px)'
+    };
   });
 }
