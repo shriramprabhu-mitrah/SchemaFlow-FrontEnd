@@ -17,6 +17,13 @@ export class DocsComponent implements OnInit, OnDestroy {
   private sub = new Subscription();
   collapsedTables = new Set<string>();
   selectedTables = new Set<string>();
+  get activeFocusedTable(): string | null {
+    return this.svc.activeFocusedTable;
+  }
+  set activeFocusedTable(val: string | null) {
+    this.svc.activeFocusedTable = val;
+  }
+  flashHighlightedTable: string | null = null;
   isFilterActive = false;
   showTableDropdown = false;
 
@@ -51,14 +58,53 @@ export class DocsComponent implements OnInit, OnDestroy {
     this.sub.unsubscribe();
   }
 
-  @HostListener('document:click')
-  onDocumentClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event?: Event): void {
     this.showTableDropdown = false;
+    if (event) {
+      const target = event.target as HTMLElement;
+      if (target && !target.closest('.docs-table-card') && !target.closest('.dropdown-table-item') && !target.closest('.rel-jump-btn')) {
+        this.activeFocusedTable = null;
+        this.flashHighlightedTable = null;
+        document.querySelectorAll('.docs-table-card.flash-highlight').forEach(el => el.classList.remove('flash-highlight'));
+      }
+    }
+  }
+
+  onCardClick(tableName: string, event: Event): void {
+    event.stopPropagation();
+    this.activeFocusedTable = tableName;
+    this.flashHighlightedTable = tableName;
+    document.querySelectorAll('.docs-table-card.flash-highlight').forEach(el => {
+      if (el.id !== 'docs-card-' + tableName) el.classList.remove('flash-highlight');
+    });
+
+    setTimeout(() => {
+      if (this.flashHighlightedTable === tableName) {
+        this.flashHighlightedTable = null;
+        this.cdr.detectChanges();
+      }
+    }, 1900);
   }
 
   toggleTableDropdown(event?: Event): void {
     if (event) event.stopPropagation();
     this.showTableDropdown = !this.showTableDropdown;
+    if (!this.showTableDropdown) {
+      this.clearTableHighlight();
+    }
+  }
+
+  closeTableDropdown(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.showTableDropdown = false;
+    this.clearTableHighlight();
+  }
+
+  private clearTableHighlight(): void {
+    this.activeFocusedTable = null;
+    this.flashHighlightedTable = null;
+    document.querySelectorAll('.docs-table-card.flash-highlight').forEach(el => el.classList.remove('flash-highlight'));
   }
 
   toggleTable(tableName: string): void {
@@ -136,6 +182,13 @@ export class DocsComponent implements OnInit, OnDestroy {
   viewTableDetails(tableName: string, currentTable?: string, event?: Event): void {
     if (event) event.stopPropagation();
     this.isFilterActive = true;
+    this.activeFocusedTable = tableName;
+    this.flashHighlightedTable = tableName;
+
+    // Clean up any residual flash-highlight classes from other DOM elements
+    document.querySelectorAll('.docs-table-card.flash-highlight').forEach(el => {
+      if (el.id !== 'docs-card-' + tableName) el.classList.remove('flash-highlight');
+    });
 
     const newSet = new Set(this.selectedTables);
     // Add target table (e.g. Employee)
@@ -149,13 +202,21 @@ export class DocsComponent implements OnInit, OnDestroy {
     }
     this.selectedTables = newSet;
 
-    // Scroll target table card into view if needed
+    // Scroll target table card into view and trigger highlight pulse
     setTimeout(() => {
       const cardEl = document.getElementById('docs-card-' + tableName);
       if (cardEl) {
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+      this.cdr.detectChanges();
     }, 50);
+
+    setTimeout(() => {
+      if (this.flashHighlightedTable === tableName) {
+        this.flashHighlightedTable = null;
+        this.cdr.detectChanges();
+      }
+    }, 1900);
   }
 
   selectAll(): void {

@@ -12,8 +12,10 @@ import { DashboardService } from '../../../../core/services/dashboard.service';
 })
 export class DocsTableDropdownComponent {
   @Input() selectedTables: Set<string> = new Set();
+  @Input() activeFocusedTable: string | null = null;
   @Output() closeDropdown = new EventEmitter<Event>();
   @Output() toggleTable = new EventEmitter<{ tableName: string; event?: Event }>();
+  @Output() selectTable = new EventEmitter<{ tableName: string; event?: Event }>();
   @Output() toggleAll = new EventEmitter<void>();
 
   tableSearchQuery = '';
@@ -30,6 +32,18 @@ export class DocsTableDropdownComponent {
     return this.selectedTables.has(tableName);
   }
 
+  isTableFocused(tableName: string): boolean {
+    if (!tableName) return false;
+    const active = this.activeFocusedTable || this.svc.activeFocusedTable || this.svc.hoveredTableName;
+    if (active) {
+      if (active === tableName) return true;
+      const baseActive = active.includes('.') ? active.split('.')[1] : active;
+      const baseTarget = tableName.includes('.') ? tableName.split('.')[1] : tableName;
+      if (baseActive.toLowerCase() === baseTarget.toLowerCase()) return true;
+    }
+    return false;
+  }
+
   getTableRelationships(tableName: string) {
     return this.svc.getTableRelationships(tableName);
   }
@@ -44,6 +58,12 @@ export class DocsTableDropdownComponent {
 
   onToggleTable(tableName: string, event?: Event) {
     this.toggleTable.emit({ tableName, event });
+  }
+
+  onSelectTable(tableName: string, event?: Event) {
+    if (event) event.stopPropagation();
+    this.svc.activeFocusedTable = tableName;
+    this.selectTable.emit({ tableName, event });
   }
 
   onToggleAll() {

@@ -217,6 +217,13 @@ ngAfterViewInit(): void {
     this.svc.toggleTableVisibility(tableName);
   }
 
+  onSelectTable(tableName: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (this.isTableHidden(tableName)) {
+      this.svc.setTableVisibility(tableName, true);
+    }
+  }
+
   getVisibleTableCount(g: GroupData): number {
     return g.tables.filter((t) => !this.isTableHidden(t)).length;
   }
