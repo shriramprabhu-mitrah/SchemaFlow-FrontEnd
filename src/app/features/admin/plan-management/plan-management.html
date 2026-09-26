@@ -370,7 +370,8 @@
               placeholder="Value">
           </td>
           <td>
-            <input class="form-input" type="number" [(ngModel)]="ent.limit_value" (ngModelChange)="onEntitlementFieldChange(ent)"
+            <input class="form-input" type="number" min="0" [(ngModel)]="ent.limit_value"
+              (keydown)="preventNonNumeric($event)" (input)="sanitizeNonNegativeInput($event, ent, 'limit_value')" (ngModelChange)="onEntitlementFieldChange(ent)"
               style="width:100px;padding:5px 8px;font-size:13px;height:32px" placeholder="Unlimited">
           </td>
           <td style="overflow:visible!important;position:relative">
@@ -568,7 +569,8 @@
       <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700">PRICE MONTHLY (₹)</label>
-          <input class="form-input" style="height:38px" type="number" [(ngModel)]="form.price_monthly" (ngModelChange)="calculateAnnualPrice()" (input)="calculateAnnualPrice()" placeholder="0">
+          <input class="form-input" style="height:38px" type="number" min="0" [(ngModel)]="form.price_monthly"
+            (keydown)="preventNonNumeric($event)" (input)="onPriceMonthlyInput($event)" (ngModelChange)="onPriceMonthlyInput($event)" placeholder="0">
         </div>
         <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;">
@@ -729,7 +731,8 @@
           </div>
 
           <div class="discount-input-wrap">
-            <input class="discount-input" type="number" min="0" max="100" [(ngModel)]="commonSettingsForm.overall_percentage" placeholder="e.g. 20">
+            <input class="discount-input" type="number" min="0" max="100" [(ngModel)]="commonSettingsForm.overall_percentage"
+              (keydown)="preventNonNumeric($event)" (input)="sanitizeDiscountInput($event)" placeholder="e.g. 20">
             <span class="input-suffix-symbol">%</span>
           </div>
 
@@ -772,7 +775,8 @@
               <span class="stepper-label">DAYS</span>
               <div class="stepper-controls-row">
                 <button type="button" class="btn-stepper" (click)="adjustCommonTrial('days', -1)">-</button>
-                <input class="stepper-num-input" type="number" min="0" [(ngModel)]="commonTrialDaysPart" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
+                <input class="stepper-num-input" type="number" min="0" [(ngModel)]="commonTrialDaysPart"
+                  (keydown)="preventNonNumeric($event, false)" (input)="sanitizeTrialPartInput($event, 'days')" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
                 <button type="button" class="btn-stepper" (click)="adjustCommonTrial('days', 1)">+</button>
               </div>
             </div>
@@ -782,7 +786,8 @@
               <span class="stepper-label">HOURS (0-23)</span>
               <div class="stepper-controls-row">
                 <button type="button" class="btn-stepper" (click)="adjustCommonTrial('hours', -1)">-</button>
-                <input class="stepper-num-input" type="number" min="0" max="23" [(ngModel)]="commonTrialHoursPart" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
+                <input class="stepper-num-input" type="number" min="0" max="23" [(ngModel)]="commonTrialHoursPart"
+                  (keydown)="preventNonNumeric($event, false)" (input)="sanitizeTrialPartInput($event, 'hours')" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
                 <button type="button" class="btn-stepper" (click)="adjustCommonTrial('hours', 1)">+</button>
               </div>
             </div>
@@ -792,7 +797,8 @@
               <span class="stepper-label">MINS (0-59)</span>
               <div class="stepper-controls-row">
                 <button type="button" class="btn-stepper" (click)="adjustCommonTrial('mins', -5)">-</button>
-                <input class="stepper-num-input" type="number" min="0" max="59" [(ngModel)]="commonTrialMinsPart" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
+                <input class="stepper-num-input" type="number" min="0" max="59" [(ngModel)]="commonTrialMinsPart"
+                  (keydown)="preventNonNumeric($event, false)" (input)="sanitizeTrialPartInput($event, 'mins')" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
                 <button type="button" class="btn-stepper" (click)="adjustCommonTrial('mins', 5)">+</button>
               </div>
             </div>

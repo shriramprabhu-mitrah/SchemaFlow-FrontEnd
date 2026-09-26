@@ -1051,7 +1051,8 @@ app-version-history {
 /* Context-menu style rows (matches the "Can view" style dropdown):
    full-width row, label on the left, checkmark on the right for the
    currently selected value, subtle hover highlight. */
-.type-menu button {
+.type-menu button,
+.type-menu .type-menu-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1068,16 +1069,26 @@ app-version-history {
   cursor: pointer;
   outline: none;
   border-radius: 6px;
-}
 
-.type-menu button:hover {
-  background: rgba(62, 197, 193, 0.12);
-  color: #61d7d3;
-}
+  .type-menu-label {
+    color: inherit;
+  }
 
-.type-menu button.selected {
-  color: #3ec5c1;
-  font-weight: 700;
+  &:hover {
+    background: rgba(62, 197, 193, 0.12);
+    color: #61d7d3;
+    .type-menu-label {
+      color: #61d7d3;
+    }
+  }
+
+  &.selected {
+    color: #3ec5c1;
+    font-weight: 700;
+    .type-menu-label {
+      color: #3ec5c1;
+    }
+  }
 }
 
 .type-menu-label {
@@ -1729,17 +1740,30 @@ body.light-theme {
       border: 1px solid rgba(0, 0, 0, 0.12) !important;
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08) !important;
 
-      button {
+      button,
+      .type-menu-item {
         color: #1f2937 !important;
         background: transparent !important;
+
+        .type-menu-label {
+          color: #1f2937 !important;
+        }
 
         &:hover {
           background: rgba(37, 99, 235, 0.08) !important;
           color: #2563eb !important;
+
+          .type-menu-label {
+            color: #2563eb !important;
+          }
         }
 
         &.selected {
           color: #2563eb !important;
+
+          .type-menu-label {
+            color: #2563eb !important;
+          }
         }
       }
 
