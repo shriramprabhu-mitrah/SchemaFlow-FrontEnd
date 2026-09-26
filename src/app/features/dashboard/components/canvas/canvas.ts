@@ -2692,18 +2692,86 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private getWrappedTooltipLines(ctx: CanvasRenderingContext2D, text: string, maxLineWidth: number): string[] {
+    const lines: string[] = [];
+    const paragraphs = text.split('\n');
+
+    for (const paragraph of paragraphs) {
+      if (!paragraph.trim()) {
+        lines.push('');
+        continue;
+      }
+
+      const words = paragraph.split(' ');
+      let currentLine = '';
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (ctx.measureText(testLine).width <= maxLineWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = '';
+          }
+
+          // If a single word is wider than maxLineWidth, break it up character by character
+          if (ctx.measureText(word).width > maxLineWidth) {
+            let chunk = '';
+            for (let c = 0; c < word.length; c++) {
+              const char = word[c];
+              if (ctx.measureText(chunk + char).width <= maxLineWidth) {
+                chunk += char;
+              } else {
+                if (chunk) lines.push(chunk);
+                chunk = char;
+              }
+            }
+            if (chunk) {
+              currentLine = chunk;
+            }
+          } else {
+            currentLine = word;
+          }
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+    }
+
+    return lines.length > 0 ? lines : [text];
+  }
+
   private drawIconTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, label: string): void {
+    if (!label) return;
+
     ctx.save();
     ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const textWidth = ctx.measureText(label).width;
-    const boxW = textWidth + 16;
-    const boxH = 22;
+
+    const maxLineWidth = 240;
+    const lines = this.getWrappedTooltipLines(ctx, label, maxLineWidth);
+
+    let maxTextWidth = 0;
+    for (const line of lines) {
+      const w = ctx.measureText(line).width;
+      if (w > maxTextWidth) maxTextWidth = w;
+    }
+
+    const lineHeight = 15;
+    const paddingX = 10;
+    const paddingY = 6;
+    const boxW = Math.max(36, maxTextWidth + paddingX * 2);
+    const boxH = Math.max(22, lines.length * lineHeight + paddingY * 2 - 4);
     const boxX = x - boxW / 2;
     const boxY = y - boxH - 8;
 
     // Draw the bubble background path
     ctx.beginPath();
-    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 5);
+    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 6);
     ctx.fillStyle = '#0b0f19';
     ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
@@ -2728,11 +2796,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.fillStyle = '#0b0f19';
     ctx.fill();
 
-    // Draw white text
+    // Draw white text lines
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, x, boxY + boxH / 2 + 0.5);
+
+    const startY = boxY + paddingY + lineHeight / 2 - 1;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, startY + i * lineHeight);
+    }
+
     ctx.restore();
   }
 
