@@ -92,6 +92,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   isUpdatingWorkspace = false;
   updateWorkspaceError = '';
   isAddingMember = false;
+  inviteErrorMessage = '';
 
   deleteConfirm = {
     visible: false,
@@ -931,12 +932,17 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       if (!trimmed) continue;
 
       if (!emailRegex.test(trimmed)) {
-        this.svc.showToast(`"${trimmed}" is not a valid email address.`, 3000, 'error');
+        const msg = `"${trimmed}" is not a valid email address.`;
+        this.inviteErrorMessage = msg;
+        this.svc.showToast(msg, 3000, 'error', 'global');
         continue;
       }
 
-      if (trimmed === this.userEmail.toLowerCase()) {
-        this.svc.showToast('You cannot invite yourself as a member.', 3000, 'error');
+      const myEmail = (this.userEmail || '').toLowerCase();
+      if (myEmail && trimmed === myEmail) {
+        const msg = 'You cannot invite yourself as a member.';
+        this.inviteErrorMessage = msg;
+        this.svc.showToast(msg, 3000, 'error', 'global');
         continue;
       }
 
@@ -944,8 +950,10 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         continue;
       }
 
-      if (this.membersList.some(m => m.email.toLowerCase() === trimmed)) {
-        this.svc.showToast(`"${trimmed}" has already been added to the members list.`, 3000, 'error');
+      if (this.membersList.some(m => (m.email || '').toLowerCase() === trimmed)) {
+        const msg = `"${trimmed}" has already been added to the members list.`;
+        this.inviteErrorMessage = msg;
+        this.svc.showToast(msg, 3000, 'error', 'global');
         continue;
       }
 
@@ -958,6 +966,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   clearErrors(): void {
     this.createWorkspaceError = '';
+    this.inviteErrorMessage = '';
     if (this.svc.toastType() === 'error') {
       this.svc.toastMessage.set(null);
     }
@@ -973,76 +982,141 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   addMember(): void {
     this.addEmailChip();
-    if (this.invitedEmailsChips.length === 0) {
+
+    if (!this.invitedEmailsChips || this.invitedEmailsChips.length === 0) {
       return;
     }
-
-    this.isAddingMember = true;
-    this.cdr.detectChanges();
 
     const emailsToValidate = [...this.invitedEmailsChips];
     const wsId = (this.activeTab === 'edit-workspace' && this.editingWorkspace) ? this.editingWorkspace.id : undefined;
 
-    this.svc.validateWorkspaceMember(emailsToValidate, wsId).pipe(
-      finalize(() => {
-        this.ngZone.run(() => {
-          this.isAddingMember = false;
-          this.cdr.detectChanges();
-        });
-      })
-    ).subscribe({
+    // Clear chips and input field immediately so UI updates right away
+    this.invitedEmailsChips = [];
+    this.inviteEmail = '';
+    this.inviteErrorMessage = '';
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+
+    this.svc.validateWorkspaceMember(emailsToValidate, wsId).subscribe({
       next: (response: any) => {
         this.ngZone.run(() => {
           try {
-            const data = response?.data || response;
-            const results = data?.results || [];
+            if (!this.membersList) {
+              this.membersList = [];
+            }
+
+            const data = response?.data !== undefined ? response.data : response;
+
+            let rawResults: any[] = [];
+            if (Array.isArray(response)) {
+              rawResults = response;
+            } else if (Array.isArray(data)) {
+              rawResults = data;
+            } else if (Array.isArray(data?.results)) {
+              rawResults = data.results;
+            } else if (Array.isArray(response?.results)) {
+              rawResults = response.results;
+            } else if (Array.isArray(data?.members)) {
+              rawResults = data.members;
+            } else if (Array.isArray(data?.validEmails)) {
+              rawResults = data.validEmails.map((e: string) => ({ email: e, valid: true }));
+              if (Array.isArray(data?.invalidEmails)) {
+                rawResults.push(...data.invalidEmails.map((e: string) => ({ email: e, valid: false })));
+              }
+            } else if (data && typeof data === 'object' && ('email' in data || 'valid' in data || 'message' in data)) {
+              rawResults = [data];
+            } else if (response && typeof response === 'object' && ('email' in response || 'valid' in response)) {
+              rawResults = [response];
+            }
 
             const invalidEmails: string[] = [];
             const errorMessages: string[] = [];
+            const validEmailsToAdd: string[] = [];
 
-            for (const item of results) {
-              if (item.valid) {
-                if (!this.membersList.some(m => m.email.toLowerCase() === item.email.toLowerCase())) {
-                  this.membersList.push({
-                    email: item.email,
-                    permission: this.invitePermission || 'Viewer',
-                    isNew: true,
-                    isAdminSelected: false,
-                    featureAccess: []
-                  });
-                }
+            for (const item of rawResults) {
+              const emailStr = typeof item === 'string'
+                ? item
+                : (item?.email || item?.userEmail || item?.user?.email || '');
+              if (!emailStr) continue;
+
+              const isValid = item?.valid === true ||
+                              item?.valid === 'true' ||
+                              item?.valid === 1 ||
+                              item?.isValid === true ||
+                              item?.status === 'valid' ||
+                              (item?.valid === undefined && !item?.error && item?.valid !== false && !item?.message?.toLowerCase().includes('not registered'));
+
+              if (isValid) {
+                validEmailsToAdd.push(emailStr);
               } else {
-                invalidEmails.push(item.email);
-                if (item.message) {
-                  errorMessages.push(item.message);
+                invalidEmails.push(emailStr.toLowerCase());
+                if (item?.message || item?.error) {
+                  errorMessages.push(item.message || item.error);
                 }
               }
             }
 
-            if (errorMessages.length > 0) {
-              this.svc.showToast(errorMessages.join('\n'), 6000, 'error', 'global');
+            // Fallback: If HTTP 200 response came back with allValid flag true or no explicit invalid list
+            if (data?.allValid === true || (invalidEmails.length === 0 && validEmailsToAdd.length === 0 && !data?.hasErrors)) {
+              for (const email of emailsToValidate) {
+                if (!invalidEmails.includes(email.toLowerCase()) && !validEmailsToAdd.some(v => v.toLowerCase() === email.toLowerCase())) {
+                  validEmailsToAdd.push(email);
+                }
+              }
             }
 
-            this.invitedEmailsChips = invalidEmails;
-            this.inviteEmail = '';
-            this.membersTotal = this.filteredMembersList ? this.filteredMembersList.length : this.membersList.length;
+            // Add ONLY strictly validated registered members to membersList
+            for (const validEmail of validEmailsToAdd) {
+              const lower = validEmail.toLowerCase();
+              if (!this.membersList.some(m => (m.email || '').toLowerCase() === lower)) {
+                this.membersList.push({
+                  email: validEmail,
+                  permission: this.invitePermission || 'Viewer',
+                  isNew: true,
+                  isAdminSelected: false,
+                  featureAccess: []
+                });
+              }
+            }
+
+            // Reassign membersList immutably so Angular change detection updates immediately
+            this.membersList = [...this.membersList];
+
+            // Update member totals for pagination if editing workspace
+            this.membersTotal = this.filteredMembersList.length;
             this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+            if (this.activeTab === 'edit-workspace') {
+              this.membersPage = this.membersTotalPages;
+            }
+
+            if (errorMessages.length > 0) {
+              const errorText = errorMessages.join(' ');
+              this.svc.showToast(errorText, 6000, 'error', 'global');
+            }
+
             this.permissionDropdownOpen = false;
+            this.cdr.markForCheck();
+            this.cdr.detectChanges();
+            setTimeout(() => {
+              this.cdr.markForCheck();
+              this.cdr.detectChanges();
+            }, 0);
           } catch (e) {
             console.error('Error handling member validation response:', e);
-          } finally {
-            this.isAddingMember = false;
-            this.cdr.detectChanges();
           }
         });
       },
       error: (err) => {
         this.ngZone.run(() => {
           console.error('Member validation failed:', err);
-          const errMsg = err?.error?.message || 'Failed to validate member(s).';
+          const errMsg = err?.error?.message || err?.message || 'Failed to validate member(s).';
           this.svc.showToast(errMsg, 5000, 'error', 'global');
-          this.isAddingMember = false;
+          this.cdr.markForCheck();
           this.cdr.detectChanges();
+          setTimeout(() => {
+            this.cdr.markForCheck();
+            this.cdr.detectChanges();
+          }, 0);
         });
       }
     });

@@ -984,9 +984,8 @@
                 (blur)="addEmailChip()" spellcheck="false" />
             </div>
 
-            <button class="btn-invite-action" (click)="addMember()" [disabled]="isAddingMember">
-              <span *ngIf="isAddingMember" class="spinner spinner-sm"></span>
-              {{ isAddingMember ? 'Inviting...' : 'Invite' }}
+            <button type="button" class="btn-invite-action" (click)="addMember()">
+              Invite
             </button>
           </div>
 
@@ -1104,13 +1103,12 @@
               <input #emailInput2 type="text" class="inline-input"
                 style="border: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;"
                 [placeholder]="invitedEmailsChips.length > 0 ? '' : 'Enter email address to add member'"
-                [(ngModel)]="inviteEmail" (keydown)="onEmailInputKeyDown($event)" (blur)="addEmailChip()"
+                [(ngModel)]="inviteEmail" (input)="clearErrors()" (keydown)="onEmailInputKeyDown($event)" (blur)="addEmailChip()"
                 spellcheck="false" />
             </div>
 
-            <button class="btn-invite-action" (click)="addMember()" [disabled]="isAddingMember">
-              <span *ngIf="isAddingMember" class="spinner spinner-sm"></span>
-              {{ isAddingMember ? 'Adding...' : 'Add Member' }}
+            <button type="button" class="btn-invite-action" (click)="addMember()">
+              Add Member
             </button>
           </div>
 
