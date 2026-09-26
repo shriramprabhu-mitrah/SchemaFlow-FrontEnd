@@ -20,7 +20,7 @@ export interface WorkspaceMemberItem {
   isAdminSelected?: boolean;
 }
 
-export type UserWorkspacePermission = 'Owner' | 'EditorInvite' | 'Editor' | 'Viewer';
+export type UserWorkspacePermission = 'Owner' | 'Editor & Invite' | 'Editor' | 'Viewer';
 
 @Component({
   selector: 'app-workspace-modal',
@@ -85,7 +85,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   membersList: WorkspaceMemberItem[] = [];
 
   permissionDropdownOpen = false;
-  activeMemberDropdownIndex: number | null = null;
+  activeMemberDropdownIndex: number | string | null = null;
   isCreatingWorkspace = false;
   createWorkspaceError = '';
   isUpdatingWorkspace = false;
@@ -190,12 +190,17 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
 
     this.membersSearch$.pipe(
-      debounceTime(2000),
+      debounceTime(300),
       distinctUntilChanged()
     ).subscribe((val) => {
       this.membersSearch = val;
       if (this.activeTab === 'view-members') {
         this.loadMembersForView(1);
+      } else if (this.activeTab === 'edit-workspace') {
+        this.membersTotal = this.filteredMembersList.length;
+        this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+        this.membersPage = 1;
+        this.cdr.detectChanges();
       } else {
         this.loadMembers(undefined, 1);
       }
@@ -664,24 +669,37 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   loadMembers(workspaceId?: number, page: any = this.membersPage): void {
     const wsId = workspaceId ?? this.editingWorkspace?.id;
     if (!wsId) return;
-    this.membersPage = Number(page);
+    this.membersPage = 1;
     this.isLoadingMembers = true;
     this.cdr.detectChanges();
     this.svc.fetchWorkspaceMembers(wsId, {
-      page: this.membersPage,
-      limit: this.membersLimit,
-      search: this.membersSearch,
+      page: 1,
+      limit: 1000,
+      search: '',
       sortBy: this.membersSortBy,
       sortOrder: this.membersSortOrder
     }).subscribe({
       next: (res) => {
         this.ngZone.run(() => {
           try {
-            this.membersTotal = res?.total || 0;
-            this.membersTotalPages = res?.totalPages || 1;
             const membersData = res?.data || [];
             this.cachedMembersMap.set(wsId, membersData);
             this.populateMembersList(membersData);
+
+            // Ensure workspace owner is always present in members list
+            const ownerEmail = this.editingWorkspace?.user_email || this.getWorkspaceOwnerEmail(this.editingWorkspace!) || this.userEmail;
+            if (ownerEmail && !this.membersList.some(m => m.permission === 'Owner' || m.email.toLowerCase() === ownerEmail.toLowerCase())) {
+              this.membersList.unshift({
+                email: ownerEmail,
+                permission: 'Owner',
+                isAdminSelected: true,
+                featureAccess: this.availableFeatures.map(f => f.feature_key)
+              });
+            }
+
+            this.membersTotal = this.filteredMembersList.length;
+            this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+            this.membersPage = 1;
           } catch (e) {
             console.error('Error processing members response:', e);
           } finally {
@@ -699,18 +717,40 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     });
   }
 
+  onEditMembersPageChange(page: any): void {
+    const pageNum = Number(page);
+    if (isNaN(pageNum) || pageNum < 1 || pageNum > this.membersTotalPages) return;
+    this.membersPage = pageNum;
+    this.activeMemberDropdownIndex = null;
+    this.cdr.detectChanges();
+  }
+
   onMembersLimitChange(newLimit: any): void {
     this.membersLimit = Number(newLimit);
-    this.loadMembers(undefined, 1);
+    if (this.activeTab === 'edit-workspace') {
+      this.membersTotal = this.filteredMembersList.length;
+      this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+      this.membersPage = 1;
+      this.cdr.detectChanges();
+    } else {
+      this.loadMembers(undefined, 1);
+    }
   }
 
   onMembersSearchChange(val: string): void {
-    if (this.membersSearch !== val) {
-      this.isLoadingMembers = true;
-      this.cdr.detectChanges();
-    }
     this.membersSearch = val;
-    this.membersSearch$.next(val);
+    if (this.activeTab === 'edit-workspace') {
+      this.membersTotal = this.filteredMembersList.length;
+      this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+      this.membersPage = 1;
+      this.cdr.detectChanges();
+    } else {
+      if (this.membersSearch !== val) {
+        this.isLoadingMembers = true;
+        this.cdr.detectChanges();
+      }
+      this.membersSearch$.next(val);
+    }
   }
 
   onMembersSortToggle(field: string): void {
@@ -722,6 +762,17 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
     if (this.activeTab === 'view-members') {
       this.loadMembersForView(1);
+    } else if (this.activeTab === 'edit-workspace') {
+      this.membersList.sort((a, b) => {
+        if (a.permission === 'Owner') return -1;
+        if (b.permission === 'Owner') return 1;
+        const valA = ((a as any)[field] || '').toString().toLowerCase();
+        const valB = ((b as any)[field] || '').toString().toLowerCase();
+        const comp = valA.localeCompare(valB);
+        return this.membersSortOrder === 'asc' ? comp : -comp;
+      });
+      this.membersPage = 1;
+      this.cdr.detectChanges();
     } else {
       this.loadMembers(undefined, 1);
     }
@@ -753,7 +804,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     if (!raw) return 'Owner';
     const str = raw.toString().trim().toLowerCase();
     if (str === 'owner') return 'Owner';
-    if (str === 'editorinvite' || str.includes('invite') || str.includes('& inviter')) return 'EditorInvite';
+    if (str === 'editorinvite' || str === 'editor & invite' || str.includes('invite') || str.includes('& inviter')) {
+      return 'Editor & Invite';
+    }
     if (str === 'editor' || str.includes('edit')) return 'Editor';
     if (str === 'viewer' || str.includes('view')) return 'Viewer';
     return 'Owner';
@@ -785,35 +838,32 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   canEditWorkspace(perm?: string | UserWorkspacePermission): boolean {
     const role = this.normalizePermissionRole(perm);
-    return role === 'Owner' || role === 'EditorInvite';
+    return role === 'Owner' || role === 'Editor & Invite';
   }
 
   canDeleteWorkspace(perm?: string | UserWorkspacePermission): boolean {
     const role = this.normalizePermissionRole(perm);
-    return role === 'Owner' || role === 'EditorInvite';
+    return role === 'Owner' || role === 'Editor & Invite';
   }
 
   canEditDiagram(perm?: string | UserWorkspacePermission): boolean {
     const role = this.normalizePermissionRole(perm);
-    return role === 'Owner' || role === 'EditorInvite' || role === 'Editor';
+    return role === 'Owner' || role === 'Editor & Invite' || role === 'Editor';
   }
 
   canCreateDiagram(perm?: string | UserWorkspacePermission): boolean {
     const role = this.normalizePermissionRole(perm);
-    return role === 'Owner' || role === 'EditorInvite' || role === 'Editor';
+    return role === 'Owner' || role === 'Editor & Invite' || role === 'Editor';
   }
 
   canDeleteDiagram(perm?: string | UserWorkspacePermission): boolean {
     const role = this.normalizePermissionRole(perm);
-    return role === 'Owner' || role === 'EditorInvite' || role === 'Editor';
+    return role === 'Owner' || role === 'Editor & Invite' || role === 'Editor';
   }
 
   backToWorkspacesList(): void {
     this.selectedWorkspace = null;
-    this.svc.fetchWorkspaces().subscribe({
-      next: () => this.cdr.markForCheck(),
-      error: () => this.cdr.markForCheck()
-    });
+    this.loadWorkspaces(this.workspacesPage);
     this.cdr.detectChanges();
   }
 
@@ -935,8 +985,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       });
     }
 
-    this.membersTotal = this.membersList.length;
-    this.membersTotalPages = Math.ceil(this.membersTotal / this.membersLimit);
+    this.membersTotal = this.filteredMembersList.length;
+    this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
 
     this.invitedEmailsChips = [];
     this.inviteEmail = '';
@@ -944,11 +994,22 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.cdr.detectChanges();
   }
 
-  removeMember(index: number, e?: Event): void {
+  removeMember(target: any, e?: Event): void {
     if (e) e.stopPropagation();
-    this.membersList.splice(index, 1);
-    this.membersTotal = Math.max(0, (this.membersTotal || 0) - 1);
-    this.membersTotalPages = Math.ceil(this.membersTotal / this.membersLimit);
+    let idx = -1;
+    if (typeof target === 'number') {
+      idx = target;
+    } else if (target && typeof target === 'object') {
+      idx = this.membersList.findIndex(m => m === target || (m.email && m.email.toLowerCase() === target.email?.toLowerCase()));
+    }
+    if (idx >= 0 && idx < this.membersList.length) {
+      this.membersList.splice(idx, 1);
+      this.membersTotal = this.filteredMembersList.length;
+      this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+      if (this.membersPage > this.membersTotalPages) {
+        this.membersPage = this.membersTotalPages;
+      }
+    }
     this.activeMemberDropdownIndex = null;
     this.cdr.detectChanges();
   }
@@ -979,29 +1040,47 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
   }
 
-  toggleMemberDropdown(index: number, e: Event): void {
+  toggleMemberDropdown(target: any, e: Event): void {
     if (e) e.stopPropagation();
-    if (this.activeMemberDropdownIndex === index) {
+    const key = (target && typeof target === 'object') ? target.email : target;
+    if (this.activeMemberDropdownIndex === key) {
       this.activeMemberDropdownIndex = null;
       return;
     }
-    this.activeMemberDropdownIndex = index;
+    this.activeMemberDropdownIndex = key;
     this.cdr.detectChanges();
     setTimeout(() => {
       const dropdownWrap = (e?.target as HTMLElement)?.closest('.member-permission-dropdown-wrap');
-      const menuDropdown = dropdownWrap?.querySelector('.permission-dropdown-menu');
+      const menuDropdown = dropdownWrap?.querySelector('.permission-dropdown-menu') as HTMLElement;
       if (menuDropdown) {
+        const rect = menuDropdown.getBoundingClientRect();
+        const modalEl = document.querySelector('.workspace-modal-container');
+        const boundaryBottom = modalEl ? modalEl.getBoundingClientRect().bottom - 16 : window.innerHeight - 16;
+        if (rect.bottom > boundaryBottom) {
+          menuDropdown.classList.add('pop-up');
+        } else {
+          menuDropdown.classList.remove('pop-up');
+        }
         menuDropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }, 50);
   }
 
-  changeMemberPermission(index: number, permission: PermissionType, e?: Event): void {
+  changeMemberPermission(target: any, permission: PermissionType, e?: Event): void {
     if (e) e.stopPropagation();
-    if (index >= 0 && index < this.membersList.length) {
-      this.membersList[index].permission = permission;
+    let member: WorkspaceMemberItem | undefined;
+    if (typeof target === 'number') {
+      if (target >= 0 && target < this.membersList.length) {
+        member = this.membersList[target];
+      }
+    } else if (target && typeof target === 'object') {
+      member = target;
+    }
+    if (member) {
+      member.permission = permission;
     }
     this.activeMemberDropdownIndex = null;
+    this.cdr.detectChanges();
   }
 
 
@@ -1151,7 +1230,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
   }
 
-  get filteredMembersList(): any[] {
+  get filteredMembersList(): WorkspaceMemberItem[] {
     const query = (this.membersSearch || '').toLowerCase().trim();
     if (!query) {
       return this.membersList;
@@ -1160,6 +1239,12 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       (m.email && m.email.toLowerCase().includes(query)) ||
       (m.permission && m.permission.toLowerCase().includes(query))
     );
+  }
+
+  get pagedEditMembersList(): WorkspaceMemberItem[] {
+    const list = this.filteredMembersList;
+    const start = (this.membersPage - 1) * this.membersLimit;
+    return list.slice(start, start + this.membersLimit);
   }
 
   openWorkspaceMembers(workspace: WorkspaceItem, e: Event): void {
@@ -1221,7 +1306,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     const ws = this.selectedWorkspaceForMembers;
     if (!ws) return false;
     const perm = this.getWorkspacePermission(ws);
-    return perm === 'Owner' || perm === 'EditorInvite';
+    return perm === 'Owner' || perm === 'Editor & Invite';
   }
 
   showDeleteMemberConfirm(member: WorkspaceMemberItem, e?: Event): void {
@@ -1424,8 +1509,11 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         this.svc.showToast(errMsg, 4000, 'error');
         // Revert newly added members so UI accurately reflects backend state
         this.membersList = this.membersList.filter(m => !m.isNew);
-        this.membersTotal = this.membersList.length;
-        this.membersTotalPages = Math.ceil(this.membersTotal / this.membersLimit);
+        this.membersTotal = this.filteredMembersList.length;
+        this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+        if (this.membersPage > this.membersTotalPages) {
+          this.membersPage = this.membersTotalPages;
+        }
         this.cdr.detectChanges();
       }
     });
@@ -1469,9 +1557,14 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       next: () => {
         this.deleteConfirm.isDeleting = false;
         this.deleteConfirm.deleteSuccess = true;
-        this.cdr.detectChanges();
 
-        this.svc.fetchWorkspaces().subscribe();
+        this.workspacesTotal = Math.max(0, this.workspacesTotal - 1);
+        this.workspacesTotalPages = Math.max(1, Math.ceil(this.workspacesTotal / this.workspacesLimit));
+        if (this.workspacesPage > this.workspacesTotalPages) {
+          this.workspacesPage = this.workspacesTotalPages;
+        }
+        this.loadWorkspaces(this.workspacesPage);
+        this.cdr.detectChanges();
 
         setTimeout(() => {
           this.closeDeleteConfirm();

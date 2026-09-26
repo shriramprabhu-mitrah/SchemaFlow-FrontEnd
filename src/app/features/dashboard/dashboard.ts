@@ -280,25 +280,21 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         if (!this.resizing || !this.bodyRef) return;
         const bodyRect = this.bodyRef.nativeElement.getBoundingClientRect();
         const w = clientX - bodyRect.left;
-        const pct = (w / bodyRect.width) * 100;
 
-      if (this.paneMode !== 'split') {
-        if (this.paneMode === 'canvas' && pct < 8) return;
-        if (this.paneMode === 'editor' && pct > 92) return;
-        this.paneMode = 'split';
-      }
+        if (this.paneMode !== 'split') {
+          this.paneMode = 'split';
+        }
 
-      if (pct >= 94) {
-        this.paneMode = 'editor';
-        this.resizing = false;
-      } else if (pct <= 6) {
-        this.paneMode = 'canvas';
-        this.resizing = false;
-      } else {
-        this.svc.editorWidthPct.set(pct);
-      }
-      this.cdr.detectChanges();
-       });
+        // Restrict drag so table panel (canvas) is strictly not fully closed,
+        // and editor panel maintains minimum width so toaster and DBML stay usable
+        const minPx = 280;
+        const maxPx = Math.max(minPx, bodyRect.width - 280);
+        const clampedW = Math.min(maxPx, Math.max(minPx, w));
+        const clampedPct = (clampedW / bodyRect.width) * 100;
+
+        this.svc.editorWidthPct.set(clampedPct);
+        this.cdr.detectChanges();
+      });
     }
   }
 
