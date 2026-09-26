@@ -127,13 +127,36 @@ export class ShareModalComponent implements OnInit {
   }
 
   onPasswordKeyDown(event: KeyboardEvent): void {
-    const input = event.target as HTMLInputElement;
-    if (event.key === ' ' && input?.selectionStart === 0) {
+    if (event.key === ' ' || event.code === 'Space') {
       event.preventDefault();
     }
   }
 
   onPasswordInput(): void {
+    if (this.password && /\s/.test(this.password)) {
+      this.password = this.password.replace(/\s+/g, '');
+    }
+    if (this.passwordError) {
+      this.passwordError = null;
+    }
+  }
+
+  onPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleanText = text.replace(/\s+/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const current = this.password || '';
+      this.password = current.substring(0, start) + cleanText + current.substring(end);
+      setTimeout(() => {
+        input.setSelectionRange(start + cleanText.length, start + cleanText.length);
+      }, 0);
+    } else {
+      this.password = (this.password || '') + cleanText;
+    }
     if (this.passwordError) {
       this.passwordError = null;
     }
@@ -157,13 +180,13 @@ export class ShareModalComponent implements OnInit {
       this.passwordError = null;
     } else if (!this.password || !this.password.trim()) {
       if (this.password && !this.password.trim()) {
-        this.passwordError = 'Password cannot contain only spaces.';
+        this.passwordError = 'Password cannot contain spaces.';
       } else {
         this.passwordError = 'Password is required for protected sharing.';
       }
       return;
-    } else if (this.password.startsWith(' ') || this.password.endsWith(' ')) {
-      this.passwordError = 'Password cannot  end with a space.';
+    } else if (/\s/.test(this.password)) {
+      this.passwordError = 'Password cannot contain spaces.';
       return;
     } else {
       this.passwordError = null;

@@ -120,9 +120,49 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
     });
   }
 
+  onPasswordKeyDown(event: KeyboardEvent): void {
+    if (event.key === ' ' || event.code === 'Space') {
+      event.preventDefault();
+    }
+  }
+
+  onPasswordInput(): void {
+    if (this.password && /\s/.test(this.password)) {
+      this.password = this.password.replace(/\s+/g, '');
+    }
+    if (this.error) {
+      this.error = null;
+    }
+  }
+
+  onPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleanText = text.replace(/\s+/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const current = this.password || '';
+      this.password = current.substring(0, start) + cleanText + current.substring(end);
+      setTimeout(() => {
+        input.setSelectionRange(start + cleanText.length, start + cleanText.length);
+      }, 0);
+    } else {
+      this.password = (this.password || '') + cleanText;
+    }
+    if (this.error) {
+      this.error = null;
+    }
+  }
+
   unlock(): void {
     if (!this.password || !this.password.trim()) {
-      this.error = 'Password cannot be empty or contain only spaces.';
+      this.error = 'Password cannot be empty or contain spaces.';
+      return;
+    }
+    if (/\s/.test(this.password)) {
+      this.error = 'Password cannot contain spaces.';
       return;
     }
     this.unlocking = true;

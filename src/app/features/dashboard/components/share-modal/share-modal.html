@@ -68,6 +68,7 @@
               placeholder="Enter password to protect this diagram" [(ngModel)]="password"
               (keydown)="onPasswordKeyDown($event)"
               (input)="onPasswordInput()"
+              (paste)="onPasswordPaste($event)"
               (keydown.enter)="saveSharingSettings()"
               [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
             <button type="button" class="password-toggle-btn"
