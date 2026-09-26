@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, HostListener, OnChanges, Simple
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { finalize, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { finalize, Subject, debounceTime, distinctUntilChanged, forkJoin, of, catchError, map } from 'rxjs';
 import { DashboardService, DiagramSummary, WorkspaceItem } from '../../../../core/services/dashboard.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
@@ -15,6 +15,7 @@ export interface WorkspaceMemberItem {
   id?: number;
   email: string;
   permission: PermissionType;
+  status?: string;
   isNew?: boolean;
   featureAccess?: string[];
   isAdminSelected?: boolean;
@@ -90,6 +91,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   createWorkspaceError = '';
   isUpdatingWorkspace = false;
   updateWorkspaceError = '';
+  isAddingMember = false;
 
   deleteConfirm = {
     visible: false,
@@ -354,11 +356,11 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     const perm = this.selectedWorkspace ? this.getWorkspacePermission(this.selectedWorkspace) : undefined;
     const fallbackWs = this.selectedWorkspace
       ? {
-          id: this.selectedWorkspace.id,
-          name: this.selectedWorkspace.name,
-          type: this.selectedWorkspace.type,
-          permission: perm
-        }
+        id: this.selectedWorkspace.id,
+        name: this.selectedWorkspace.name,
+        type: this.selectedWorkspace.type,
+        permission: perm
+      }
       : null;
     this.svc.loadDiagram(id, fallbackWs).subscribe({
       next: () => {
@@ -867,18 +869,21 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.cdr.detectChanges();
   }
 
-  getPermissionLabel(perm: PermissionType): string {
-    switch (perm) {
-      case 'Owner':
-        return 'Owner';
-      case 'Editor & Inviter':
-        return 'Can edit & invite';
-      case 'Editor':
-        return 'Can edit';
-      case 'Viewer':
-      default:
-        return 'Can view';
+  getPermissionLabel(perm: PermissionType | string): string {
+    if (!perm) return 'Can view';
+    const p = perm.toString().trim();
+    if (p.toLowerCase() === 'owner') return 'Owner';
+    if (
+      p.toLowerCase() === 'editorinvite' ||
+      p.toLowerCase() === 'editor & invite' ||
+      p.toLowerCase() === 'editor & inviter' ||
+      p.toLowerCase().includes('invite')
+    ) {
+      return 'Editor & Invite';
     }
+    if (p.toLowerCase() === 'editor' || p.toLowerCase() === 'can edit') return 'Can edit';
+    if (p.toLowerCase() === 'viewer' || p.toLowerCase() === 'can view') return 'Can view';
+    return p;
   }
 
   getWorkspaceOwnerEmail(ws: WorkspaceItem): string {
@@ -972,26 +977,75 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       return;
     }
 
-    for (const email of this.invitedEmailsChips) {
-      if (this.membersList.some(m => m.email.toLowerCase() === email)) {
-        continue;
-      }
-      this.membersList.push({
-        email: email,
-        permission: this.invitePermission,
-        isNew: true,
-        isAdminSelected: false,
-        featureAccess: []
-      });
-    }
-
-    this.membersTotal = this.filteredMembersList.length;
-    this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
-
-    this.invitedEmailsChips = [];
-    this.inviteEmail = '';
-    this.permissionDropdownOpen = false;
+    this.isAddingMember = true;
     this.cdr.detectChanges();
+
+    const emailsToValidate = [...this.invitedEmailsChips];
+    const wsId = (this.activeTab === 'edit-workspace' && this.editingWorkspace) ? this.editingWorkspace.id : undefined;
+
+    this.svc.validateWorkspaceMember(emailsToValidate, wsId).pipe(
+      finalize(() => {
+        this.ngZone.run(() => {
+          this.isAddingMember = false;
+          this.cdr.detectChanges();
+        });
+      })
+    ).subscribe({
+      next: (response: any) => {
+        this.ngZone.run(() => {
+          try {
+            const data = response?.data || response;
+            const results = data?.results || [];
+
+            const invalidEmails: string[] = [];
+            const errorMessages: string[] = [];
+
+            for (const item of results) {
+              if (item.valid) {
+                if (!this.membersList.some(m => m.email.toLowerCase() === item.email.toLowerCase())) {
+                  this.membersList.push({
+                    email: item.email,
+                    permission: this.invitePermission || 'Viewer',
+                    isNew: true,
+                    isAdminSelected: false,
+                    featureAccess: []
+                  });
+                }
+              } else {
+                invalidEmails.push(item.email);
+                if (item.message) {
+                  errorMessages.push(item.message);
+                }
+              }
+            }
+
+            if (errorMessages.length > 0) {
+              this.svc.showToast(errorMessages.join('\n'), 6000, 'error', 'global');
+            }
+
+            this.invitedEmailsChips = invalidEmails;
+            this.inviteEmail = '';
+            this.membersTotal = this.filteredMembersList ? this.filteredMembersList.length : this.membersList.length;
+            this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
+            this.permissionDropdownOpen = false;
+          } catch (e) {
+            console.error('Error handling member validation response:', e);
+          } finally {
+            this.isAddingMember = false;
+            this.cdr.detectChanges();
+          }
+        });
+      },
+      error: (err) => {
+        this.ngZone.run(() => {
+          console.error('Member validation failed:', err);
+          const errMsg = err?.error?.message || 'Failed to validate member(s).';
+          this.svc.showToast(errMsg, 5000, 'error', 'global');
+          this.isAddingMember = false;
+          this.cdr.detectChanges();
+        });
+      }
+    });
   }
 
   removeMember(target: any, e?: Event): void {
@@ -1040,6 +1094,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
   }
 
+  isMemberDropdownUpward: boolean = false;
+
   toggleMemberDropdown(target: any, e: Event): void {
     if (e) e.stopPropagation();
     const key = (target && typeof target === 'object') ? target.email : target;
@@ -1047,23 +1103,27 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       this.activeMemberDropdownIndex = null;
       return;
     }
+
     this.activeMemberDropdownIndex = key;
     this.cdr.detectChanges();
-    setTimeout(() => {
-      const dropdownWrap = (e?.target as HTMLElement)?.closest('.member-permission-dropdown-wrap');
-      const menuDropdown = dropdownWrap?.querySelector('.permission-dropdown-menu') as HTMLElement;
-      if (menuDropdown) {
-        const rect = menuDropdown.getBoundingClientRect();
-        const modalEl = document.querySelector('.workspace-modal-container');
-        const boundaryBottom = modalEl ? modalEl.getBoundingClientRect().bottom - 16 : window.innerHeight - 16;
-        if (rect.bottom > boundaryBottom) {
-          menuDropdown.classList.add('pop-up');
-        } else {
-          menuDropdown.classList.remove('pop-up');
+
+    requestAnimationFrame(() => {
+      const menuEl = document.querySelector('.permission-dropdown-menu.member-perm-menu') as HTMLElement;
+      if (menuEl) {
+        const wrapper = menuEl.closest('.members-list-wrapper') as HTMLElement;
+        if (wrapper) {
+          const menuRect = menuEl.getBoundingClientRect();
+          const wrapperRect = wrapper.getBoundingClientRect();
+          if (menuRect.bottom > wrapperRect.bottom) {
+            const diff = menuRect.bottom - wrapperRect.bottom + 16;
+            wrapper.scrollBy({ top: diff, behavior: 'smooth' });
+          } else if (menuRect.top < wrapperRect.top) {
+            const diff = wrapperRect.top - menuRect.top + 8;
+            wrapper.scrollBy({ top: -diff, behavior: 'smooth' });
+          }
         }
-        menuDropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
-    }, 50);
+    });
   }
 
   changeMemberPermission(target: any, permission: PermissionType, e?: Event): void {
@@ -1107,7 +1167,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       workspaceName: name,
       members: this.membersList.map(m => ({
         email: m.email,
-        permission: m.permission === 'Editor & Inviter' ? 'EditorInvite' : m.permission,
+        permission: m.permission === 'Editor & Inviter' ? 'Editor & Invite' : m.permission,
       }))
     };
 
@@ -1144,6 +1204,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     this.editingWorkspace = null;
     this.isCreatingWorkspace = false;
     this.isUpdatingWorkspace = false;
+    this.isAddingMember = false;
   }
 
   isLoadingMembers = false;
@@ -1210,13 +1271,14 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   private populateMembersList(membersData: any[]): void {
     if (Array.isArray(membersData)) {
       const list = membersData.map((m: any) => {
-        const id = m?.id ?? m?.workspace_member_id ?? m?.workspaceMemberId ?? m?.memberid ?? m?.member_id ?? m?.userId ?? m?.user_id ?? m?.userid;
+        const id = m?.id ?? m?.workspace_member_id ?? m?.workspaceMemberId ?? m?.memberid ?? m?.member_id ?? m?.userId ?? m?.user_id ?? m?.userid ?? m?.invitationid ?? m?.invitation_id;
         const email = (m?.email || '').toString();
         const rawPerm = m?.permission || m?.role || m?.access || m?.permission_type || m?.permissionType || '';
         const permission = (rawPerm.toString().toLowerCase() === 'owner') ? 'Owner' : this.mapPermission(rawPerm);
+        const status = (m?.status || 'Active').toString();
         const isAdminSelected = (rawPerm.toString().toLowerCase() === 'admin' || permission === 'Owner');
         const featureAccess = m?.feature_access || m?.featureAccess || this.availableFeatures.map(f => f.feature_key);
-        return { id, email, permission, isAdminSelected, featureAccess };
+        return { id, email, permission, status, isAdminSelected, featureAccess };
       });
 
       // Sort to ensure 'Owner' is always first
@@ -1485,7 +1547,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         .filter(m => m.permission !== 'Owner')
         .map(m => ({
           email: m.email,
-          permission: m.permission === 'Editor & Inviter' ? 'EditorInvite' : m.permission
+          permission: m.permission === 'Editor & Inviter' ? 'Editor & Invite' : m.permission
         }))
     };
 
@@ -1700,6 +1762,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       !target.closest('.member-context-menu') &&
       !target.closest('.permission-dropdown-menu')) {
       this.activeMemberDropdownIndex = null;
+      this.isMemberDropdownUpward = false;
       this.permissionDropdownOpen = false;
     }
   }
@@ -1726,6 +1789,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
     this.permissionDropdownOpen = false;
     this.activeMemberDropdownIndex = null;
+    this.isMemberDropdownUpward = false;
   }
   isFeatureRequired(featureKey: string): boolean {
     const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces'];

@@ -24,7 +24,8 @@
         <div class="password-input-wrapper"
           style="position: relative; display: flex; align-items: center; width: 100%;">
           <input [type]="showPassword ? 'text' : 'password'" class="db-input password-input w-100"
-            style="padding-right: 40px;" placeholder="Enter password" [(ngModel)]="password" (keyup.enter)="unlock()" />
+            style="padding-right: 40px;" placeholder="Enter password" [(ngModel)]="password"
+            (keydown)="preventWhitespace($event)" (paste)="onPasswordPaste($event)" (input)="onPasswordInput($event)" (keyup.enter)="unlock()" />
           <button type="button" class="btn-icon"
             style="position: absolute; right: 8px; background: none; border: none; color: var(--text-muted); cursor: pointer;"
             (click)="showPassword = !showPassword" [title]="showPassword ? 'Hide password' : 'Show password'">

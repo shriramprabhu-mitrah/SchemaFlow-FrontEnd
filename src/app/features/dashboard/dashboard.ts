@@ -327,6 +327,11 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get isDocLimitReached(): boolean {
+    if (this.auth.isSuperAdmin()) return false;
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
+    if (isPlanExpired) return true;
+    if (!this.entitlementService.canUseFeature('document_view')) return true;
     const ent = this.documentViewEntitlement;
     if (!ent) return true;
     const limit = ent.effective_limit ?? ent.limit_value;

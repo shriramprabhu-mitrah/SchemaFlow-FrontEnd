@@ -425,6 +425,26 @@ export class DashboardService {
     return this.HEADER_H + rowCount * this.ROW_H;
   }
 
+  getTableWidth(tableName?: string, columns: Column[] = []): number {
+    let maxContentWidth = this.CARD_W;
+    for (const c of columns) {
+      const prefixLen = (c.pk ? 3 : 0) + (c.fk ? 3 : 0) + (c.unique && !c.pk ? 3 : 0);
+      const nameLen = (c.name || '').length + prefixLen;
+      const typeLen = (c.type || '').length;
+      const neededWidth = Math.ceil((nameLen + typeLen) * 7.5 + 40);
+      if (neededWidth > maxContentWidth) {
+        maxContentWidth = neededWidth;
+      }
+    }
+    if (tableName) {
+      const headerNeeded = Math.ceil(((tableName || '').length + 6) * 8.5 + 40);
+      if (headerNeeded > maxContentWidth) {
+        maxContentWidth = headerNeeded;
+      }
+    }
+    return Math.min(380, Math.max(this.CARD_W, maxContentWidth));
+  }
+
   private _code = '';
   readonly code$ = new BehaviorSubject<string>(this._code);
   private readonly dbmlChanges$ = new Subject<string>();
@@ -665,6 +685,9 @@ export class DashboardService {
   showUpgradeModal$ = new Subject<string>();
 
   showUpgradeModal(featureKey: string = ''): void {
+    if (this.auth.isSuperAdmin()) {
+      return;
+    }
     this.showUpgradeModal$.next(featureKey);
   }
 
@@ -1034,7 +1057,7 @@ export class DashboardService {
           this.emitCollabChange();
         } else {
           this.saveDiagram().subscribe({
-            error: () => {}
+            error: () => { }
           });
         }
       } else if (!this.hasUnsavedChanges()) {
@@ -1221,9 +1244,6 @@ export class DashboardService {
 
   showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success', location: 'editor' | 'canvas' | 'global' = 'canvas'): void {
     if (typeof window === 'undefined') return;
-    if (type === 'error' && location !== 'global') {
-      location = 'editor';
-    }
     this.toastType.set(type);
     this.toastLocation.set(location);
     this.toastMessage.set(message);
@@ -1353,7 +1373,7 @@ export class DashboardService {
       const toTabObj = parsed.tables.find(t => t.name === ref.toTable);
       const fromColObj = fromTabObj?.columns?.find(c => c.name === ref.fromCol);
       const toColObj = toTabObj?.columns?.find(c => c.name === ref.toCol);
-      
+
       let msg = null;
       if (!fromTabObj || !toTabObj) {
         msg = `Table for reference not found`;
@@ -1376,8 +1396,8 @@ export class DashboardService {
     });
 
 
- // 3. Check Note definitions with invalid names or duplicate names
- const seenNotes = new Map<string, number>();    lines.forEach((lineText, idx) => {
+    // 3. Check Note definitions with invalid names or duplicate names
+    const seenNotes = new Map<string, number>(); lines.forEach((lineText, idx) => {
       const trimmed = lineText.trim();
       if (/^Note\b/i.test(trimmed)) {
         const headerMatch = lineText.match(/^[ \t]*Note\s+([^{]*?)(?:\{|$)/i);
@@ -1670,7 +1690,7 @@ export class DashboardService {
 
       // Match general backend error mentioning tables involved in this ref (e.g. Can't find table "null"."table_5")
       if (msg.includes(`"${ref.fromTable}"`) || msg.includes(`'${ref.fromTable}'`) ||
-          msg.includes(`"${ref.toTable}"`) || msg.includes(`'${ref.toTable}'`)) {
+        msg.includes(`"${ref.toTable}"`) || msg.includes(`'${ref.toTable}'`)) {
         return true;
       }
     }
@@ -1804,13 +1824,35 @@ export class DashboardService {
       const cols: Column[] = [];
       body.split('\n').forEach((line) => {
         line = line.trim();
-        if (!line || line.indexOf('//') === 0) return;
-        const cm = line.match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+(?:\s*\([^)]*\))?)\s*(\[(.*)\])?/);
-        if (cm) {
-          const rawAttrs = cm[4] || '';
+        if (!line || line.indexOf('//') === 0 || /^Note\b/i.test(line) || /^indexes\b/i.test(line) || line === '}') return;
+
+        let rawAttrs = '';
+        let mainPart = line;
+
+        // Extract settings in [...] at the end of the line
+        const bracketMatch = line.match(/^([\s\S]*?)\s*\[([\s\S]*)\]\s*$/);
+        if (bracketMatch) {
+          mainPart = bracketMatch[1].trim();
+          rawAttrs = bracketMatch[2].trim();
+        }
+
+        // Match column name (identifier or quoted) and column type (the rest of mainPart)
+        const colMatch = mainPart.match(/^(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([A-Za-z0-9_.]+))\s+([\s\S]+)$/);
+        if (colMatch) {
+          const colName = colMatch[1] || colMatch[2] || colMatch[3] || colMatch[4];
+          let colType = colMatch[5].trim();
+
+          // Strip surrounding quotes around column type if present (e.g., "timestamp with time zone" -> timestamp with time zone)
+          if (
+            (colType.startsWith('"') && colType.endsWith('"')) ||
+            (colType.startsWith("'") && colType.endsWith("'")) ||
+            (colType.startsWith('`') && colType.endsWith('`'))
+          ) {
+            colType = colType.slice(1, -1).trim();
+          }
+
+          const cleanType = colType.replace(/\s*\([^)]*\)/g, '').trim();
           const attrsLower = rawAttrs.toLowerCase();
-          const rawType = cm[2] || '';
-          const cleanType = rawType.replace(/\s*\([^)]*\)/g, '').trim();
 
           const defaultMatch = rawAttrs.match(/default:\s*('[^']*'|"[^"]*"|`[^`]*`|[^,\]]+)/i);
           let defaultVal: string | undefined = undefined;
@@ -1841,7 +1883,7 @@ export class DashboardService {
           }
 
           cols.push({
-            name: cm[1],
+            name: colName,
             type: cleanType,
             pk: attrsLower.includes('pk') || attrsLower.includes('primary key'),
             notNull: attrsLower.includes('not null'),
@@ -2101,7 +2143,8 @@ export class DashboardService {
 
     parsed.tables.forEach((t) => {
       const height = this.getTableHeight(t.columns);
-      t.width = this.CARD_W;
+      const width = this.getTableWidth(t.name, t.columns);
+      t.width = width;
       t.height = height;
       if (!this.tablePositions[t.name]) {
         let col = 0;
@@ -2238,7 +2281,7 @@ export class DashboardService {
         columns: t.columns,
         x: pos.x,
         y: pos.y,
-        width: this.CARD_W,
+        width: this.getTableWidth(t.name, t.columns),
         height,
         colY,
         color: tableColors.get(t.name) || this.tableColorsMap[t.name]
@@ -3327,6 +3370,14 @@ export class DashboardService {
     const headers = this.getAuthHeaders();
     const url = `${this.appConfig.environment?.workspaceApiUrls?.workspaceMembers?.replace('{workspaceId}', workspaceId.toString())}/${memberId}`;
     return this.http.delete<any>(url, { headers });
+  }
+
+  validateWorkspaceMember(emails: string[] | string, workspaceId?: number): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const url = this.appConfig.environment?.workspaceApiUrls?.validateMember ||
+      `${this.appConfig.environment?.workspaceApiUrls?.workspaces}/validate-member`;
+    const emailList = Array.isArray(emails) ? emails : [emails];
+    return this.http.post<any>(url, { emails: emailList, workspaceId }, { headers });
   }
 
   fetchWorkspaces(queryParams?: QueryParams): Observable<PaginatedResult<WorkspaceItem>> {
@@ -4654,7 +4705,7 @@ export class DashboardService {
   /** Flag to prevent re-entrant DBML sync loops */
   private _syncingNotesToCode = false;
 
-   /** Check if a note name is already taken by another note */
+  /** Check if a note name is already taken by another note */
   isNoteNameDuplicate(name: string, excludeNoteId?: number): boolean {
     if (!name || !name.trim()) return false;
     const target = name.trim().toLowerCase();
