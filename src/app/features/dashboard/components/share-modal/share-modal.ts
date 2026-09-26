@@ -127,13 +127,39 @@ export class ShareModalComponent implements OnInit {
   }
 
   onPasswordKeyDown(event: KeyboardEvent): void {
-    const input = event.target as HTMLInputElement;
-    if (event.key === ' ' && input?.selectionStart === 0) {
+    if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
       event.preventDefault();
     }
   }
 
-  onPasswordInput(): void {
+  onPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleaned = text.replace(/\s/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const val = input.value || '';
+      const newVal = val.substring(0, start) + cleaned + val.substring(end);
+      input.value = newVal;
+      this.password = newVal;
+      input.setSelectionRange(start + cleaned.length, start + cleaned.length);
+    } else {
+      this.password = (this.password + cleaned).replace(/\s/g, '');
+    }
+    if (this.passwordError) {
+      this.passwordError = null;
+    }
+  }
+
+  onPasswordInput(event?: Event): void {
+    const input = event?.target as HTMLInputElement;
+    const cleaned = (input ? input.value : this.password || '').replace(/\s/g, '');
+    this.password = cleaned;
+    if (input && input.value !== cleaned) {
+      input.value = cleaned;
+    }
     if (this.passwordError) {
       this.passwordError = null;
     }
@@ -156,14 +182,10 @@ export class ShareModalComponent implements OnInit {
       this.password = ''; // Clear password when making it public
       this.passwordError = null;
     } else if (!this.password || !this.password.trim()) {
-      if (this.password && !this.password.trim()) {
-        this.passwordError = 'Password cannot contain only spaces.';
-      } else {
-        this.passwordError = 'Password is required for protected sharing.';
-      }
+      this.passwordError = 'Password is required for protected sharing.';
       return;
-    } else if (this.password.startsWith(' ') || this.password.endsWith(' ')) {
-      this.passwordError = 'Password cannot  end with a space.';
+    } else if (/\s/.test(this.password)) {
+      this.passwordError = 'Password cannot contain whitespace.';
       return;
     } else {
       this.passwordError = null;

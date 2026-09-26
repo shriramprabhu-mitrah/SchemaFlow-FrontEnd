@@ -197,10 +197,7 @@ export class UpgradeModalComponent implements OnInit {
     if (this.isOrganization) {
       return this.plans.filter(p => p.slug === 'team');
     }
-    if (this._featureKey === 'create_workspaces') {
-      return this.plans.filter(p => p.slug === 'team');
-    }
-    // Otherwise, show only the two individual plans (Free & Premium)
+    // Individual account: show only Free & Premium
     return this.plans.filter(p => p.slug === 'free' || p.slug === 'premium');
   }
 
@@ -489,7 +486,15 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   getCtaLabel(plan: any): string {
+    if (this.auth.isSuperAdmin()) return 'Super Admin';
     const trialDuration = this.formatTrialDuration(plan);
+    if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
+      return 'Individual Only';
+    }
+    if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) {
+      return 'Business Only';
+    }
+
     if (this.isLoggedIn && this.currentPlanSlug && this.currentPlanSlug === plan.slug && this.currentPlanStatus !== 'expired') {
       if (this.currentPlanStatus === 'trial') {
         return `Current Plan (Free trial for ${trialDuration})`;
@@ -517,7 +522,10 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   isCtaDisabled(plan: any): boolean {
+    if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
+    if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) return true;
+    if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) return true;
     if (this.currentPlanStatus === 'expired') return false;
     return !!(this.currentPlanSlug && this.currentPlanSlug === plan.slug);
   }
@@ -570,6 +578,17 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   selectPlan(plan: any): void {
+    if (this.auth.isSuperAdmin()) return;
+
+    if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
+      this.svc.showToast('Business accounts can only subscribe to the Team plan.', 4000, 'error');
+      return;
+    }
+    if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) {
+      this.svc.showToast('Team plan is only available for Business/Organization accounts.', 4000, 'error');
+      return;
+    }
+
     if (!this.isLoggedIn) {
       this.closeModal();
       this.router.navigate(['/auth/register'], {

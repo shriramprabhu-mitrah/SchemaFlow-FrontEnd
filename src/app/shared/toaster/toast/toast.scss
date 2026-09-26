@@ -16,7 +16,8 @@
    CANVAS TOAST — top-right, simple style
    matching the reference screenshot
 ══════════════════════════════════════ */
-.dbml-toast.toast-canvas {
+.dbml-toast.toast-canvas,
+.dbml-toast.toast-global {
   top: 68px;
   right: 18px;
   width: 320px;

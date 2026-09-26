@@ -1,5 +1,5 @@
 <div class="workspace-modal-backdrop" *ngIf="visible">
-  <div class="workspace-modal-container" [class.compact-modal]="activeTab === 'create-workspace' || activeTab === 'edit-workspace'" (click)="onContainerClick($event)">
+  <div class="workspace-modal-container" (click)="onContainerClick($event)">
     <app-loader *ngIf="isCreatingWorkspace || isUpdatingWorkspace"
       [text]="isCreatingWorkspace ? 'Creating workspace...' : 'Updating workspace...'"></app-loader>
 
@@ -25,8 +25,9 @@
           <span class="plus-icon">+</span>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Create New
             Workspace</span>
-          <app-icons *ngIf="!entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
-            color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
+          <app-icons *ngIf="!entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')"
+            name="premium-crown" size="14" color="#f59e0b"
+            style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </button>
       </div>
 
@@ -110,8 +111,8 @@
           <span class="breadcrumb-label" (click)="openMyWorkspaces()">Workspaces</span>
           <span class="sep">/</span>
           <input type="text" class="workspace-title-input" placeholder="Workspace Name" [(ngModel)]="workspaceName"
-            (blur)="workspaceName = (workspaceName || '').trim()"
-            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" autofocus />
+            (blur)="workspaceName = (workspaceName || '').trim()" spellcheck="false" autocomplete="off"
+            autocorrect="off" autocapitalize="off" autofocus />
         </div>
         <div class="header-badges">
           <button class="close-modal-btn" (click)="onCloseModal()">&times;</button>
@@ -227,9 +228,8 @@
                   {{ formatDate(d.created_at) }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
-                  <div class="action-menu-wrap"
-                       [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
-                       [style.position]="openMenuId === d.id ? 'relative' : 'static'">
+                  <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
+                    [style.position]="openMenuId === d.id ? 'relative' : 'static'">
                     <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
                       (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -416,9 +416,8 @@
                   {{ formatDate(d.shared_date) }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
-                  <div class="action-menu-wrap"
-                       [style.zIndex]="openMenuId === d.diagramid ? 99999 : 'auto'"
-                       [style.position]="openMenuId === d.diagramid ? 'relative' : 'static'">
+                  <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.diagramid ? 99999 : 'auto'"
+                    [style.position]="openMenuId === d.diagramid ? 'relative' : 'static'">
                     <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.diagramid"
                       (click)="toggleRowMenu(d.diagramid, $event)"
                       [attr.data-tt]="openMenuId !== d.diagramid ? 'Options' : null">
@@ -538,7 +537,9 @@
             </div>
             <p class="empty-desc">{{ workspacesSearch ? 'Try searching for something else.' : 'Create your first
               workspace to collaborate on diagrams with your team.' }}</p>
-            <button *ngIf="auth.hasWorkspaceCreatePermission()" class="btn-create-first" (click)="entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces')">+ Create
+            <button *ngIf="auth.hasWorkspaceCreatePermission()" class="btn-create-first"
+              (click)="entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces')">+
+              Create
               Workspace</button>
           </div>
 
@@ -575,7 +576,7 @@
                 </tr>
               </thead>
               <tbody>
-              <tr *ngFor="let ws of svc.workspaces()">
+                <tr *ngFor="let ws of svc.workspaces()">
                   <td class="col-name">
                     <div class="diagram-name-cell">
                       <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -589,8 +590,7 @@
                   <td class="col-modified">
                     <div class="member-user-info">
                       <div class="tt tt-left owner-avatar-wrap" [attr.data-tt]="ws.user_email">
-                        <img *ngIf="ws.profile_pic" [src]="ws.profile_pic"
-                          class="owner-profile-img" />
+                        <img *ngIf="ws.profile_pic" [src]="ws.profile_pic" class="owner-profile-img" />
                         <div *ngIf="!ws.profile_pic" class="default-owner-avatar">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -605,9 +605,8 @@
                     <span class="ws-permission-tag">{{ getWorkspacePermission(ws) }}</span>
                   </td>
                   <td class="col-actions" (click)="$event.stopPropagation()">
-                    <div class="action-menu-wrap"
-                         [style.zIndex]="openWorkspaceMenuId === ws.id ? 99999 : 'auto'"
-                         [style.position]="openWorkspaceMenuId === ws.id ? 'relative' : 'static'">
+                    <div class="action-menu-wrap" [style.zIndex]="openWorkspaceMenuId === ws.id ? 99999 : 'auto'"
+                      [style.position]="openWorkspaceMenuId === ws.id ? 'relative' : 'static'">
                       <button class="three-dots-btn tt-left" [class.tt]="openWorkspaceMenuId !== ws.id"
                         (click)="toggleWorkspaceMenu(ws.id, $event)"
                         [attr.data-tt]="openWorkspaceMenuId !== ws.id ? 'Options' : null">
@@ -845,9 +844,8 @@
                     {{ formatDate(d.created_at) }}
                   </td>
                   <td class="col-actions" (click)="$event.stopPropagation()">
-                    <div class="action-menu-wrap"
-                         [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
-                         [style.position]="openMenuId === d.id ? 'relative' : 'static'">
+                    <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
+                      [style.position]="openMenuId === d.id ? 'relative' : 'static'">
                       <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
                         (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -871,7 +869,7 @@
                           [disabled]="selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))"
                           [class.disabled]="selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))"
                           [class.tt]="selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))"
-                          [attr.data-tt]="(selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))) ? 'Requires Owner, EditorInvite, or Editor permission' : null"
+                          [attr.data-tt]="(selectedWorkspace && !canDeleteDiagram(getWorkspacePermission(selectedWorkspace))) ? 'Requires Owner, Editor & Invite, or Editor permission' : null"
                           (click)="showDeleteDiagramConfirm(d, $event)">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -965,8 +963,8 @@
         <div class="form-group">
           <label class="form-label">Workspace Name <span class="required-star">*</span></label>
           <input type="text" class="workspace-input-field" placeholder="e.g. Demo Project or Team Workspace"
-            [(ngModel)]="workspaceName" (blur)="workspaceName = (workspaceName || '').trim()"
-            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" />
+            [(ngModel)]="workspaceName" (blur)="workspaceName = (workspaceName || '').trim()" spellcheck="false"
+            autocomplete="off" autocorrect="off" autocapitalize="off" />
         </div>
 
         <!-- Invite Section -->
@@ -986,7 +984,9 @@
                 (blur)="addEmailChip()" spellcheck="false" />
             </div>
 
-            <button class="btn-invite-action" (click)="addMember()">Invite</button>
+            <button type="button" class="btn-invite-action" (click)="addMember()">
+              Invite
+            </button>
           </div>
 
           <!-- Added Members List -->
@@ -1024,8 +1024,7 @@
 
                 <div class="member-actions-wrap" style="display: flex; align-items: center; gap: 8px;">
                   <div class="member-permission-dropdown-wrap" (click)="$event.stopPropagation()">
-                    <button class="btn-member-perm-select"
-                      (click)="toggleMemberDropdown(i, $event)">
+                    <button class="btn-member-perm-select" (click)="toggleMemberDropdown(i, $event)">
                       <span>{{ getPermissionLabel(m.permission) }}</span>
                       <svg class="chevron" [class.open]="activeMemberDropdownIndex === i" width="12" height="12"
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1035,29 +1034,35 @@
 
                     <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === i"
                       (click)="$event.stopPropagation()">
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor & Inviter', $event)" [class.selected]="m.permission === 'Editor & Inviter'">
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor & Inviter', $event)"
+                        [class.selected]="m.permission === 'Editor & Inviter'">
                         <div class="perm-option-header">
-                          <span class="perm-option-title">Can edit & invite <span *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
+                          <span class="perm-option-title">Editor & Invite <span
+                              *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can edit & invite people.</div>
                       </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor', $event)" [class.selected]="m.permission === 'Editor'">
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor', $event)"
+                        [class.selected]="m.permission === 'Editor'">
                         <div class="perm-option-header">
-                          <span class="perm-option-title">Can edit <span *ngIf="m.permission === 'Editor'">✓</span></span>
+                          <span class="perm-option-title">Can edit <span
+                              *ngIf="m.permission === 'Editor'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can edit, but not invite people.</div>
                       </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Viewer', $event)" [class.selected]="m.permission === 'Viewer'">
+                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Viewer', $event)"
+                        [class.selected]="m.permission === 'Viewer'">
                         <div class="perm-option-header">
-                          <span class="perm-option-title">Can view <span *ngIf="m.permission === 'Viewer'">✓</span></span>
+                          <span class="perm-option-title">Can view <span
+                              *ngIf="m.permission === 'Viewer'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can view, but not edit.</div>
                       </div>
                     </div>
                   </div>
 
-                  <button type="button" class="btn-remove-member-icon"
-                    (click)="removeMember(i, $event)" title="Remove Member">
+                  <button type="button" class="btn-remove-member-icon" (click)="removeMember(i, $event)"
+                    title="Remove Member">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1098,11 +1103,13 @@
               <input #emailInput2 type="text" class="inline-input"
                 style="border: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;"
                 [placeholder]="invitedEmailsChips.length > 0 ? '' : 'Enter email address to add member'"
-                [(ngModel)]="inviteEmail" (keydown)="onEmailInputKeyDown($event)" (blur)="addEmailChip()"
+                [(ngModel)]="inviteEmail" (input)="clearErrors()" (keydown)="onEmailInputKeyDown($event)" (blur)="addEmailChip()"
                 spellcheck="false" />
             </div>
 
-            <button class="btn-invite-action" (click)="addMember()">Add Member</button>
+            <button type="button" class="btn-invite-action" (click)="addMember()">
+              Add Member
+            </button>
           </div>
 
           <!-- Added Members List -->
@@ -1130,7 +1137,8 @@
 
               <ng-container *ngIf="!isLoadingMembers">
                 <!-- Empty state if search returns no results -->
-                <div class="empty-state" *ngIf="filteredMembersList.length === 0 && membersSearch" style="padding: 24px; text-align: center; color: #7082a0; font-size: 13px;">
+                <div class="empty-state" *ngIf="filteredMembersList.length === 0 && membersSearch"
+                  style="padding: 24px; text-align: center; color: #7082a0; font-size: 13px;">
                   No members found matching "{{ membersSearch }}"
                 </div>
 
@@ -1147,49 +1155,67 @@
                       </svg>
                     </div>
                     <span class="member-email-text">{{ m.email }} <span class="you-tag"
-                        *ngIf="m.email.toLowerCase() === userEmail.toLowerCase()">(You)</span></span>
+                        *ngIf="m.email.toLowerCase() === userEmail.toLowerCase()">(You)</span>
+                      <span class="pending-status-tag" *ngIf="m.status && m.status.toLowerCase() === 'pending'">Pending</span>
+                    </span>
                   </div>
 
                   <!-- Display static text badge for owner -->
                   <div class="owner-badge-text" *ngIf="m.permission === 'Owner'">Owner</div>
 
-                  <div class="member-actions-wrap" *ngIf="m.permission !== 'Owner'"
+                  <!-- Display static text badge for pending members (no permission change dropdown) -->
+                  <div class="owner-badge-text" *ngIf="m.permission !== 'Owner' && m.status && m.status.toLowerCase() === 'pending'">
+                    {{ getPermissionLabel(m.permission) }}
+                  </div>
+
+                  <div class="member-actions-wrap" *ngIf="m.permission !== 'Owner' && (!m.status || m.status.toLowerCase() !== 'pending')"
                     style="display: flex; align-items: center; gap: 8px;">
                     <!-- Display dropdown for normal members -->
                     <div class="member-permission-dropdown-wrap" (click)="$event.stopPropagation()">
-                      <button type="button" class="btn-member-perm-select" (click)="toggleMemberDropdown(m.email, $event)">
+                      <button type="button" class="btn-member-perm-select"
+                        (click)="toggleMemberDropdown(m.email, $event)">
                         <span>{{ getPermissionLabel(m.permission) }}</span>
-                        <svg class="chevron" [class.open]="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i" width="10" height="10"
-                          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <svg class="chevron"
+                          [class.open]="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i"
+                          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2.5">
                           <polyline points="6 9 12 15 18 9" />
                         </svg>
                       </button>
 
-                      <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i"
+                      <div class="permission-dropdown-menu member-perm-menu"
+                        *ngIf="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i"
                         (click)="$event.stopPropagation()">
-                      <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor & Inviter', $event)" [class.selected]="m.permission === 'Editor & Inviter'">
-                        <div class="perm-option-header">
-                          <span class="perm-option-title">Can edit & invite <span *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
+                        <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor & Inviter', $event)"
+                          [class.selected]="m.permission === 'Editor & Inviter'">
+                          <div class="perm-option-header">
+                            <span class="perm-option-title">Editor & Invite <span
+                                *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
+                          </div>
+                          <div class="perm-option-desc">Can edit & invite people.</div>
                         </div>
-                        <div class="perm-option-desc">Can edit & invite people.</div>
-                      </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor', $event)" [class.selected]="m.permission === 'Editor'">
-                        <div class="perm-option-header">
-                          <span class="perm-option-title">Can edit <span *ngIf="m.permission === 'Editor'">✓</span></span>
+                        <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor', $event)"
+                          [class.selected]="m.permission === 'Editor'">
+                          <div class="perm-option-header">
+                            <span class="perm-option-title">Can edit <span
+                                *ngIf="m.permission === 'Editor'">✓</span></span>
+                          </div>
+                          <div class="perm-option-desc">Can edit, but not invite people.</div>
                         </div>
-                        <div class="perm-option-desc">Can edit, but not invite people.</div>
-                      </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(m, 'Viewer', $event)" [class.selected]="m.permission === 'Viewer'">
-                        <div class="perm-option-header">
-                          <span class="perm-option-title">Can view <span *ngIf="m.permission === 'Viewer'">✓</span></span>
+                        <div class="perm-option-item" (click)="changeMemberPermission(m, 'Viewer', $event)"
+                          [class.selected]="m.permission === 'Viewer'">
+                          <div class="perm-option-header">
+                            <span class="perm-option-title">Can view <span
+                                *ngIf="m.permission === 'Viewer'">✓</span></span>
+                          </div>
+                          <div class="perm-option-desc">Can view, but not edit.</div>
                         </div>
-                        <div class="perm-option-desc">Can view, but not edit.</div>
-                      </div>
                       </div>
                     </div>
 
                     <button type="button" class="btn-remove-member-icon" [disabled]="!m.isNew"
-                      (click)="removeMember(m, $event)" [attr.title]="!m.isNew ? 'Cannot remove existing members here' : 'Remove Member'">
+                      (click)="removeMember(m, $event)"
+                      [attr.title]="!m.isNew ? 'Cannot remove existing members here' : 'Remove Member'">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1338,6 +1364,7 @@
                         <span class="member-email-text">
                           {{ m.email }}
                           <span class="you-tag" *ngIf="m.email.toLowerCase() === userEmail.toLowerCase()">(You)</span>
+                          <span class="pending-status-tag" *ngIf="m.status && m.status.toLowerCase() === 'pending'">Pending</span>
                         </span>
                       </div>
                     </td>
@@ -1353,7 +1380,7 @@
 
                     <td class="col-actions">
                       <button type="button" class="btn-delete-member"
-                        *ngIf="m.permission !== 'Owner' && canDeleteMember()"
+                        *ngIf="m.permission !== 'Owner' && canDeleteMember() && (!m.status || m.status.toLowerCase() !== 'pending')"
                         (click)="showDeleteMemberConfirm(m, $event)" title="Remove Member">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                           stroke-width="2">

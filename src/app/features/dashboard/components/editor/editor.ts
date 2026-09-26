@@ -378,7 +378,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
     // Highlight datatypes only when they appear as column types (after column name), not when used as column or table names
     text = text.replace(
-      /^(\s*(?:["'`][^"'`]+["'`]|[A-Za-z0-9_.]+)\s+)(integer|varchar|text|timestamp|date|decimal|boolean|float|datetime|int|bigint|objectid|json|bson|array|uuid|map|mixed)\b/gim,
+      /^(\s*(?:["'`][^"'`]+["'`]|[A-Za-z0-9_.]+)\s+)("timestamp with time zone"|"timestamp without time zone"|'timestamp with time zone'|'timestamp without time zone'|`timestamp with time zone`|`timestamp without time zone`|timestamp with time zone|timestamp without time zone|time with time zone|time without time zone|double precision|character varying|bit varying|integer|varchar|text|timestamp|timestamptz|timetz|date|decimal|numeric|real|boolean|bool|float|double|datetime|time|int|bigint|smallint|tinyint|serial|bigserial|smallserial|objectid|json|jsonb|bson|uuid|blob|bytea|nvarchar|varchar2|char|enum|set|array|map|mixed)\b/gim,
       '$1<span class="datatype">$2</span>'
     );
 

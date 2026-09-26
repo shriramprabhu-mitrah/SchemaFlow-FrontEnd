@@ -1577,20 +1577,51 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.stroke();
 
       const textY = rowY + this.svc.ROW_H / 2 + 1;
-      ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = isLight ? '#1a202c' : '#e6eef9';
-      ctx.textAlign = 'left';
+      const padding = 12;
+      const minGap = 8;
+      const tableW = t.width || this.svc.CARD_W || 220;
+      const availableWidth = tableW - (padding * 2);
+
+      // Measure type width
+      ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      let typeText = c.type || '';
+      let typeWidth = ctx.measureText(typeText).width;
+
+      const maxTypeWidth = Math.max(30, availableWidth * 0.6);
+      if (typeWidth > maxTypeWidth && availableWidth > 60) {
+        while (typeText.length > 3 && ctx.measureText(typeText + '...').width > maxTypeWidth) {
+          typeText = typeText.slice(0, -1);
+        }
+        typeText += '...';
+        typeWidth = ctx.measureText(typeText).width;
+      }
+
+      // Max width available for column name
+      const maxNameWidth = Math.max(20, availableWidth - typeWidth - minGap);
+
       let prefix = '';
       if (c.pk) prefix += '\u{1F511} ';
       if (c.fk) prefix += '\u{1F517} ';
       if (c.unique && !c.pk) prefix += '\u{1F4A0} ';
-      const displayColName = c.name.length > 15 ? c.name.slice(0, 15) + '...' : c.name;
-      const label = prefix + displayColName;
-      ctx.fillText(label, t.x + 12, textY);
 
-      if (c.name.length > 15 && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
+      ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      let displayColName = c.name;
+      let fullLabel = prefix + displayColName;
+      if (ctx.measureText(fullLabel).width > maxNameWidth) {
+        while (displayColName.length > 2 && ctx.measureText(prefix + displayColName + '...').width > maxNameWidth) {
+          displayColName = displayColName.slice(0, -1);
+        }
+        displayColName += '...';
+      }
+      const label = prefix + displayColName;
+
+      ctx.fillStyle = isLight ? '#1a202c' : '#e6eef9';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, t.x + padding, textY);
+
+      if ((c.name !== displayColName) && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
         this.activeTooltip = {
-          x: t.x + 12,
+          x: t.x + padding,
           y: textY,
           label: c.name
         };
@@ -1599,7 +1630,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
       ctx.textAlign = 'right';
-      ctx.fillText(c.type, t.x + t.width - 12, textY);
+      ctx.fillText(typeText, t.x + tableW - padding, textY);
     });
 
     const hiddenCount = t.columns.length - visibleColumns.length;
@@ -2661,18 +2692,86 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private getWrappedTooltipLines(ctx: CanvasRenderingContext2D, text: string, maxLineWidth: number): string[] {
+    const lines: string[] = [];
+    const paragraphs = text.split('\n');
+
+    for (const paragraph of paragraphs) {
+      if (!paragraph.trim()) {
+        lines.push('');
+        continue;
+      }
+
+      const words = paragraph.split(' ');
+      let currentLine = '';
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (ctx.measureText(testLine).width <= maxLineWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = '';
+          }
+
+          // If a single word is wider than maxLineWidth, break it up character by character
+          if (ctx.measureText(word).width > maxLineWidth) {
+            let chunk = '';
+            for (let c = 0; c < word.length; c++) {
+              const char = word[c];
+              if (ctx.measureText(chunk + char).width <= maxLineWidth) {
+                chunk += char;
+              } else {
+                if (chunk) lines.push(chunk);
+                chunk = char;
+              }
+            }
+            if (chunk) {
+              currentLine = chunk;
+            }
+          } else {
+            currentLine = word;
+          }
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+    }
+
+    return lines.length > 0 ? lines : [text];
+  }
+
   private drawIconTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, label: string): void {
+    if (!label) return;
+
     ctx.save();
     ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const textWidth = ctx.measureText(label).width;
-    const boxW = textWidth + 16;
-    const boxH = 22;
+
+    const maxLineWidth = 240;
+    const lines = this.getWrappedTooltipLines(ctx, label, maxLineWidth);
+
+    let maxTextWidth = 0;
+    for (const line of lines) {
+      const w = ctx.measureText(line).width;
+      if (w > maxTextWidth) maxTextWidth = w;
+    }
+
+    const lineHeight = 15;
+    const paddingX = 10;
+    const paddingY = 6;
+    const boxW = Math.max(36, maxTextWidth + paddingX * 2);
+    const boxH = Math.max(22, lines.length * lineHeight + paddingY * 2 - 4);
     const boxX = x - boxW / 2;
     const boxY = y - boxH - 8;
 
     // Draw the bubble background path
     ctx.beginPath();
-    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 5);
+    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 6);
     ctx.fillStyle = '#0b0f19';
     ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
@@ -2697,11 +2796,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.fillStyle = '#0b0f19';
     ctx.fill();
 
-    // Draw white text
+    // Draw white text lines
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, x, boxY + boxH / 2 + 0.5);
+
+    const startY = boxY + paddingY + lineHeight / 2 - 1;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, startY + i * lineHeight);
+    }
+
     ctx.restore();
   }
 

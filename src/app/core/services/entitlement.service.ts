@@ -97,6 +97,12 @@ export class EntitlementService {
             this.hasUsedTrial = data.hasUsedTrial;
         }
 
+        if (data?.organizationId === null && typeof window !== 'undefined' && localStorage.getItem('organization_id')) {
+          localStorage.removeItem('organization_id');
+          localStorage.removeItem('org_role');
+          localStorage.setItem('account_type', 'individual');
+        }
+
         return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
       }),
       tap(data => {
@@ -112,6 +118,17 @@ export class EntitlementService {
   }
 
   getEntitlement(featureKey: string): any | undefined {
+    if (this.auth.isSuperAdmin()) {
+      return {
+        feature_key: featureKey,
+        enabled: true,
+        value: 'true',
+        effective_limit: -1,
+        limit_value: -1,
+        remaining: -1,
+        used: 0
+      };
+    }
     let ent = this.entitlementsSubject.value.find(e => e.feature_key === featureKey);
     if (!ent) {
       if (featureKey === 'create_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'max_diagrams');
@@ -121,6 +138,8 @@ export class EntitlementService {
   }
 
   decrementUsage(featureKey: string, amount: number = 1): void {
+    if (this.auth.isSuperAdmin()) return;
+
     const isTarget = (k: string) =>
       k === featureKey ||
       (featureKey === 'create_diagrams' && k === 'max_diagrams') ||
@@ -154,6 +173,8 @@ export class EntitlementService {
   }
 
   incrementUsage(featureKey: string, amount: number = 1): void {
+    if (this.auth.isSuperAdmin()) return;
+
     const isTarget = (k: string) =>
       k === featureKey ||
       (featureKey === 'create_diagrams' && k === 'max_diagrams') ||
@@ -330,7 +351,7 @@ export class EntitlementService {
     }
 
     // Default premium features that must be explicitly enabled
-    if (featureKey === 'code_compare' || (planSlug === 'free' && (featureKey === 'table_group' || featureKey === 'diagram_notes'))) {
+    if (featureKey === 'code_compare' || (planSlug === 'free' && (featureKey === 'table_group' || featureKey === 'diagram_notes' || featureKey === 'document_view'))) {
       return false;
     }
 

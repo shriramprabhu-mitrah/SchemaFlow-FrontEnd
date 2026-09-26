@@ -7,10 +7,11 @@
   [class.toast-light]="!isDark()"
   [class.toast-editor]="location === 'editor'"
   [class.toast-canvas]="location === 'canvas'"
+  [class.toast-global]="location === 'global'"
   [ngStyle]="location === 'editor' ? editorStyle() : {}">
 
-  <!-- CANVAS toast: title + message + × -->
-  <ng-container *ngIf="location === 'canvas'">
+  <!-- CANVAS & GLOBAL toast: title + message + × -->
+  <ng-container *ngIf="location === 'canvas' || location === 'global'">
     <div class="toast-header">
       <span class="toast-title">
         {{ svc.toastType() === 'success' ? 'Success' : svc.toastType() === 'error' ? 'Error' : 'Info' }}

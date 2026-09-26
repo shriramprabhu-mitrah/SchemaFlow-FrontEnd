@@ -431,13 +431,20 @@ export class HeaderComponent implements OnInit {
       this.svc.authModalVisible.set(true);
       return;
     }
-    if (this.svc.isDocUnlocked()) {
-      this.svc.showDocs = !this.svc.showDocs;
-      if (this.svc.showDocs) {
-        this.svc.requestSplitView();
-      }
+
+    if (this.svc.showDocs) {
+      this.svc.showDocs = false;
       return;
     }
+
+    if (this.auth.isSuperAdmin()) {
+      this.svc.showDocs = true;
+      this.svc.requestSplitView();
+      return;
+    }
+
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
 
     const canUse = this.entitlementService.canUseFeature('document_view');
     const ent = this.entitlementService.getEntitlement('document_view');
@@ -448,14 +455,19 @@ export class HeaderComponent implements OnInit {
       (ent?.remaining !== undefined && ent.remaining <= 0)
     ));
 
-    if (isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
+    if (isPlanExpired || isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
       this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
       this.svc.showUpgradeModal('document_view');
       return;
     }
 
-    this.svc.showDocs = false;
-    this.svc.showDocsPlaceholder = true;
+    if (this.svc.isDocUnlocked()) {
+      this.svc.showDocs = true;
+      this.svc.requestSplitView();
+    } else {
+      this.svc.showDocs = false;
+      this.svc.showDocsPlaceholder = true;
+    }
   }
 
   toggleVersionHistory(): void {

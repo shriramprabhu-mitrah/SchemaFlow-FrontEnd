@@ -62,6 +62,41 @@ export class LoginComponent {
     this.showPassword = !this.showPassword;
   }
 
+  preventWhitespace(event: KeyboardEvent): void {
+    if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
+      event.preventDefault();
+    }
+  }
+
+  onPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleaned = text.replace(/\s/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const val = input.value || '';
+      const newVal = val.substring(0, start) + cleaned + val.substring(end);
+      input.value = newVal;
+      this.password = newVal;
+      input.setSelectionRange(start + cleaned.length, start + cleaned.length);
+    } else {
+      this.password = (this.password + cleaned).replace(/\s/g, '');
+    }
+    this.passwordError = '';
+  }
+
+  onPasswordInput(event?: Event): void {
+    const input = event?.target as HTMLInputElement;
+    const cleaned = (input ? input.value : this.password || '').replace(/\s/g, '');
+    this.password = cleaned;
+    if (input && input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    this.passwordError = '';
+  }
+
   toggleForgotPasswordMode(event?: Event): void {
     if (event) event.preventDefault();
     this.isForgotPasswordMode = !this.isForgotPasswordMode;
@@ -202,6 +237,9 @@ export class LoginComponent {
     }
     if (!pass) {
       this.passwordError = 'Please enter your password.';
+      hasValidationError = true;
+    } else if (/\s/.test(pass)) {
+      this.passwordError = 'Password cannot contain whitespace.';
       hasValidationError = true;
     }
 
