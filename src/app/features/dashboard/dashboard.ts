@@ -280,25 +280,21 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         if (!this.resizing || !this.bodyRef) return;
         const bodyRect = this.bodyRef.nativeElement.getBoundingClientRect();
         const w = clientX - bodyRect.left;
-        const pct = (w / bodyRect.width) * 100;
 
-      if (this.paneMode !== 'split') {
-        if (this.paneMode === 'canvas' && pct < 8) return;
-        if (this.paneMode === 'editor' && pct > 92) return;
-        this.paneMode = 'split';
-      }
+        if (this.paneMode !== 'split') {
+          this.paneMode = 'split';
+        }
 
-      if (pct >= 94) {
-        this.paneMode = 'editor';
-        this.resizing = false;
-      } else if (pct <= 6) {
-        this.paneMode = 'canvas';
-        this.resizing = false;
-      } else {
-        this.svc.editorWidthPct.set(pct);
-      }
-      this.cdr.detectChanges();
-       });
+        // Restrict drag so table panel (canvas) is strictly not fully closed,
+        // and editor panel maintains minimum width so toaster and DBML stay usable
+        const minPx = 280;
+        const maxPx = Math.max(minPx, bodyRect.width - 280);
+        const clampedW = Math.min(maxPx, Math.max(minPx, w));
+        const clampedPct = (clampedW / bodyRect.width) * 100;
+
+        this.svc.editorWidthPct.set(clampedPct);
+        this.cdr.detectChanges();
+      });
     }
   }
 
@@ -324,5 +320,43 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   openUpgradeModal(): void {
     this.svc.showUpgradeModal('trial_expired_banner');
+  }
+
+  get documentViewEntitlement() {
+    return this.entitlementService.getEntitlement('document_view');
+  }
+
+  get isDocLimitReached(): boolean {
+    const ent = this.documentViewEntitlement;
+    if (!ent) return true;
+    const limit = ent.effective_limit ?? ent.limit_value;
+    if (limit === -1) return false;
+    if (limit === undefined || limit === null || limit === 0) return true;
+    if (ent.used !== undefined && ent.used >= limit) return true;
+    if (ent.remaining !== undefined && ent.remaining <= 0) return true;
+    return false;
+  }
+
+  unlockDocs(): void {
+    const id = this.svc.diagramId();
+    if (!id) return;
+    if (this.isDocLimitReached) {
+      this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
+      this.svc.showUpgradeModal('document_view');
+      return;
+    }
+    
+    this.svc.unlockDocs(id).subscribe({
+      next: () => {
+        this.svc.showToast('Document view unlocked successfully!', 3000, 'success');
+      },
+      error: (err: any) => {
+        const errorMsg = err?.error?.message || 'Failed to unlock docs';
+        this.svc.showToast(errorMsg, 3000, 'error');
+        if (err?.status === 403) {
+          this.svc.showUpgradeModal('document_view');
+        }
+      }
+    });
   }
 }

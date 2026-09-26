@@ -2260,6 +2260,15 @@ body.light-theme #extra-controls {
   }
 }
 
+.sticky-note-name-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: visible !important;
+}
+
 .sticky-note-name {
   flex: 1;
   font-size: 11px;

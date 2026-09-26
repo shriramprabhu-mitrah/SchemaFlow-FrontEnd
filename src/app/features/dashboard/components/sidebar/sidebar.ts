@@ -129,6 +129,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return !this.hasFeatureAccess('version_history');
       case 'tables':
       case 'refs':
+        return !this.hasFeatureAccess('table_relationships');
       case 'docs':
         return !this.hasFeatureAccess('document_view');
       case 'compare':
@@ -366,8 +367,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
 
     if (!this.auth.isSuperAdmin()) {
-      if (!this.hasFeatureAccess('document_view')) {
-        this.svc.showUpgradeModal('document_view');
+      if (!this.hasFeatureAccess('table_relationships')) {
+        this.svc.showUpgradeModal('table_relationships');
         return;
       }
     }
@@ -462,14 +463,35 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.isSampleDiagram()) {
       return;
     }
-    if (!this.entitlementService.canUseFeature('document_view')) {
-      if (!this.entitlementService.orgHasFeature('document_view')) {
-        this.svc.showUpgradeModal('document_view');
+    const isCurrentlyActive = this.svc.showDocs || this.svc.showDocsPlaceholder;
+
+    if (isCurrentlyActive) {
+      this.svc.showDocs = false;
+      this.svc.showDocsPlaceholder = false;
+    } else {
+      if (this.svc.isDocUnlocked()) {
+        this.svc.showDocs = true;
+        this.svc.showDocsPlaceholder = false;
+      } else {
+        const canUse = this.entitlementService.canUseFeature('document_view');
+        const ent = this.entitlementService.getEntitlement('document_view');
+        const limit = ent?.effective_limit ?? ent?.limit_value;
+        const isLimitReached = !canUse || (limit !== undefined && limit !== null && limit !== -1 && (
+          limit === 0 ||
+          (ent?.used !== undefined && ent.used >= limit) ||
+          (ent?.remaining !== undefined && ent.remaining <= 0)
+        ));
+
+        if (isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
+          this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
+          this.svc.showUpgradeModal('document_view');
+          return;
+        }
+        
+        this.svc.showDocs = false;
+        this.svc.showDocsPlaceholder = true;
       }
-      return;
-    }
-    this.svc.showDocs = !this.svc.showDocs;
-    if (this.svc.showDocs) {
+
       this.svc.sidebarInspectorTab.set(null);
       if (this.svc.showDiffChecker()) {
         this.svc.closeDiffChecker();

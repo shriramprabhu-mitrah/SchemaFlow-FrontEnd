@@ -29,6 +29,22 @@
   overflow: hidden;
   box-sizing: border-box;
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: height 0.2s ease, max-height 0.2s ease;
+
+  &.compact-modal {
+    height: auto;
+    min-height: 440px;
+    max-height: min(560px, 90vh);
+
+    .workspace-sidebar {
+      align-self: stretch;
+    }
+
+    .workspace-content {
+      height: auto;
+      min-height: 440px;
+    }
+  }
 
   &,
   * {
@@ -497,7 +513,7 @@
 
     &.create-workspace-pane,
     &.edit-workspace-pane {
-      overflow: hidden !important;
+      overflow-y: auto !important;
       display: flex !important;
       flex-direction: column !important;
       height: 100% !important;
@@ -507,35 +523,42 @@
         z-index: 10 !important;
         display: flex !important;
         flex-direction: column !important;
-        flex: 1 !important;
+        flex: 1 1 auto !important;
         min-height: 0 !important;
 
         >.members-section-box {
           display: flex !important;
           flex-direction: column !important;
-          flex: 1 !important;
+          flex: 1 1 auto !important;
           min-height: 0 !important;
 
           .members-list-wrapper {
-            flex: 1 !important;
+            flex: 0 1 auto !important;
+            max-height: 280px !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
-            min-height: 100px !important;
+            min-height: 40px !important;
             padding-right: 4px !important;
-            padding-bottom: 120px !important;
+            padding-bottom: 8px !important;
           }
 
           .members-pagination-footer {
-            margin-top: auto !important;
-            padding-top: 12px !important;
+            margin-top: 12px !important;
+            padding-top: 10px !important;
             border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
           }
         }
       }
 
       .create-workspace-footer {
-        margin-top: 12px !important;
+        margin-top: auto !important;
+        padding-top: 14px !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
         flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 12px !important;
       }
     }
 
@@ -2584,7 +2607,7 @@ tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-dropdo
     flex-direction: column !important;
     gap: 10px !important;
     overflow: visible !important;
-    padding-bottom: 120px !important;
+    padding-bottom: 8px !important;
 
     .member-item-row {
       display: flex !important;
@@ -3000,7 +3023,8 @@ th.sortable-head {
 
 .members-list-wrapper {
   max-height: 280px !important;
-  overflow: visible !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   position: relative !important;
   z-index: 10 !important;
 }
@@ -3799,6 +3823,11 @@ body.light-theme {
           border: 1px solid rgba(0, 0, 0, 0.12) !important;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
 
+          &.pop-up {
+            bottom: calc(100% + 6px) !important;
+            top: auto !important;
+          }
+
           .perm-divider {
             background: rgba(0, 0, 0, 0.08) !important;
           }
@@ -3867,12 +3896,36 @@ body.light-theme {
     >.members-section-box {
       position: relative !important;
       z-index: 10 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
     }
 
     >.members-section-box>.members-section-box {
+      display: flex !important;
+      flex-direction: column !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+
+      .members-list-wrapper {
+        flex: 0 1 auto !important;
+        max-height: 280px !important;
+        padding-bottom: 8px !important;
+      }
+
       .members-pagination-footer {
+        margin-top: 12px !important;
+        padding-top: 10px !important;
         border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
       }
+    }
+
+    .create-workspace-footer {
+      margin-top: auto !important;
+      padding-top: 14px !important;
+      border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+      flex-shrink: 0 !important;
     }
   }
 }

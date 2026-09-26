@@ -88,6 +88,7 @@ export interface DiagramSummary {
   name: string;
   created_at?: string | Date | null;
   updated_at?: string | Date | null;
+  is_doc_unlocked?: boolean;
 }
 
 export interface EditorError {
@@ -547,6 +548,14 @@ export class DashboardService {
   }
   set showDocs(val: boolean) {
     this.showDocsSignal.set(val);
+  }
+
+  showDocsPlaceholderSignal = signal<boolean>(false);
+  get showDocsPlaceholder(): boolean {
+    return this.showDocsPlaceholderSignal();
+  }
+  set showDocsPlaceholder(val: boolean) {
+    this.showDocsPlaceholderSignal.set(val);
   }
   showDiffChecker = signal<boolean>(false);
   diffCheckerData: { leftText: string; rightText: string; viewMode: 'edit' | 'diff' } = {
@@ -1116,6 +1125,25 @@ export class DashboardService {
     }
   }
 
+  unlockDocs(id: number): Observable<any> {
+    const url = `${this.appConfig.environment?.apiConfig?.baseUrl || ''}/api/diagrams/${id}/unlock-docs`;
+    return this.http.post(url, {}).pipe(
+      tap(() => {
+        // Update local diagram state
+        const diagrams = this.diagrams();
+        const diagram = diagrams.find(d => d.id === id);
+        if (diagram) {
+          diagram.is_doc_unlocked = true;
+          this.diagrams.set([...diagrams]);
+        }
+        this.isDocUnlocked.set(true);
+        this.showDocsPlaceholder = false;
+        this.showDocs = true;
+        this.entitlementService.incrementUsage('document_view');
+      })
+    );
+  }
+
   // --- Signals: these three are read directly by templates (header.html),
   // so they need to notify Angular regardless of zone/OnPush/zoneless setup. ---
   diagramId: any = signal<number | null>(null);
@@ -1183,6 +1211,7 @@ export class DashboardService {
   readonly isDiagramLoading = signal(false);
   readonly isSaving = signal(false);
   readonly diagramWorkspaceType = signal<string>('Personal');
+  readonly isDocUnlocked = signal<boolean>(false);
   readonly diagrams = signal<DiagramSummary[]>([]);
   readonly isLoadingDiagrams = signal(false);
   readonly workspaces = signal<WorkspaceItem[]>([]);
@@ -1322,6 +1351,7 @@ export class DashboardService {
   selectedConnectionIndex = -1;
   showAllConnections = false;
   hoveredTableName: string | null = null;
+  activeFocusedTable: string | null = null;
 
   view = { x: 40, y: 40, scale: 1 };
   tool: Tool = 'select';
@@ -2297,6 +2327,9 @@ export class DashboardService {
     this.code = `Table Untitled {
   id int [pk]
 }`;
+    this.isDocUnlocked.set(false);
+    this.showDocs = false;
+    this.showDocsPlaceholder = false;
     this.showCanvasPlaceholder = true;
     this.updateGutter();
     this.parseAndLayout();
@@ -2306,8 +2339,8 @@ export class DashboardService {
 
   /* ============ DBML PARSER ============ */
 
-  parseDBML(text: string): { tables: { name: string; columns: Column[] }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
-    const tables: { name: string; columns: Column[] }[] = [];
+  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
+    const tables: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
     const refs: RefDef[] = [];
     const groups: { name: string; color: string; tables: string[] }[] = [];
 
@@ -2632,6 +2665,8 @@ export class DashboardService {
 
     parsed.tables.forEach((t) => {
       const height = this.getTableHeight(t.columns);
+      t.width = this.CARD_W;
+      t.height = height;
       if (!this.tablePositions[t.name]) {
         let col = 0;
         if (tableToGroupColOffset.has(t.name)) {
@@ -3734,7 +3769,8 @@ export class DashboardService {
               id,
               name: diagram?.name || diagram?.diagramname || '',
               created_at,
-              updated_at
+              updated_at,
+              is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
             };
           });
 
@@ -3768,10 +3804,15 @@ export class DashboardService {
     const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', id.toString()) ?? "";
     return this.http.delete<any>(url, { headers }).pipe(
       tap(() => {
+        const deleted = this.diagrams().find((d) => d.id === id);
+        const wasDocUnlocked = deleted?.is_doc_unlocked === true || (deleted as any)?.is_doc_unlocked === 'true' || (deleted as any)?.is_doc_unlocked === 1;
         const currentList = this.diagrams().filter((d) => d.id !== id);
         this.diagrams.set(currentList);
         this.totalDiagrams.update(n => Math.max(0, n > 0 ? n - 1 : currentList.length));
         this.entitlementService.decrementUsage('create_diagrams');
+        if (wasDocUnlocked) {
+          this.entitlementService.decrementUsage('document_view');
+        }
 
         if (Number(this.diagramId()) === Number(id)) {
           const currentWsId = this.activeWorkspaceId();
@@ -3985,7 +4026,8 @@ export class DashboardService {
                 id: numId,
                 name: diagram?.name || 'Untitled Diagram',
                 created_at: diagram?.createdat ?? diagram?.created_at ?? diagram?.createdAt ?? null,
-                updated_at: diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? null
+                updated_at: diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? null,
+                is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
               });
             }
           }
@@ -4211,6 +4253,8 @@ export class DashboardService {
     } else {
       this.isReadOnly = false;
     }
+    const isUnlocked = diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1;
+    this.isDocUnlocked.set(isUnlocked);
 
     let layout = diagram?.layout;
     if (typeof layout === 'string') {
@@ -4241,6 +4285,7 @@ export class DashboardService {
     this.isDiagramPublic = diagram?.ispublic !== false; // defaults to true unless explicitly false
     this.diagramPassword = diagram?.protectedpassword || diagram?.protectedPassword || '';
     this.showDocs = false;
+    this.showDocsPlaceholder = false;
 
     this.applyParsedLayout(layout, diagram);
 
@@ -4461,6 +4506,9 @@ export class DashboardService {
             ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
           this.setActiveWorkspace(null);
           this.diagramWorkspaceType.set('Personal');
+          this.isDocUnlocked.set(false);
+          this.showDocs = false;
+          this.showDocsPlaceholder = false;
           if (id != null) {
             this.diagramId.set(id);
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -4493,6 +4541,9 @@ export class DashboardService {
             ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
           this.setActiveWorkspace(Number(workspaceId), workspaceName);
           this.diagramWorkspaceType.set('Team');
+          this.isDocUnlocked.set(false);
+          this.showDocs = false;
+          this.showDocsPlaceholder = false;
           if (id != null) {
             this.diagramId.set(Number(id));
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -4528,6 +4579,9 @@ export class DashboardService {
           ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
         this.setActiveWorkspace(null);
         this.diagramWorkspaceType.set('Personal');
+        this.isDocUnlocked.set(false);
+        this.showDocs = false;
+        this.showDocsPlaceholder = false;
         if (id != null) {
           this.diagramId.set(id);
           if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -4810,6 +4864,8 @@ export class DashboardService {
     }
     this.diagramName = '';
     this.showDocs = false;
+    this.showDocsPlaceholder = false;
+    this.isDocUnlocked.set(false);
     this.showDiffChecker.set(false);
     this.showCanvasPlaceholder = false;
     this.isAllFields = true;

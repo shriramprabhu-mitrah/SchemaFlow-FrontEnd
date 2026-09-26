@@ -66,6 +66,7 @@
             <input [type]="showPassword ? 'text' : 'password'" class="db-input w-100" style="padding-right: 40px;"
               [class.input-error]="passwordError"
               placeholder="Enter password to protect this diagram" [(ngModel)]="password"
+              (keydown)="onPasswordKeyDown($event)"
               (input)="onPasswordInput()"
               (keydown.enter)="saveSharingSettings()"
               [disabled]="hasDbmlErrors() || isDiagramEmpty()" />

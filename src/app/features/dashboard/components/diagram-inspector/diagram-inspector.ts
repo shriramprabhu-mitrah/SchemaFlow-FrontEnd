@@ -187,7 +187,6 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
   finishRenameTable(oldName: string): void {
     if (!this.editingTableName) return;
     let newName = (this.newTableNameVal || '').trim();
-    if (newName.length > 15) newName = newName.slice(0, 15);
     this.editingTableName = null;
     if (!newName || newName === oldName) {
       this.cdr.markForCheck();
@@ -277,7 +276,6 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
   onFieldNameBlur(table: TableDef, col: Column, e: FocusEvent): void {
     const input = e.target as HTMLInputElement;
     let newName = (input.value || '').trim();
-    if (newName.length > 15) newName = newName.slice(0, 15);
     if (!newName || newName === col.name) {
       input.value = col.name;
       return;

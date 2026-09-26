@@ -258,6 +258,9 @@ export class EntitlementService {
         // Numeric limit check
         const limit = ent.effective_limit ?? (ent as any).limit_value;
         if (limit !== undefined && limit !== null && limit !== -1) {
+          if (limit === 0) {
+            return false;
+          }
           if (ent.remaining !== undefined && ent.remaining <= 0) {
             return false;
           }
@@ -285,6 +288,9 @@ export class EntitlementService {
           // Check numeric limit in cache if present
           const limit = userEnt.effective_limit ?? userEnt.limit_value;
           if (limit !== undefined && limit !== null && limit !== -1) {
+            if (limit === 0) {
+              return false;
+            }
             if (userEnt.remaining !== undefined && userEnt.remaining <= 0) {
               return false;
             }
@@ -331,6 +337,17 @@ export class EntitlementService {
     return true; // default to true if the feature is unknown
   }
 
+  private overallPercentage = 20;
+  private defaultTrialDays = 14;
+
+  getOverallPercentage(): number {
+    return this.overallPercentage;
+  }
+
+  getDefaultTrialDays(): number {
+    return this.defaultTrialDays;
+  }
+
   loadPlans(force = false): Observable<any[]> {
     if (this.plansLoaded && !force && this.plansSubject.value.length > 0) {
       return of(this.plansSubject.value);
@@ -346,6 +363,22 @@ export class EntitlementService {
     }
 
     return this.http.get<any>(url).pipe(
+      tap(res => {
+        if (res?.overall_percentage !== undefined && res?.overall_percentage !== null) {
+          this.overallPercentage = Number(res.overall_percentage) || 20;
+        } else if (res?.data && Array.isArray(res.data)) {
+          const found = res.data.find((p: any) => p.overall_percentage !== null && p.overall_percentage !== undefined);
+          if (found) {
+            this.overallPercentage = Number(found.overall_percentage || found.discount_percentage) || 20;
+          }
+        }
+        if (res?.data && Array.isArray(res.data)) {
+          const foundTrial = res.data.find((p: any) => p.trial_days && Number(p.trial_days) > 0);
+          if (foundTrial) {
+            this.defaultTrialDays = Number(foundTrial.trial_days);
+          }
+        }
+      }),
       map(res => res?.data || res || []),
       tap(plans => {
         if (Array.isArray(plans) && plans.length > 0) {

@@ -536,13 +536,13 @@ Paste the following DBML code snippet into the left editor panel:
 
 \`\`\`dbml
 // Define Users Table
-Table users [headercolor: #3b82f6] {
+Table users  {
   id int [pk, increment]
   username varchar [not null, unique]
 }
 
 // Define Orders Table
-Table orders [headercolor: #10b981] {
+Table orders {
   id int [pk, increment]
   user_id int [not null, ref: > users.id]
   total_amount decimal(10,2) [not null, default: 0.00]
@@ -762,14 +762,14 @@ Below is a complete DBML schema definition:
 
 \`\`\`dbml
 // 1. Department Table
-Table Department [headercolor: #317ec2] {
+Table Department {
   DepartmentId int [pk, increment]
   DepartmentName varchar [not null]
   Location varchar
 }
 
 // 2. Employee Table
-Table Employee [headercolor: #317ec2] {
+Table Employee  {
   EmployeeId int [pk, increment]
   DepartmentId int [ref: > Department.DepartmentId]
   FirstName varchar [not null]
@@ -781,7 +781,7 @@ Table Employee [headercolor: #317ec2] {
 }
 
 // 3. Project Table
-Table Project [headercolor: #10b981] {
+Table Project  {
   ProjectId int [pk, increment]
   ProjectName varchar [not null]
   StartDate date
@@ -834,7 +834,7 @@ Connecting tables through foreign key references is the foundation of relational
 Inline references are defined directly inside column attribute brackets:
 
 \`\`\`dbml
-Table orders [headercolor: #10b981] {
+Table orders  {
   id int [pk, increment]
   user_id int [not null, ref: > users.id]
   total decimal(10,2)
@@ -859,14 +859,14 @@ Below is a complete multi-table blueprint demonstrating how tables connect toget
 
 \`\`\`dbml
 // 1. Primary Users Table
-Table users [headercolor: #3b82f6] {
+Table users  {
   id int [pk, increment]
   username varchar [not null, unique]
   email varchar [not null]
 }
 
 // 2. Orders Table Connected to Users
-Table orders [headercolor: #10b981] {
+Table orders {
   id int [pk, increment]
   user_id int [not null, ref: > users.id]
   order_date timestamp [default: \`now()\`]
@@ -874,7 +874,7 @@ Table orders [headercolor: #10b981] {
 }
 
 // 3. Order Items Table Connected to Orders
-Table order_items [headercolor: #8b5cf6] {
+Table order_items {
   id int [pk, increment]
   order_id int [not null]
   product_name varchar [not null]

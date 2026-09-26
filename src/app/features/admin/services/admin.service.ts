@@ -48,6 +48,24 @@ export class AdminService {
     return this.http.put(url, { entitlements }, { withCredentials: true });
   }
 
+  getCommonPlanSettings(): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || '';
+    const url = this.urls.plans ? `${this.urls.plans}/common-settings` : `${baseUrl}/api/admin/plans/common-settings`;
+    return this.http.get(url, { withCredentials: true });
+  }
+
+  updateCommonPlanSettings(data: {
+    overall_percentage?: number;
+    trial_days?: number;
+    trial_days_part?: number;
+    trial_hours_part?: number;
+    trial_mins_part?: number;
+  }): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || '';
+    const url = this.urls.plans ? `${this.urls.plans}/common-settings` : `${baseUrl}/api/admin/plans/common-settings`;
+    return this.http.put(url, data, { withCredentials: true });
+  }
+
   // ── Features ──
   getFeatures(page = 1, limit = 10, search = '', sortColumn = 'display_order', sortAsc = true): Observable<any> {
     let params = new HttpParams().set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);

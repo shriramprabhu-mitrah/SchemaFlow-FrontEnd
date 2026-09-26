@@ -2,8 +2,10 @@
   <!-- View Table Dropdown Menu -->
   <app-docs-table-dropdown *ngIf="showTableDropdown"
     [selectedTables]="selectedTables"
-    (closeDropdown)="toggleTableDropdown($event)"
+    [activeFocusedTable]="activeFocusedTable"
+    (closeDropdown)="closeTableDropdown($event)"
     (toggleTable)="toggleTableCheckbox($event.tableName, $event.event)"
+    (selectTable)="viewTableDetails($event.tableName, undefined, $event.event)"
     (toggleAll)="toggleSelectAll()">
   </app-docs-table-dropdown>
 
@@ -58,7 +60,10 @@
     </div>
 
     <div [id]="'docs-card-' + t.name" class="docs-table-card" *ngFor="let t of getVisibleTables()"
-      [class.is-collapsed]="isTableCollapsed(t.name)" [class.is-selected]="isTableSelected(t.name)">
+      [class.is-collapsed]="isTableCollapsed(t.name)"
+      [class.is-focused]="activeFocusedTable === t.name"
+      [class.flash-highlight]="flashHighlightedTable === t.name"
+      (click)="onCardClick(t.name, $event)">
       <!-- Accordion Header -->
       <div class="docs-card-header" (click)="toggleTable(t.name)">
         <div class="header-title-group">
@@ -71,7 +76,7 @@
             {{ getTableRelationships(t.name).length }} connection{{ getTableRelationships(t.name).length !== 1 ? 's' :
             '' }}
           </span>
-          <span class="card-badge connected-badge" *ngIf="isTableSelected(t.name)">
+          <span class="card-badge connected-badge" *ngIf="isFilterActive && isTableSelected(t.name)">
             Connected View Active
           </span>
         </div>

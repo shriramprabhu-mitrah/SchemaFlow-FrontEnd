@@ -1,5 +1,5 @@
 <div class="workspace-modal-backdrop" *ngIf="visible">
-  <div class="workspace-modal-container" (click)="onContainerClick($event)">
+  <div class="workspace-modal-container" [class.compact-modal]="activeTab === 'create-workspace' || activeTab === 'edit-workspace'" (click)="onContainerClick($event)">
     <app-loader *ngIf="isCreatingWorkspace || isUpdatingWorkspace"
       [text]="isCreatingWorkspace ? 'Creating workspace...' : 'Updating workspace...'"></app-loader>
 
@@ -110,6 +110,7 @@
           <span class="breadcrumb-label" (click)="openMyWorkspaces()">Workspaces</span>
           <span class="sep">/</span>
           <input type="text" class="workspace-title-input" placeholder="Workspace Name" [(ngModel)]="workspaceName"
+            (blur)="workspaceName = (workspaceName || '').trim()"
             spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" autofocus />
         </div>
         <div class="header-badges">
@@ -964,7 +965,8 @@
         <div class="form-group">
           <label class="form-label">Workspace Name <span class="required-star">*</span></label>
           <input type="text" class="workspace-input-field" placeholder="e.g. Demo Project or Team Workspace"
-            [(ngModel)]="workspaceName" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" />
+            [(ngModel)]="workspaceName" (blur)="workspaceName = (workspaceName || '').trim()"
+            spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" />
         </div>
 
         <!-- Invite Section -->
@@ -1127,10 +1129,15 @@
               </div>
 
               <ng-container *ngIf="!isLoadingMembers">
+                <!-- Empty state if search returns no results -->
+                <div class="empty-state" *ngIf="filteredMembersList.length === 0 && membersSearch" style="padding: 24px; text-align: center; color: #7082a0; font-size: 13px;">
+                  No members found matching "{{ membersSearch }}"
+                </div>
+
                 <!-- Invited & Owner Members List Rows -->
-                <div class="member-item-row" *ngFor="let m of membersList; let i = index"
-                  [class.active-dropdown-row]="activeMemberDropdownIndex === i"
-                  [style.z-index]="activeMemberDropdownIndex === i ? 99999 : 1">
+                <div class="member-item-row" *ngFor="let m of pagedEditMembersList; let i = index"
+                  [class.active-dropdown-row]="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i"
+                  [style.z-index]="(activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i) ? 99999 : 1">
                   <div class="member-user-info">
                     <div class="member-avatar" [class.owner-avatar]="m.permission === 'Owner'">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1150,29 +1157,29 @@
                     style="display: flex; align-items: center; gap: 8px;">
                     <!-- Display dropdown for normal members -->
                     <div class="member-permission-dropdown-wrap" (click)="$event.stopPropagation()">
-                      <button type="button" class="btn-member-perm-select" (click)="toggleMemberDropdown(i, $event)">
+                      <button type="button" class="btn-member-perm-select" (click)="toggleMemberDropdown(m.email, $event)">
                         <span>{{ getPermissionLabel(m.permission) }}</span>
-                        <svg class="chevron" [class.open]="activeMemberDropdownIndex === i" width="10" height="10"
+                        <svg class="chevron" [class.open]="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i" width="10" height="10"
                           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                           <polyline points="6 9 12 15 18 9" />
                         </svg>
                       </button>
 
-                      <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === i"
+                      <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i"
                         (click)="$event.stopPropagation()">
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor & Inviter', $event)" [class.selected]="m.permission === 'Editor & Inviter'">
+                      <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor & Inviter', $event)" [class.selected]="m.permission === 'Editor & Inviter'">
                         <div class="perm-option-header">
                           <span class="perm-option-title">Can edit & invite <span *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can edit & invite people.</div>
                       </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor', $event)" [class.selected]="m.permission === 'Editor'">
+                      <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor', $event)" [class.selected]="m.permission === 'Editor'">
                         <div class="perm-option-header">
                           <span class="perm-option-title">Can edit <span *ngIf="m.permission === 'Editor'">✓</span></span>
                         </div>
                         <div class="perm-option-desc">Can edit, but not invite people.</div>
                       </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Viewer', $event)" [class.selected]="m.permission === 'Viewer'">
+                      <div class="perm-option-item" (click)="changeMemberPermission(m, 'Viewer', $event)" [class.selected]="m.permission === 'Viewer'">
                         <div class="perm-option-header">
                           <span class="perm-option-title">Can view <span *ngIf="m.permission === 'Viewer'">✓</span></span>
                         </div>
@@ -1182,7 +1189,7 @@
                     </div>
 
                     <button type="button" class="btn-remove-member-icon" [disabled]="!m.isNew"
-                      (click)="removeMember(i, $event)" [attr.title]="!m.isNew ? 'Cannot remove existing members here' : 'Remove Member'">
+                      (click)="removeMember(m, $event)" [attr.title]="!m.isNew ? 'Cannot remove existing members here' : 'Remove Member'">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1200,22 +1207,22 @@
                 membersLimit, membersTotal) }} of {{ membersTotal }} items</span>
               <div class="pagination-controls-center">
                 <button type="button" class="btn-page-nav-icon" [disabled]="membersPage <= 1"
-                  (click)="loadMembers(editingWorkspace?.id, 1)">«</button>
+                  (click)="onEditMembersPageChange(1)">«</button>
                 <button type="button" class="btn-page-nav-icon" [disabled]="membersPage <= 1"
-                  (click)="loadMembers(editingWorkspace?.id, membersPage - 1)">‹</button>
+                  (click)="onEditMembersPageChange(membersPage - 1)">‹</button>
                 <div class="page-numbers-container">
                   <ng-container *ngFor="let p of getPageRange(membersPage, membersTotalPages)">
                     <button type="button" *ngIf="p !== '...'" class="btn-page-number" [class.active]="p === membersPage"
-                      (click)="loadMembers(editingWorkspace?.id, p)">
+                      (click)="onEditMembersPageChange(p)">
                       {{ p }}
                     </button>
                     <span *ngIf="p === '...'" class="page-ellipsis">...</span>
                   </ng-container>
                 </div>
                 <button type="button" class="btn-page-nav-icon" [disabled]="membersPage >= membersTotalPages"
-                  (click)="loadMembers(editingWorkspace?.id, membersPage + 1)">›</button>
+                  (click)="onEditMembersPageChange(membersPage + 1)">›</button>
                 <button type="button" class="btn-page-nav-icon" [disabled]="membersPage >= membersTotalPages"
-                  (click)="loadMembers(editingWorkspace?.id, membersTotalPages)">»</button>
+                  (click)="onEditMembersPageChange(membersTotalPages)">»</button>
               </div>
               <div class="page-size-selector">
                 <div class="custom-select-container">

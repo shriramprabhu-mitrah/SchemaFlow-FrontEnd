@@ -2,3 +2,17 @@
   display: block;
   width: 100%;
 }
+
+.social-icon {
+  color: #94a3b8;
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+
+  &:hover {
+    color: #0a66c2;
+    transform: translateY(-2px);
+  }
+}
