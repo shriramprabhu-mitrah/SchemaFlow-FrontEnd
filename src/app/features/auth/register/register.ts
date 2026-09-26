@@ -44,9 +44,10 @@ export class RegisterComponent implements OnInit {
   get hasLowercase(): boolean { return /[a-z]/.test(this.password); }
   get hasUppercase(): boolean { return /[A-Z]/.test(this.password); }
   get hasNumber(): boolean { return /[0-9]/.test(this.password); }
-  get hasSpecialChar(): boolean { return /[^a-zA-Z0-9]/.test(this.password); }
+  get hasSpecialChar(): boolean { return /[^a-zA-Z0-9\s]/.test(this.password); }
   get hasMinLength(): boolean { return this.password.length >= 8; }
-  get isPasswordValid(): boolean { return this.hasLowercase && this.hasUppercase && this.hasNumber && this.hasSpecialChar && this.hasMinLength; }
+  get hasNoWhitespace(): boolean { return !/\s/.test(this.password); }
+  get isPasswordValid(): boolean { return this.hasLowercase && this.hasUppercase && this.hasNumber && this.hasSpecialChar && this.hasMinLength && this.hasNoWhitespace; }
 
   constructor(
     private auth: AuthService,
@@ -98,6 +99,70 @@ export class RegisterComponent implements OnInit {
 
   toggleConfirmPasswordVisibility(): void {
     this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  preventWhitespace(event: KeyboardEvent): void {
+    if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
+      event.preventDefault();
+    }
+  }
+
+  onPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleaned = text.replace(/\s/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const val = input.value || '';
+      const newVal = val.substring(0, start) + cleaned + val.substring(end);
+      input.value = newVal;
+      this.password = newVal;
+      input.setSelectionRange(start + cleaned.length, start + cleaned.length);
+    } else {
+      this.password = (this.password + cleaned).replace(/\s/g, '');
+    }
+    this.passwordError = '';
+  }
+
+  onConfirmPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleaned = text.replace(/\s/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const val = input.value || '';
+      const newVal = val.substring(0, start) + cleaned + val.substring(end);
+      input.value = newVal;
+      this.confirmPassword = newVal;
+      input.setSelectionRange(start + cleaned.length, start + cleaned.length);
+    } else {
+      this.confirmPassword = (this.confirmPassword + cleaned).replace(/\s/g, '');
+    }
+    this.confirmPasswordError = '';
+  }
+
+  onPasswordInput(event?: Event): void {
+    const input = event?.target as HTMLInputElement;
+    const cleaned = (input ? input.value : this.password || '').replace(/\s/g, '');
+    this.password = cleaned;
+    if (input && input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    this.passwordError = '';
+  }
+
+  onConfirmPasswordInput(event?: Event): void {
+    const input = event?.target as HTMLInputElement;
+    const cleaned = (input ? input.value : this.confirmPassword || '').replace(/\s/g, '');
+    this.confirmPassword = cleaned;
+    if (input && input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    this.confirmPasswordError = '';
   }
 
   private getErrorMessage(err: any, fallback: string): string {
@@ -161,6 +226,9 @@ export class RegisterComponent implements OnInit {
     if (!pass) {
       this.passwordError = 'Password is required.';
       hasValidationError = true;
+    } else if (/\s/.test(pass)) {
+      this.passwordError = 'Password cannot contain whitespace.';
+      hasValidationError = true;
     } else if (pass.length < 8 || !this.hasLowercase || !this.hasUppercase || !this.hasNumber || !this.hasSpecialChar) {
       this.passwordError = 'Password does not meet the requirements.';
       hasValidationError = true;
@@ -168,6 +236,9 @@ export class RegisterComponent implements OnInit {
 
     if (!confirmPass) {
       this.confirmPasswordError = 'Please confirm your password.';
+      hasValidationError = true;
+    } else if (/\s/.test(confirmPass)) {
+      this.confirmPasswordError = 'Password cannot contain whitespace.';
       hasValidationError = true;
     } else if (pass && pass !== confirmPass) {
       this.confirmPasswordError = 'Passwords do not match.';

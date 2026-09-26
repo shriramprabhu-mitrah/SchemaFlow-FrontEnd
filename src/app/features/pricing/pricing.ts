@@ -527,8 +527,13 @@ export class PricingComponent implements OnInit {
     return parts.join(' ') || '0 days';
   }
 
+  get isOrganization(): boolean {
+    return this.auth.isOrganizationAccount() || this.auth.getOrganizationId() !== null;
+  }
+
   /** CTA button label depending on audience + plan type + login state */
   getCtaLabel(plan: any): string {
+    if (this.auth.isSuperAdmin()) return 'Super Admin';
     if (plan.slug === 'enterprise') return 'Contact Sales';
 
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
@@ -555,6 +560,16 @@ export class PricingComponent implements OnInit {
 
     if (this.auth.isOrganizationMember() && plan.slug !== 'free') {
       return 'Contact Sales';
+    }
+
+    // Business account viewing individual plans
+    if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
+      return 'Individual Only';
+    }
+
+    // Individual account viewing team plan
+    if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) {
+      return 'Business Only';
     }
 
     if (this.isEligibleForTrial() && plan.slug !== 'free') return `Start free trial for ${trialDuration}`;
@@ -636,11 +651,22 @@ export class PricingComponent implements OnInit {
   }
 
   isCtaDisabled(plan: any): boolean {
+    if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
     if (this.currentPlanStatus === 'expired') return false;
 
     // If they are on this exact plan (active or trial), disable the button
     if (this.currentPlanSlug && this.currentPlanSlug === plan.slug) {
+      return true;
+    }
+
+    // Business account cannot subscribe to individual plans
+    if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
+      return true;
+    }
+
+    // Individual account cannot subscribe to team plan
+    if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) {
       return true;
     }
 
@@ -666,8 +692,22 @@ export class PricingComponent implements OnInit {
   }
 
   selectPlan(plan: any): void {
+    if (this.auth.isSuperAdmin()) {
+      return;
+    }
+
     if (!this.isLoggedIn) {
       this.openLoginPromptModal(plan.slug);
+      return;
+    }
+
+    if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
+      this.svc.showToast('Business accounts can only subscribe to the Team plan.', 4000, 'error');
+      return;
+    }
+
+    if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) {
+      this.svc.showToast('Team plan is only available for Business/Organization accounts.', 4000, 'error');
       return;
     }
 
