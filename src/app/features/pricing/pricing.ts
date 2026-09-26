@@ -210,12 +210,26 @@ export class PricingComponent implements OnInit {
 
   getPrice(plan: any): string {
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
-    const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 12;
-
     if (monthlyPrice === 0) return 'Free';
 
-    const price = this.isAnnual ? annualPrice : monthlyPrice;
-    return price.toString();
+    if (this.isAnnual) {
+      if (plan.price_annual !== undefined && plan.price_annual !== null && Number(plan.price_annual) > 0) {
+        return Math.round(Number(plan.price_annual)).toString();
+      }
+      const discount = Number(this.overallPercentage) || 0;
+      return Math.round(monthlyPrice * (1 - discount / 100)).toString();
+    }
+    return Math.round(monthlyPrice).toString();
+  }
+
+  getOriginalMonthlyPrice(plan: any): string {
+    const monthlyPrice = parseFloat(plan.price_monthly || '0');
+    return Math.round(monthlyPrice).toString();
+  }
+
+  getAnnualTotal(plan: any): string {
+    const activeMonthly = Number(this.getPrice(plan)) || 0;
+    return (activeMonthly * 12).toString();
   }
 
   getPeriod(plan: any): string {
@@ -479,16 +493,51 @@ export class PricingComponent implements OnInit {
     }));
   }
 
+  getTrialDays(plan?: any): number {
+    if (plan && plan.trial_days !== undefined && plan.trial_days !== null && Number(plan.trial_days) > 0) {
+      return Number(plan.trial_days);
+    }
+    const found = this.plans.find(p => p.trial_days && Number(p.trial_days) > 0);
+    return found ? Number(found.trial_days) : 14;
+  }
+
+  formatTrialDuration(planOrDays?: any): string {
+    let totalDays: number;
+    if (typeof planOrDays === 'number') {
+      totalDays = planOrDays;
+    } else if (planOrDays && planOrDays.trial_days !== undefined && planOrDays.trial_days !== null) {
+      totalDays = Number(planOrDays.trial_days);
+    } else {
+      totalDays = this.getTrialDays();
+    }
+
+    if (!totalDays || totalDays <= 0) return '0 days';
+
+    const totalMinutes = Math.round(totalDays * 1440);
+    const days = Math.floor(totalMinutes / 1440);
+    const remainingMinutes = totalMinutes % 1440;
+    const hours = Math.floor(remainingMinutes / 60);
+    const mins = remainingMinutes % 60;
+
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+    if (mins > 0) parts.push(`${mins} ${mins === 1 ? 'min' : 'mins'}`);
+
+    return parts.join(' ') || '0 days';
+  }
+
   /** CTA button label depending on audience + plan type + login state */
   getCtaLabel(plan: any): string {
     if (plan.slug === 'enterprise') return 'Contact Sales';
 
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
+    const trialDuration = this.formatTrialDuration(plan);
 
     // --- Public (not logged in) ---
     if (!this.isLoggedIn) {
       if (plan.slug !== 'free' && plan.slug !== 'enterprise') {
-        return 'Start free trial for 14 days';
+        return `Start free trial for ${trialDuration}`;
       }
       if (plan.cta_text) return plan.cta_text;
       if (monthlyPrice === 0) return 'Sign Up Free';
@@ -499,7 +548,7 @@ export class PricingComponent implements OnInit {
     // --- Logged-in user ---
     if (this.currentPlanSlug && this.currentPlanSlug === plan.slug && this.currentPlanStatus !== 'expired') {
       if (this.currentPlanStatus === 'trial') {
-        return 'Current Plan (Free trial for 14 days)';
+        return `Current Plan (Free trial for ${trialDuration})`;
       }
       return 'Current Plan';
     }
@@ -508,7 +557,7 @@ export class PricingComponent implements OnInit {
       return 'Contact Sales';
     }
 
-    if (this.isEligibleForTrial() && plan.slug !== 'free') return 'Start free trial for 14 days';
+    if (this.isEligibleForTrial() && plan.slug !== 'free') return `Start free trial for ${trialDuration}`;
 
 
     if (monthlyPrice === 0) return 'Start for Free';
@@ -551,10 +600,11 @@ export class PricingComponent implements OnInit {
   showLoginPromptModal = false;
   pendingPlanSlug = '';
 
-  contactModalMessage = 'Your 45-day free trial has expired. To continue using premium features, please contact our sales team.';
+  contactModalMessage = 'Your free trial has expired. To continue using premium features, please contact our sales team.';
 
   openContactModal(): void {
-    this.contactModalMessage = 'Your 45-day free trial has expired. To continue using premium features, please contact our sales team.';
+    const trialDuration = this.formatTrialDuration();
+    this.contactModalMessage = `Your ${trialDuration} free trial has expired. To continue using premium features, please contact our sales team.`;
     this.showContactModal = true;
   }
 

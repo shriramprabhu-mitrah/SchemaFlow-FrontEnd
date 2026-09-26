@@ -330,19 +330,36 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     return this.entitlementService.getEntitlement('document_view');
   }
 
+  get isDocLimitReached(): boolean {
+    const ent = this.documentViewEntitlement;
+    if (!ent) return true;
+    const limit = ent.effective_limit ?? ent.limit_value;
+    if (limit === -1) return false;
+    if (limit === undefined || limit === null || limit === 0) return true;
+    if (ent.used !== undefined && ent.used >= limit) return true;
+    if (ent.remaining !== undefined && ent.remaining <= 0) return true;
+    return false;
+  }
+
   unlockDocs(): void {
     const id = this.svc.diagramId();
     if (!id) return;
-    const ent = this.documentViewEntitlement;
-    if (ent && ent.used !== undefined && ent.effective_limit !== undefined && ent.used >= ent.effective_limit) {
+    if (this.isDocLimitReached) {
+      this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
       this.svc.showUpgradeModal('document_view');
       return;
     }
     
     this.svc.unlockDocs(id).subscribe({
+      next: () => {
+        this.svc.showToast('Document view unlocked successfully!', 3000, 'success');
+      },
       error: (err: any) => {
         const errorMsg = err?.error?.message || 'Failed to unlock docs';
         this.svc.showToast(errorMsg, 3000, 'error');
+        if (err?.status === 403) {
+          this.svc.showUpgradeModal('document_view');
+        }
       }
     });
   }

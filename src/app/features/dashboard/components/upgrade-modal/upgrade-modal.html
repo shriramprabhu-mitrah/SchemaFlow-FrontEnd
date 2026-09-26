@@ -20,11 +20,15 @@
             <circle cx="12" cy="16" r="1"></circle>
           </svg>
         </div>
-        <h2 class="limit-title">You have hit the limit for {{ limitEntityName }} numbers!</h2>
+        <h2 class="limit-title" *ngIf="featureKey === 'document_view'">Docs view count is completed!</h2>
+        <h2 class="limit-title" *ngIf="featureKey !== 'document_view'">You have hit the limit for {{ limitEntityName }} numbers!</h2>
       </div>
 
       <div class="limit-warning-footer">
-        <p class="limit-desc">
+        <p class="limit-desc" *ngIf="featureKey === 'document_view'">
+          Upgrade your plan now to unlock more <strong>document views</strong> and access advanced database documentation features!
+        </p>
+        <p class="limit-desc" *ngIf="featureKey !== 'document_view'">
           Upgrade to our paid plans now for <strong>unlimited<br>{{ limitEntityName }} creations</strong> and other
           advanced features!
         </p>
@@ -148,7 +152,7 @@
                 </span>
                 <div class="annual-billed-label" *ngIf="isAnnual"
                   style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
-                  Billed annually ({{ getCurrencySymbol() }}{{ $any(getPrice(plan)) * 12 }}/yr)
+                  Billed annually ({{ getCurrencySymbol() }}{{ getAnnualTotal(plan) }}/yr)
                 </div>
               </ng-container>
 

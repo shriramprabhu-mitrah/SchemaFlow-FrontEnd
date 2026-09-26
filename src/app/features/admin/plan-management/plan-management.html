@@ -41,6 +41,15 @@
           (ngModelChange)="onFeatureSearch()">
       </div>
 
+      <button class="btn-secondary" (click)="openSettingsModal()" *ngIf="!showEntitlementsView"
+        style="display:inline-flex;align-items:center;gap:7px;font-weight:600;" title="Configure Plan Discount and Trial Timing">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        Plan Settings
+      </button>
+
       <button class="btn-primary" (click)="openCreate()" *ngIf="!showEntitlementsView">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -51,32 +60,70 @@
     </div>
   </div>
 
-  <!-- Plan Type Filter Tabs (Matching Workspace Pills) -->
-  <div class="plan-tabs-bar" *ngIf="!showEntitlementsView">
-    <button class="plan-type-tab" [class.active]="planTypeFilter === 'all'" (click)="planTypeFilter = 'all'; page = 1">
-      All Plans
-      <span class="tab-count">{{ plans.length }}</span>
-    </button>
-    <button class="plan-type-tab indiv-tab" [class.active]="planTypeFilter === 'individual'"
-      (click)="planTypeFilter = 'individual'; page = 1">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
-      Individual
-      <span class="tab-count">{{ individualPlanCount }}</span>
-    </button>
-    <button class="plan-type-tab org-tab" [class.active]="planTypeFilter === 'organization'"
-      (click)="planTypeFilter = 'organization'; page = 1">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
-      </svg>
-      Business / Org
-      <span class="tab-count">{{ orgPlanCount }}</span>
-    </button>
+  <!-- Plan Type Filter Tabs & Common Settings Summary Bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;" *ngIf="!showEntitlementsView">
+    <div class="plan-tabs-bar" style="margin-bottom:0;">
+      <button class="plan-type-tab" [class.active]="planTypeFilter === 'all'" (click)="planTypeFilter = 'all'; page = 1">
+        All Plans
+        <span class="tab-count">{{ plans.length }}</span>
+      </button>
+      <button class="plan-type-tab indiv-tab" [class.active]="planTypeFilter === 'individual'"
+        (click)="planTypeFilter = 'individual'; page = 1">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        Individual
+        <span class="tab-count">{{ individualPlanCount }}</span>
+      </button>
+      <button class="plan-type-tab org-tab" [class.active]="planTypeFilter === 'organization'"
+        (click)="planTypeFilter = 'organization'; page = 1">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+        </svg>
+        Business / Org
+        <span class="tab-count">{{ orgPlanCount }}</span>
+      </button>
+    </div>
+
+    <!-- Common Settings Badges -->
+    <div class="common-settings-badge-bar">
+      <div class="badge-item">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:rgba(16, 185, 129, 0.2);color:#34d399;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="5" x2="5" y2="19"></line>
+            <circle cx="6.5" cy="6.5" r="2.5"></circle>
+            <circle cx="17.5" cy="17.5" r="2.5"></circle>
+          </svg>
+        </span>
+        <span class="badge-label">Discount:</span>
+        <span style="background:rgba(16, 185, 129, 0.15);color:#34d399;border:1px solid rgba(16, 185, 129, 0.3);padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px;">{{ commonSettings.overall_percentage }}% Off</span>
+      </div>
+
+      <div class="badge-divider"></div>
+
+      <div class="badge-item">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:rgba(245, 158, 11, 0.2);color:#fbbf24;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <span class="badge-label">Trial:</span>
+        <span style="background:rgba(245, 158, 11, 0.15);color:#fbbf24;border:1px solid rgba(245, 158, 11, 0.3);padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px;">{{ formatTrialDuration(commonSettings.trial_days) }}</span>
+      </div>
+
+      <button class="btn-quick-edit" (click)="openSettingsModal()" title="Quick Edit Plan Settings">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Edit
+      </button>
+    </div>
   </div>
 
   <div class="loading-state" *ngIf="loading && !showEntitlementsView">
@@ -528,12 +575,15 @@
       <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700">PRICE MONTHLY (₹)</label>
-          <input class="form-input" style="height:38px" type="number" [(ngModel)]="form.price_monthly">
+          <input class="form-input" style="height:38px" type="number" [(ngModel)]="form.price_monthly" (ngModelChange)="calculateAnnualPrice()" (input)="calculateAnnualPrice()" placeholder="0">
         </div>
         <div class="form-group" style="margin:0">
-          <label class="form-label" style="font-size:12px;font-weight:700">PRICE ANNUAL (₹)</label>
-          <input class="form-input" style="height:38px;" type="number"
-            [(ngModel)]="form.price_annual" placeholder="e.g. 720">
+          <label class="form-label" style="font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;">
+            <span>PRICE ANNUAL (₹)</span>
+            <span style="font-size:11px;font-weight:700;color:#10b981;letter-spacing:0.3px;">{{ commonSettings.overall_percentage || 0 }}% DISCOUNT APPLIED</span>
+          </label>
+          <input class="form-input" style="height:38px;opacity:0.85;cursor:not-allowed;font-weight:700;" type="number"
+            [(ngModel)]="form.price_annual" readonly placeholder="0" title="Calculated automatically based on the global discount percentage">
         </div>
       </div>
 
@@ -554,20 +604,16 @@
 
       <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="form-group" style="margin:0">
-          <label class="form-label" style="font-size:12px;font-weight:700">TRIAL DAYS</label>
-          <input class="form-input" style="height:38px" type="number" [(ngModel)]="form.trial_days">
-        </div>
-        <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700">BADGE TEXT</label>
           <input class="form-input" style="height:38px" [(ngModel)]="form.badge_text" placeholder="e.g. MOST POPULAR">
         </div>
-      </div>
-
-      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
         <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700">CTA TEXT</label>
           <input class="form-input" style="height:38px" [(ngModel)]="form.cta_text" placeholder="Get Started">
         </div>
+      </div>
+
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
         <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700">HIGHLIGHT COLOR</label>
           <input class="form-input" style="height:38px" [(ngModel)]="form.highlight_color" placeholder="#3b82f6">
@@ -641,6 +687,155 @@
           {{ confirmButtonText }}
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Common Plan Settings Modal (Discount & Trial Timing - Dual Theme Dark & Light) -->
+  <div class="common-settings-overlay" *ngIf="showSettingsModal">
+    <div class="common-settings-dialog" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="common-modal-header">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="modal-icon-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h3 class="modal-title-text">Common Plan Settings</h3>
+              <span class="modal-scope-tag">GLOBAL</span>
+            </div>
+            <p class="modal-subtitle-text">Configure global plan discount &amp; trial duration across all standard plans</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeSettingsModal()" title="Close Modal">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="common-modal-body">
+        
+        <!-- Section 1: Annual Plan Discount Card -->
+        <div class="setting-section-card">
+          <div class="section-header-row">
+            <div class="section-title-wrap">
+              <span class="icon-box-emerald">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="19" y1="5" x2="5" y2="19"></line>
+                  <circle cx="6.5" cy="6.5" r="2.5"></circle>
+                  <circle cx="17.5" cy="17.5" r="2.5"></circle>
+                </svg>
+              </span>
+              <span class="section-title">ANNUAL PLAN DISCOUNT</span>
+            </div>
+            <span class="status-pill-emerald">
+              {{ commonSettingsForm.overall_percentage || 0 }}% Off All Plans
+            </span>
+          </div>
+
+          <div class="discount-input-wrap">
+            <input class="discount-input" type="number" min="0" max="100" [(ngModel)]="commonSettingsForm.overall_percentage" placeholder="e.g. 20">
+            <span class="input-suffix-symbol">%</span>
+          </div>
+
+          <!-- Discount Presets -->
+          <div class="presets-row">
+            <span class="presets-label">Presets:</span>
+            <button type="button" *ngFor="let p of discountPresets" (click)="setDiscountPreset(p)"
+              class="preset-chip"
+              [class.active-discount]="commonSettingsForm.overall_percentage === p">
+              {{ p }}%
+            </button>
+          </div>
+          <p class="section-description">
+            Updates the annual savings badge across all public pricing cards, upgrade modals, and marketing views.
+          </p>
+        </div>
+
+        <!-- Section 2: Trial Duration Card (Days, Hours, Minutes) -->
+        <div class="setting-section-card">
+          <div class="section-header-row">
+            <div class="section-title-wrap">
+              <span class="icon-box-amber">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </span>
+              <span class="section-title">PLAN TRIAL TIMING</span>
+            </div>
+            <span class="status-pill-amber">
+              {{ formatTrialDuration(composeTrialDays(commonTrialDaysPart, commonTrialHoursPart, commonTrialMinsPart)) }}
+            </span>
+          </div>
+
+          <!-- 3-Segment Input Grid (Days, Hours, Minutes) with Steppers -->
+          <div class="trial-steppers-grid">
+            
+            <!-- Days Stepper -->
+            <div class="stepper-card-box">
+              <span class="stepper-label">DAYS</span>
+              <div class="stepper-controls-row">
+                <button type="button" class="btn-stepper" (click)="adjustCommonTrial('days', -1)">-</button>
+                <input class="stepper-num-input" type="number" min="0" [(ngModel)]="commonTrialDaysPart" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
+                <button type="button" class="btn-stepper" (click)="adjustCommonTrial('days', 1)">+</button>
+              </div>
+            </div>
+
+            <!-- Hours Stepper -->
+            <div class="stepper-card-box">
+              <span class="stepper-label">HOURS (0-23)</span>
+              <div class="stepper-controls-row">
+                <button type="button" class="btn-stepper" (click)="adjustCommonTrial('hours', -1)">-</button>
+                <input class="stepper-num-input" type="number" min="0" max="23" [(ngModel)]="commonTrialHoursPart" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
+                <button type="button" class="btn-stepper" (click)="adjustCommonTrial('hours', 1)">+</button>
+              </div>
+            </div>
+
+            <!-- Minutes Stepper -->
+            <div class="stepper-card-box">
+              <span class="stepper-label">MINS (0-59)</span>
+              <div class="stepper-controls-row">
+                <button type="button" class="btn-stepper" (click)="adjustCommonTrial('mins', -5)">-</button>
+                <input class="stepper-num-input" type="number" min="0" max="59" [(ngModel)]="commonTrialMinsPart" (ngModelChange)="onCommonTrialPartChange()" placeholder="0">
+                <button type="button" class="btn-stepper" (click)="adjustCommonTrial('mins', 5)">+</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Presets -->
+          <div class="presets-row">
+            <span class="presets-label">Presets:</span>
+            <button type="button" *ngFor="let p of trialPresets" (click)="setTrialPreset(p)"
+              class="preset-chip"
+              [class.active-trial]="isTrialPresetActive(p)">
+              {{ p.label }}
+            </button>
+          </div>
+          <p class="section-description">
+            Sets the trial period duration across all standard paid plans (with exact day, hour, and minute accuracy).
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="common-modal-footer">
+        <button type="button" class="btn-cancel-modal" (click)="closeSettingsModal()" [disabled]="savingCommonSettings">
+          Cancel
+        </button>
+        <button type="button" class="btn-save-modal" (click)="saveCommonSettings()" [disabled]="savingCommonSettings">
+          <span *ngIf="savingCommonSettings" class="spinner" style="width:15px;height:15px;border-width:2px;border-color:white;border-top-color:transparent;"></span>
+          <svg *ngIf="!savingCommonSettings" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          {{ savingCommonSettings ? 'Saving Settings...' : 'Save Settings' }}
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
