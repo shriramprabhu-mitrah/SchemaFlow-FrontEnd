@@ -1764,6 +1764,9 @@ export class DashboardService {
     this.code = `Table Untitled {
   id int [pk]
 }`;
+    this.isDocUnlocked.set(false);
+    this.showDocs = false;
+    this.showDocsPlaceholder = false;
     this.showCanvasPlaceholder = true;
     this.updateGutter();
     this.parseAndLayout();
@@ -3192,10 +3195,15 @@ export class DashboardService {
     const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', id.toString()) ?? "";
     return this.http.delete<any>(url, { headers }).pipe(
       tap(() => {
+        const deleted = this.diagrams().find((d) => d.id === id);
+        const wasDocUnlocked = deleted?.is_doc_unlocked === true || (deleted as any)?.is_doc_unlocked === 'true' || (deleted as any)?.is_doc_unlocked === 1;
         const currentList = this.diagrams().filter((d) => d.id !== id);
         this.diagrams.set(currentList);
         this.totalDiagrams.update(n => Math.max(0, n > 0 ? n - 1 : currentList.length));
         this.entitlementService.decrementUsage('create_diagrams');
+        if (wasDocUnlocked) {
+          this.entitlementService.decrementUsage('document_view');
+        }
 
         if (Number(this.diagramId()) === Number(id)) {
           const currentWsId = this.activeWorkspaceId();
@@ -3409,7 +3417,8 @@ export class DashboardService {
                 id: numId,
                 name: diagram?.name || 'Untitled Diagram',
                 created_at: diagram?.createdat ?? diagram?.created_at ?? diagram?.createdAt ?? null,
-                updated_at: diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? null
+                updated_at: diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? null,
+                is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
               });
             }
           }
@@ -3667,6 +3676,7 @@ export class DashboardService {
     this.isDiagramPublic = diagram?.ispublic !== false; // defaults to true unless explicitly false
     this.diagramPassword = diagram?.protectedpassword || diagram?.protectedPassword || '';
     this.showDocs = false;
+    this.showDocsPlaceholder = false;
 
     this.applyParsedLayout(layout, diagram);
 
@@ -3887,6 +3897,9 @@ export class DashboardService {
             ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
           this.setActiveWorkspace(null);
           this.diagramWorkspaceType.set('Personal');
+          this.isDocUnlocked.set(false);
+          this.showDocs = false;
+          this.showDocsPlaceholder = false;
           if (id != null) {
             this.diagramId.set(id);
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -3919,6 +3932,9 @@ export class DashboardService {
             ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
           this.setActiveWorkspace(Number(workspaceId), workspaceName);
           this.diagramWorkspaceType.set('Team');
+          this.isDocUnlocked.set(false);
+          this.showDocs = false;
+          this.showDocsPlaceholder = false;
           if (id != null) {
             this.diagramId.set(Number(id));
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -3954,6 +3970,9 @@ export class DashboardService {
           ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
         this.setActiveWorkspace(null);
         this.diagramWorkspaceType.set('Personal');
+        this.isDocUnlocked.set(false);
+        this.showDocs = false;
+        this.showDocsPlaceholder = false;
         if (id != null) {
           this.diagramId.set(id);
           if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -4236,6 +4255,8 @@ export class DashboardService {
     }
     this.diagramName = '';
     this.showDocs = false;
+    this.showDocsPlaceholder = false;
+    this.isDocUnlocked.set(false);
     this.showDiffChecker.set(false);
     this.showCanvasPlaceholder = false;
     this.isAllFields = true;

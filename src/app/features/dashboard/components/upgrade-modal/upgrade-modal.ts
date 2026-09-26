@@ -39,7 +39,7 @@ export class UpgradeModalComponent implements OnInit {
         });
       }
 
-      if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams') {
+      if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
         this.showLimitWarning = true;
       } else {
         this.showLimitWarning = false;
@@ -60,7 +60,7 @@ export class UpgradeModalComponent implements OnInit {
   @Input()
   set featureKey(val: string) {
     this._featureKey = val || '';
-    if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams') {
+    if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
       this.showLimitWarning = true;
     } else {
       this.showLimitWarning = false;
@@ -105,6 +105,7 @@ export class UpgradeModalComponent implements OnInit {
     switch (this.featureKey) {
       case 'create_diagrams':
       case 'max_diagrams': return 'diagram';
+      case 'document_view': return 'document view';
       case 'create_workspaces': return 'workspace';
       case 'workspace_members': return 'team member';
       case 'code_compare': return 'sql compare';
@@ -213,12 +214,26 @@ export class UpgradeModalComponent implements OnInit {
 
   getPrice(plan: any): string {
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
-    const annualPrice = parseFloat(plan.price_annual || '0') || monthlyPrice * 12;
-
     if (monthlyPrice === 0) return 'Free';
 
-    const price = this.isAnnual ? annualPrice : monthlyPrice;
-    return price.toString();
+    if (this.isAnnual) {
+      if (plan.price_annual !== undefined && plan.price_annual !== null && Number(plan.price_annual) > 0) {
+        return Math.round(Number(plan.price_annual)).toString();
+      }
+      const discount = Number(this.overallPercentage) || 0;
+      return Math.round(monthlyPrice * (1 - discount / 100)).toString();
+    }
+    return Math.round(monthlyPrice).toString();
+  }
+
+  getAnnualTotal(plan: any): string {
+    const monthlyPrice = parseFloat(plan.price_monthly || '0');
+    if (plan.price_annual !== undefined && plan.price_annual !== null && Number(plan.price_annual) > 0) {
+      return Math.round(Number(plan.price_annual) * 12).toString();
+    }
+    const discount = Number(this.overallPercentage) || 0;
+    const discountedMonthly = monthlyPrice * (1 - discount / 100);
+    return Math.round(discountedMonthly * 12).toString();
   }
 
   getCurrencySymbol(): string {
@@ -439,10 +454,45 @@ export class UpgradeModalComponent implements OnInit {
     return this.getCardFeatures(plan).length > 6;
   }
 
+  getTrialDays(plan?: any): number {
+    if (plan && plan.trial_days !== undefined && plan.trial_days !== null && Number(plan.trial_days) > 0) {
+      return Number(plan.trial_days);
+    }
+    const found = this.plans.find(p => p.trial_days && Number(p.trial_days) > 0);
+    return found ? Number(found.trial_days) : (this.entitlementService.getDefaultTrialDays() || 14);
+  }
+
+  formatTrialDuration(planOrDays?: any): string {
+    let totalDays: number;
+    if (typeof planOrDays === 'number') {
+      totalDays = planOrDays;
+    } else if (planOrDays && planOrDays.trial_days !== undefined && planOrDays.trial_days !== null) {
+      totalDays = Number(planOrDays.trial_days);
+    } else {
+      totalDays = this.getTrialDays();
+    }
+
+    if (!totalDays || totalDays <= 0) return '0 days';
+
+    const totalMinutes = Math.round(totalDays * 1440);
+    const days = Math.floor(totalMinutes / 1440);
+    const remainingMinutes = totalMinutes % 1440;
+    const hours = Math.floor(remainingMinutes / 60);
+    const mins = remainingMinutes % 60;
+
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+    if (mins > 0) parts.push(`${mins} ${mins === 1 ? 'min' : 'mins'}`);
+
+    return parts.join(' ') || '0 days';
+  }
+
   getCtaLabel(plan: any): string {
+    const trialDuration = this.formatTrialDuration(plan);
     if (this.isLoggedIn && this.currentPlanSlug && this.currentPlanSlug === plan.slug && this.currentPlanStatus !== 'expired') {
       if (this.currentPlanStatus === 'trial') {
-        return 'Current Plan (Free trial for 14 days)';
+        return `Current Plan (Free trial for ${trialDuration})`;
       }
       return 'Current Plan';
     }
@@ -455,11 +505,10 @@ export class UpgradeModalComponent implements OnInit {
       if (plan.cta_text) return plan.cta_text;
       if (monthlyPrice === 0) return 'Sign Up Free';
       if (this.isOrganization) return 'Sign Up & Try Free';
-      return 'Sign Up & Get Started';
+      return `Start free trial for ${trialDuration}`;
     }
 
-    if (this.isEligibleForTrial() && plan.slug !== 'free') return 'Start free trial for 14 days';
-
+    if (this.isEligibleForTrial() && plan.slug !== 'free') return `Start free trial for ${trialDuration}`;
 
     // Logged-in user: show contextual upgrade label based on plan type
     if (monthlyPrice === 0) return 'Start for Free';

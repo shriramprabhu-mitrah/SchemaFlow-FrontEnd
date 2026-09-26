@@ -462,10 +462,18 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.svc.showDocs = true;
         this.svc.showDocsPlaceholder = false;
       } else {
-        if (!this.entitlementService.canUseFeature('document_view')) {
-          if (!this.entitlementService.orgHasFeature('document_view')) {
-            this.svc.showUpgradeModal('document_view');
-          }
+        const canUse = this.entitlementService.canUseFeature('document_view');
+        const ent = this.entitlementService.getEntitlement('document_view');
+        const limit = ent?.effective_limit ?? ent?.limit_value;
+        const isLimitReached = !canUse || (limit !== undefined && limit !== null && limit !== -1 && (
+          limit === 0 ||
+          (ent?.used !== undefined && ent.used >= limit) ||
+          (ent?.remaining !== undefined && ent.remaining <= 0)
+        ));
+
+        if (isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
+          this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
+          this.svc.showUpgradeModal('document_view');
           return;
         }
         

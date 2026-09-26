@@ -144,7 +144,7 @@
         <div class="card-price">
           <!-- Paid Plan -->
           <ng-container *ngIf="plan.price_monthly > 0 && plan.slug !== 'enterprise'">
-            <div style="display: flex; align-items: baseline;gap: 4px;">
+            <div style="display: flex; align-items: baseline; gap: 4px;">
               <div class="price-val-row">
                 <span class="currency">{{ getCurrencySymbol() }}</span>
                 <span class="price-amount">{{ getPrice(plan) }}</span>
@@ -154,7 +154,7 @@
               </span>
             </div>
             <div class="annual-billed-label" [style.visibility]="isAnnual ? 'visible' : 'hidden'">
-              Billed annually ({{ getCurrencySymbol() }}{{ $any(getPrice(plan)) * 12 }}/yr)
+              Billed annually ({{ getCurrencySymbol() }}{{ getAnnualTotal(plan) }}/yr)
             </div>
           </ng-container>
 
@@ -366,7 +366,7 @@
       </svg>
 
       <h2 class="modal-title">Authentication Required</h2>
-      <p class="modal-desc">Please log in or create a free account to unlock your 45-day trial and explore premium
+      <p class="modal-desc">Please log in or create a free account to unlock your {{ formatTrialDuration() }} free trial and explore premium
         features.</p>
 
       <div class="modal-actions">
