@@ -140,13 +140,8 @@
               <!-- Paid Plan -->
               <ng-container *ngIf="+plan.price_monthly > 0 && plan.slug !== 'enterprise'">
                 <div class="price-val-row">
-                  <span class="currency" *ngIf="!isEligibleForTrial()">{{ getCurrencySymbol() }}</span>
-                  <span class="price-amount">
-                    <ng-container *ngIf="isEligibleForTrial()">
-                      <s style="opacity: 0.7; margin-right: 8px;">{{ getCurrencySymbol() }}{{ getPrice(plan) }}</s>
-                    </ng-container>
-                    <ng-container *ngIf="!isEligibleForTrial()">{{ getPrice(plan) }}</ng-container>
-                  </span>
+                  <span class="currency">{{ getCurrencySymbol() }}</span>
+                  <span class="price-amount">{{ getPrice(plan) }}</span>
                 </div>
                 <span class="price-period">
                   {{ (plan.plan_type === 'organization' || plan.is_per_seat) ? 'per member / month' : 'per month' }}

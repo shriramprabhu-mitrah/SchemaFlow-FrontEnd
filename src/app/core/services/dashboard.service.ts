@@ -1773,8 +1773,8 @@ export class DashboardService {
 
   /* ============ DBML PARSER ============ */
 
-  parseDBML(text: string): { tables: { name: string; columns: Column[] }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
-    const tables: { name: string; columns: Column[] }[] = [];
+  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
+    const tables: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
     const refs: RefDef[] = [];
     const groups: { name: string; color: string; tables: string[] }[] = [];
 
@@ -2095,6 +2095,8 @@ export class DashboardService {
 
     parsed.tables.forEach((t) => {
       const height = this.getTableHeight(t.columns);
+      t.width = this.CARD_W;
+      t.height = height;
       if (!this.tablePositions[t.name]) {
         let col = 0;
         if (tableToGroupColOffset.has(t.name)) {
