@@ -1,9 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { DocPage, DocRevision, DocSection, DocStatus } from '../models/cms-docs.model';
 
-const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v39_sections';
-const STORAGE_KEY_PAGES = 'dbnexus_cms_v39_pages';
-const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v39_revisions';
+const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v45_sections';
+const STORAGE_KEY_PAGES = 'dbnexus_cms_v45_pages';
+const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v45_revisions';
 
 @Injectable({
   providedIn: 'root'
@@ -23,13 +23,18 @@ export class CmsDocsService {
     }
 
     // Clean up all legacy storage keys
-    const legacyKeys: string[] = [];
-    for (let i = 1; i <= 38; i++) {
-      legacyKeys.push(`dbnexus_cms_v${i}_sections`, `dbnexus_cms_v${i}_pages`, `dbnexus_cms_v${i}_revisions`);
-      legacyKeys.push(`dbnexus_cms_sections_v${i}`, `dbnexus_cms_pages_v${i}`, `dbnexus_cms_revisions_v${i}`);
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('dbnexus_cms_') || key.startsWith('msdb_cms_')) && !key.startsWith('dbnexus_cms_v45_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+    } catch {
+      // Ignore storage cleanup issues
     }
-    legacyKeys.push('msdb_cms_sections_v1', 'msdb_cms_pages_v1', 'msdb_cms_revisions_v1');
-    legacyKeys.forEach(key => localStorage.removeItem(key));
 
     const storedSections = localStorage.getItem(STORAGE_KEY_SECTIONS);
     const storedPages = localStorage.getItem(STORAGE_KEY_PAGES);
@@ -39,7 +44,13 @@ export class CmsDocsService {
       try {
         const parsedSec = JSON.parse(storedSections);
         const parsedPg = JSON.parse(storedPages);
-        if (parsedSec.length < 5 || parsedPg.some((p: any) => p.slug === 'cms-documentation-management' || p.id === '124' || p.id === '102' || p.id === '125' || p.id === '127' || p.slug === 'release-notes-and-changelog')) {
+        if (
+          parsedSec.length < 5 ||
+          !parsedPg.some((p: any) => p.slug === 'refund-policy') ||
+          !parsedPg.some((p: any) => p.slug === 'terms-of-service') ||
+          !parsedPg.some((p: any) => p.slug === 'privacy-policy') ||
+          parsedPg.some((p: any) => p.slug === 'cms-documentation-management' || p.id === '124' || p.id === '102' || p.id === '125' || p.id === '127' || p.slug === 'release-notes-and-changelog')
+        ) {
           needsReseed = true;
         }
       } catch {
@@ -72,6 +83,24 @@ export class CmsDocsService {
           p.slug !== 'sso-and-security-compliance' &&
           p.slug !== 'branching-and-pull-requests'
         );
+
+        // Ensure refund-policy is in parsedPages with correct section and status
+        let refundPolicyPage = parsedPages.find(p => p.slug === 'refund-policy');
+        if (!refundPolicyPage) {
+          const refundSeed = this.getSeedPages().find(p => p.slug === 'refund-policy');
+          if (refundSeed) {
+            parsedPages.push(refundSeed);
+          }
+        } else {
+          refundPolicyPage.sectionId = 'sec-legal';
+          refundPolicyPage.status = 'published';
+          refundPolicyPage.sortOrder = 2;
+        }
+
+        const termsPage = parsedPages.find(p => p.slug === 'terms-of-service');
+        if (termsPage) {
+          termsPage.sortOrder = 3;
+        }
 
         // Sanitize any legacy text references, YouTube videos, and image URLs inside stored pages
         parsedPages = parsedPages.map(p => {
@@ -1042,7 +1071,7 @@ DB Nexus automatically tracks schema modifications and maintains an immutable **
         publishedAt: now
       }
       // SECTION: LEGAL & POLICY
-      ,{
+      , {
         id: '113',
         title: 'Privacy Policy',
         slug: 'privacy-policy',
@@ -1176,6 +1205,112 @@ Database Schema Design & Collaboration Platform
         createdBy: 'Super Admin',
         updatedBy: 'Super Admin',
         createdAt: '2026-09-11T12:00:00.000Z',
+        updatedAt: now,
+        publishedAt: now
+      },
+      {
+        id: '115',
+        title: 'Refund Policy',
+        slug: 'refund-policy',
+        description: 'DB Nexus strict Refund & Cancellation Policy detailing all final, non-refundable transactions, terms, and conditions.',
+        sectionId: 'sec-legal',
+        content: `# Refund & Cancellation Policy
+
+**Last Updated: September 25, 2026**
+
+DB Nexus ("we", "us", or "our") provides a web-based, declarative database schema design, collaboration, visual diagramming, and documentation platform built around DBML (Database Markup Language).
+
+Please review this **Refund & Cancellation Policy** carefully prior to purchasing any subscription, plan upgrade, team seats, or digital service on DB Nexus. By purchasing a subscription, adding workspace seats, upgrading your account tier, or otherwise executing a paid transaction with DB Nexus, you expressly acknowledge, understand, and agree to be bound by the terms set forth herein.
+
+---
+
+### STRICT NO-REFUND AND NO-CANCELLATION POLICY
+
+> [!IMPORTANT]
+> **ALL SALES, SUBSCRIPTION TRANSACTIONS, UPGRADES, SEAT EXPANSIONS, AND RENEWALS ARE STRICTLY FINAL, NON-REFUNDABLE, AND NON-CANCELLABLE MID-TERM.**
+>
+> DB Nexus operates under a **strict zero-refund and no-cancellation policy**. Under no circumstances will refunds, charge reversals, payment reimbursements, or prorated credits be provided for any fees paid to DB Nexus once a transaction is successfully processed.
+
+---
+
+## 1. Nature of the Digital SaaS Platform
+
+DB Nexus is a specialized Software-as-a-Service (SaaS) and digital developer platform. Upon payment confirmation:
+
+- Your account receives **immediate, irrevocable provisioning** of cloud workspace infrastructure, real-time collaboration sockets, increased diagram quotas, and database export features.
+- Dedicated cloud storage, vector ER diagram layout engines, data dictionary compilers, and AI compute capacity are reserved and instantiated for your account immediately.
+- Because access to full digital capabilities, code generation engines, and proprietary software tooling occurs instantaneously upon purchase, standard statutory consumer return or cooling-off periods for physical goods do **not** apply to DB Nexus services.
+
+## 2. No Cancellation of Active Subscription Periods
+
+1. **Term Commitment**: When you subscribe to a DB Nexus monthly, annual, team, or enterprise tier, you commit to the entire duration of the chosen billing cycle.
+2. **No Early Termination or Cancellation with Refund**: Subscriptions cannot be cancelled, truncated, or revoked midway through an active billing term for the purpose of obtaining a refund, price adjustment, or prorated credit.
+3. **No Partial or Prorated Refunds**: No partial refunds, prorated credits, or fee adjustments will be issued for unused portions of an active subscription period, unutilized workspace seats, dormant diagrams, or underutilized quotas.
+4. **Auto-Renewal Management**: You may disable automatic renewal for subsequent billing terms through your workspace account settings prior to your next renewal date. Disabling auto-renewal prevents future charges from occurring on the next billing date; however, your active plan will remain operational until the conclusion of the already-paid billing cycle, and no reimbursement will be issued for the remainder of that term.
+
+## 3. Subscription Tiers, Upgrades & Seat Additions
+
+DB Nexus offers various plans (Free, Pro, Team, Organization/Enterprise) and dynamic seat allotments:
+
+| Transaction Type | Policy Details | Refund Status |
+| :--- | :--- | :--- |
+| **New Subscriptions** | Instant provisioning of advanced schema modeling, unlimited diagrams, and team collaboration. | **Strictly Non-Refundable** |
+| **Subscription Renewals** | Recurring monthly or annual billing for ongoing platform continuity and cloud infrastructure. | **Strictly Non-Refundable** |
+| **Tier Upgrades** | Immediate upgrade of feature entitlements, higher diagram quotas, and expanded toolsets. | **Strictly Non-Refundable** |
+| **Seat Expansions** | Adding collaborator seats to a team or organization workspace. | **Strictly Non-Refundable** |
+| **Seat Reductions** | Removing or deallocating members during an ongoing subscription period. | **No Prorated Refund / No Credit** |
+| **AI Assistant Add-ons** | AI model queries, token generation, and computational assistance. | **Strictly Non-Refundable** |
+
+Any changes made to decrease workspace seat counts or downgrade account tiers will only take effect at the conclusion of your current prepaid billing period. No retroactive adjustments or reimbursements are granted for removed seats.
+
+## 4. AI Compute and Digital Consumables
+
+DB Nexus includes artificial intelligence features (e.g., dbnexus AI, automated schema generation, and query assistance). All AI generations, API queries, compute resources, and token quotas consumed through the platform are non-recoverable computational expenditures and are strictly exempt from refunds or credits under all circumstances.
+
+## 5. Account Suspension and Terms Violations
+
+If your account, workspace, or access to DB Nexus is suspended, throttled, or permanently terminated due to:
+
+- A breach of our Terms of Service or acceptable use standards;
+- Fraudulent activity, reverse-engineering, security exploits, or unauthorized automated scraping;
+- Abuse of team collaboration or sharing features;
+
+you will forfeit all remaining time on your subscription, and **no refund, reimbursement, or compensation of any kind will be granted**.
+
+## 6. Chargeback Policy and Payment Disputes
+
+> [!WARNING]
+> By purchasing a subscription with DB Nexus, you agree to resolve any billing questions directly with our support team prior to initiating any dispute with your financial institution or payment provider.
+
+- Filing an unauthorized chargeback or payment dispute against a legitimate charge constitutes a violation of these terms.
+- In the event of a chargeback or dispute, DB Nexus reserves the immediate right to suspend or terminate the associated account, revoke all workspace and schema access, and block all associated email addresses and payment methods permanently.
+- DB Nexus will submit comprehensive audit logs—including login history, diagram creation records, IP logs, and cryptographic transaction confirmations—to dispute invalid chargebacks.
+
+## 7. Plan Changes and Price Modifications
+
+DB Nexus reserves the right to adjust plan pricing, feature packages, and billing terms at its discretion. Any pricing adjustments will not impact currently active, prepaid terms and will apply only upon future renewals following reasonable advance notification.
+
+## 8. Exceptions
+
+**There are no exceptions to this policy.** Sales, subscription fees, seat fees, and renewals are final across all tiers, geographies, and user types (individual, startup, team, and enterprise).
+
+## 9. Contact Billing Support
+
+If you have questions regarding this Refund & Cancellation Policy or wish to clarify your billing cycle details, please contact:
+
+- **Support**: sales@dbnexus.com
+- **Platform**: DB Nexus Documentation & Support Portal
+
+---
+
+**DB Nexus**  
+*Declarative Database Modeling & Architecture Platform*
+`,
+        sortOrder: 2,
+        status: 'published',
+        createdBy: 'Super Admin',
+        updatedBy: 'Super Admin',
+        createdAt: '2026-09-25T12:00:00.000Z',
         updatedAt: now,
         publishedAt: now
       },
@@ -1675,7 +1810,7 @@ Database Schema Design & Collaboration Platform
 
 **Important:** This Terms of Service document is intended as a product-policy draft for DB Nexus. It should be reviewed and finalized by a qualified legal professional before being published as the binding legal agreement for your company.
 `,
-        sortOrder: 2,
+        sortOrder: 3,
         status: 'published',
         createdBy: 'Super Admin',
         updatedBy: 'Super Admin',
