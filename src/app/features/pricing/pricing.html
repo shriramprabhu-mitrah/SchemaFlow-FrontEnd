@@ -146,16 +146,8 @@
           <ng-container *ngIf="plan.price_monthly > 0 && plan.slug !== 'enterprise'">
             <div style="display: flex; align-items: baseline;gap: 4px;">
               <div class="price-val-row">
-                <ng-container *ngIf="isEligibleForTrial()">
-                  <span class="currency" style="opacity: 0.6;">{{ getCurrencySymbol() }}</span>
-                  <span class="price-amount" style="opacity: 0.6;">
-                    <s>{{ getPrice(plan) }}</s>
-                  </span>
-                </ng-container>
-                <ng-container *ngIf="!isEligibleForTrial()">
-                  <span class="currency">{{ getCurrencySymbol() }}</span>
-                  <span class="price-amount">{{ getPrice(plan) }}</span>
-                </ng-container>
+                <span class="currency">{{ getCurrencySymbol() }}</span>
+                <span class="price-amount">{{ getPrice(plan) }}</span>
               </div>
               <span class="price-period" style="font-size: 14px; opacity: 0.7;">
                 /month
@@ -343,8 +335,7 @@
       </div>
       <div class="faq-item">
         <h4>Do you offer refunds?</h4>
-        <p>We offer a 7-day money-back guarantee for monthly subscription upgrades and a 14-day window for annual
-          upgrades. Contact billing support to file a claim.</p>
+        <p>All subscription purchases, upgrades, seat additions, and renewals are strictly final and non-refundable. You can disable auto-renewal in your account settings at any time to prevent future billing. For details, please review our <a routerLink="/docs/refund-policy">Refund Policy</a>.</p>
       </div>
     </div>
   </section>

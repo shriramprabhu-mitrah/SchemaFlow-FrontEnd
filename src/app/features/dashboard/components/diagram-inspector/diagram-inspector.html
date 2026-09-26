@@ -35,11 +35,10 @@
 
             <!-- Table Name (or rename input) -->
             <div class="table-name-wrap">
-              <span *ngIf="editingTableName !== table.name" class="table-title">{{ table.name }}</span>
+              <span *ngIf="editingTableName !== table.name" class="table-title tt" [attr.data-tt]="table.name && table.name.length > 15 ? table.name : null">{{ table.name && table.name.length > 15 ? (table.name.slice(0, 15) + '...') : table.name }}</span>
               <input *ngIf="editingTableName === table.name"
                 class="table-rename-input"
                 [(ngModel)]="newTableNameVal"
-                maxlength="15"
                 (click)="$event.stopPropagation()"
                 (keydown.enter)="finishRenameTable(table.name)"
                 (keydown.escape)="cancelRenameTable()"
@@ -106,9 +105,9 @@
 
                   <!-- Field Name Input -->
                   <input type="text"
-                    class="field-input field-name"
+                    class="field-input field-name tt"
                     [value]="col.name"
-                    maxlength="15"
+                    [attr.data-tt]="col.name && col.name.length > 15 ? col.name : null"
                     (blur)="onFieldNameBlur(table, col, $event)"
                     placeholder="Field name" />
 

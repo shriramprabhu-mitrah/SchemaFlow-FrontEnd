@@ -60,11 +60,13 @@
           </span>
 
           <!-- Note name or inline rename input -->
-          <span class="sticky-note-name" *ngIf="editingNoteId !== note.id" [style.color]="note.textColor || '#000000'"
-            [style.font-size.px]="11 * svc.view.scale" [style.line-height.px]="14 * svc.view.scale">{{ note.name
-            }}</span>
+          <div class="sticky-note-name-wrap tt tt-bottom" *ngIf="editingNoteId !== note.id"
+            [attr.data-tt]="note.name && note.name.length > 15 ? note.name : null">
+            <span class="sticky-note-name" [style.color]="note.textColor || '#000000'"
+              [style.font-size.px]="11 * svc.view.scale" [style.line-height.px]="14 * svc.view.scale">{{ note.name && note.name.length > 15 ? (note.name.slice(0, 15) + '...') : note.name }}</span>
+          </div>
           <input *ngIf="editingNoteId === note.id" class="sticky-note-name-input" [(ngModel)]="editNoteNameValue"
-            maxlength="15" [style.color]="note.textColor || '#000000'" [style.font-size.px]="11 * svc.view.scale"
+            [style.color]="note.textColor || '#000000'" [style.font-size.px]="11 * svc.view.scale"
             [style.height.px]="18 * svc.view.scale" [style.padding]="'0 ' + (4 * svc.view.scale) + 'px'"
             [style.border-radius.px]="3 * svc.view.scale" (mousedown)="$event.stopPropagation()"
             (keydown.enter)="commitEditNoteName()" (keydown.escape)="cancelEditNoteName()" (blur)="commitEditNoteName()"
@@ -180,7 +182,7 @@
   <!-- edit column input -->
   <input *ngIf="inlineEdit.visible && !isReadOnly" class="inline-edit-input" [style.left.px]="inlineEdit.x"
     [style.top.px]="inlineEdit.y" [style.width.px]="inlineEdit.width" [style.height.px]="inlineEdit.height"
-    [(ngModel)]="inlineEdit.value" maxlength="15" (keydown.enter)="commitInlineEdit()" (keydown.escape)="cancelInlineEdit()"
+    [(ngModel)]="inlineEdit.value" (keydown.enter)="commitInlineEdit()" (keydown.escape)="cancelInlineEdit()"
     (blur)="commitInlineEdit()" (mousedown)="$event.stopPropagation()" />
 
   <div id="create-table-control" *ngIf="!svc.isPublicViewer"
@@ -339,7 +341,7 @@
       <div class="group-fields-wrap" *ngIf="tableModal.isGroup && !isReadOnly">
         <label class="table-name-field">Group name
           <div class="group-dropdown-wrap">
-            <input placeholder="Enter group name" [(ngModel)]="tableModal.groupName" maxlength="15" (input)="tableModal.error = ''"
+            <input placeholder="Enter group name" [(ngModel)]="tableModal.groupName" (input)="tableModal.error = ''"
               autocomplete="off" (focus)="openGroupDropdown($event)" (click)="$event.stopPropagation()"
               [style.border-bottom-left-radius]="groupDropdownVisible ? '0px' : '8px'"
               [style.border-bottom-right-radius]="groupDropdownVisible ? '0px' : '8px'" />
@@ -349,9 +351,9 @@
             </app-button>
             <div class="group-menu" *ngIf="groupDropdownVisible && svc.groups && svc.groups.length > 0"
               (click)="$event.stopPropagation()">
-              <app-button variant="none" class="group-menu-item" *ngFor="let g of svc.groups"
-                (onClick)="selectGroup(g.name)">
-                {{ g.name }}
+              <app-button variant="none" class="group-menu-item tt" *ngFor="let g of svc.groups"
+                (onClick)="selectGroup(g.name)" [attr.data-tt]="g.name && g.name.length > 15 ? g.name : null">
+                {{ g.name && g.name.length > 15 ? (g.name.slice(0, 15) + '...') : g.name }}
               </app-button>
             </div>
           </div>
@@ -359,7 +361,7 @@
       </div>
 
       <label class="table-name-field">Table name
-        <input [(ngModel)]="tableModal.name" maxlength="15" (input)="tableModal.error = ''" [disabled]="isReadOnly"
+        <input [(ngModel)]="tableModal.name" (input)="tableModal.error = ''" [disabled]="isReadOnly"
           [readonly]="isReadOnly" />
       </label>
       <div class="table-columns-heading">
@@ -374,7 +376,7 @@
         <div class="table-columns-list" #tableColumnsList (scroll)="closeAllDropdowns()">
           <div class="table-column" *ngFor="let column of tableModal.columns; let i = index">
             <span class="column-number">{{ i + 1 }}</span>
-            <input aria-label="Column name" placeholder="column_name" [(ngModel)]="column.name" maxlength="15"
+            <input aria-label="Column name" placeholder="column_name" [(ngModel)]="column.name"
               (input)="tableModal.error = ''" [disabled]="isReadOnly" [readonly]="isReadOnly" />
             <div class="type-dropdown">
               <input aria-label="Column data type" placeholder="varchar" [(ngModel)]="column.type" autocomplete="off"
@@ -498,7 +500,7 @@
       <!-- Group Name Field -->
       <label class="table-name-field">
         Group name
-        <input [(ngModel)]="groupModal.name" maxlength="15" (input)="groupModal.error = ''" placeholder="Enter group name"
+        <input [(ngModel)]="groupModal.name" (input)="groupModal.error = ''" placeholder="Enter group name"
           [disabled]="isReadOnly" [readonly]="isReadOnly" />
       </label>
 
@@ -522,9 +524,9 @@
           </app-button>
           <div class="group-menu" *ngIf="groupModal.isAddDropdownOpen" (click)="$event.stopPropagation()"
             style="width: 100%; box-sizing: border-box; font-size: 13px; max-height: 160px; left: 0; right: 0; z-index: 9999; top: 100%;">
-            <app-button variant="none" class="group-menu-item" *ngFor="let t of getFilteredAvailableTablesForGroup()"
-              (onClick)="addTableToGroup(t)">
-              {{ t }}
+            <app-button variant="none" class="group-menu-item tt" *ngFor="let t of getFilteredAvailableTablesForGroup()"
+              (onClick)="addTableToGroup(t)" [attr.data-tt]="t && t.length > 15 ? t : null">
+              {{ t.length > 15 ? (t.slice(0, 15) + '...') : t }}
             </app-button>
             <div class="group-menu-item disabled-item" *ngIf="getFilteredAvailableTablesForGroup().length === 0"
               style="padding: 8px 12px; color: #98a7c4; font-size: 13px;">
@@ -544,7 +546,7 @@
         <div class="table-columns-list">
           <div class="group-table-row" *ngFor="let tableName of groupModal.tables; let i = index">
             <span class="column-number">{{ i + 1 }}</span>
-            <span class="group-table-name">{{ tableName }}</span>
+            <span class="group-table-name tt" [attr.data-tt]="tableName && tableName.length > 15 ? tableName : null">{{ tableName.length > 15 ? (tableName.slice(0, 15) + '...') : tableName }}</span>
             <app-button *ngIf="!isReadOnly" variant="none" customClass="group-remove-btn"
               (onClick)="removeTableFromGroupList(i)" aria-label="Remove table from group">Remove table</app-button>
           </div>
