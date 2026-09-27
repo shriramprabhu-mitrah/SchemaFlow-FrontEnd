@@ -182,7 +182,7 @@ app-admin-layout {
   cursor: pointer;
   padding: 8px;
   border-radius: 8px;
-  
+
   &:hover {
     color: #e2e8f0;
     background: rgba(255, 255, 255, 0.1);
@@ -212,7 +212,7 @@ app-admin-layout {
     transform: translateX(0);
   }
 
-  .admin-sidebar.mobile-open + .mobile-sidebar-backdrop,
+  .admin-sidebar.mobile-open+.mobile-sidebar-backdrop,
   .mobile-sidebar-backdrop:has(+ .admin-sidebar.mobile-open) {
     display: block;
   }
@@ -328,7 +328,8 @@ app-admin-layout {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #3ec5c1, #3b82f6);;
+    background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+    ;
     color: #ffffff;
     font-size: 11px;
     font-weight: 700;

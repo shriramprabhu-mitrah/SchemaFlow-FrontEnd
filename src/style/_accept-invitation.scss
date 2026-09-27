@@ -3,7 +3,7 @@
   min-height: 100vh;
   width: 100vw;
   background: #08101f;
-  background-image: 
+  background-image:
     radial-gradient(at 50% 0%, rgba(62, 197, 193, 0.12) 0px, transparent 60%),
     radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
   display: flex;
@@ -228,24 +228,38 @@
 }
 
 @keyframes cardFadeIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes skeletonLoading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Light Theme Overrides */
 body.light-theme {
   .accept-invitation-container {
     background: #f8fafc;
-    background-image: 
+    background-image:
       radial-gradient(at 50% 0%, rgba(62, 197, 193, 0.08) 0px, transparent 60%),
       radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
   }
@@ -259,6 +273,7 @@ body.light-theme {
       .brand-title {
         color: #0f172a;
       }
+
       .invite-badge {
         color: #2563eb;
         border-color: rgba(37, 99, 235, 0.25);
@@ -270,9 +285,11 @@ body.light-theme {
       .card-title {
         color: #0f172a;
       }
+
       .card-desc {
         color: #64748b;
       }
+
       .workspace-details-box {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -281,14 +298,18 @@ body.light-theme {
           .detail-label {
             color: #64748b;
           }
+
           .detail-value {
             color: #0f172a;
+
             &.highlight {
               color: #2563eb;
             }
+
             &.code-font {
               color: #0284c7;
             }
+
             .skeleton-text {
               background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 75%);
               background-size: 200% 100%;
@@ -303,10 +324,12 @@ body.light-theme {
         color: #0f766e;
         border-color: rgba(15, 118, 110, 0.25);
       }
+
       &.error-banner {
         color: #b91c1c;
         border-color: rgba(185, 28, 28, 0.25);
       }
+
       &.warning-banner {
         color: #b45309;
         border-color: rgba(180, 83, 9, 0.25);
@@ -317,6 +340,7 @@ body.light-theme {
       .btn-decline-invitation {
         color: #64748b;
         border-color: rgba(0, 0, 0, 0.12);
+
         &:hover {
           color: #0f172a;
           background: rgba(0, 0, 0, 0.04);
@@ -326,3 +350,25 @@ body.light-theme {
   }
 }
 
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+
+
+  .brand-text {
+    background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  app-icons {
+    color: #3ec5c1;
+  }
+}

@@ -113,10 +113,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
   hasFeatureAccess(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (featureKey === 'code_compare' && !this.isLoggedIn) return true;
-    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
+    if (isPlanExpired) return false;
+    return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
   }
 
-  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare'): boolean {
+  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     switch (item) {
       case 'import':
@@ -129,6 +132,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return !this.hasFeatureAccess('version_history');
       case 'tables':
       case 'refs':
+        return !this.hasFeatureAccess('table_relationships');
+      case 'docs':
         return !this.hasFeatureAccess('document_view');
       case 'compare':
         return !this.hasFeatureAccess('code_compare');
@@ -141,6 +146,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleImportMenu(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -152,8 +158,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  openImportDialect(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
+  openImportDialect(dialect: SqlDialect, e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -169,7 +176,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  openImportModal(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
+  openImportModal(dialect: SqlDialect, e?: Event): void {
     this.openImportDialect(dialect, e);
   }
 
@@ -181,6 +188,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleExportMenu(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -217,7 +225,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  exportSQL(dialect: 'postgres' | 'mysql' | 'sqlserver' | 'sqlite', e?: Event): void {
+  exportSQL(dialect: SqlDialect, e?: Event): void {
     if (e) e.stopPropagation();
     if (this.hasDbmlErrors()) {
       return;
@@ -280,6 +288,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openShare(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
@@ -312,11 +321,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleVersionHistory(e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (this.svc.shareModalVisible()) {
       this.svc.shareModalVisible.set(false);
     }
+    this.svc.showDocs = false;
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
     }
@@ -338,8 +349,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleInspector(tab: 'tables' | 'refs', e?: Event): void {
     if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
+    this.svc.showDocs = false;
 
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
@@ -357,8 +370,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
 
     if (!this.auth.isSuperAdmin()) {
-      if (!this.hasFeatureAccess('document_view')) {
-        this.svc.showUpgradeModal('document_view');
+      if (!this.hasFeatureAccess('table_relationships')) {
+        this.svc.showUpgradeModal('table_relationships');
         return;
       }
     }
@@ -380,6 +393,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
+    this.svc.showDocs = false;
 
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
@@ -406,6 +420,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
+    this.svc.showDocs = false;
     if (this.svc.shareModalVisible()) {
       this.svc.shareModalVisible.set(false);
     }
@@ -427,8 +442,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  // ============ VIEW DOCS (Commented out as requested) ============
-  /*
+  // ============ VIEW DOCS ============
+  
   toggleDocs(e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
@@ -440,19 +455,54 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.isSampleDiagram()) {
       return;
     }
-    if (!this.entitlementService.canUseFeature('document_view')) {
-      if (!this.entitlementService.orgHasFeature('document_view')) {
-        this.svc.showUpgradeModal('document_view');
+    const isCurrentlyActive = this.svc.showDocs || this.svc.showDocsPlaceholder;
+
+    if (isCurrentlyActive) {
+      this.svc.showDocs = false;
+      this.svc.showDocsPlaceholder = false;
+    } else {
+      if (this.auth.isSuperAdmin()) {
+        this.svc.showDocs = true;
+        this.svc.showDocsPlaceholder = false;
+      } else {
+        const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+          (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
+
+        const canUse = this.entitlementService.canUseFeature('document_view');
+        const ent = this.entitlementService.getEntitlement('document_view');
+        const limit = ent?.effective_limit ?? ent?.limit_value;
+        const isLimitReached = !canUse || (limit !== undefined && limit !== null && limit !== -1 && (
+          limit === 0 ||
+          (ent?.used !== undefined && ent.used >= limit) ||
+          (ent?.remaining !== undefined && ent.remaining <= 0)
+        ));
+
+        if (isPlanExpired || isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
+          this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
+          this.svc.showUpgradeModal('document_view');
+          return;
+        }
+
+        if (this.svc.isDocUnlocked()) {
+          this.svc.showDocs = true;
+          this.svc.showDocsPlaceholder = false;
+        } else {
+          this.svc.showDocs = false;
+          this.svc.showDocsPlaceholder = true;
+        }
       }
-      return;
-    }
-    this.svc.showDocs = !this.svc.showDocs;
-    if (this.svc.showDocs) {
-      this.svc.requestSplitView();
+
+      this.svc.sidebarInspectorTab.set(null);
+      if (this.svc.showDiffChecker()) {
+        this.svc.closeDiffChecker();
+      }
+      if (this.svc.showVersionHistory()) {
+        this.svc.showVersionHistory.set(false);
+      }
     }
     this.cdr.markForCheck();
   }
-  */
+  
 
   // ============ AUTH / SIGNOUT ============
 

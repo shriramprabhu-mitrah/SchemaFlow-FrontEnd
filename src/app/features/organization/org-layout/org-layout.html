@@ -3,11 +3,16 @@
   <aside class="org-sidebar">
     <div class="sidebar-header sidebar-header-flex">
       <!-- Logo and brand text always centered inside header -->
-      <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text" *ngIf="!sidebarCollapsed">dbNexus</span>
+      </div>
+
+      <!-- <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
         [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
         <app-icons name="db-diagram-logo" size="48" class="brand-icon-wrap"></app-icons>
         <span class="brand-text brand-text-flex dbnexus-text" *ngIf="!sidebarCollapsed">dbNexus</span>
-      </a>
+      </a> -->
       <!-- Close button visible on mobile -->
       <button class="collapse-btn mobile-close-btn" *ngIf="!sidebarCollapsed" (click)="toggleSidebar()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -42,8 +47,8 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">General</span>
       </a>
 
-      <a *ngIf="isOwner && showPremiumRoutes" routerLink="/organization/subscription" routerLinkActive="active" class="nav-item"
-        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
+      <a *ngIf="isOwner && showPremiumRoutes" routerLink="/organization/subscription" routerLinkActive="active"
+        class="nav-item" [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
         [attr.data-tt]="sidebarCollapsed ? 'Subscription' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
@@ -53,8 +58,9 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Subscription</span>
       </a>
 
-      <a *ngIf="showPremiumRoutes" routerLink="/organization/members" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
-        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Members' : null">
+      <a *ngIf="showPremiumRoutes" routerLink="/organization/members" routerLinkActive="active" class="nav-item"
+        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
+        [attr.data-tt]="sidebarCollapsed ? 'Members' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -65,8 +71,9 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Members</span>
       </a>
 
-      <a *ngIf="showPremiumRoutes" routerLink="/organization/audit-logs" routerLinkActive="active" class="nav-item" [class.tt]="sidebarCollapsed"
-        [class.tt-right]="sidebarCollapsed" [attr.data-tt]="sidebarCollapsed ? 'Audit Logs' : null">
+      <a *ngIf="showPremiumRoutes" routerLink="/organization/audit-logs" routerLinkActive="active" class="nav-item"
+        [class.tt]="sidebarCollapsed" [class.tt-right]="sidebarCollapsed"
+        [attr.data-tt]="sidebarCollapsed ? 'Audit Logs' : null">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>

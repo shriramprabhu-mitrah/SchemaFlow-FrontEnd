@@ -15,6 +15,7 @@ content = content.replace(sectionToFind, sectionToFind + sectionToAdd);
 
 // 3. Add pages
 const privacyContent = fs.readFileSync(path.join(__dirname, 'src/assets/policy/privacy-policy.md'), 'utf8');
+const refundContent = fs.readFileSync(path.join(__dirname, 'src/assets/policy/refund-policy.md'), 'utf8');
 const termsContent = fs.readFileSync(path.join(__dirname, 'src/assets/policy/terms-of-service.md'), 'utf8');
 
 const pagesToAdd = `
@@ -35,13 +36,28 @@ const pagesToAdd = `
         publishedAt: now
       },
       {
+        id: '115',
+        title: 'Refund Policy',
+        slug: 'refund-policy',
+        description: 'DB Nexus strict Refund & Cancellation Policy detailing all final, non-refundable transactions, terms, and conditions.',
+        sectionId: 'sec-legal',
+        content: \`${refundContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,
+        sortOrder: 2,
+        status: 'published',
+        createdBy: 'Super Admin',
+        updatedBy: 'Super Admin',
+        createdAt: '2026-09-25T12:00:00.000Z',
+        updatedAt: now,
+        publishedAt: now
+      },
+      {
         id: '114',
         title: 'Terms of Service',
         slug: 'terms-of-service',
         description: 'DB Nexus Terms of Service outlining the rules and regulations for the use of our platform.',
         sectionId: 'sec-legal',
         content: \`${termsContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,
-        sortOrder: 2,
+        sortOrder: 3,
         status: 'published',
         createdBy: 'Super Admin',
         updatedBy: 'Super Admin',

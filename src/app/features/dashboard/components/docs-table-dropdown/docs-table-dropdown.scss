@@ -87,9 +87,11 @@
   &::-webkit-scrollbar-thumb { background: rgba(62, 197, 193, 0.25); border-radius: 3px; &:hover { background: rgba(62, 197, 193, 0.4); } }
 
   .dropdown-table-item {
-    display: flex; align-items: center; padding: 6px 12px; margin: 1px 0; border-radius: 6px; cursor: pointer;
-    transition: background 0.15s ease;
+    display: flex; align-items: center; padding: 6px 12px; margin: 2px 0; border-radius: 6px; cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
     &:hover { background: rgba(255, 255, 255, 0.04); }
+
     .node-icon { color: #94a3b8; display: flex; align-items: center; margin-right: 8px; }
     .table-item-name {
       color: #cbd5e1; font-weight: 500; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -97,6 +99,16 @@
     }
     .table-conn-count { font-size: 11px; color: #64748b; margin-left: 8px; }
     .spacer { flex: 1; }
+
+    &.is-focused {
+      background: rgba(62, 197, 193, 0.16) !important;
+      border: 2px solid #3ec5c1 !important;
+      box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.3), 0 2px 8px rgba(62, 197, 193, 0.2) !important;
+
+      .node-icon { color: #3ec5c1 !important; }
+      .table-item-name { color: #3ec5c1 !important; font-weight: 700 !important; }
+      .table-conn-count { color: #5eead4 !important; }
+    }
     .visibility-toggle-btn {
       background: none; border: none; padding: 4px; color: #94a3b8; cursor: pointer;
       display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.15s ease;
@@ -106,6 +118,7 @@
   }
 }
 
+.docs-table-dropdown-menu.light,
 :host-context(body.light-theme) .docs-table-dropdown-menu {
   background: #ffffff; border: 1px solid #e2e8f0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05); color: #1e293b;
@@ -139,13 +152,27 @@
     &::-webkit-scrollbar-thumb { background: rgba(37, 99, 235, 0.25) !important; &:hover { background: rgba(37, 99, 235, 0.45) !important; } }
 
     .dropdown-table-item {
-      &:hover { background: #f8fafc; }
+      border: 1px solid transparent;
+
+      &:hover { background: #f1f5f9; }
+
       .node-icon { color: #64748b; }
-      .table-item-name { color: #1e293b; &.dimmed { color: #1e293b; } }
+      .table-item-name { color: #1e293b; &.dimmed { color: #64748b; } }
       .table-conn-count { color: #64748b; }
+
+      &.is-focused {
+        background: #eff6ff !important;
+        border: 2px solid #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+
+        .node-icon { color: #2563eb !important; }
+        .table-item-name { color: #1d4ed8 !important; font-weight: 700 !important; }
+        .table-conn-count { color: #2563eb !important; }
+      }
+
       .visibility-toggle-btn {
         color: #64748b;
-        &:hover { background: #f1f5f9; color: #0f172a; }
+        &:hover { background: #e2e8f0; color: #0f172a; }
         .hidden-eye { color: #94a3b8; }
       }
     }

@@ -32,6 +32,7 @@
     "publicDiagram": "http://192.168.1.201:3001/api/diagrams/public/{token}"
   },
   "workspaceApiUrls": {
+    "validateMember": "http://192.168.1.201:3001/api/workspaces/validate-member",
     "workspaces": "http://192.168.1.201:3001/api/workspaces",
     "workspaceById": "http://192.168.1.201:3001/api/workspaces/{id}",
     "workspaceMembers": "http://192.168.1.201:3001/api/workspaces/{workspaceId}/members",
@@ -47,6 +48,10 @@
   "pricingApiUrls": {
     "plans": "http://192.168.1.201:3001/api/pricing/plans",
     "profileUpgrade": "http://192.168.1.201:3001/api/profile/subscription/upgrade"
+  },
+  "paymentApiUrls": {
+    "createSubscription": "http://192.168.1.201:3001/api/payments/create-subscription",
+    "verifySubscription": "http://192.168.1.201:3001/api/payments/verify-subscription"
   },
   "organizationApiUrls": {
     "organizations": "http://192.168.1.201:3001/api/organizations",

@@ -12,8 +12,8 @@ import { takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Toast implements OnInit, OnDestroy {
-  /** Which zone this instance renders toasts for: 'editor' | 'canvas' */
-  @Input() location: 'editor' | 'canvas' = 'canvas';
+  /** Which zone this instance renders toasts for: 'editor' | 'canvas' | 'global' */
+  @Input() location: 'editor' | 'canvas' | 'global' = 'canvas';
 
   private destroy$ = new Subject<void>();
 
@@ -53,6 +53,16 @@ export class Toast implements OnInit, OnDestroy {
 
   /** Reactive computed style for editor toast — updates when paneMode or editorWidthPct changes */
   readonly editorStyle = computed(() => {
+    if (this.location === 'global') {
+      return {
+        left: '50%',
+        bottom: '24px',
+        transform: 'translateX(-50%)',
+        width: 'auto',
+        minWidth: '300px',
+        maxWidth: 'calc(100vw - 24px)'
+      };
+    }
     const mode = this.svc.paneMode();
     const pct  = this.svc.editorWidthPct();
     if (mode === 'split') {
@@ -60,7 +70,7 @@ export class Toast implements OnInit, OnDestroy {
         left: '12px',
         bottom: '12px',
         width: `calc(${pct}% - 24px)`,
-        maxWidth: 'none'
+        maxWidth: `calc(${pct}% - 24px)`
       };
     }
     if (mode === 'editor') {
@@ -68,10 +78,17 @@ export class Toast implements OnInit, OnDestroy {
         left: '12px',
         bottom: '12px',
         width: 'calc(100% - 24px)',
-        maxWidth: 'none'
+        maxWidth: 'calc(100% - 24px)'
       };
     }
-    // canvas mode: editor is hidden, so hide this toast too
-    return { display: 'none' };
+    // canvas mode: center at bottom so errors are still visible
+    return {
+      left: '50%',
+      bottom: '24px',
+      transform: 'translateX(-50%)',
+      width: 'auto',
+      minWidth: 'min(max-content, calc(100vw - 24px))',
+      maxWidth: 'calc(100vw - 24px)'
+    };
   });
 }

@@ -153,10 +153,14 @@
       border-color: rgba(255, 255, 255, 0.05);
     }
 
-    &.is-selected {
-      border-color: rgba(62, 197, 193, 0.6);
-      box-shadow: 0 0 16px rgba(62, 197, 193, 0.15);
+    &.is-focused {
+      border: 2px solid #3ec5c1 !important;
+      box-shadow: 0 0 20px rgba(62, 197, 193, 0.35), 0 4px 16px rgba(0, 0, 0, 0.25) !important;
       background: #17243c;
+    }
+
+    &.flash-highlight {
+      animation: cardPulseDark 1.8s ease-in-out;
     }
 
     .docs-card-header {
@@ -552,20 +556,31 @@ body.light-theme {
     }
 
     .docs-table-card {
-      background: #f8fafc !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
 
       h3 {
-        color: #337ab7 !important;
+        color: #2563eb !important;
       }
 
       .chevron-icon {
-        color: #337ab7 !important;
+        color: #2563eb !important;
       }
 
-      &.is-selected {
-        border-color: transparent !important;
-        box-shadow: 0 12px 32px rgb(212 226 255 / 25%), 0 4px 12px rgb(6 6 6 / 15%) !important;
+      &:hover {
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+      }
+
+      &.is-focused {
+        border: 2px solid #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+        background: #ffffff !important;
+      }
+
+      &.flash-highlight {
+        animation: cardPulseLight 1.8s ease-in-out !important;
       }
     }
 
@@ -665,5 +680,35 @@ body.light-theme {
   .attr-check {
     background: rgba(236, 72, 153, 0.15) !important;
     color: #db2777 !important;
+  }
+}
+
+@keyframes cardPulseDark {
+  0% {
+    border-color: #3ec5c1;
+    box-shadow: 0 0 0 6px rgba(62, 197, 193, 0.5), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 8px rgba(56, 189, 248, 0.5), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    border-color: #3ec5c1;
+    box-shadow: 0 0 20px rgba(62, 197, 193, 0.35), 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+}
+
+@keyframes cardPulseLight {
+  0% {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.4), 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+  50% {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 8px rgba(2, 132, 199, 0.4), 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+  100% {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2), 0 8px 24px rgba(0, 0, 0, 0.1);
   }
 }

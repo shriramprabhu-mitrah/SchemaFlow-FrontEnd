@@ -56,11 +56,13 @@ export class PlanManagementComponent implements OnInit {
   limit = 10;
   showLimitDropdown = false;
   activeEntDropdownId: number | null = null;
+  activeShowDropdownId: number | null = null;
 
   @HostListener('document:click')
   onDocumentClick() {
     this.showLimitDropdown = false;
     this.activeEntDropdownId = null;
+    this.activeShowDropdownId = null;
   }
 
   sortColumn = 'name';
@@ -88,6 +90,273 @@ export class PlanManagementComponent implements OnInit {
   set planEntitlements(v: any[]) { this._planEntitlements.set(v); }
 
   form: any = {};
+
+  // ── Common Plan Settings (Discount & Trial Timing) ──
+  commonSettings = { overall_percentage: 20, trial_days: 14 };
+  commonSettingsForm = { overall_percentage: 20, trial_days: 14 };
+  commonTrialDaysPart = 14;
+  commonTrialHoursPart = 0;
+  commonTrialMinsPart = 0;
+  showSettingsModal = false;
+  savingCommonSettings = false;
+
+  trialPresets = [
+    { label: '30 Mins', days: 0, hours: 0, mins: 30, value: 30 / 1440 },
+    { label: '1 Hour', days: 0, hours: 1, mins: 0, value: 1 / 24 },
+    { label: '6 Hours', days: 0, hours: 6, mins: 0, value: 6 / 24 },
+    { label: '12 Hours', days: 0, hours: 12, mins: 0, value: 0.5 },
+    { label: '1 Day', days: 1, hours: 0, mins: 0, value: 1 },
+    { label: '7 Days', days: 7, hours: 0, mins: 0, value: 7 },
+    { label: '14 Days', days: 14, hours: 0, mins: 0, value: 14 },
+    { label: '30 Days', days: 30, hours: 0, mins: 0, value: 30 },
+    { label: '45 Days', days: 45, hours: 0, mins: 0, value: 45 },
+    { label: '60 Days', days: 60, hours: 0, mins: 0, value: 60 }
+  ];
+
+  discountPresets = [10, 15, 20, 25, 30, 40, 50];
+
+  decomposeTrialDays(totalDays: number): { days: number, hours: number, mins: number } {
+    if (!totalDays || Number(totalDays) <= 0) return { days: 0, hours: 0, mins: 0 };
+    const totalMinutes = Math.round(Number(totalDays) * 1440);
+    const days = Math.floor(totalMinutes / 1440);
+    const remainingMinutes = totalMinutes % 1440;
+    const hours = Math.floor(remainingMinutes / 60);
+    const mins = remainingMinutes % 60;
+    return { days, hours, mins };
+  }
+
+  composeTrialDays(days: number, hours: number, mins: number): number {
+    const d = Math.max(0, Number(days) || 0);
+    const h = Math.max(0, Number(hours) || 0);
+    const m = Math.max(0, Number(mins) || 0);
+    const totalDays = d + (h / 24) + (m / 1440);
+    return Math.round(totalDays * 1000000) / 1000000;
+  }
+
+  formatTrialDuration(totalDays: any): string {
+    if (totalDays === null || totalDays === undefined || Number(totalDays) <= 0) return '0 Days';
+    const { days, hours, mins } = this.decomposeTrialDays(Number(totalDays));
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days} ${days === 1 ? 'Day' : 'Days'}`);
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'Hour' : 'Hours'}`);
+    if (mins > 0) parts.push(`${mins} ${mins === 1 ? 'Min' : 'Mins'}`);
+    return parts.join(' ') || '0 Days';
+  }
+
+  adjustCommonTrial(field: 'days' | 'hours' | 'mins', delta: number): void {
+    if (field === 'days') {
+      this.commonTrialDaysPart = Math.max(0, (Number(this.commonTrialDaysPart) || 0) + delta);
+    } else if (field === 'hours') {
+      let h = (Number(this.commonTrialHoursPart) || 0) + delta;
+      if (h < 0) h = 0;
+      if (h > 23) h = 23;
+      this.commonTrialHoursPart = h;
+    } else if (field === 'mins') {
+      let m = (Number(this.commonTrialMinsPart) || 0) + delta;
+      if (m < 0) m = 0;
+      if (m > 59) m = 59;
+      this.commonTrialMinsPart = m;
+    }
+    this.onCommonTrialPartChange();
+  }
+
+  onCommonTrialPartChange(): void {
+    this.commonSettingsForm.trial_days = this.composeTrialDays(
+      this.commonTrialDaysPart,
+      this.commonTrialHoursPart,
+      this.commonTrialMinsPart
+    );
+  }
+
+  loadCommonSettings(): void {
+    this.admin.getCommonPlanSettings().subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.commonSettings = {
+            overall_percentage: Number(res.data.overall_percentage) || 20,
+            trial_days: Number(res.data.trial_days) || 14
+          };
+          this.commonSettingsForm = { ...this.commonSettings };
+          const decomp = this.decomposeTrialDays(this.commonSettings.trial_days);
+          this.commonTrialDaysPart = decomp.days;
+          this.commonTrialHoursPart = decomp.hours;
+          this.commonTrialMinsPart = decomp.mins;
+          this.refreshView();
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load common plan settings', err);
+      }
+    });
+  }
+
+  openSettingsModal(): void {
+    this.commonSettingsForm = { ...this.commonSettings };
+    const decomp = this.decomposeTrialDays(this.commonSettings.trial_days);
+    this.commonTrialDaysPart = decomp.days;
+    this.commonTrialHoursPart = decomp.hours;
+    this.commonTrialMinsPart = decomp.mins;
+    this.showSettingsModal = true;
+    this.refreshView();
+  }
+
+  closeSettingsModal(): void {
+    if (this.savingCommonSettings) return;
+    this.showSettingsModal = false;
+    this.refreshView();
+  }
+
+  preventNonNumeric(event: KeyboardEvent, allowDecimal: boolean = true): void {
+    const invalidKeys = ['+', '-', 'e', 'E'];
+    if (invalidKeys.includes(event.key)) {
+      event.preventDefault();
+      return;
+    }
+    const allowedControlKeys = [
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+      'ArrowLeft', 'ArrowRight', 'Home', 'End'
+    ];
+    if (allowedControlKeys.includes(event.key)) {
+      return;
+    }
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+    if (allowDecimal && event.key === '.') {
+      const input = event.target as HTMLInputElement;
+      if (input && input.value.includes('.')) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (!/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  onPriceMonthlyInput(event?: Event): void {
+    if (event && event.target) {
+      const input = event.target as HTMLInputElement;
+      let cleaned = input.value.replace(/[^0-9.]/g, '');
+      const parts = cleaned.split('.');
+      if (parts.length > 2) {
+        cleaned = parts[0] + '.' + parts.slice(1).join('');
+      }
+      if (input.value !== cleaned) {
+        input.value = cleaned;
+      }
+      const num = cleaned === '' ? 0 : Math.max(0, Number(cleaned) || 0);
+      this.form.price_monthly = num;
+    } else {
+      this.form.price_monthly = Math.max(0, Number(this.form.price_monthly) || 0);
+    }
+    this.calculateAnnualPrice();
+  }
+
+  sanitizeDiscountInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let cleaned = input.value.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    let val = cleaned === '' ? 0 : Number(cleaned);
+    if (val > 100) val = 100;
+    if (val < 0) val = 0;
+    if (input.value !== String(val) && cleaned !== input.value) {
+      input.value = String(val);
+    }
+    this.commonSettingsForm.overall_percentage = val;
+  }
+
+  sanitizeTrialPartInput(event: Event, part: 'days' | 'hours' | 'mins'): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let cleaned = input.value.replace(/[^0-9]/g, '');
+    let val = cleaned === '' ? 0 : Math.max(0, parseInt(cleaned, 10) || 0);
+    if (part === 'hours' && val > 23) val = 23;
+    if (part === 'mins' && val > 59) val = 59;
+    
+    if (part === 'days') this.commonTrialDaysPart = val;
+    if (part === 'hours') this.commonTrialHoursPart = val;
+    if (part === 'mins') this.commonTrialMinsPart = val;
+    this.onCommonTrialPartChange();
+  }
+
+  sanitizeNonNegativeInput(event: Event, targetObj?: any, key?: string): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let cleaned = input.value.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    if (input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    const val = cleaned === '' ? 0 : Math.max(0, Number(cleaned) || 0);
+    if (targetObj && key) {
+      targetObj[key] = val;
+    }
+  }
+
+  setDiscountPreset(val: number): void {
+    this.commonSettingsForm.overall_percentage = val;
+  }
+
+  setTrialPreset(p: { days: number, hours: number, mins: number, value: number }): void {
+    this.commonTrialDaysPart = p.days;
+    this.commonTrialHoursPart = p.hours;
+    this.commonTrialMinsPart = p.mins;
+    this.commonSettingsForm.trial_days = p.value;
+  }
+
+  isTrialPresetActive(p: { value: number }): boolean {
+    const current = Number(this.commonSettingsForm.trial_days || 0);
+    return Math.abs(current - p.value) < 0.0001;
+  }
+
+  saveCommonSettings(): void {
+    const discount = Number(this.commonSettingsForm.overall_percentage);
+    this.onCommonTrialPartChange();
+    const trialDays = Number(this.commonSettingsForm.trial_days);
+
+    if (isNaN(discount) || discount < 0 || discount > 100) {
+      this.dashService.showToast('Discount percentage must be between 0 and 100', 4000, 'error');
+      return;
+    }
+    if (isNaN(trialDays) || trialDays < 0) {
+      this.dashService.showToast('Trial duration must be 0 or greater', 4000, 'error');
+      return;
+    }
+
+    this.savingCommonSettings = true;
+    this.admin.updateCommonPlanSettings({
+      overall_percentage: discount,
+      trial_days: trialDays,
+      trial_days_part: this.commonTrialDaysPart,
+      trial_hours_part: this.commonTrialHoursPart,
+      trial_mins_part: this.commonTrialMinsPart
+    }).subscribe({
+      next: (res) => {
+        this.savingCommonSettings = false;
+        this.commonSettings = {
+          overall_percentage: discount,
+          trial_days: trialDays
+        };
+        this.showSettingsModal = false;
+        this.dashService.showToast('Common plan settings updated successfully!', 3500, 'success');
+        this.loadPlans();
+        this.refreshView();
+      },
+      error: (err) => {
+        this.savingCommonSettings = false;
+        const msg = err?.error?.message || 'Failed to update common plan settings';
+        this.dashService.showToast(msg, 4000, 'error');
+      }
+    });
+  }
 
   refreshView(): void {
     this.cdr.markForCheck();
@@ -149,6 +418,11 @@ export class PlanManagementComponent implements OnInit {
     return this.planEntitlements;
   }
 
+  isShowInPricingEnabled(ent: any): boolean {
+    if (!ent) return false;
+    return ent.show_in_pricing === true || ent.show_in_pricing === 'true' || ent.show_in_pricing === 1 || ent.show_in_pricing === '1';
+  }
+
   isEntitlementChanged(ent: any): boolean {
     if (!ent || !ent.feature_id) return false;
     const entId = Number(ent.feature_id);
@@ -165,7 +439,10 @@ export class PlanManagementComponent implements OnInit {
     const curText = (ent.display_text || '').trim();
     const cleanCurText = (curText === '—' || curText === '-' || curText === 'null') ? '' : curText;
 
-    return (rawVal !== curVal) || (rawLimit !== curLimit) || (cleanRawText !== cleanCurText);
+    const rawShow = raw ? (raw.show_in_pricing === true || raw.show_in_pricing === 'true' || raw.show_in_pricing === 1 || raw.show_in_pricing === '1') : true;
+    const curShow = this.isShowInPricingEnabled(ent);
+
+    return (rawVal !== curVal) || (rawLimit !== curLimit) || (cleanRawText !== cleanCurText) || (rawShow !== curShow);
   }
 
   syncCurrentPageToEdits(): void {
@@ -184,7 +461,8 @@ export class PlanManagementComponent implements OnInit {
           value_type: ent.value_type,
           value: String(ent.value ?? 'false'),
           limit_value: isNaN(curLimit as number) ? null : curLimit,
-          display_text: cleanCurText
+          display_text: cleanCurText,
+          show_in_pricing: this.isShowInPricingEnabled(ent)
         });
       } else {
         this.editedEntitlementsMap.delete(fId);
@@ -200,6 +478,12 @@ export class PlanManagementComponent implements OnInit {
   setEntitlementValue(ent: any, val: string): void {
     if (!ent) return;
     ent.value = val;
+    this.onEntitlementFieldChange(ent);
+  }
+
+  setShowInPricing(ent: any, val: boolean): void {
+    if (!ent) return;
+    ent.show_in_pricing = val;
     this.onEntitlementFieldChange(ent);
   }
 
@@ -325,6 +609,7 @@ export class PlanManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPlans();
+    this.loadCommonSettings();
     this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => {
       this.ngZone.run(() => {
         this.page = 1;
@@ -404,6 +689,8 @@ export class PlanManagementComponent implements OnInit {
       const rawText = (existing?.display_text || '').trim();
       const cleanText = (rawText === '—' || rawText === '-' || rawText === 'null') ? '' : rawText;
 
+      const rawShow = existing ? this.isShowInPricingEnabled(existing) : true;
+
       if (edited) {
         return {
           feature_id: fId,
@@ -412,7 +699,8 @@ export class PlanManagementComponent implements OnInit {
           value_type: f.value_type,
           value: edited.value,
           limit_value: edited.limit_value,
-          display_text: edited.display_text
+          display_text: edited.display_text,
+          show_in_pricing: edited.show_in_pricing !== undefined ? edited.show_in_pricing : rawShow
         };
       }
 
@@ -425,12 +713,47 @@ export class PlanManagementComponent implements OnInit {
         value_type: f.value_type,
         value: existing?.value || 'false',
         limit_value: isNaN(exLimit as number) ? null : exLimit,
-        display_text: cleanText
+        display_text: cleanText,
+        show_in_pricing: rawShow
       };
     }).filter(item => item !== null);
   }
 
   formErrors = { name: '', slug: '' };
+
+  /*
+  onDiscountOrMonthlyChange(): void {
+    const monthly = parseFloat(this.form.price_monthly) || 0;
+    const discountRaw = this.form.discount_percentage;
+
+    if (discountRaw !== null && discountRaw !== undefined && discountRaw !== '') {
+      const discount = parseFloat(discountRaw) || 0;
+      const validDiscount = Math.max(0, Math.min(100, discount));
+      const annual = monthly - (monthly * (validDiscount / 100));
+      this.form.price_annual = Math.round(annual);
+    } else {
+      this.form.price_annual = Math.round(monthly);
+    }
+  }
+  */
+
+  onFormTrialPartChange(): void {
+    this.form.trial_days = this.composeTrialDays(
+      this.form.trial_days_part,
+      this.form.trial_hours_part,
+      this.form.trial_mins_part
+    );
+  }
+
+  calculateAnnualPrice(): void {
+    const monthly = Number(this.form.price_monthly) || 0;
+    const discount = Number(this.commonSettings.overall_percentage) || 0;
+    if (monthly <= 0) {
+      this.form.price_annual = 0;
+    } else {
+      this.form.price_annual = Math.round(monthly * (1 - discount / 100) * 100) / 100;
+    }
+  }
 
   openCreate(): void {
     this.editMode = false;
@@ -439,19 +762,22 @@ export class PlanManagementComponent implements OnInit {
       slug: '',
       description: '',
       plan_type: 'individual',   // 'individual' | 'organization' | 'both'
+      discount_percentage: this.commonSettings.overall_percentage || 20,
+      overall_percentage: this.commonSettings.overall_percentage || 20,
       price_monthly: 0,
       price_annual: 0,
       is_per_seat: false,        // true = per-user billing (org plans)
       included_seats: 1,
-      trial_days: 0,
+      trial_days: this.commonSettings.trial_days || 14,
       cta_text: 'Get Started',
-      highlight_color: '',
+      highlight_color: '#3b82f6',
       badge_text: '',
       is_active: true,
       is_custom: false,
       custom_email: '',
       is_public: true
     };
+    this.calculateAnnualPrice();
     this.formErrors = { name: '', slug: '' };
     this.showModal = true;
   }
@@ -459,6 +785,7 @@ export class PlanManagementComponent implements OnInit {
   openEdit(plan: any): void {
     this.editMode = true;
     this.form = { ...plan };
+    this.calculateAnnualPrice();
     this.formErrors = { name: '', slug: '' };
     this.showModal = true;
   }
@@ -497,6 +824,11 @@ export class PlanManagementComponent implements OnInit {
       this.cdr.detectChanges();
       return;
     }
+
+    this.calculateAnnualPrice();
+    this.form.overall_percentage = this.commonSettings.overall_percentage;
+    this.form.discount_percentage = this.commonSettings.overall_percentage;
+    this.form.trial_days = this.commonSettings.trial_days;
 
     const obs = this.editMode
       ? this.admin.updatePlan(this.form.plan_id, this.form)
@@ -618,7 +950,8 @@ export class PlanManagementComponent implements OnInit {
           feature_id: Number(r.feature_id),
           value: String(r.value ?? 'false'),
           limit_value: (r.limit_value === null || r.limit_value === undefined || r.limit_value === '') ? null : (isNaN(Number(r.limit_value)) ? null : Number(r.limit_value)),
-          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt,
+          show_in_pricing: this.isShowInPricingEnabled(r)
         });
       }
     }
@@ -632,7 +965,8 @@ export class PlanManagementComponent implements OnInit {
           feature_id: Number(e.feature_id),
           value: String(e.value ?? 'false'),
           limit_value: (e.limit_value === null || e.limit_value === undefined || e.limit_value === '') ? null : (isNaN(Number(e.limit_value)) ? null : Number(e.limit_value)),
-          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+          display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt,
+          show_in_pricing: this.isShowInPricingEnabled(e)
         });
       }
     }
@@ -645,7 +979,8 @@ export class PlanManagementComponent implements OnInit {
         feature_id: Number(id),
         value: String(e.value ?? 'false'),
         limit_value: (e.limit_value === null || e.limit_value === undefined || e.limit_value === '') ? null : (isNaN(Number(e.limit_value)) ? null : Number(e.limit_value)),
-        display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt
+        display_text: (dt === '—' || dt === '-' || dt === 'null') ? '' : dt,
+        show_in_pricing: this.isShowInPricingEnabled(e)
       });
     }
 

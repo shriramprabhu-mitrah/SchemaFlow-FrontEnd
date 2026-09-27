@@ -373,6 +373,7 @@ input {
     border-color: #10b981 !important;
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
   }
+
   .input-icon {
     color: #10b981 !important;
   }
@@ -634,10 +635,11 @@ body.light-theme {
     .password-rules {
       .rule-item {
         color: #64748b !important;
-        
+
         &.valid {
           color: #16a34a !important;
         }
+
         &.invalid {
           color: #ef4444 !important;
         }
@@ -649,6 +651,7 @@ body.light-theme {
         border-color: #16a34a !important;
         box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
       }
+
       .input-icon {
         color: #16a34a !important;
       }
@@ -800,6 +803,7 @@ body.light-theme {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -818,4 +822,28 @@ input::-webkit-credentials-auto-fill-button {
   pointer-events: none;
   position: absolute;
   right: 0;
+}
+
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+
+
+  .brand-text {
+    background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  app-icons {
+    color: #3ec5c1;
+  }
 }

@@ -68,6 +68,7 @@ export const routes: Routes = [
       { path: 'organizations', title: 'Organization Management - DBNexus', loadComponent: () => import('./features/admin/organization-management/organization-management').then(m => m.OrganizationManagementComponent) },
       { path: 'users', title: 'User Management - DBNexus', loadComponent: () => import('./features/admin/user-management/user-management').then(m => m.UserManagementComponent) },
       { path: 'subscriptions', title: 'Subscription Management - DBNexus', loadComponent: () => import('./features/admin/subscription-management/subscription-management').then(m => m.SubscriptionManagementComponent) },
+      { path: 'transactions', title: 'Transaction Management - DBNexus', loadComponent: () => import('./features/admin/transaction-management/transaction-management').then(m => m.TransactionManagementComponent) },
       { path: 'enquiries', title: 'Enquiries - DBNexus', loadComponent: () => import('./features/admin/enquiries-management/enquiries-management').then(m => m.EnquiriesManagementComponent) },
       { path: 'audit-logs', title: 'Audit Logs - DBNexus', loadComponent: () => import('./features/admin/audit-logs/audit-logs').then(m => m.AuditLogsComponent) },
       { path: 'docs', title: 'CMS Documentation - DBNexus', loadComponent: () => import('./features/admin/cms-docs/cms-docs').then(m => m.CmsDocsComponent) },
