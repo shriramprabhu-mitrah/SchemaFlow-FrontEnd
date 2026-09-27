@@ -25,7 +25,8 @@
     }
   }
 
-  app-sidebar.collapsed + #editor-pane {
+  app-sidebar.collapsed + #editor-pane,
+  app-sidebar.collapsed + app-docs {
     border-top-left-radius: 7px;
     border-bottom-left-radius: 7px;
   }
@@ -34,6 +35,17 @@
     flex: 1;
     min-width: 0;
     height: 100%;
+    border-top-right-radius: 7px;
+    border-bottom-right-radius: 7px;
+  }
+
+  app-docs {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     border-top-right-radius: 7px;
     border-bottom-right-radius: 7px;
   }
@@ -428,6 +440,18 @@ body.light-theme {
       background: rgba(239, 68, 68, 0.1) !important;
       color: #dc2626 !important;
       border: 1px solid rgba(239, 68, 68, 0.25) !important;
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.18) !important;
+        border-color: rgba(239, 68, 68, 0.45) !important;
+      }
+
+      &:active,
+      &.active {
+        background: #dc2626 !important;
+        color: #ffffff !important;
+        border-color: #dc2626 !important;
+      }
     }
 
     .readonly-badge {
@@ -623,15 +647,37 @@ body.light-theme {
 .error-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   margin-left: 8px;
-  padding: 1px 7px;
+  padding: 2px 8px;
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
+  font-family: inherit;
   letter-spacing: 0.2px;
+  line-height: 1.2;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+  user-select: none;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.28);
+    border-color: rgba(239, 68, 68, 0.55);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.25);
+  }
+
+  &:active,
+  &.active {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  }
 }
 
 /* Read-Only badge in toolbar */
@@ -652,6 +698,7 @@ body.light-theme {
 .dot.error-dot {
   background: #ef4444 !important;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
+  cursor: pointer;
 }
 
 /* Floating Error Tooltip Card */
@@ -699,4 +746,332 @@ body.light-theme .editor-error-tooltip {
   color: #dc2626;
   border: 1px solid rgba(239, 68, 68, 0.3);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Floating Errors Card (Positioned directly under DBML toolbar) */
+.editor-errors-container {
+  position: absolute;
+  top: 50px;
+  left: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.editor-errors-card {
+  pointer-events: auto;
+  width: 280px;
+  max-width: min(380px, calc(100vw - 48px));
+  max-height: 300px;
+  margin-top: 2px;
+  background: #141d31;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75), 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideDownErrorsCard 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  .errors-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #111b2e;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+    .header-left {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+
+      .header-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #e6eef9;
+      }
+
+      .header-count {
+        font-size: 12px;
+        color: #98a7c4;
+      }
+    }
+
+    .errors-card-close-btn {
+      background: transparent;
+      border: none;
+      color: #98a7c4;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 0.15s ease, background 0.15s ease;
+
+      &:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.08);
+      }
+    }
+  }
+
+  .errors-card-body {
+    overflow-y: auto;
+    max-height: 280px;
+    padding: 4px 0;
+    background: transparent;
+
+    scrollbar-width: thin;
+    scrollbar-color: #32445f transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #32445f;
+      border-radius: 99px;
+
+      &:hover {
+        background: #475d80;
+      }
+    }
+  }
+
+  .error-group {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .error-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(17, 27, 46, 0.5);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+    &:hover {
+      background: rgba(62, 197, 193, 0.08);
+    }
+
+    .group-chevron {
+      color: #3ec5c1;
+      transition: transform 0.15s ease;
+
+      &.rotated {
+        transform: rotate(-90deg);
+      }
+    }
+
+    .group-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #98a7c4;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .group-count {
+      font-size: 11px;
+      color: #64748b;
+    }
+  }
+
+  .error-group-items {
+    padding-bottom: 4px;
+  }
+
+  .error-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 14px 7px 22px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+
+    &:hover {
+      background: rgba(62, 197, 193, 0.08);
+
+      .error-msg {
+        color: #ffffff;
+      }
+      .error-loc {
+        color: #cbd5e1;
+      }
+    }
+
+    .error-row-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      flex: 1;
+
+      .error-bullet {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #ef4444;
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+        flex-shrink: 0;
+        display: inline-block;
+      }
+
+      .error-msg {
+        font-size: 12px;
+        color: #e6eef9;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.4;
+      }
+    }
+
+    .error-loc {
+      font-size: 11px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* Light Theme Styling for Errors Card (matching application modal popups) */
+html.light-theme,
+body.light-theme,
+.light-theme {
+  .editor-errors-card {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.22),
+                0 8px 16px -4px rgba(15, 23, 42, 0.14),
+                0 2px 6px rgba(15, 23, 42, 0.08) !important;
+
+    .errors-card-header {
+      background: #f8fafc !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+
+      .header-left {
+        .header-title {
+          color: #0f172a !important;
+        }
+        .header-count {
+          color: #64748b !important;
+        }
+      }
+
+      .errors-card-close-btn {
+        color: #64748b !important;
+        background: transparent !important;
+
+        &:hover {
+          color: #0f172a !important;
+          background: rgba(0, 0, 0, 0.06) !important;
+        }
+      }
+    }
+
+    .errors-card-body {
+      background: #ffffff !important;
+      scrollbar-color: #cbd5e1 transparent !important;
+
+      &::-webkit-scrollbar {
+        width: 6px !important;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent !important;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e1 !important;
+        border-radius: 99px !important;
+
+        &:hover {
+          background: #94a3b8 !important;
+        }
+      }
+    }
+
+    .error-group {
+      border-bottom: 1px solid #e2e8f0 !important;
+      &:last-child {
+        border-bottom: none !important;
+      }
+    }
+
+    .error-group-header {
+      background: #f8fafc !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+
+      &:hover {
+        background: #f1f5f9 !important;
+      }
+
+      .group-chevron {
+        color: #64748b !important;
+      }
+
+      .group-name {
+        color: #475569 !important;
+      }
+
+      .group-count {
+        color: #94a3b8 !important;
+      }
+    }
+
+    .error-row {
+      background: transparent !important;
+
+      &:hover {
+        background: #f1f5f9 !important;
+
+        .error-msg {
+          color: #0f172a !important;
+        }
+        .error-loc {
+          color: #334155 !important;
+        }
+      }
+
+      .error-row-main {
+        .error-bullet {
+          background: #ef4444 !important;
+          box-shadow: 0 0 4px rgba(239, 68, 68, 0.3) !important;
+        }
+
+        .error-msg {
+          color: #1e293b !important;
+        }
+      }
+
+      .error-loc {
+        color: #64748b !important;
+      }
+    }
+  }
+}
+
+@keyframes slideDownErrorsCard {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

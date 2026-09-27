@@ -76,7 +76,17 @@ export class AcceptInvitationComponent implements OnInit {
         this.orgName = qp['orgName'];
       }
       if (qp['permission']) {
-        this.permission = qp['permission'];
+        const rawPerm = (qp['permission'] || '').toString().trim();
+        if (
+          rawPerm.toLowerCase() === 'editorinvite' ||
+          rawPerm.toLowerCase() === 'editor & invite' ||
+          rawPerm.toLowerCase() === 'editor & inviter' ||
+          rawPerm.toLowerCase().includes('invite')
+        ) {
+          this.permission = 'Editor & Invite';
+        } else {
+          this.permission = rawPerm;
+        }
       }
 
       if (this.isOrgInvite && this.orgId) {

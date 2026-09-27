@@ -3,8 +3,10 @@
 
     <!-- Header Brand Logo -->
     <div class="card-brand">
-      <app-icons name="db-diagram-logo" size="80"></app-icons>
-      <span class="brand-title dbnexus-text">dbNexus</span>
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text">dbNexus</span>
+      </div>
       <span class="invite-badge">{{ isOrgInvite ? "ORGANIZATION INVITATION" : "WORKSPACE INVITATION" }}</span>
     </div>
 
@@ -60,7 +62,8 @@
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
-        <span>This invitation was sent to {{ invitedEmail }}, but you are logged in as {{ userEmail }}. Please login with the correct account to accept.</span>
+        <span>This invitation was sent to {{ invitedEmail }}, but you are logged in as {{ userEmail }}. Please login
+          with the correct account to accept.</span>
       </div>
 
       <div class="alert-banner warning-banner" *ngIf="noInvitation">
@@ -69,7 +72,8 @@
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
-        <span>You do not have a pending invitation for this organization. Please login with the correct account to accept.</span>
+        <span>You do not have a pending invitation for this organization. Please login with the correct account to
+          accept.</span>
       </div>
 
       <div class="alert-banner warning-banner" *ngIf="alreadyMember">

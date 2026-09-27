@@ -15,14 +15,22 @@
     </svg>
   </button>
 
-  <div id="editor-pane" *ngIf="!svc.sidebarInspectorTab()">
+  <div id="editor-pane" *ngIf="!svc.sidebarInspectorTab() && !svc.showDocs">
     <div id="editor-toolbar">
       <div class="toolbar-title">
-        <span class="dot" [class.error-dot]="svc.editorErrors().length > 0"></span> DBML
+        <span class="dot"
+              [class.error-dot]="svc.editorErrors().length > 0"
+              (click)="svc.editorErrors().length > 0 ? toggleErrorsCard($event) : null"
+              [title]="svc.editorErrors().length > 0 ? 'Click to view errors' : ''"></span> DBML
         <span class="readonly-badge" *ngIf="!isLoggedIn || svc.isReadOnly || isSampleDiagram()">Read-Only</span>
-        <span class="error-badge" *ngIf="svc.editorErrors().length > 0">
+        <button type="button"
+                class="error-badge"
+                [class.active]="showErrorsCard"
+                *ngIf="svc.editorErrors().length > 0"
+                (click)="toggleErrorsCard($event)"
+                title="Click to view error list">
           {{ svc.editorErrors().length }} error{{ svc.editorErrors().length > 1 ? 's' : '' }}
-        </span>
+        </button>
       </div>
       <app-button type="button" variant="none" customClass="editor-pane-action"
         [tooltip]="svc.paneMode() === 'editor' ? 'Restore split view' : 'Expand editor'"
@@ -83,14 +91,58 @@
         <span class="error-tooltip-msg">{{ hoveredError.message }}</span>
       </div>
     </div>
+
+    <!-- Floating Errors Card (Opens below DBML toolbar when clicking error badge) -->
+    <div class="editor-errors-container" *ngIf="svc.editorErrors().length > 0 && showErrorsCard">
+      <!-- Popup Card -->
+      <div class="editor-errors-card" (click)="$event.stopPropagation()">
+        <div class="errors-card-header">
+          <div class="header-left">
+            <span class="header-title">Errors</span>
+            <span class="header-count">{{ svc.editorErrors().length }} in this file</span>
+          </div>
+          <button type="button" class="errors-card-close-btn" (click)="toggleErrorsCard($event)" aria-label="Close error card">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="errors-card-body">
+          <div class="error-group" *ngFor="let group of getErrorGroups()">
+            <div class="error-group-header" (click)="toggleGroup(group.name, $event)">
+              <svg class="group-chevron" [class.rotated]="!isGroupExpanded(group.name)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+              <span class="group-name">{{ group.name}}</span>
+              <span class="group-count">{{ group.errors.length }}</span>
+            </div>
+
+            <div class="error-group-items" *ngIf="isGroupExpanded(group.name)">
+              <div class="error-row" *ngFor="let err of group.errors" (click)="jumpToError(err)">
+                <div class="error-row-main">
+                  <span class="error-bullet"></span>
+                  <span class="error-msg" [title]="err.message">{{ err.message }}</span>
+                </div>
+                <span class="error-loc">{{ err.line }}:{{ err.column || 1 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Diagram Inspector Component (Tables / Refs View) -->
-  <app-diagram-inspector *ngIf="svc.sidebarInspectorTab()"
+  <app-diagram-inspector *ngIf="svc.sidebarInspectorTab() && !svc.showDocs"
     [activeTab]="svc.sidebarInspectorTab()!"
     (tabChange)="svc.sidebarInspectorTab.set($event)"
     (close)="svc.sidebarInspectorTab.set(null)"
     style="flex: 1; display: flex; flex-direction: column; overflow: hidden; height: 100%;">
   </app-diagram-inspector>
+
+  <!-- Full-Page Documentation Component -->
+  <app-docs *ngIf="svc.showDocs"></app-docs>
 
 </div>

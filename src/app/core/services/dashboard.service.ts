@@ -69,6 +69,7 @@ export interface DiagramSummary {
   name: string;
   created_at?: string | Date | null;
   updated_at?: string | Date | null;
+  is_doc_unlocked?: boolean;
 }
 
 export interface EditorError {
@@ -424,6 +425,26 @@ export class DashboardService {
     return this.HEADER_H + rowCount * this.ROW_H;
   }
 
+  getTableWidth(tableName?: string, columns: Column[] = []): number {
+    let maxContentWidth = this.CARD_W;
+    for (const c of columns) {
+      const prefixLen = (c.pk ? 3 : 0) + (c.fk ? 3 : 0) + (c.unique && !c.pk ? 3 : 0);
+      const nameLen = (c.name || '').length + prefixLen;
+      const typeLen = (c.type || '').length;
+      const neededWidth = Math.ceil((nameLen + typeLen) * 7.5 + 40);
+      if (neededWidth > maxContentWidth) {
+        maxContentWidth = neededWidth;
+      }
+    }
+    if (tableName) {
+      const headerNeeded = Math.ceil(((tableName || '').length + 6) * 8.5 + 40);
+      if (headerNeeded > maxContentWidth) {
+        maxContentWidth = headerNeeded;
+      }
+    }
+    return Math.min(380, Math.max(this.CARD_W, maxContentWidth));
+  }
+
   private _code = '';
   readonly code$ = new BehaviorSubject<string>(this._code);
   private readonly dbmlChanges$ = new Subject<string>();
@@ -520,7 +541,21 @@ export class DashboardService {
     }
   }
 
-  showDocs = false;
+  showDocsSignal = signal<boolean>(false);
+  get showDocs(): boolean {
+    return this.showDocsSignal();
+  }
+  set showDocs(val: boolean) {
+    this.showDocsSignal.set(val);
+  }
+
+  showDocsPlaceholderSignal = signal<boolean>(false);
+  get showDocsPlaceholder(): boolean {
+    return this.showDocsPlaceholderSignal();
+  }
+  set showDocsPlaceholder(val: boolean) {
+    this.showDocsPlaceholderSignal.set(val);
+  }
   showDiffChecker = signal<boolean>(false);
   diffCheckerData: { leftText: string; rightText: string; viewMode: 'edit' | 'diff' } = {
     leftText: '',
@@ -566,8 +601,13 @@ export class DashboardService {
 
   readonly isDiagramNameInvalid = computed(() => this.isDiagramNameEmpty() || this.isDiagramNameDuplicate());
 
+  hasDbmlError(): boolean {
+    return this.editorErrors().length > 0 || this.getValidationErrors().length > 0 || this.dbmlValidationError != null;
+  }
+
   hasUnsavedError(): boolean {
     if (this.isDiagramNameInvalid()) return true;
+    if (this.hasDbmlError()) return true;
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) return true;
     return false;
   }
@@ -575,6 +615,22 @@ export class DashboardService {
   getSaveStatusTooltip(): string {
     if (this.isDiagramNameEmpty()) return 'Diagram name should not be empty';
     if (this.isDiagramNameDuplicate()) return 'Diagram name already exists';
+    if (this.editorErrors().length > 0) {
+      const first = this.editorErrors()[0];
+      const count = this.editorErrors().length;
+      const suffix = count > 1 ? ` (+${count - 1} more)` : '';
+      return `DBML error: ${first.message}${suffix}`;
+    }
+    const valErrors = this.getValidationErrors();
+    if (valErrors.length > 0) {
+      const firstMessage = typeof valErrors[0] === 'string' ? valErrors[0] : valErrors[0]?.message ?? 'Invalid DBML syntax';
+      const suffix = valErrors.length > 1 ? ` (+${valErrors.length - 1} more)` : '';
+      return `DBML error: ${firstMessage}${suffix}`;
+    }
+    if (this.dbmlValidationError != null) {
+      const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
+      return typeof errObj === 'string' ? errObj : errObj?.message || 'DBML Validation Failed';
+    }
     if (this.hasUnsavedChanges() && this.saveErrorOccurred) {
       return typeof this.dbmlValidationError === 'string' ? this.dbmlValidationError : 'Save failed';
     }
@@ -599,6 +655,25 @@ export class DashboardService {
     }
   }
 
+  unlockDocs(id: number): Observable<any> {
+    const url = `${this.appConfig.environment?.apiConfig?.baseUrl || ''}/api/diagrams/${id}/unlock-docs`;
+    return this.http.post(url, {}).pipe(
+      tap(() => {
+        // Update local diagram state
+        const diagrams = this.diagrams();
+        const diagram = diagrams.find(d => d.id === id);
+        if (diagram) {
+          diagram.is_doc_unlocked = true;
+          this.diagrams.set([...diagrams]);
+        }
+        this.isDocUnlocked.set(true);
+        this.showDocsPlaceholder = false;
+        this.showDocs = true;
+        this.entitlementService.incrementUsage('document_view');
+      })
+    );
+  }
+
   // --- Signals: these three are read directly by templates (header.html),
   // so they need to notify Angular regardless of zone/OnPush/zoneless setup. ---
   diagramId: any = signal<number | null>(null);
@@ -610,6 +685,9 @@ export class DashboardService {
   showUpgradeModal$ = new Subject<string>();
 
   showUpgradeModal(featureKey: string = ''): void {
+    if (this.auth.isSuperAdmin()) {
+      return;
+    }
     this.showUpgradeModal$.next(featureKey);
   }
 
@@ -666,6 +744,7 @@ export class DashboardService {
   readonly isDiagramLoading = signal(false);
   readonly isSaving = signal(false);
   readonly diagramWorkspaceType = signal<string>('Personal');
+  readonly isDocUnlocked = signal<boolean>(false);
   readonly diagrams = signal<DiagramSummary[]>([]);
   readonly isLoadingDiagrams = signal(false);
   readonly workspaces = signal<WorkspaceItem[]>([]);
@@ -717,10 +796,17 @@ export class DashboardService {
   // user immediately rather than fail silently in the auto-save pipeline.
   readonly toastMessage = signal<string | null>(null);
   readonly toastType = signal<'success' | 'error' | 'info'>('success');
-  readonly toastLocation = signal<'editor' | 'canvas'>('canvas');
+  readonly toastLocation = signal<'editor' | 'canvas' | 'global'>('canvas');
   private toastTimeout: ReturnType<typeof setTimeout> | undefined;
   private invalidRefTimers = new Map<string, { timer: any; startTime: number }>();
   readonly editorErrors = signal<EditorError[]>([]);
+  readonly showErrorsCard = signal<boolean>(false);
+
+  closeErrorsCard(): void {
+    if (this.showErrorsCard()) {
+      this.showErrorsCard.set(false);
+    }
+  }
 
   showDbdocsInstructions = false;
   showCanvasPlaceholder = true;
@@ -735,6 +821,7 @@ export class DashboardService {
   selectedConnectionIndex = -1;
   showAllConnections = false;
   hoveredTableName: string | null = null;
+  activeFocusedTable: string | null = null;
 
   view = { x: 40, y: 40, scale: 1 };
   tool: Tool = 'select';
@@ -970,7 +1057,7 @@ export class DashboardService {
           this.emitCollabChange();
         } else {
           this.saveDiagram().subscribe({
-            error: () => {}
+            error: () => { }
           });
         }
       } else if (!this.hasUnsavedChanges()) {
@@ -1015,6 +1102,8 @@ export class DashboardService {
         if (firstErrMessage) {
           this.showToast(firstErrMessage, 5000, 'error', 'editor');
         }
+      } else if (this.editorErrors().length > 0) {
+        this.showToast(this.editorErrors()[0].message, 5000, 'error', 'editor');
       } else {
         const currentMsg = this.toastMessage();
         if (
@@ -1023,6 +1112,7 @@ export class DashboardService {
           (currentMsg.startsWith('(') ||
             currentMsg.includes('Foreign key reference') ||
             currentMsg.includes('Table') ||
+            currentMsg.includes('Note') ||
             currentMsg.includes('Syntax error') ||
             currentMsg.includes('DBML'))
         ) {
@@ -1152,18 +1242,17 @@ export class DashboardService {
     this.canvasFitRequested$.next();
   }
 
-  showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success', location: 'editor' | 'canvas' = 'canvas'): void {
+  showToast(message: string, duration = 4000, type: 'success' | 'error' | 'info' = 'success', location: 'editor' | 'canvas' | 'global' = 'canvas'): void {
     if (typeof window === 'undefined') return;
-    if (type === 'error') {
-      location = 'editor';
-    }
     this.toastType.set(type);
     this.toastLocation.set(location);
     this.toastMessage.set(message);
     if (this.toastTimeout) {
       clearTimeout(this.toastTimeout);
     }
-    this.toastTimeout = setTimeout(() => this.toastMessage.set(null), duration);
+    this.toastTimeout = setTimeout(() => {
+      this.toastMessage.set(null);
+    }, duration);
   }
 
   setPaneMode(val: 'split' | 'editor' | 'canvas'): void {
@@ -1284,7 +1373,7 @@ export class DashboardService {
       const toTabObj = parsed.tables.find(t => t.name === ref.toTable);
       const fromColObj = fromTabObj?.columns?.find(c => c.name === ref.fromCol);
       const toColObj = toTabObj?.columns?.find(c => c.name === ref.toCol);
-      
+
       let msg = null;
       if (!fromTabObj || !toTabObj) {
         msg = `Table for reference not found`;
@@ -1306,8 +1395,9 @@ export class DashboardService {
       }
     });
 
-    // 3. Check Note definitions with invalid names (spaces, quotes, or invalid identifiers)
-    lines.forEach((lineText, idx) => {
+
+    // 3. Check Note definitions with invalid names or duplicate names
+    const seenNotes = new Map<string, number>(); lines.forEach((lineText, idx) => {
       const trimmed = lineText.trim();
       if (/^Note\b/i.test(trimmed)) {
         const headerMatch = lineText.match(/^[ \t]*Note\s+([^{]*?)(?:\{|$)/i);
@@ -1325,11 +1415,48 @@ export class DashboardService {
               message: 'Expected Table Group, comment, end of input, enum, project, references, table, or whitespace but "N" found.'
             });
           }
+          else if (isValidIdentifier) {
+            const lower = unquoted.toLowerCase();
+            if (seenNotes.has(lower)) {
+              if (!errors.some(e => e.line === idx + 1)) {
+                errors.push({
+                  line: idx + 1,
+                  token: unquoted,
+                  message: `Note '${unquoted}' already exists`
+                });
+              }
+            } else {
+              seenNotes.set(lower, idx + 1);
+            }
+          }
+
         }
       }
     });
 
-    // 4. Integrate backend validation errors
+    // 4. Check TableGroup definitions for empty groups (groups with no tables)
+    const emptyGroupRegex = /^[ \t]*TableGroup\s+(?:["']?([A-Za-z0-9_]+)["']?)\s*(?:\[color:\s*([^\]]+)\])?\s*\{([\s\S]*?)\}/gim;
+    let groupMatch: RegExpExecArray | null;
+    while ((groupMatch = emptyGroupRegex.exec(code)) !== null) {
+      const groupName = groupMatch[1];
+      const body = groupMatch[3];
+      const tableNames = body
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('//'));
+      if (tableNames.length === 0) {
+        const lineNum = code.substring(0, groupMatch.index).split('\n').length;
+        if (!errors.some(e => e.line === lineNum)) {
+          errors.push({
+            line: lineNum,
+            token: groupName,
+            message: `TableGroup "${groupName}" must contain at least one table.`
+          });
+        }
+      }
+    }
+
+    // 5. Integrate backend validation errors
     const backendErrors = this.getValidationErrors();
     if (this.dbmlValidationError) {
       const errObj = this.dbmlValidationError?.error || this.dbmlValidationError;
@@ -1444,7 +1571,11 @@ export class DashboardService {
   }
 
   updateEditorErrors(): void {
-    this.editorErrors.set(this.computeEditorErrors());
+    const errs = this.computeEditorErrors();
+    this.editorErrors.set(errs);
+    if (errs.length === 0) {
+      this.showErrorsCard.set(false);
+    }
   }
 
   getValidationError(): string | null {
@@ -1559,7 +1690,7 @@ export class DashboardService {
 
       // Match general backend error mentioning tables involved in this ref (e.g. Can't find table "null"."table_5")
       if (msg.includes(`"${ref.fromTable}"`) || msg.includes(`'${ref.fromTable}'`) ||
-          msg.includes(`"${ref.toTable}"`) || msg.includes(`'${ref.toTable}'`)) {
+        msg.includes(`"${ref.toTable}"`) || msg.includes(`'${ref.toTable}'`)) {
         return true;
       }
     }
@@ -1654,6 +1785,9 @@ export class DashboardService {
     this.code = `Table Untitled {
   id int [pk]
 }`;
+    this.isDocUnlocked.set(false);
+    this.showDocs = false;
+    this.showDocsPlaceholder = false;
     this.showCanvasPlaceholder = true;
     this.updateGutter();
     this.parseAndLayout();
@@ -1663,12 +1797,20 @@ export class DashboardService {
 
   /* ============ DBML PARSER ============ */
 
-  parseDBML(text: string): { tables: { name: string; columns: Column[] }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
-    const tables: { name: string; columns: Column[] }[] = [];
+  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
+    const tables: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
     const refs: RefDef[] = [];
     const groups: { name: string; color: string; tables: string[] }[] = [];
 
-    const tableRe = /Table\s+([A-Za-z0-9_.]+)\s*\{([\s\S]*?)\}/g;
+    // Normalize keyword casing: table→Table, ref→Ref, tablegroup→TableGroup, note→Note
+    // This preserves user content (column names, values) while fixing keyword case
+    text = text
+      .replace(/^(\s*)tablegroup(\s)/gim, '$1TableGroup$2')
+      .replace(/^(\s*)table(\s)/gim, '$1Table$2')
+      .replace(/^(\s*)ref(\s*:)/gim, '$1Ref$2')
+      .replace(/^(\s*)note(\s)/gim, '$1Note$2');
+
+    const tableRe = /Table\s+([A-Za-z0-9_.]+)\s*\{([\s\S]*?)\}/gi;
     let m: RegExpExecArray | null;
     const seenTables = new Set<string>();
     while ((m = tableRe.exec(text)) !== null) {
@@ -1682,10 +1824,34 @@ export class DashboardService {
       const cols: Column[] = [];
       body.split('\n').forEach((line) => {
         line = line.trim();
-        if (!line || line.indexOf('//') === 0) return;
-        const cm = line.match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_()]+)\s*(\[(.*)\])?/);
-        if (cm) {
-          const rawAttrs = cm[4] || '';
+        if (!line || line.indexOf('//') === 0 || /^Note\b/i.test(line) || /^indexes\b/i.test(line) || line === '}') return;
+
+        let rawAttrs = '';
+        let mainPart = line;
+
+        // Extract settings in [...] at the end of the line
+        const bracketMatch = line.match(/^([\s\S]*?)\s*\[([\s\S]*)\]\s*$/);
+        if (bracketMatch) {
+          mainPart = bracketMatch[1].trim();
+          rawAttrs = bracketMatch[2].trim();
+        }
+
+        // Match column name (identifier or quoted) and column type (the rest of mainPart)
+        const colMatch = mainPart.match(/^(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([A-Za-z0-9_.]+))\s+([\s\S]+)$/);
+        if (colMatch) {
+          const colName = colMatch[1] || colMatch[2] || colMatch[3] || colMatch[4];
+          let colType = colMatch[5].trim();
+
+          // Strip surrounding quotes around column type if present (e.g., "timestamp with time zone" -> timestamp with time zone)
+          if (
+            (colType.startsWith('"') && colType.endsWith('"')) ||
+            (colType.startsWith("'") && colType.endsWith("'")) ||
+            (colType.startsWith('`') && colType.endsWith('`'))
+          ) {
+            colType = colType.slice(1, -1).trim();
+          }
+
+          const cleanType = colType.replace(/\s*\([^)]*\)/g, '').trim();
           const attrsLower = rawAttrs.toLowerCase();
 
           const defaultMatch = rawAttrs.match(/default:\s*('[^']*'|"[^"]*"|`[^`]*`|[^,\]]+)/i);
@@ -1717,8 +1883,8 @@ export class DashboardService {
           }
 
           cols.push({
-            name: cm[1],
-            type: cm[2],
+            name: colName,
+            type: cleanType,
             pk: attrsLower.includes('pk') || attrsLower.includes('primary key'),
             notNull: attrsLower.includes('not null'),
             unique: attrsLower.includes('unique'),
@@ -1734,7 +1900,7 @@ export class DashboardService {
       tables.push({ name, columns: cols });
     }
 
-    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/g;
+    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/gi;
     while ((m = refRe.exec(text)) !== null) {
       const matchIndex = m.index;
       const lineNumber = text.substring(0, matchIndex).split('\n').length;
@@ -1763,7 +1929,7 @@ export class DashboardService {
       });
     }
 
-    const groupRe = /TableGroup\s+(?:["']?([A-Za-z0-9_]+)["']?)\s*(?:\[color:\s*([^\]]+)\])?\s*\{([\s\S]*?)\}/gi;
+    const groupRe = /TableGroup\s+(?:["']?([A-Za-z0-9_ ]+)["']?)\s*(?:\[color:\s*([^\]]+)\])?\s*\{([\s\S]*?)\}/gi;
     let gm: RegExpExecArray | null;
     while ((gm = groupRe.exec(text)) !== null) {
       const name = gm[1];
@@ -1779,11 +1945,12 @@ export class DashboardService {
     }
 
     // Parse Note blocks: Note noteName { 'content' }
-    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|'([^']+)'|([^\r\n{]+)))?\s*\{([\s\S]*?)\}/gm;
+    const noteRe = /^\s*Note(?:\s+(?:"([^"]+)"|'([^']+)'|([^\r\n{]+)))?\s*\{([\s\S]*?)\}/gim;
     const parsedNotes: { name: string; text: string }[] = [];
     let nm: RegExpExecArray | null;
     while ((nm = noteRe.exec(text)) !== null) {
       const name = (nm[1] || nm[2] || nm[3] || '').trim().replace(/^["']|["']$/g, '');
+      if (!name) continue;
       let rawText = (nm[4] || '').trim();
       if (rawText.startsWith("'''") && rawText.endsWith("'''")) {
         rawText = rawText.slice(3, -3);
@@ -1791,7 +1958,10 @@ export class DashboardService {
         rawText = rawText.slice(1, -1);
       }
       const noteText = rawText.replace(/''/g, "'");
-      parsedNotes.push({ name, text: noteText });
+      // Deduplicate by name (keep first occurrence only)
+      if (!parsedNotes.some(n => n.name === name)) {
+        parsedNotes.push({ name, text: noteText });
+      }
     }
 
     return { tables, refs, groups, notes: parsedNotes };
@@ -1882,7 +2052,15 @@ export class DashboardService {
     }
 
     const canUseTableGroup = this.entitlementService.canUseFeature('table_group');
-    const groups = canUseTableGroup ? (parsed.groups || []) : [];
+    let groups = canUseTableGroup ? (parsed.groups || []) : [];
+
+    // Deduplicate groups by name (keep first occurrence) to prevent overlapping on canvas
+    const seenGroupNames = new Set<string>();
+    groups = groups.filter(g => {
+      if (seenGroupNames.has(g.name)) return false;
+      seenGroupNames.add(g.name);
+      return true;
+    });
 
     // Automatically position newly added/chosen tables inside the group's existing visual bounds
     groups.forEach((g) => {
@@ -1965,6 +2143,9 @@ export class DashboardService {
 
     parsed.tables.forEach((t) => {
       const height = this.getTableHeight(t.columns);
+      const width = this.getTableWidth(t.name, t.columns);
+      t.width = width;
+      t.height = height;
       if (!this.tablePositions[t.name]) {
         let col = 0;
         if (tableToGroupColOffset.has(t.name)) {
@@ -2100,7 +2281,7 @@ export class DashboardService {
         columns: t.columns,
         x: pos.x,
         y: pos.y,
-        width: this.CARD_W,
+        width: this.getTableWidth(t.name, t.columns),
         height,
         colY,
         color: tableColors.get(t.name) || this.tableColorsMap[t.name]
@@ -2405,7 +2586,7 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${newName} {\n${columns
-      .map((column) => `  ${column.name} ${column.type}${attributes(column)}`)
+      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
       .join('\n')}\n}`;
 
     // Replace the table block
@@ -2773,7 +2954,7 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${name} {\n${columns
-      .map((column) => `  ${column.name} ${column.type}${attributes(column)}`)
+      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
       .join('\n')}\n}`;
 
     const newRefs: string[] = [];
@@ -3025,7 +3206,8 @@ export class DashboardService {
               id,
               name: diagram?.name || diagram?.diagramname || '',
               created_at,
-              updated_at
+              updated_at,
+              is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
             };
           });
 
@@ -3059,10 +3241,15 @@ export class DashboardService {
     const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', id.toString()) ?? "";
     return this.http.delete<any>(url, { headers }).pipe(
       tap(() => {
+        const deleted = this.diagrams().find((d) => d.id === id);
+        const wasDocUnlocked = deleted?.is_doc_unlocked === true || (deleted as any)?.is_doc_unlocked === 'true' || (deleted as any)?.is_doc_unlocked === 1;
         const currentList = this.diagrams().filter((d) => d.id !== id);
         this.diagrams.set(currentList);
         this.totalDiagrams.update(n => Math.max(0, n > 0 ? n - 1 : currentList.length));
         this.entitlementService.decrementUsage('create_diagrams');
+        if (wasDocUnlocked) {
+          this.entitlementService.decrementUsage('document_view');
+        }
 
         if (Number(this.diagramId()) === Number(id)) {
           const currentWsId = this.activeWorkspaceId();
@@ -3185,6 +3372,14 @@ export class DashboardService {
     return this.http.delete<any>(url, { headers });
   }
 
+  validateWorkspaceMember(emails: string[] | string, workspaceId?: number): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const url = this.appConfig.environment?.workspaceApiUrls?.validateMember ||
+      `${this.appConfig.environment?.workspaceApiUrls?.workspaces}/validate-member`;
+    const emailList = Array.isArray(emails) ? emails : [emails];
+    return this.http.post<any>(url, { emails: emailList, workspaceId }, { headers });
+  }
+
   fetchWorkspaces(queryParams?: QueryParams): Observable<PaginatedResult<WorkspaceItem>> {
     const headers = this.getAuthHeaders();
     this.isLoadingWorkspaces.set(true);
@@ -3276,7 +3471,8 @@ export class DashboardService {
                 id: numId,
                 name: diagram?.name || 'Untitled Diagram',
                 created_at: diagram?.createdat ?? diagram?.created_at ?? diagram?.createdAt ?? null,
-                updated_at: diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? null
+                updated_at: diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? null,
+                is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
               });
             }
           }
@@ -3502,6 +3698,8 @@ export class DashboardService {
     } else {
       this.isReadOnly = false;
     }
+    const isUnlocked = diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1;
+    this.isDocUnlocked.set(isUnlocked);
 
     let layout = diagram?.layout;
     if (typeof layout === 'string') {
@@ -3532,6 +3730,7 @@ export class DashboardService {
     this.isDiagramPublic = diagram?.ispublic !== false; // defaults to true unless explicitly false
     this.diagramPassword = diagram?.protectedpassword || diagram?.protectedPassword || '';
     this.showDocs = false;
+    this.showDocsPlaceholder = false;
 
     this.applyParsedLayout(layout, diagram);
 
@@ -3752,6 +3951,9 @@ export class DashboardService {
             ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
           this.setActiveWorkspace(null);
           this.diagramWorkspaceType.set('Personal');
+          this.isDocUnlocked.set(false);
+          this.showDocs = false;
+          this.showDocsPlaceholder = false;
           if (id != null) {
             this.diagramId.set(id);
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -3784,6 +3986,9 @@ export class DashboardService {
             ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
           this.setActiveWorkspace(Number(workspaceId), workspaceName);
           this.diagramWorkspaceType.set('Team');
+          this.isDocUnlocked.set(false);
+          this.showDocs = false;
+          this.showDocsPlaceholder = false;
           if (id != null) {
             this.diagramId.set(Number(id));
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -3819,6 +4024,9 @@ export class DashboardService {
           ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
         this.setActiveWorkspace(null);
         this.diagramWorkspaceType.set('Personal');
+        this.isDocUnlocked.set(false);
+        this.showDocs = false;
+        this.showDocsPlaceholder = false;
         if (id != null) {
           this.diagramId.set(id);
           if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -4101,6 +4309,8 @@ export class DashboardService {
     }
     this.diagramName = '';
     this.showDocs = false;
+    this.showDocsPlaceholder = false;
+    this.isDocUnlocked.set(false);
     this.showDiffChecker.set(false);
     this.showCanvasPlaceholder = false;
     this.isAllFields = true;
@@ -4495,13 +4705,21 @@ export class DashboardService {
   /** Flag to prevent re-entrant DBML sync loops */
   private _syncingNotesToCode = false;
 
-  /** Auto-generate next note name: note_1, note_2, … */
+  /** Check if a note name is already taken by another note */
+  isNoteNameDuplicate(name: string, excludeNoteId?: number): boolean {
+    if (!name || !name.trim()) return false;
+    const target = name.trim().toLowerCase();
+    return this.notes.some(n => n.id !== excludeNoteId && (n.name || '').trim().toLowerCase() === target);
+  }
+
+  /** Auto-generate next note name: note_1, note_2, … guaranteed unique */
   private nextNoteName(): string {
-    const nums = this.notes
-      .map(n => { const m = n.name?.match(/^note_(\d+)$/); return m ? +m[1] : 0; })
-      .filter(n => n > 0);
-    const max = nums.length > 0 ? Math.max(...nums) : 0;
-    return `note_${max + 1}`;
+    const existingNames = new Set(this.notes.map(n => (n.name || '').trim().toLowerCase()));
+    let n = 1;
+    while (existingNames.has(`note_${n}`)) {
+      n++;
+    }
+    return `note_${n}`;
   }
 
   /** Add a new sticky note at the given canvas position */

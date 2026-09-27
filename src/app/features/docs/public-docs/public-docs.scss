@@ -2448,3 +2448,37 @@ body.light-theme {
     font-weight: 600 !important;
   }
 }
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+
+
+  .brand-text {
+    background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  app-icons {
+    color: #3ec5c1;
+  }
+}
+
+.docs-tag {
+  font-size: 11px;
+  background: rgba(62, 197, 193, 0.18);
+  color: #3ec5c1;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(62, 197, 193, 0.4);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}

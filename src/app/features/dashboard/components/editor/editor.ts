@@ -9,11 +9,12 @@ import { Router } from '@angular/router';
 import { ButtonComponent } from '../../../../shared/button/button';
 import { SidebarComponent } from '../sidebar/sidebar';
 import { DiagramInspectorComponent } from '../diagram-inspector/diagram-inspector';
+import { DocsComponent } from '../docs/docs';
 
 @Component({
   selector: 'app-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, SidebarComponent, DiagramInspectorComponent, DocsComponent],
   templateUrl: './editor.html',
 })
 export class EditorComponent implements OnInit, OnDestroy {
@@ -31,6 +32,20 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   private codeSub?: Subscription;
 
+  get showErrorsCard(): boolean {
+    return this.svc.showErrorsCard();
+  }
+  set showErrorsCard(val: boolean) {
+    this.svc.showErrorsCard.set(val);
+  }
+  errorGroupsExpanded: Record<string, boolean> = {
+    'All Error': true,
+    'SYNTAX': true,
+    'RELATIONSHIP': true
+  };
+
+  private prevErrorsCount = 0;
+
   constructor(
     public svc: DashboardService,
     private readonly auth: AuthService,
@@ -40,7 +55,11 @@ export class EditorComponent implements OnInit, OnDestroy {
     // Re-render cursors and error squiggles whenever remoteCursors or editorErrors signal changes
     effect(() => {
       this.svc.remoteCursors();
-      this.svc.editorErrors();
+      const errs = this.svc.editorErrors();
+      if (errs.length === 0) {
+        this.showErrorsCard = false;
+      }
+      this.prevErrorsCount = errs.length;
       if (this.highlight?.nativeElement) {
         this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
       }
@@ -89,10 +108,17 @@ export class EditorComponent implements OnInit, OnDestroy {
       this.svc.updateGutter();
       this.cdr.detectChanges();
     });
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', this.onDocumentClickCapture, true);
+    }
   }
 
   ngOnDestroy(): void {
     this.codeSub?.unsubscribe();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('click', this.onDocumentClickCapture, true);
+    }
   }
 
   highlightCode(code: string): string {
@@ -247,6 +273,81 @@ export class EditorComponent implements OnInit, OnDestroy {
     ta.scrollTop = Math.max(0, (line - 3) * 24.3);
   }
 
+  jumpToError(err: EditorError): void {
+    const ta = document.getElementById('codearea') as HTMLTextAreaElement;
+    if (!ta) return;
+    const lines = this.displayCode.split('\n');
+    let pos = 0;
+    const targetLine = Math.max(1, Math.min(err.line, lines.length));
+    for (let i = 0; i < targetLine - 1 && i < lines.length; i++) {
+      pos += lines[i].length + 1;
+    }
+    const colOffset = Math.max(0, (err.column || 1) - 1);
+    const lineLen = lines[targetLine - 1]?.length || 0;
+    const startPos = pos + Math.min(colOffset, lineLen);
+    const endPos = pos + lineLen;
+
+    ta.focus();
+    ta.setSelectionRange(startPos, endPos > startPos ? endPos : startPos + 1);
+    ta.scrollTop = Math.max(0, (targetLine - 3) * 24.3);
+  }
+
+  toggleErrorsCard(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.showErrorsCard = !this.showErrorsCard;
+    this.cdr.markForCheck();
+  }
+
+  private onDocumentClickCapture = (event: MouseEvent): void => {
+    if (!this.showErrorsCard) return;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    if (
+      target.closest('.editor-errors-card') ||
+      target.closest('.error-badge') ||
+      target.closest('.dot.error-dot')
+    ) {
+      return;
+    }
+    this.showErrorsCard = false;
+    this.cdr.markForCheck();
+  };
+
+  toggleGroup(name: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.errorGroupsExpanded[name] = !this.isGroupExpanded(name);
+  }
+
+  isGroupExpanded(name: string): boolean {
+    return this.errorGroupsExpanded[name] !== false;
+  }
+
+  getErrorGroups(): { name: string; errors: EditorError[] }[] {
+    const errors = this.svc.editorErrors();
+    if (!errors || errors.length === 0) return [];
+
+    const map = new Map<string, EditorError[]>();
+    errors.forEach(err => {
+      let category = 'All error';
+      if (/foreign\s*key|relationship|type\s*mismatch/i.test(err.message)) {
+        category = 'RELATIONSHIP';
+      } else if (/expected|expect\s+an|unexpected|syntax/i.test(err.message)) {
+        category = 'All error';
+      }
+      if (!map.has(category)) {
+        map.set(category, []);
+      }
+      map.get(category)!.push(err);
+    });
+
+    return Array.from(map.entries()).map(([name, errs]) => ({
+      name,
+      errors: errs
+    }));
+  }
+
   escapeHtmlBasic(str: string): string {
     return str
       .replace(/&/g, '&amp;')
@@ -259,13 +360,13 @@ export class EditorComponent implements OnInit, OnDestroy {
     text = this.escapeHtmlBasic(text);
 
     text = text.replace(
-      /\b(TableGroup|Table|Ref|Note)\b/g,
+      /\b(TableGroup|Table|Ref|Note)\b/gi,
       '<span class="keyword">$1</span>'
     );
 
     // Highlight the names after TableGroup in orange (preserving original quotes and text length)
     text = text.replace(
-      /(<span class="keyword">TableGroup<\/span>)\s+("[A-Za-z0-9_]+"|[A-Za-z0-9_]+)/g,
+      /(<span class="keyword">TableGroup<\/span>)\s+("[A-Za-z0-9_]+"|[A-Za-z0-9_]+)/gi,
       '$1 <span class="groupName">$2</span>'
     );
 
@@ -275,9 +376,10 @@ export class EditorComponent implements OnInit, OnDestroy {
       '<span class="attribute">$1</span>'
     );
 
+    // Highlight datatypes only when they appear as column types (after column name), not when used as column or table names
     text = text.replace(
-      /\b(integer|varchar|text|timestamp|date|decimal|boolean|float|datetime|int|bigint)\b/g,
-      '<span class="datatype">$1</span>'
+      /^(\s*(?:["'`][^"'`]+["'`]|[A-Za-z0-9_.]+)\s+)("timestamp with time zone"|"timestamp without time zone"|'timestamp with time zone'|'timestamp without time zone'|`timestamp with time zone`|`timestamp without time zone`|timestamp with time zone|timestamp without time zone|time with time zone|time without time zone|double precision|character varying|bit varying|integer|varchar|text|timestamp|timestamptz|timetz|date|decimal|numeric|real|boolean|bool|float|double|datetime|time|int|bigint|smallint|tinyint|serial|bigserial|smallserial|objectid|json|jsonb|bson|uuid|blob|bytea|nvarchar|varchar2|char|enum|set|array|map|mixed)\b/gim,
+      '$1<span class="datatype">$2</span>'
     );
 
     // Highlight numbers and commas inside parentheses, e.g., (100) or (10,2)

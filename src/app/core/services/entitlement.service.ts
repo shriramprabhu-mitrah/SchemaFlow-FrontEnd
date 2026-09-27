@@ -97,6 +97,12 @@ export class EntitlementService {
             this.hasUsedTrial = data.hasUsedTrial;
         }
 
+        if (data?.organizationId === null && typeof window !== 'undefined' && localStorage.getItem('organization_id')) {
+          localStorage.removeItem('organization_id');
+          localStorage.removeItem('org_role');
+          localStorage.setItem('account_type', 'individual');
+        }
+
         return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
       }),
       tap(data => {
@@ -112,6 +118,17 @@ export class EntitlementService {
   }
 
   getEntitlement(featureKey: string): any | undefined {
+    if (this.auth.isSuperAdmin()) {
+      return {
+        feature_key: featureKey,
+        enabled: true,
+        value: 'true',
+        effective_limit: -1,
+        limit_value: -1,
+        remaining: -1,
+        used: 0
+      };
+    }
     let ent = this.entitlementsSubject.value.find(e => e.feature_key === featureKey);
     if (!ent) {
       if (featureKey === 'create_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'max_diagrams');
@@ -121,6 +138,8 @@ export class EntitlementService {
   }
 
   decrementUsage(featureKey: string, amount: number = 1): void {
+    if (this.auth.isSuperAdmin()) return;
+
     const isTarget = (k: string) =>
       k === featureKey ||
       (featureKey === 'create_diagrams' && k === 'max_diagrams') ||
@@ -154,6 +173,8 @@ export class EntitlementService {
   }
 
   incrementUsage(featureKey: string, amount: number = 1): void {
+    if (this.auth.isSuperAdmin()) return;
+
     const isTarget = (k: string) =>
       k === featureKey ||
       (featureKey === 'create_diagrams' && k === 'max_diagrams') ||
@@ -258,6 +279,9 @@ export class EntitlementService {
         // Numeric limit check
         const limit = ent.effective_limit ?? (ent as any).limit_value;
         if (limit !== undefined && limit !== null && limit !== -1) {
+          if (limit === 0) {
+            return false;
+          }
           if (ent.remaining !== undefined && ent.remaining <= 0) {
             return false;
           }
@@ -285,6 +309,9 @@ export class EntitlementService {
           // Check numeric limit in cache if present
           const limit = userEnt.effective_limit ?? userEnt.limit_value;
           if (limit !== undefined && limit !== null && limit !== -1) {
+            if (limit === 0) {
+              return false;
+            }
             if (userEnt.remaining !== undefined && userEnt.remaining <= 0) {
               return false;
             }
@@ -324,11 +351,22 @@ export class EntitlementService {
     }
 
     // Default premium features that must be explicitly enabled
-    if (featureKey === 'code_compare' || (planSlug === 'free' && (featureKey === 'table_group' || featureKey === 'diagram_notes'))) {
+    if (featureKey === 'code_compare' || (planSlug === 'free' && (featureKey === 'table_group' || featureKey === 'diagram_notes' || featureKey === 'document_view'))) {
       return false;
     }
 
     return true; // default to true if the feature is unknown
+  }
+
+  private overallPercentage = 20;
+  private defaultTrialDays = 14;
+
+  getOverallPercentage(): number {
+    return this.overallPercentage;
+  }
+
+  getDefaultTrialDays(): number {
+    return this.defaultTrialDays;
   }
 
   loadPlans(force = false): Observable<any[]> {
@@ -346,6 +384,22 @@ export class EntitlementService {
     }
 
     return this.http.get<any>(url).pipe(
+      tap(res => {
+        if (res?.overall_percentage !== undefined && res?.overall_percentage !== null) {
+          this.overallPercentage = Number(res.overall_percentage) || 20;
+        } else if (res?.data && Array.isArray(res.data)) {
+          const found = res.data.find((p: any) => p.overall_percentage !== null && p.overall_percentage !== undefined);
+          if (found) {
+            this.overallPercentage = Number(found.overall_percentage || found.discount_percentage) || 20;
+          }
+        }
+        if (res?.data && Array.isArray(res.data)) {
+          const foundTrial = res.data.find((p: any) => p.trial_days && Number(p.trial_days) > 0);
+          if (foundTrial) {
+            this.defaultTrialDays = Number(foundTrial.trial_days);
+          }
+        }
+      }),
       map(res => res?.data || res || []),
       tap(plans => {
         if (Array.isArray(plans) && plans.length > 0) {

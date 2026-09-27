@@ -33,6 +33,7 @@
     "publicDiagram": "API_URL/api/diagrams/public/{token}"
   },
   "workspaceApiUrls": {
+    "validateMember": "API_URL/api/workspaces/validate-member",
     "workspaces": "API_URL/api/workspaces",
     "workspaceById": "API_URL/api/workspaces/{id}",
     "workspaceMembers": "API_URL/api/workspaces/{workspaceId}/members",
@@ -48,6 +49,10 @@
   "pricingApiUrls": {
     "plans": "API_URL/api/pricing/plans",
     "profileUpgrade": "API_URL/api/profile/subscription/upgrade"
+  },
+  "paymentApiUrls": {
+    "createSubscription": "API_URL/api/payments/create-subscription",
+    "verifySubscription": "API_URL/api/payments/verify-subscription"
   },
   "organizationApiUrls": {
     "organizations": "API_URL/api/organizations",

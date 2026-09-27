@@ -94,9 +94,10 @@ export class HeaderComponent implements OnInit {
     private zone: NgZone
   ) {
     effect(() => {
-      // Access diagramId and diagramNameSignal to register dependencies
+      // Access diagramId, diagramNameSignal, and editorErrors to register dependencies
       this.svc.diagramId();
       this.svc.diagramNameSignal();
+      this.svc.editorErrors();
 
       const nameEl = this._diagramNameEl?.nativeElement ?? document.querySelector('.diagram-name') as HTMLDivElement;
       if (nameEl && document.activeElement !== nameEl) {
@@ -126,21 +127,22 @@ export class HeaderComponent implements OnInit {
       return false;
     }
 
-    // Check current workspace entitlements first (works for both personal and orgs)
+    // Check if the plan is explicitly free or trial
+    const currentPlan = this.auth.getCurrentPlanSlug();
+    if (currentPlan && currentPlan !== 'free') {
+      return true; // Hide the upgrade button for premium users
+    }
+
+    // Fallback to entitlement check if plan slug is unknown
     const ent = this.entitlementService.getEntitlement('create_diagrams');
     if (ent) {
       const limit = ent.effective_limit ?? (ent as any).limit_value;
       if (limit === -1) {
-        return true; // Unlimited diagrams means it's a premium/upgraded plan
-      }
-      if (limit !== undefined && limit !== null && limit !== -1) {
-        return false; // Has a limit, so it's a free plan
+        return true; 
       }
     }
 
-    // Fallback to local storage for personal plan
-    const currentPlan = this.auth.getCurrentPlanSlug();
-    return !!(currentPlan && currentPlan !== 'free');
+    return false;
   }
 
   goToLogin(): void {
@@ -405,6 +407,19 @@ export class HeaderComponent implements OnInit {
     if (this.svc.isDiagramNameEmpty() || this.svc.isDiagramNameDuplicate()) {
       return;
     }
+    if (this.svc.hasDbmlError()) {
+      const first = this.svc.editorErrors()[0];
+      if (first) {
+        this.svc.showToast(`Cannot save: ${first.message}`, 4000, 'error');
+        return;
+      }
+      const valErrors = this.svc.getValidationErrors();
+      if (valErrors.length > 0) {
+        const msg = typeof valErrors[0] === 'string' ? valErrors[0] : valErrors[0]?.message ?? 'Invalid DBML syntax';
+        this.svc.showToast(`Cannot save: ${msg}`, 4000, 'error');
+        return;
+      }
+    }
     if (this.svc.hasUnsavedChanges() && this.svc.saveErrorOccurred) {
       const msg = typeof this.svc.dbmlValidationError === 'string' ? this.svc.dbmlValidationError : 'Save failed';
       this.svc.showToast(msg, 4000, 'error');
@@ -416,15 +431,42 @@ export class HeaderComponent implements OnInit {
       this.svc.authModalVisible.set(true);
       return;
     }
-    if (!this.entitlementService.canUseFeature('document_view')) {
-      if (!this.entitlementService.orgHasFeature('document_view')) {
-        this.svc.showUpgradeModal('document_view');
-      }
+
+    if (this.svc.showDocs) {
+      this.svc.showDocs = false;
       return;
     }
-    this.svc.showDocs = !this.svc.showDocs;
-    if (this.svc.showDocs) {
+
+    if (this.auth.isSuperAdmin()) {
+      this.svc.showDocs = true;
       this.svc.requestSplitView();
+      return;
+    }
+
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
+
+    const canUse = this.entitlementService.canUseFeature('document_view');
+    const ent = this.entitlementService.getEntitlement('document_view');
+    const limit = ent?.effective_limit ?? ent?.limit_value;
+    const isLimitReached = !canUse || (limit !== undefined && limit !== null && limit !== -1 && (
+      limit === 0 ||
+      (ent?.used !== undefined && ent.used >= limit) ||
+      (ent?.remaining !== undefined && ent.remaining <= 0)
+    ));
+
+    if (isPlanExpired || isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
+      this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
+      this.svc.showUpgradeModal('document_view');
+      return;
+    }
+
+    if (this.svc.isDocUnlocked()) {
+      this.svc.showDocs = true;
+      this.svc.requestSplitView();
+    } else {
+      this.svc.showDocs = false;
+      this.svc.showDocsPlaceholder = true;
     }
   }
 
@@ -709,7 +751,7 @@ export class HeaderComponent implements OnInit {
           if (dbmlVal && dbmlVal.isValid === false) {
             this.importValidated = false;
             this.importValidationError =
-              dbmlVal.errors?.[0] || 'This does not look like valid SQL for the selected dialect.';
+              dbmlVal.errors?.[0] || 'This does not look like valid schema syntax for the selected dialect.';
           } else {
             this.importValidated = true;
             this.importValidationError = null;
@@ -722,7 +764,7 @@ export class HeaderComponent implements OnInit {
       },
       error: (err) => {
         this.importValidated = false;
-        let errorMessage = 'This does not look like valid SQL for the selected dialect.';
+        let errorMessage = 'This does not look like valid schema syntax for the selected dialect.';
         if (err?.error) {
           try {
             const parsed = JSON.parse(err.error);
@@ -767,13 +809,13 @@ export class HeaderComponent implements OnInit {
             return;
           }
           this.svc.forceSetCode(dbml);
-          this.svc.showToast('SQL imported successfully.', 2500);
+          this.svc.showToast('Schema imported successfully.', 2500, 'success');
           this.closeImportModal();
           this.cdr.markForCheck();
         },
         error: (err: any) => {
           console.error('Import failed:', err);
-          let errorMessage = 'Failed to convert SQL. Please check the syntax.';
+          let errorMessage = 'Failed to convert schema. Please check the syntax.';
           if (err?.error) {
             try {
               const parsed = JSON.parse(err.error);

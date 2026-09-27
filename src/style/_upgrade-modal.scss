@@ -321,8 +321,36 @@ app-upgrade-modal {
         }
       }
 
+      .card-key-specs {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        margin: 10px 0 10px !important;
+
+        .key-spec-item {
+          display: flex !important;
+          align-items: center !important;
+          gap: 8px !important;
+          font-size: 12px !important;
+          font-weight: 600 !important;
+          color: #cbd5e1 !important;
+
+          svg {
+            flex-shrink: 0 !important;
+            stroke: #94a3b8 !important;
+          }
+        }
+      }
+
+      .card-divider {
+        width: 100% !important;
+        height: 1px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        margin: 6px 0 10px !important;
+      }
+
       .card-features {
-        padding: 10px 0 4px !important;
+        padding: 4px 0 4px !important;
 
         ul {
           gap: 6px !important;
@@ -337,6 +365,68 @@ app-upgrade-modal {
           margin-top: 8px !important;
           padding: 3px 8px !important;
           font-size: 11.5px !important;
+        }
+      }
+
+      .card-addons-section {
+        width: 100% !important;
+        margin-top: auto !important;
+        padding-top: 8px !important;
+
+        .card-addons-divider {
+          width: 100% !important;
+          height: 1px !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          margin-bottom: 8px !important;
+        }
+
+        .addons-header {
+          font-size: 11px !important;
+          font-weight: 700 !important;
+          color: #94a3b8 !important;
+          margin-bottom: 6px !important;
+        }
+
+        .addons-list {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 4px !important;
+        }
+
+        .addon-item {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          font-size: 11.5px !important;
+          color: #cbd5e1 !important;
+          white-space: nowrap !important;
+          width: 100% !important;
+
+          .addon-left {
+            display: flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+            font-weight: 500 !important;
+            white-space: nowrap !important;
+
+            svg {
+              flex-shrink: 0 !important;
+              stroke: #94a3b8 !important;
+            }
+
+            span {
+              white-space: nowrap !important;
+            }
+          }
+
+          .addon-price {
+            font-weight: 600 !important;
+            color: #e2e8f0 !important;
+            font-size: 11px !important;
+            white-space: nowrap !important;
+            margin-left: 6px !important;
+            flex-shrink: 0 !important;
+          }
         }
       }
 
@@ -503,8 +593,19 @@ body.light-theme {
         border: 1px solid #e2e8f0 !important;
       }
 
+      .card-key-specs {
+        .key-spec-item {
+          color: #334155 !important;
+          svg { stroke: #64748b !important; }
+        }
+      }
+
+      .card-divider {
+        background: #e2e8f0 !important;
+      }
+
       .card-features {
-        border-top: 1px solid #edf2f7 !important;
+        border-top: none !important;
         li {
           color: #475569 !important;
           span { color: #475569 !important; }

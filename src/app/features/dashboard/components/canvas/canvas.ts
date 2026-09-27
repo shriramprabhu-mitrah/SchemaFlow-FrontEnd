@@ -88,6 +88,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   activeTooltip: { x: number; y: number; label: string } | null = null;
   hoveredColumn: { tableName: string; columnName: string } | null = null;
   isMouseOverCanvas = false;
+  private lastMouseWorldPoint: { x: number; y: number } | null = null;
   private drawingClean = false;
   private forceHighlightConnections = false;
 
@@ -1206,10 +1207,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     let maxY = -Infinity;
 
     groupTables.forEach((t) => {
-      if (t.x < minX) minX = t.x;
-      if (t.y < minY) minY = t.y;
-      if (t.x + t.width > maxX) maxX = t.x + t.width;
-      if (t.y + t.height > maxY) maxY = t.y + t.height;
+      const pos = (geometry && geometry[t.name]) ? geometry[t.name] : t;
+      const x = pos.x;
+      const y = pos.y;
+      const w = pos.width || t.width || this.svc.CARD_W || 220;
+      const h = pos.height || t.height || this.svc.getTableHeight(t.columns);
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x + w > maxX) maxX = x + w;
+      if (y + h > maxY) maxY = y + h;
     });
 
     const paddingX = 24;
@@ -1284,7 +1290,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.textBaseline = 'middle';
       const isCollapsed = this.svc.collapsedGroups.has(g.name);
       const arrowSymbol = isCollapsed ? '▶  ' : '▼  ';
-      ctx.fillText(arrowSymbol + g.name, x + 12, y + headerH / 2);
+      const displayGroupName = g.name.length > 15 ? g.name.slice(0, 15) + '...' : g.name;
+      ctx.fillText(arrowSymbol + displayGroupName, x + 12, y + headerH / 2);
       ctx.restore();
 
       // Draw Group Settings Icon
@@ -1298,6 +1305,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           this.activeTooltip = { x: gColorX, y: gColorY, label: 'Settings' };
         }
         this.groupColorIcons.push({ groupName: g.name, x: gColorX, y: gColorY });
+      }
+
+      if (this.hoveredGroupName === g.name && g.name.length > 15 && !isGroupColorHovered) {
+        this.activeTooltip = { x: x + 12, y: y + headerH / 2, label: g.name };
       }
 
       ctx.save();
@@ -1498,7 +1509,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.font = '700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
-    ctx.fillText('\u25A6  ' + t.name, t.x + 12, t.y + this.svc.HEADER_H / 2 + 1);
+    const displayTableName = t.name.length > 15 ? t.name.slice(0, 15) + '...' : t.name;
+    ctx.fillText('\u25A6  ' + displayTableName, t.x + 12, t.y + this.svc.HEADER_H / 2 + 1);
 
     const settingX = t.x + t.width - 18;
     const editY = t.y + this.svc.HEADER_H / 2;
@@ -1520,6 +1532,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           label: 'Settings'
         };
       }
+    }
+
+    const isTableHeaderHovered = this.svc.hoveredTableName === t.name &&
+      this.lastMouseWorldPoint &&
+      this.lastMouseWorldPoint.y >= t.y &&
+      this.lastMouseWorldPoint.y <= t.y + this.svc.HEADER_H;
+
+    if (isTableHeaderHovered && t.name.length > 15 && !isSettingsHovered) {
+      this.activeTooltip = {
+        x: t.x + 12,
+        y: editY,
+        label: t.name
+      };
     }
 
     let visibleColumns: Column[] = [];
@@ -1552,20 +1577,60 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.stroke();
 
       const textY = rowY + this.svc.ROW_H / 2 + 1;
-      ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = isLight ? '#1a202c' : '#e6eef9';
-      ctx.textAlign = 'left';
+      const padding = 12;
+      const minGap = 8;
+      const tableW = t.width || this.svc.CARD_W || 220;
+      const availableWidth = tableW - (padding * 2);
+
+      // Measure type width
+      ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      let typeText = c.type || '';
+      let typeWidth = ctx.measureText(typeText).width;
+
+      const maxTypeWidth = Math.max(30, availableWidth * 0.6);
+      if (typeWidth > maxTypeWidth && availableWidth > 60) {
+        while (typeText.length > 3 && ctx.measureText(typeText + '...').width > maxTypeWidth) {
+          typeText = typeText.slice(0, -1);
+        }
+        typeText += '...';
+        typeWidth = ctx.measureText(typeText).width;
+      }
+
+      // Max width available for column name
+      const maxNameWidth = Math.max(20, availableWidth - typeWidth - minGap);
+
       let prefix = '';
       if (c.pk) prefix += '\u{1F511} ';
       if (c.fk) prefix += '\u{1F517} ';
       if (c.unique && !c.pk) prefix += '\u{1F4A0} ';
-      const label = prefix + c.name;
-      ctx.fillText(label, t.x + 12, textY);
+
+      ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      let displayColName = c.name;
+      let fullLabel = prefix + displayColName;
+      if (ctx.measureText(fullLabel).width > maxNameWidth) {
+        while (displayColName.length > 2 && ctx.measureText(prefix + displayColName + '...').width > maxNameWidth) {
+          displayColName = displayColName.slice(0, -1);
+        }
+        displayColName += '...';
+      }
+      const label = prefix + displayColName;
+
+      ctx.fillStyle = isLight ? '#1a202c' : '#e6eef9';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, t.x + padding, textY);
+
+      if ((c.name !== displayColName) && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
+        this.activeTooltip = {
+          x: t.x + padding,
+          y: textY,
+          label: c.name
+        };
+      }
 
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
       ctx.textAlign = 'right';
-      ctx.fillText(c.type, t.x + t.width - 12, textY);
+      ctx.fillText(typeText, t.x + tableW - padding, textY);
     });
 
     const hiddenCount = t.columns.length - visibleColumns.length;
@@ -2627,18 +2692,86 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private getWrappedTooltipLines(ctx: CanvasRenderingContext2D, text: string, maxLineWidth: number): string[] {
+    const lines: string[] = [];
+    const paragraphs = text.split('\n');
+
+    for (const paragraph of paragraphs) {
+      if (!paragraph.trim()) {
+        lines.push('');
+        continue;
+      }
+
+      const words = paragraph.split(' ');
+      let currentLine = '';
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (ctx.measureText(testLine).width <= maxLineWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = '';
+          }
+
+          // If a single word is wider than maxLineWidth, break it up character by character
+          if (ctx.measureText(word).width > maxLineWidth) {
+            let chunk = '';
+            for (let c = 0; c < word.length; c++) {
+              const char = word[c];
+              if (ctx.measureText(chunk + char).width <= maxLineWidth) {
+                chunk += char;
+              } else {
+                if (chunk) lines.push(chunk);
+                chunk = char;
+              }
+            }
+            if (chunk) {
+              currentLine = chunk;
+            }
+          } else {
+            currentLine = word;
+          }
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+    }
+
+    return lines.length > 0 ? lines : [text];
+  }
+
   private drawIconTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, label: string): void {
+    if (!label) return;
+
     ctx.save();
     ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const textWidth = ctx.measureText(label).width;
-    const boxW = textWidth + 16;
-    const boxH = 22;
+
+    const maxLineWidth = 240;
+    const lines = this.getWrappedTooltipLines(ctx, label, maxLineWidth);
+
+    let maxTextWidth = 0;
+    for (const line of lines) {
+      const w = ctx.measureText(line).width;
+      if (w > maxTextWidth) maxTextWidth = w;
+    }
+
+    const lineHeight = 15;
+    const paddingX = 10;
+    const paddingY = 6;
+    const boxW = Math.max(36, maxTextWidth + paddingX * 2);
+    const boxH = Math.max(22, lines.length * lineHeight + paddingY * 2 - 4);
     const boxX = x - boxW / 2;
     const boxY = y - boxH - 8;
 
     // Draw the bubble background path
     ctx.beginPath();
-    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 5);
+    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 6);
     ctx.fillStyle = '#0b0f19';
     ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
@@ -2663,11 +2796,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.fillStyle = '#0b0f19';
     ctx.fill();
 
-    // Draw white text
+    // Draw white text lines
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, x, boxY + boxH / 2 + 0.5);
+
+    const startY = boxY + paddingY + lineHeight / 2 - 1;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, startY + i * lineHeight);
+    }
+
     ctx.restore();
   }
 
@@ -2677,6 +2815,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (e.button === 2) return;
     if (this.inlineEdit.visible) {
       this.commitInlineEdit();
+      return;
     }
 
 
@@ -2960,6 +3099,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('window:mousemove', ['$event'])
   onWindowMouseMove(e: MouseEvent): void {
     const wp = this.worldPointFromEvent(e);
+    this.lastMouseWorldPoint = wp;
 
     // Sync cursor for real-time collaboration
     if (this.svc.diagramWorkspaceType() === 'Team') {
@@ -3154,8 +3294,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           ? this.svc.groups.some(g => g.tables.includes(table.name))
           : false;
         const column = this.contextMenu.column;
-        const isDisabled = (label === 'Change Color' && isTableInGroup) ||
-          (label === 'Edit Column' && column && (column.pk || column.fk));
+        const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
+        const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+          (label === 'Edit Column' && column && (column.pk || column.fk)) ||
+          (label === 'Edit Table' && isRestrictedTableGroup);
 
         if (isDisabled) {
           canvas.style.cursor = 'not-allowed';
@@ -3276,7 +3418,82 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('window:mouseup', ['$event'])
   onWindowMouseUp(e?: MouseEvent): void {
     if (this.draggingGroup) {
+      const droppedGroupName = this.draggingGroup;
       this.draggingGroup = null;
+
+      // Collision check: revert if dropped group overlaps any other group
+      const geometry: Record<string, TableDef> = {};
+      this.svc.tables.forEach((tbl) => (geometry[tbl.name] = tbl));
+
+      const droppedGroup = this.svc.groups.find(gr => gr.name === droppedGroupName);
+      let overlapsOtherGroup = false;
+
+      if (droppedGroup) {
+        const droppedBounds = this.getGroupBounds(droppedGroup, geometry);
+        if (droppedBounds) {
+          for (const otherGroup of this.svc.groups) {
+            if (otherGroup.name === droppedGroupName) continue;
+            const otherBounds = this.getGroupBounds(otherGroup, geometry);
+            if (!otherBounds) continue;
+
+            const overlapX = droppedBounds.x < otherBounds.x + otherBounds.w &&
+              droppedBounds.x + droppedBounds.w > otherBounds.x;
+            const overlapY = droppedBounds.y < otherBounds.y + otherBounds.h &&
+              droppedBounds.y + droppedBounds.h > otherBounds.y;
+
+            if (overlapX && overlapY) {
+              overlapsOtherGroup = true;
+              break;
+            }
+          }
+
+          if (!overlapsOtherGroup) {
+            for (const otherTable of this.svc.tables) {
+              if (droppedGroup.tables.includes(otherTable.name)) continue;
+              const otLeft = otherTable.x;
+              const otRight = otherTable.x + (otherTable.width || this.svc.CARD_W || 220);
+              const otTop = otherTable.y;
+              const otBottom = otherTable.y + (otherTable.height || this.svc.getTableHeight(otherTable.columns));
+
+              const overlapX = droppedBounds.x < otRight && droppedBounds.x + droppedBounds.w > otLeft;
+              const overlapY = droppedBounds.y < otBottom && droppedBounds.y + droppedBounds.h > otTop;
+
+              if (overlapX && overlapY) {
+                overlapsOtherGroup = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (overlapsOtherGroup) {
+          // Revert all tables in the group back to their drag-start positions
+          droppedGroup.tables.forEach((tableName) => {
+            const startPos = this.dragGroupStartPoints[tableName];
+            if (startPos) {
+              this.svc.tablePositions[tableName] = { x: startPos.x, y: startPos.y };
+              const t = this.svc.tables.find((tt) => tt.name === tableName);
+              if (t) {
+                t.x = startPos.x;
+                t.y = startPos.y;
+              }
+            }
+          });
+          // Revert group position
+          if (this.dragGroupStartGroupPos) {
+            this.svc.groupPositions[droppedGroupName] = {
+              x: this.dragGroupStartGroupPos.x,
+              y: this.dragGroupStartGroupPos.y
+            };
+            this.svc.saveGroupPositions();
+          }
+          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            localStorage.setItem('drag position', JSON.stringify(this.svc.tablePositions));
+          }
+          this.svc.showToast('Group cannot overlap existing tables or groups. Move reverted.', 3000, 'error');
+        }
+      }
+
       this.dragGroupStartPoints = {};
       this.dragGroupStartGroupPos = null;
       if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
@@ -3347,29 +3564,99 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const t = this.svc.tables.find(tbl => tbl.name === droppedTableName);
       if (t) {
         const tLeft = t.x;
-        const tRight = t.x + t.width;
+        const tRight = t.x + (t.width || this.svc.CARD_W || 220);
         const tTop = t.y;
-        const tBottom = t.y + t.height;
+        const tBottom = t.y + (t.height || this.svc.getTableHeight(t.columns));
         const geometry: Record<string, TableDef> = {};
         this.svc.tables.forEach(tbl => (geometry[tbl.name] = tbl));
 
+        let overlapsTable = false;
         let overlapsGroup = false;
-        for (const g of this.svc.groups) {
-          if (g.tables.includes(droppedTableName)) continue;
-          const bounds = this.getGroupBounds(g, geometry);
-          if (bounds) {
-            if (tLeft < bounds.x + bounds.w && tRight > bounds.x && tTop < bounds.y + bounds.h && tBottom > bounds.y) {
-              overlapsGroup = true;
-              break;
+        let overlapsGroupAsExpansion = false;
+
+        // 1. Check if dropped table directly overlaps another table
+        for (const otherTable of this.svc.tables) {
+          if (otherTable.name === droppedTableName) continue;
+          const otLeft = otherTable.x;
+          const otRight = otherTable.x + (otherTable.width || this.svc.CARD_W || 220);
+          const otTop = otherTable.y;
+          const otBottom = otherTable.y + (otherTable.height || this.svc.getTableHeight(otherTable.columns));
+
+          if (tLeft < otRight && tRight > otLeft && tTop < otBottom && tBottom > otTop) {
+            overlapsTable = true;
+            break;
+          }
+        }
+
+        // 2. Check if dropped table overlaps another group (that it doesn't belong to)
+        if (!overlapsTable) {
+          for (const g of this.svc.groups) {
+            if (g.tables.includes(droppedTableName)) continue;
+            const bounds = this.getGroupBounds(g, geometry);
+            if (bounds) {
+              if (tLeft < bounds.x + bounds.w && tRight > bounds.x && tTop < bounds.y + bounds.h && tBottom > bounds.y) {
+                overlapsGroup = true;
+                break;
+              }
             }
           }
         }
 
-        if (overlapsGroup && this.dragTableStartPos) {
+        // 3. If the dragged table IS inside a group, verify that moving it
+        // doesn't expand that group's boundary to overlap another group or an existing table
+        if (!overlapsTable && !overlapsGroup) {
+          const parentGroup = this.svc.groups.find(g => g.tables.includes(droppedTableName));
+          if (parentGroup) {
+            const parentBounds = this.getGroupBounds(parentGroup, geometry);
+            if (parentBounds) {
+              for (const otherGroup of this.svc.groups) {
+                if (otherGroup.name === parentGroup.name) continue;
+                const otherBounds = this.getGroupBounds(otherGroup, geometry);
+                if (!otherBounds) continue;
+                const overlapX = parentBounds.x < otherBounds.x + otherBounds.w &&
+                  parentBounds.x + parentBounds.w > otherBounds.x;
+                const overlapY = parentBounds.y < otherBounds.y + otherBounds.h &&
+                  parentBounds.y + parentBounds.h > otherBounds.y;
+                if (overlapX && overlapY) {
+                  overlapsGroupAsExpansion = true;
+                  break;
+                }
+              }
+
+              if (!overlapsGroupAsExpansion) {
+                for (const otherTable of this.svc.tables) {
+                  if (parentGroup.tables.includes(otherTable.name)) continue;
+                  const otLeft = otherTable.x;
+                  const otRight = otherTable.x + (otherTable.width || this.svc.CARD_W || 220);
+                  const otTop = otherTable.y;
+                  const otBottom = otherTable.y + (otherTable.height || this.svc.getTableHeight(otherTable.columns));
+
+                  const overlapX = parentBounds.x < otRight && parentBounds.x + parentBounds.w > otLeft;
+                  const overlapY = parentBounds.y < otBottom && parentBounds.y + parentBounds.h > otTop;
+                  if (overlapX && overlapY) {
+                    overlapsGroupAsExpansion = true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if ((overlapsTable || overlapsGroup || overlapsGroupAsExpansion) && this.dragTableStartPos) {
           t.x = this.dragTableStartPos.x;
           t.y = this.dragTableStartPos.y;
           this.svc.tablePositions[droppedTableName] = { x: t.x, y: t.y };
-          this.svc.showToast(`Cannot drop table over a group. Use the group's gear icon to add it.`, 3000, 'error');
+          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            localStorage.setItem('drag position', JSON.stringify(this.svc.tablePositions));
+          }
+          let msg = 'Cannot place table over an existing table. Move reverted.';
+          if (overlapsGroupAsExpansion) {
+            msg = 'Cannot expand group to overlap an existing table or group. Move reverted.';
+          } else if (overlapsGroup) {
+            msg = `Cannot drop table over a group. Use the group's gear icon to add it.`;
+          }
+          this.svc.showToast(msg, 3000, 'error');
         }
       }
 
@@ -3441,58 +3728,14 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCanvasContextMenu(e: MouseEvent): void {
-    if (this.svc.isReadOnly) {
-      e.preventDefault();
-      return;
-    }
     e.preventDefault();
-    if (!this.auth.isLoggedIn()) {
-      this.svc.authModalVisible.set(true);
-      return;
+    if (this.inlineEdit.visible) {
+      this.commitInlineEdit();
     }
-
-    const rect = this.canvasRef.nativeElement.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const wp = this.worldPointFromEvent(e);
-
-    const columnHit = this.findColumnAt(wp.x, wp.y);
-    if (columnHit) {
-      this.openContextMenu(sx, sy, 'column', columnHit.table, columnHit.column, -1);
-      return;
-    }
-
-    const geometry: Record<string, TableDef> = {};
-    this.svc.tables.forEach((t) => (geometry[t.name] = t));
-    const connectionHit = this.findHoveredConnectionIndex(wp.x, wp.y, geometry);
-    if (connectionHit !== -1) {
-      this.svc.selectedConnectionIndex = connectionHit;
+    if (this.contextMenu.visible) {
       this.contextMenu.visible = false;
       this.scheduleDraw();
-      return;
     }
-    const tableHit = this.findTableAt(wp.x, wp.y);
-    if (tableHit) {
-      this.contextMenu.visible = false;
-      this.scheduleDraw();
-      return;
-    }
-
-    if (this.svc.groups && this.svc.groups.length > 0) {
-      for (const g of this.svc.groups) {
-        const bounds = this.getGroupBounds(g, geometry);
-        if (bounds) {
-          if (wp.x >= bounds.x && wp.x <= bounds.x + bounds.w && wp.y >= bounds.y && wp.y <= bounds.y + bounds.h) {
-            this.contextMenu.visible = false;
-            this.scheduleDraw();
-            return;
-          }
-        }
-      }
-    }
-
-    this.contextMenuWorldPoint = wp;
-    this.openContextMenu(sx, sy, 'empty', null, null, -1);
   }
 
   /* ============ COORDINATE HELPERS ============ */
@@ -3967,7 +4210,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       isNew,
       originalName: table.name,
       name: table.name,
-      columns: table.columns.map((column) => ({ ...column, originalName: column.name })),
+      columns: table.columns.map((column) => ({
+        ...column,
+        originalName: column.name,
+        type: (column.type || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
+      })),
       error: '',
       isGroup: !!currentGroup,
       groupName: currentGroup ? currentGroup.name : '',
@@ -4144,7 +4391,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectDataType(column: any, type: string): void {
-    column.type = type;
+    column.type = type.replace(/\s*\([^)]*\)/g, '').trim();
     this.typeDropdownIndex = null;
   }
 
@@ -4325,7 +4572,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveGroupModal(): void {
-    const name = this.groupModal.name.trim();
+    let name = this.groupModal.name.trim();
+    this.groupModal.name = name;
+
     const validName = /^[A-Za-z_][A-Za-z0-9_]*$/;
     if (!validName.test(name)) {
       this.groupModal.error = 'Use letters, numbers, and underscores for the group name.';
@@ -4386,7 +4635,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   saveTableModal(): void {
-    const name = this.tableModal.name.trim();
+    let name = this.tableModal.name.trim();
+    this.tableModal.name = name;
+
     const validName = /^[A-Za-z_][A-Za-z0-9_]*$/;
     if (!validName.test(name)) {
       this.tableModal.error = 'Use letters, numbers, and underscores for the table name.';
@@ -4396,7 +4647,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.tableModal.error = 'A table needs at least one column.';
       return;
     }
-    const names = this.tableModal.columns.map((column) => column.name.trim());
+    const names = this.tableModal.columns.map((column) => {
+      let colName = column.name.trim();
+      column.name = colName;
+      return colName;
+    });
     if (names.some((columnName) => !validName.test(columnName)) || new Set(names).size !== names.length) {
       this.tableModal.error = 'Column names must be unique and use only letters, numbers, and underscores.';
       return;
@@ -4411,7 +4666,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (this.tableModal.isGroup) {
-      const gName = this.tableModal.groupName.trim();
+      let gName = this.tableModal.groupName.trim();
+      this.tableModal.groupName = gName;
       if (!gName) {
         this.tableModal.error = 'Group name is required when Group option is selected.';
         return;
@@ -4425,7 +4681,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const columns = this.tableModal.columns.map((column, index) => ({
       ...column,
       name: names[index],
-      type: column.type.trim() || 'varchar'
+      type: (column.type.trim() || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
     }));
 
     if (isNew) {
@@ -4649,7 +4905,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private getContextMenuItems(): string[] {
     switch (this.contextMenu.targetType) {
       case 'column':
-        return ['Add Column', 'Edit Column', 'Delete Column'];
+        return [];
       case 'table':
         return [];
       case 'tableHeader':
@@ -4659,7 +4915,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'connection':
         return [];
       case 'empty':
-        return ['Add Table'];
+        return [];
       default:
         return [];
     }
@@ -4693,6 +4949,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.svc.isReadOnly) return;
     if (!this.auth.isLoggedIn()) {
       this.svc.authModalVisible.set(true);
+      return;
+    }
+    if (this.inlineEdit.visible) {
+      this.commitInlineEdit();
       return;
     }
     this.contextMenu.visible = true;
@@ -4764,9 +5024,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = (label === 'Change Color' && isTableInGroup) ||
+      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
-        ((label === 'Edit Table' || label === 'Delete Table') && isRestrictedTableGroup);
+        (label === 'Edit Table' && isRestrictedTableGroup);
 
       if (isDisabled) {
         ctx.fillStyle = isLight ? '#9ca3af' : '#4b5563';
@@ -4926,9 +5186,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = (label === 'Change Color' && isTableInGroup) ||
+      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
-        ((label === 'Edit Table' || label === 'Delete Table') && isRestrictedTableGroup);
+        (label === 'Edit Table' && isRestrictedTableGroup);
 
       if (!isDisabled) {
         this.handleContextMenuClick(label);
@@ -5185,6 +5445,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (rowIndex === -1) return;
     const rowY = table.y + this.svc.HEADER_H + rowIndex * this.svc.ROW_H;
 
+    this.contextMenu.visible = false;
     this.inlineEdit = {
       visible: true,
       x: table.x * this.svc.view.scale + this.svc.view.x,
@@ -5196,9 +5457,18 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       tableName: table.name,
       originalColumnName: column.name
     };
+    this.scheduleDraw();
+    setTimeout(() => {
+      const el = document.querySelector('.inline-edit-input') as HTMLInputElement | null;
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, 50);
   }
 
   private openInlineEditForTable(table: TableDef): void {
+    this.contextMenu.visible = false;
     this.inlineEdit = {
       visible: true,
       x: table.x * this.svc.view.scale + this.svc.view.x,
@@ -5210,11 +5480,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       tableName: table.name,
       originalColumnName: undefined
     };
+    this.scheduleDraw();
+    setTimeout(() => {
+      const el = document.querySelector('.inline-edit-input') as HTMLInputElement | null;
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, 50);
   }
 
   commitInlineEdit(): void {
     if (!this.inlineEdit.visible) return;
-    const val = this.inlineEdit.value.trim();
+    let val = this.inlineEdit.value.trim();
 
     if (val) {
       if (this.inlineEdit.kind === 'column' && this.inlineEdit.originalColumnName) {
@@ -5477,8 +5755,18 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   commitEditNoteName(): void {
     if (this.editingNoteId !== null) {
-      this.svc.updateNote(this.editingNoteId, { name: this.editNoteNameValue.trim() });
+      let trimmedName = (this.editNoteNameValue || '').trim();
+      if (trimmedName && this.svc.isNoteNameDuplicate(trimmedName, this.editingNoteId)) {
+        this.svc.showToast(`Sticky note name "${trimmedName}" already exists.`, 4000, 'error');
+        this.editingNoteId = null;
+        this.cdr.detectChanges();
+        return;
+      }
+      if (trimmedName) {
+        this.svc.updateNote(this.editingNoteId, { name: trimmedName });
+      }
     }
+
     this.editingNoteId = null;
     this.cdr.detectChanges();
   }

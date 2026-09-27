@@ -138,6 +138,9 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
     } else {
       this.expandedTables.add(name);
     }
+    this.activeFieldMenu = null;
+    this.activeTypeDropdown = null;
+    this.activeMenuTable = null;
     this.cdr.markForCheck();
   }
 
@@ -154,6 +157,9 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
     } else {
       this.collapsedFieldsTables.add(tableName);
     }
+    this.activeFieldMenu = null;
+    this.activeTypeDropdown = null;
+    this.activeMenuTable = null;
     this.cdr.markForCheck();
   }
 
@@ -180,7 +186,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
 
   finishRenameTable(oldName: string): void {
     if (!this.editingTableName) return;
-    const newName = (this.newTableNameVal || '').trim();
+    let newName = (this.newTableNameVal || '').trim();
     this.editingTableName = null;
     if (!newName || newName === oldName) {
       this.cdr.markForCheck();
@@ -269,7 +275,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
 
   onFieldNameBlur(table: TableDef, col: Column, e: FocusEvent): void {
     const input = e.target as HTMLInputElement;
-    const newName = (input.value || '').trim();
+    let newName = (input.value || '').trim();
     if (!newName || newName === col.name) {
       input.value = col.name;
       return;
@@ -304,7 +310,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
       const newBody = body
         .split('\n')
         .map(line => {
-          const m = line.trim().match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_()]+)(.*)/);
+          const m = line.trim().match(/^([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+(?:\s*\([^)]*\))?)(.*)/);
           if (m && m[1] === oldColName) {
             const rawAttrs = m[3] || '';
             const attrs: string[] = [];
@@ -313,7 +319,8 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
             if (rawAttrs.includes('increment')) attrs.push('increment');
             if (rawAttrs.includes('unique')) attrs.push('unique');
             const attrStr = attrs.length > 0 ? ` [${attrs.join(', ')}]` : '';
-            return `  ${newColName} ${type}${attrStr}`;
+            const cleanType = type.replace(/\s*\([^)]*\)/g, '').trim();
+            return `  ${newColName} ${cleanType}${attrStr}`;
           }
           return line;
         })
@@ -357,6 +364,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
     e.stopPropagation();
     this.activeMenuTable = this.activeMenuTable === tableName ? null : tableName;
     this.activeFieldMenu = null;
+    this.activeTypeDropdown = null;
   }
 
   toggleFieldMenu(tableName: string, fieldName: string, e: Event): void {
@@ -365,6 +373,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
       this.activeFieldMenu = null;
     } else {
       this.activeFieldMenu = { table: tableName, field: fieldName };
+      this.activeTypeDropdown = null;
     }
     this.activeMenuTable = null;
   }

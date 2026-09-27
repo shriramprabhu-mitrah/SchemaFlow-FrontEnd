@@ -33,6 +33,7 @@
     "publicDiagram": "http://localhost:4000/api/diagrams/public/{token}"
   },
   "workspaceApiUrls": {
+    "validateMember": "http://localhost:4000/api/workspaces/validate-member",
     "workspaces": "http://localhost:4000/api/workspaces",
     "workspaceById": "http://localhost:4000/api/workspaces/{id}",
     "workspaceMembers": "http://localhost:4000/api/workspaces/{workspaceId}/members",
@@ -48,6 +49,10 @@
   "pricingApiUrls": {
     "plans": "http://localhost:4000/api/pricing/plans",
     "profileUpgrade": "http://localhost:4000/api/profile/subscription/upgrade"
+  },
+  "paymentApiUrls": {
+    "createSubscription": "http://localhost:4000/api/payments/create-subscription",
+    "verifySubscription": "http://localhost:4000/api/payments/verify-subscription"
   },
   "organizationApiUrls": {
     "organizations": "http://localhost:4000/api/organizations",

@@ -22,18 +22,19 @@ export class ShareModalComponent implements OnInit {
   get diagramName(): string {
     return this.svc.diagramName || 'Untitled Diagram';
   }
-  
+
   isPublic = true;
   password = '';
+  passwordError: string | null = null;
   emailsInput = '';
   sendingEmails = false;
   savingStatus = false;
   showPassword = false;
-  
+
   activeTab: 'sharing' | 'embedding' = 'sharing';
   invitePermission = 'can view';
   sharePermission = 'Viewer';
-  
+
   linkCopied = false;
   /*
   embedCopied = false;
@@ -65,7 +66,7 @@ export class ShareModalComponent implements OnInit {
     public svc: DashboardService,
     private appConfig: AppConfigService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
   }
@@ -74,6 +75,7 @@ export class ShareModalComponent implements OnInit {
     if (changes['visible'] && this.visible) {
       this.isPublic = this.svc.isDiagramPublic;
       this.password = this.svc.diagramPassword;
+      this.passwordError = null;
       this.showPassword = false;
 
       if ((!this.svc.publicToken || this.svc.publicToken === 'TOKEN_PENDING') && this.diagramId) {
@@ -88,6 +90,7 @@ export class ShareModalComponent implements OnInit {
   closeModal(): void {
     this.isPublic = true;
     this.password = '';
+    this.passwordError = null;
     this.emailsInput = '';
     this.activeTab = 'sharing';
     this.invitePermission = 'can view';
@@ -120,11 +123,51 @@ export class ShareModalComponent implements OnInit {
 
   togglePublicStatus(): void {
     this.isPublic = !this.isPublic;
+    this.passwordError = null;
+  }
+
+  onPasswordKeyDown(event: KeyboardEvent): void {
+    if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
+      event.preventDefault();
+    }
+  }
+
+  onPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleaned = text.replace(/\s/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const val = input.value || '';
+      const newVal = val.substring(0, start) + cleaned + val.substring(end);
+      input.value = newVal;
+      this.password = newVal;
+      input.setSelectionRange(start + cleaned.length, start + cleaned.length);
+    } else {
+      this.password = (this.password + cleaned).replace(/\s/g, '');
+    }
+    if (this.passwordError) {
+      this.passwordError = null;
+    }
+  }
+
+  onPasswordInput(event?: Event): void {
+    const input = event?.target as HTMLInputElement;
+    const cleaned = (input ? input.value : this.password || '').replace(/\s/g, '');
+    this.password = cleaned;
+    if (input && input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    if (this.passwordError) {
+      this.passwordError = null;
+    }
   }
 
   saveSharingSettings(): void {
     if (!this.diagramId) return;
-    
+
     if (this.hasDbmlErrors()) {
       this.svc.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
       return;
@@ -137,9 +180,15 @@ export class ShareModalComponent implements OnInit {
 
     if (this.isPublic) {
       this.password = ''; // Clear password when making it public
-    } else if (!this.password) {
-      this.svc.showToast('Password is required for protected sharing.', 3000, 'error');
+      this.passwordError = null;
+    } else if (!this.password || !this.password.trim()) {
+      this.passwordError = 'Password is required for protected sharing.';
       return;
+    } else if (/\s/.test(this.password)) {
+      this.passwordError = 'Password cannot contain whitespace.';
+      return;
+    } else {
+      this.passwordError = null;
     }
 
     this.savingStatus = true;
@@ -148,6 +197,7 @@ export class ShareModalComponent implements OnInit {
         this.savingStatus = false;
         this.svc.isDiagramPublic = this.isPublic;
         this.svc.diagramPassword = this.password;
+        this.passwordError = null;
         this.cdr.detectChanges();
         this.svc.showToast('Sharing settings updated successfully.', 3000, 'success');
       },
@@ -171,19 +221,19 @@ export class ShareModalComponent implements OnInit {
       this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
       return;
     }
-    
+
     // Parse emails from input
     const rawEmails = this.emailsInput.split(/[\s,]+/).map(e => e.trim()).filter(e => e.length > 0);
-    
+
     if (rawEmails.length === 0) {
       this.svc.showToast('Please enter at least one valid email address.', 3000, 'error');
       return;
     }
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const invalidEmails = rawEmails.filter(email => !emailRegex.test(email));
-    
+
     if (invalidEmails.length > 0) {
       this.svc.showToast(`Invalid email(s): ${invalidEmails.join(', ')}`, 3000, 'error');
       return;

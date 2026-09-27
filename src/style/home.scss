@@ -210,11 +210,13 @@
   color: #ffffff;
   letter-spacing: -0.02em;
 
+
   .brand-text {
     background: linear-gradient(135deg, #3ec5c1, #3b82f6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
 
   app-icons {
