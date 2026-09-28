@@ -134,6 +134,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
       case 'refs':
         return !this.hasFeatureAccess('table_relationships');
       case 'docs':
+        if (this.svc.isDocUnlocked()) {
+          const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+            (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
+          if (!isPlanExpired) {
+            return false;
+          }
+        }
         return !this.hasFeatureAccess('document_view');
       case 'compare':
         return !this.hasFeatureAccess('code_compare');
@@ -471,25 +478,30 @@ export class SidebarComponent implements OnInit, OnDestroy {
         const canUse = this.entitlementService.canUseFeature('document_view');
         const ent = this.entitlementService.getEntitlement('document_view');
         const limit = ent?.effective_limit ?? ent?.limit_value;
-        const isLimitReached = !canUse || (limit !== undefined && limit !== null && limit !== -1 && (
-          limit === 0 ||
-          (ent?.used !== undefined && ent.used >= limit) ||
-          (ent?.remaining !== undefined && ent.remaining <= 0)
+        const isLimitReached = !canUse || (limit !== undefined && limit !== null && Number(limit) !== -1 && (
+          Number(limit) === 0 ||
+          (ent?.used !== undefined && Number(ent.used) >= Number(limit)) ||
+          (ent?.remaining !== undefined && Number(ent.remaining) <= 0)
         ));
 
-        if (isPlanExpired || isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
-          this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
+        if (isPlanExpired || !this.entitlementService.orgHasFeature('document_view')) {
           this.svc.showUpgradeModal('document_view');
           return;
         }
 
-        if (this.svc.isDocUnlocked()) {
+        if (this.svc.isDocUnlocked() || Number(limit) === -1) {
           this.svc.showDocs = true;
           this.svc.showDocsPlaceholder = false;
-        } else {
-          this.svc.showDocs = false;
-          this.svc.showDocsPlaceholder = true;
+          return;
         }
+
+        if (isLimitReached) {
+          this.svc.showUpgradeModal('document_view');
+          return;
+        }
+
+        this.svc.showDocs = false;
+        this.svc.showDocsPlaceholder = true;
       }
 
       this.svc.sidebarInspectorTab.set(null);
