@@ -636,6 +636,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const trunkXByAnchor: Record<string, number> = {};
     this.svc.refs.forEach((ref, i) => {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) return;
+      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) return;
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return;
 
@@ -1737,6 +1738,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) {
         return null;
       }
+      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) {
+        return null;
+      }
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return null;
 
@@ -2080,8 +2084,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.fillText('!', pt.x, pt.y);
         ctx.restore();
 
-        // If target table does not exist on canvas, draw an indicator pill with missing table name
-        if (!geometry[ref.toTable] && ortho.length >= 2) {
+        // If target table does not exist on canvas, draw an indicator pill with missing table name (only when not in diff review)
+        if (!this.svc.aiDiffReviewActive() && !geometry[ref.toTable] && ortho.length >= 2) {
           const endPt = ortho[ortho.length - 1];
           ctx.save();
           ctx.setLineDash([]);
@@ -2103,7 +2107,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           ctx.textBaseline = 'middle';
           ctx.fillText(label, px + 8, py + ph / 2);
           ctx.restore();
-        } else if (!geometry[ref.fromTable] && ortho.length >= 2) {
+        } else if (!this.svc.aiDiffReviewActive() && !geometry[ref.fromTable] && ortho.length >= 2) {
           const startPt = ortho[0];
           ctx.save();
           ctx.setLineDash([]);

@@ -97,6 +97,7 @@
     "aiProviderManage": "http://localhost:4007/api/ai/providers",
     "aiProviderById": "http://localhost:4007/api/ai/providers/{id}",
     "aiModels": "http://localhost:4007/api/ai/admin/models",
+    "aiModelManage": "http://localhost:4007/api/ai/models",
     "aiModelById": "http://localhost:4007/api/ai/models/{id}",
     "aiChatModels": "http://localhost:4007/api/ai/models/",
     "aiChat": "http://localhost:4007/api/ai/chat",

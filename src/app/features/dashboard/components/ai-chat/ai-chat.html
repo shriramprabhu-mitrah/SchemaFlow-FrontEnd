@@ -13,8 +13,8 @@
       <!-- New Chat Button -->
       <button type="button" class="header-action-btn tt tt-bottom" data-tt="New Chat" aria-label="New Chat"
         (click)="startNewChat()" [disabled]="isCreatingSession()">
-        <svg *ngIf="!isCreatingSession()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
-          stroke-linecap="round" stroke-linejoin="round">
+        <svg *ngIf="!isCreatingSession()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
@@ -34,16 +34,17 @@
       <!-- Expand / Collapse Chat Button -->
       <button type="button" class="header-action-btn tt tt-bottom"
         [attr.data-tt]="(svc.isAiChatExpanded() || svc.aiChatWidth() !== null) ? 'Collapse Chat' : 'Expand Chat'"
-        [attr.aria-label]="(svc.isAiChatExpanded() || svc.aiChatWidth() !== null) ? 'Collapse Chat' : 'Expand Chat'" (click)="svc.toggleAiChatExpand()">
-        <svg *ngIf="!svc.isAiChatExpanded() && svc.aiChatWidth() === null" width="13" height="13" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        [attr.aria-label]="(svc.isAiChatExpanded() || svc.aiChatWidth() !== null) ? 'Collapse Chat' : 'Expand Chat'"
+        (click)="svc.toggleAiChatExpand()">
+        <svg *ngIf="!svc.isAiChatExpanded() && svc.aiChatWidth() === null" width="13" height="13" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 3 21 3 21 9"></polyline>
           <polyline points="9 21 3 21 3 15"></polyline>
           <line x1="21" y1="3" x2="14" y2="10"></line>
           <line x1="3" y1="21" x2="10" y2="14"></line>
         </svg>
-        <svg *ngIf="svc.isAiChatExpanded() || svc.aiChatWidth() !== null" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <svg *ngIf="svc.isAiChatExpanded() || svc.aiChatWidth() !== null" width="13" height="13" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="4 14 10 14 10 20"></polyline>
           <polyline points="20 10 14 10 14 4"></polyline>
           <line x1="14" y1="10" x2="21" y2="3"></line>
@@ -72,7 +73,8 @@
     </div>
 
     <!-- Welcome View (Default when no messages and not loading) -->
-    <div class="ai-welcome-view" *ngIf="!isLoadingSessions() && !isLoadingHistory() && messages().length === 0 && !isThinking()">
+    <div class="ai-welcome-view"
+      *ngIf="!isLoadingSessions() && !isLoadingHistory() && messages().length === 0 && !isThinking()">
       <!-- Hero Header -->
       <div class="welcome-hero">
         <div class="ai-sparkle-logo">
@@ -183,14 +185,11 @@
           </div>
 
           <!-- Delete latest chat button at the bottom-left corner -->
-          <button type="button"
-                  class="btn-delete-chat-corner"
-                  *ngIf="isLatestMessage(msg) && !isThinking() && !msg.isStreaming"
-                  (click)="deleteLatestChat(msg)"
-                  [disabled]="isDeletingChat()"
-                  title="Delete latest chat"
-                  aria-label="Delete latest chat">
-            <svg *ngIf="!isDeletingChat()" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button type="button" class="btn-delete-chat-corner"
+            *ngIf="isLatestMessage(msg) && !isThinking() && !msg.isStreaming" (click)="deleteLatestChat(msg)"
+            [disabled]="isDeletingChat()" title="Delete latest chat" aria-label="Delete latest chat">
+            <svg *ngIf="!isDeletingChat()" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               <line x1="10" y1="11" x2="10" y2="17"></line>
@@ -203,11 +202,13 @@
         <div class="msg-content-wrap">
           <div class="msg-bubble">
             <!-- Code Snippet Box if provided (displayed before description) -->
-            <div class="code-snippet-box" *ngIf="msg.codeSnippet && (msg.displayCodeSnippet !== undefined ? msg.displayCodeSnippet : msg.codeSnippet)">
+            <div class="code-snippet-box"
+              *ngIf="msg.codeSnippet && (msg.displayCodeSnippet !== undefined ? msg.displayCodeSnippet : msg.codeSnippet)">
               <div class="snippet-header">
                 <span class="snippet-lang">DBML</span>
                 <div class="snippet-actions">
-                  <button type="button" class="btn-snippet-copy" (click)="copySnippet(msg.codeSnippet || msg.displayCodeSnippet || '', msg.id)">
+                  <button type="button" class="btn-snippet-copy"
+                    (click)="copySnippet(msg.codeSnippet || msg.displayCodeSnippet || '', msg.id)">
                     <svg *ngIf="copiedSnippetId() !== msg.id" width="12" height="12" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -227,16 +228,19 @@
                       <polyline points="8 6 2 12 8 18"></polyline>
                     </svg>
                     <span *ngIf="applyingSnippetMsgId() === msg.id" class="btn-mini-spinner"></span>
-                    <span>{{ msg.applied ? 'Applied' : (applyingSnippetMsgId() === msg.id ? 'Applying...' : 'Apply to Editor') }}</span>
+                    <span>{{ msg.applied ? 'Applied' : (applyingSnippetMsgId() === msg.id ? 'Applying...' : 'Apply to
+                      Editor') }}</span>
                   </button>
                 </div>
               </div>
-              <pre class="snippet-pre"><code>{{ msg.displayCodeSnippet !== undefined ? msg.displayCodeSnippet : msg.codeSnippet }}<span class="chatgpt-cursor code-cursor" *ngIf="msg.isStreaming && msg.streamingStage === 'code'">▊</span></code></pre>
+              <pre
+                class="snippet-pre"><code [innerHTML]="colorizeDbml(msg.displayCodeSnippet !== undefined ? msg.displayCodeSnippet : msg.codeSnippet)"></code><span class="chatgpt-cursor code-cursor" *ngIf="msg.isStreaming && msg.streamingStage === 'code'">▊</span></pre>
             </div>
 
             <!-- Description Text -->
             <p class="msg-text" *ngIf="msg.displayText !== undefined ? msg.displayText : msg.text">
-              {{ msg.displayText !== undefined ? msg.displayText : msg.text }}<span class="chatgpt-cursor" *ngIf="msg.isStreaming && msg.streamingStage === 'text'">▊</span>
+              {{ msg.displayText !== undefined ? msg.displayText : msg.text }}<span class="chatgpt-cursor"
+                *ngIf="msg.isStreaming && msg.streamingStage === 'text'">▊</span>
             </p>
 
             <div class="msg-meta-row" *ngIf="!msg.isStreaming">
@@ -256,8 +260,10 @@
         </div>
         <div class="thinking-content">
           <span class="thinking-spark-icon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" />
             </svg>
           </span>
           <span class="thinking-text">Thinking</span>
@@ -310,13 +316,17 @@
                   [class.active]="selectedModel()?.id === model.id" (click)="onModelSelect(model, $event)">
                   <div class="model-item-info">
                     <span class="model-item-name">{{ model.model_name }}</span>
+                    <span class="model-item-free-tag" *ngIf="isNoApiKeyRequired(model)"
+                      title="Free model provided by dbnexus AI - No API key required">Free</span>
                     <span class="model-item-tag">{{ model.provider_name }}</span>
                   </div>
                   <div class="model-item-status">
-                    <span class="model-key-badge" [class.has-key]="isNoApiKeyRequired(model) || model.has_api_key || model.api_key"
+                    <span class="model-key-badge"
+                      [class.has-key]="isNoApiKeyRequired(model) || model.has_api_key || model.api_key"
                       (click)="$event.stopPropagation(); !isNoApiKeyRequired(model) && openApiKeyModal(model, $event)"
                       [title]="isNoApiKeyRequired(model) ? 'Default model - No API key required' : ((model.has_api_key || model.api_key) ? 'Click to change API key' : 'Click to configure API key')">
-                      {{ isNoApiKeyRequired(model) ? 'Ready' : ((model.has_api_key || model.api_key) ? 'Ready' : 'Key required') }}
+                      {{ isNoApiKeyRequired(model) ? 'Ready' : ((model.has_api_key || model.api_key) ? 'Ready' : 'Key
+                      required') }}
                     </span>
                     <svg *ngIf="selectedModel()?.id === model.id" class="model-check-icon" width="13" height="13"
                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"

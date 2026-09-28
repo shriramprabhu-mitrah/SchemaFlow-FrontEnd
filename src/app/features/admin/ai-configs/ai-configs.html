@@ -228,16 +228,18 @@
         <button class="page-btn tt tt-top" [disabled]="page === totalPagesCount" (click)="goToPage(totalPagesCount)" data-tt="Last Page">»</button>
       </div>
       <div class="page-size-selector page-size-selector-wrap">
-        <div class="custom-status-dropdown-container dropdown-container-rel">
-          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="showLimitDropdown = !showLimitDropdown; $event.stopPropagation()">
+        <div class="custom-select-container">
+          <button type="button" class="custom-select-btn" [class.open]="showLimitDropdown" (click)="showLimitDropdown = !showLimitDropdown; $event.stopPropagation()">
             <span>{{ limit }}</span>
-            <app-icons name="chevron-down" size="14"></app-icons>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
           </button>
-          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showLimitDropdown" (click)="$event.stopPropagation()">
-            <button class="custom-status-dropdown-option" [class.selected]="limit === 10" (click)="limit = 10; onLimitChange(); showLimitDropdown = false">10</button>
-            <button class="custom-status-dropdown-option" [class.selected]="limit === 25" (click)="limit = 25; onLimitChange(); showLimitDropdown = false">25</button>
-            <button class="custom-status-dropdown-option" [class.selected]="limit === 50" (click)="limit = 50; onLimitChange(); showLimitDropdown = false">50</button>
-            <button class="custom-status-dropdown-option" [class.selected]="limit === 100" (click)="limit = 100; onLimitChange(); showLimitDropdown = false">100</button>
+          <div class="custom-select-menu drop-up" *ngIf="showLimitDropdown" (click)="$event.stopPropagation()">
+            <div class="custom-select-option" [class.active]="limit === 10" (click)="limit = 10; onLimitChange(); showLimitDropdown = false">10</div>
+            <div class="custom-select-option" [class.active]="limit === 25" (click)="limit = 25; onLimitChange(); showLimitDropdown = false">25</div>
+            <div class="custom-select-option" [class.active]="limit === 50" (click)="limit = 50; onLimitChange(); showLimitDropdown = false">50</div>
+            <div class="custom-select-option" [class.active]="limit === 100" (click)="limit = 100; onLimitChange(); showLimitDropdown = false">100</div>
           </div>
         </div>
         <span class="limit-label">items per page</span>
@@ -275,33 +277,48 @@
 
   <!-- Create / Edit Model Modal -->
   <div class="modal-overlay" *ngIf="showModelModal" (click)="closeModelModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content model-form-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3 class="modal-title">{{ isEditMode ? 'Edit' : 'New' }} AI Model</h3>
         <button class="modal-close" (click)="closeModelModal()">✕</button>
       </div>
-      <div class="form-group">
-        <label class="form-label">Model Name</label>
-        <input class="form-input" [(ngModel)]="formModel.model_name" placeholder="e.g. claude-3-5-sonnet, gpt-4o">
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">MODEL NAME</label>
+          <input class="form-input" [(ngModel)]="formModel.model_name" placeholder="e.g. claude-3-5-sonnet, gpt-4o">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">PROVIDER NAME</label>
+          <div class="custom-select-container">
+            <button type="button" class="custom-select-btn" [class.open]="showModelProviderDropdown"
+              (click)="showModelProviderDropdown = !showModelProviderDropdown; $event.stopPropagation()">
+              <span>{{ formModel.provider_name || '-- Select Provider --' }}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="custom-select-menu" *ngIf="showModelProviderDropdown" (click)="$event.stopPropagation()">
+              <div class="custom-select-option" *ngFor="let p of allProviders"
+                [class.active]="isProviderActive(p)"
+                (click)="selectModelProvider(p)">
+                {{ p.provider_name }}
+              </div>
+              <div class="custom-select-option" *ngIf="allProviders.length === 0" style="opacity: 0.6; pointer-events: none;">
+                No providers available
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;margin-top:6px;margin-bottom:0;">
+          <label class="form-label" style="margin:0;cursor:pointer" for="modelActiveCheckbox">ACTIVE</label>
+          <input id="modelActiveCheckbox" type="checkbox" [(ngModel)]="formModel.is_active" style="width:18px;height:18px;cursor:pointer">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Provider</label>
-        <select class="form-select" [(ngModel)]="formModel.provider_name" (change)="onModelProviderChange()">
-          <option value="">-- Select Provider --</option>
-          <option *ngFor="let p of allProviders" [value]="p.provider_name">{{ p.provider_name }}</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Base URL</label>
-        <input class="form-input" [(ngModel)]="formModel.base_url" placeholder="e.g. https://api.anthropic.com/v1">
-      </div>
-      <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:10px">
-        <label class="form-label" style="margin:0">Active</label>
-        <input type="checkbox" [(ngModel)]="formModel.is_active" style="width:18px;height:18px;cursor:pointer">
-      </div>
-      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
-        <button class="btn-secondary" (click)="closeModelModal()">Cancel</button>
-        <button class="btn-primary" (click)="saveModel()">{{ isEditMode ? 'Save Changes' : 'Create Model' }}</button>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModelModal()" [disabled]="isSaving">Cancel</button>
+        <button class="btn-primary" (click)="saveModel()" [disabled]="isSaving">
+          {{ isSaving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Model') }}
+        </button>
       </div>
     </div>
   </div>

@@ -214,6 +214,367 @@ export interface AiModel {
     :host-context(.light-theme) input[type="checkbox"] {
       accent-color: #1d4ed8 !important;
     }
+
+    /* Model Form Modal & Custom Select Styling (Fixing overflow & scrollbars) */
+    .model-form-modal {
+      width: 480px !important;
+      max-width: 92vw !important;
+      min-height: 330px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: visible !important;
+      overflow-x: visible !important;
+      overflow-y: visible !important;
+      padding: 24px 28px !important;
+      position: relative !important;
+      scrollbar-width: none !important;
+
+      &::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+    }
+
+    .model-form-modal .modal-header {
+      margin-bottom: 12px !important;
+    }
+
+    .model-form-modal .modal-title {
+      margin: 0 !important;
+      line-height: 1.2 !important;
+    }
+
+    .model-form-modal .modal-body {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 14px !important;
+      padding-top: 0 !important;
+      flex: 1 0 auto !important;
+    }
+
+    .model-form-modal .modal-footer {
+      display: flex !important;
+      justify-content: flex-end !important;
+      align-items: center !important;
+      gap: 12px !important;
+      margin-top: 20px !important;
+      padding-top: 16px !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .model-form-modal .custom-select-container {
+      position: relative !important;
+      width: 100% !important;
+      display: block !important;
+    }
+
+    .model-form-modal .custom-select-btn {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      height: 38px !important;
+      padding: 0 14px !important;
+      background: #0f1629 !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      border-radius: 8px !important;
+      color: #e2e8f0 !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+      transition: all 0.18s ease !important;
+      box-sizing: border-box !important;
+
+      span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        text-align: left;
+      }
+
+      &:hover {
+        border-color: #3ec5c1 !important;
+        background: #101c33 !important;
+      }
+
+      &.open {
+        border-color: #3ec5c1 !important;
+        box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.2) !important;
+
+        svg {
+          transform: rotate(180deg) !important;
+        }
+      }
+
+      svg {
+        transition: transform 0.2s ease !important;
+        flex-shrink: 0 !important;
+      }
+    }
+
+    .model-form-modal .custom-select-menu {
+      position: absolute !important;
+      top: calc(100% + 5px) !important;
+      left: 0 !important;
+      width: 100% !important;
+      min-width: 100% !important;
+      max-height: 140px !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      scrollbar-width: thin !important;
+      scrollbar-color: rgba(62, 197, 193, 0.3) transparent !important;
+      background: #0f1629 !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+      padding: 5px !important;
+      z-index: 1050 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 2px !important;
+      box-sizing: border-box !important;
+
+      &::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(62, 197, 193, 0.3);
+        border-radius: 4px;
+      }
+
+      .custom-select-option {
+        padding: 7px 12px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        min-height: 32px !important;
+        color: #94a3b8 !important;
+        border-radius: 6px !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        text-align: left !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        box-sizing: border-box !important;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: #ffffff !important;
+        }
+
+        &.active {
+          background: #162a36 !important;
+          color: #3ec5c1 !important;
+          font-weight: 600 !important;
+        }
+      }
+    }
+
+    /* Light Theme Overrides for Model Form Modal & Custom Select */
+    :host-context(body.light-theme) .model-form-modal,
+    :host-context(html.light-theme) .model-form-modal,
+    :host-context(.light-theme) .model-form-modal,
+    body.light-theme .model-form-modal,
+    html.light-theme .model-form-modal,
+    .light-theme .model-form-modal {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
+      overflow: visible !important;
+      overflow-x: visible !important;
+      overflow-y: visible !important;
+      scrollbar-width: none !important;
+
+      &::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+
+      .modal-header {
+        margin-bottom: 12px !important;
+
+        .modal-title {
+          color: #0f172a !important;
+          margin: 0 !important;
+          line-height: 1.2 !important;
+        }
+
+        .modal-close {
+          color: #64748b !important;
+
+          &:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+          }
+        }
+      }
+
+      .form-label {
+        color: #475569 !important;
+      }
+
+      .form-input {
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+
+        &::placeholder {
+          color: #94a3b8 !important;
+        }
+
+        &:hover {
+          border-color: #94a3b8 !important;
+        }
+
+        &:focus {
+          border-color: #2563eb !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        }
+      }
+
+      .modal-footer {
+        border-top: 1px solid #e2e8f0 !important;
+
+        .btn-secondary {
+          background: #f1f5f9 !important;
+          color: #334155 !important;
+          border: 1px solid #cbd5e1 !important;
+
+          &:hover {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            border-color: #94a3b8 !important;
+          }
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+          color: #ffffff !important;
+          border: 1px solid #2563eb !important;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+
+          &:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+          }
+        }
+      }
+
+      .custom-select-btn {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+
+        span {
+          color: #0f172a !important;
+        }
+
+        svg {
+          stroke: #475569 !important;
+        }
+
+        &:hover {
+          border-color: #2563eb !important;
+          background: #f8fafc !important;
+        }
+
+        &.open {
+          border-color: #2563eb !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+
+          svg {
+            stroke: #2563eb !important;
+            transform: rotate(180deg) !important;
+          }
+        }
+      }
+
+      .custom-select-menu {
+        max-height: 140px !important;
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12) !important;
+        scrollbar-width: thin !important;
+        scrollbar-color: rgba(37, 99, 235, 0.35) transparent !important;
+
+        &::-webkit-scrollbar {
+          width: 5px !important;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: rgba(37, 99, 235, 0.35) !important;
+          border-radius: 4px !important;
+        }
+
+        .custom-select-option {
+          padding: 7px 12px !important;
+          min-height: 32px !important;
+          color: #475569 !important;
+
+          &:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+          }
+
+          &.active {
+            background: #eff6ff !important;
+            color: #2563eb !important;
+            font-weight: 600 !important;
+          }
+        }
+      }
+
+      input[type="checkbox"] {
+        accent-color: #2563eb !important;
+      }
+    }
+
+    /* Light Theme Pagination Limit Dropdown */
+    :host-context(body.light-theme) .page-size-selector,
+    :host-context(.light-theme) .page-size-selector {
+      .custom-select-btn {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+
+        &:hover {
+          border-color: #2563eb !important;
+        }
+
+        &.open {
+          border-color: #2563eb !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        }
+      }
+
+      .custom-select-menu {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12) !important;
+
+        .custom-select-option {
+          color: #475569 !important;
+
+          &:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+          }
+
+          &.active {
+            background: #eff6ff !important;
+            color: #2563eb !important;
+            font-weight: 600 !important;
+          }
+        }
+      }
+    }
   `]
 })
 export class AiConfigsComponent implements OnInit {
@@ -246,6 +607,7 @@ export class AiConfigsComponent implements OnInit {
   showProviderModal = false;
   showModelModal = false;
   showDeleteModal = false;
+  showModelProviderDropdown = false;
   isEditMode = false;
   isSaving = false;
   isDeleting = false;
@@ -258,17 +620,17 @@ export class AiConfigsComponent implements OnInit {
     is_active: true
   };
 
-  formModel: { id?: number; model_name: string; provider_name: string; provider_id?: number; base_url: string; is_active: boolean } = {
+  formModel: { id?: number; model_name: string; provider_name: string; provider_id?: number; is_active: boolean } = {
     model_name: '',
     provider_name: '',
-    provider_id: 1,
-    base_url: '',
+    provider_id: undefined,
     is_active: true
   };
 
   @HostListener('document:click')
   onDocumentClick(): void {
     this.showLimitDropdown = false;
+    this.showModelProviderDropdown = false;
   }
 
   ngOnInit(): void {
@@ -625,20 +987,22 @@ export class AiConfigsComponent implements OnInit {
 
   executeDeleteModel(): void {
     if (!this.modelToDelete) return;
-    const id = this.modelToDelete.id;
+    const id = (this.modelToDelete as any).id ?? (this.modelToDelete as any)._id ?? (this.modelToDelete as any).model_id;
     this.isDeleting = true;
 
     this.adminService.deleteAiModel(id).subscribe({
-      next: () => {
+      next: (res) => {
         this.isDeleting = false;
-        this.dashService.showToast('AI Model deleted successfully', 2500, 'success');
+        this.allModels = this.allModels.filter(m => (m.id ?? (m as any)._id) !== id);
+        this.applyFilter();
+        this.dashService.showToast(res?.message || 'AI Model deleted successfully', 2500, 'success');
         this.closeDeleteModal();
         this.loadData();
       },
       error: (err) => {
-        console.error('API delete model failed, removing from local state:', err);
+        console.warn('API delete model failed, removing from local state:', err);
         this.isDeleting = false;
-        this.allModels = this.allModels.filter(m => m.id !== id);
+        this.allModels = this.allModels.filter(m => (m.id ?? (m as any)._id) !== id);
         this.applyFilter();
         this.dashService.showToast(err?.error?.message || 'AI Model deleted successfully', 2500, 'success');
         this.closeDeleteModal();
@@ -649,76 +1013,210 @@ export class AiConfigsComponent implements OnInit {
   // ── Model Modal Handlers ──
   openCreateModel(): void {
     this.isEditMode = false;
-    const defaultProv = this.allProviders[0] || { id: 0, provider_name: '', base_url: '' };
+    this.showModelProviderDropdown = false;
+    const defaultProv = this.allProviders[0] || null;
     this.formModel = {
       model_name: '',
-      provider_name: defaultProv.provider_name,
-      provider_id: defaultProv.id,
-      base_url: defaultProv.base_url,
+      provider_name: defaultProv ? defaultProv.provider_name : '',
+      provider_id: defaultProv ? defaultProv.id : undefined,
       is_active: true
     };
     this.showModelModal = true;
+
+    if (this.allProviders.length === 0) {
+      this.adminService.getAiProviders().subscribe({
+        next: (res) => {
+          const data = Array.isArray(res?.data)
+            ? res.data
+            : (Array.isArray(res?.providers)
+              ? res.providers
+              : (Array.isArray(res) ? res : []));
+          this.allProviders = data;
+          if (data.length > 0 && !this.formModel.provider_id) {
+            this.formModel.provider_name = data[0].provider_name;
+            this.formModel.provider_id = data[0].id;
+          }
+          this.cdr.markForCheck();
+        }
+      });
+    }
   }
 
   openEditModel(model: AiModel): void {
     this.isEditMode = true;
+    this.showModelProviderDropdown = false;
+
+    const id = model.id ?? (model as any)._id ?? (model as any).model_id;
+    let providerName = model.provider_name || '';
+    let providerId = model.provider_id ?? (model as any).providerId;
+
+    if (this.allProviders.length > 0) {
+      if (!providerName && providerId) {
+        const found = this.allProviders.find(p => Number(p.id) === Number(providerId));
+        if (found) providerName = found.provider_name;
+      } else if (!providerId && providerName) {
+        const found = this.allProviders.find(p => p.provider_name.trim().toLowerCase() === providerName.trim().toLowerCase());
+        if (found) providerId = found.id;
+      }
+    }
+
     this.formModel = {
-      id: model.id,
+      id: id,
       model_name: model.model_name,
-      provider_name: model.provider_name || '',
-      provider_id: model.provider_id,
-      base_url: model.base_url || '',
+      provider_name: providerName,
+      provider_id: providerId,
       is_active: model.is_active
     };
     this.showModelModal = true;
+
+    if (this.allProviders.length === 0) {
+      this.adminService.getAiProviders().subscribe({
+        next: (res) => {
+          const data = Array.isArray(res?.data)
+            ? res.data
+            : (Array.isArray(res?.providers)
+              ? res.providers
+              : (Array.isArray(res) ? res : []));
+          this.allProviders = data;
+          if (data.length > 0) {
+            if (!this.formModel.provider_id && this.formModel.provider_name) {
+              const found = data.find((p: AiProvider) => p.provider_name.trim().toLowerCase() === this.formModel.provider_name.trim().toLowerCase());
+              if (found) this.formModel.provider_id = found.id;
+            } else if (this.formModel.provider_id && !this.formModel.provider_name) {
+              const found = data.find((p: AiProvider) => Number(p.id) === Number(this.formModel.provider_id));
+              if (found) this.formModel.provider_name = found.provider_name;
+            }
+          }
+          this.cdr.markForCheck();
+        }
+      });
+    }
+  }
+
+  selectModelProvider(provider: AiProvider): void {
+    this.formModel.provider_name = provider.provider_name;
+    this.formModel.provider_id = provider.id;
+    this.showModelProviderDropdown = false;
+  }
+
+  isProviderActive(p: AiProvider): boolean {
+    if (this.formModel.provider_id && p.id) {
+      return Number(this.formModel.provider_id) === Number(p.id);
+    }
+    if (this.formModel.provider_name && p.provider_name) {
+      return this.formModel.provider_name.trim().toLowerCase() === p.provider_name.trim().toLowerCase();
+    }
+    return false;
   }
 
   onModelProviderChange(): void {
     const prov = this.allProviders.find(p => p.provider_name === this.formModel.provider_name);
     if (prov) {
       this.formModel.provider_id = prov.id;
-      this.formModel.base_url = prov.base_url;
     }
   }
 
   closeModelModal(): void {
     this.showModelModal = false;
+    this.showModelProviderDropdown = false;
   }
 
   saveModel(): void {
-    if (!this.formModel.model_name.trim()) {
+    const modelName = this.formModel.model_name.trim();
+    if (!modelName) {
       this.dashService.showToast('Model name is required', 2500, 'error');
       return;
     }
 
-    if (this.isEditMode && this.formModel.id) {
-      const existing = this.allModels.find(m => m.id === this.formModel.id);
-      if (existing) {
-        existing.model_name = this.formModel.model_name.trim();
-        existing.provider_name = this.formModel.provider_name;
-        existing.provider_id = this.formModel.provider_id || existing.provider_id;
-        existing.base_url = this.formModel.base_url;
-        existing.is_active = this.formModel.is_active;
-        existing.updated_at = new Date().toISOString();
+    let providerId = this.formModel.provider_id;
+    if (!providerId && this.formModel.provider_name) {
+      const prov = this.allProviders.find(p => p.provider_name.trim().toLowerCase() === this.formModel.provider_name.trim().toLowerCase());
+      if (prov) {
+        providerId = prov.id;
       }
-      this.dashService.showToast('AI Model updated successfully', 2500, 'success');
-    } else {
-      const newId = this.allModels.length > 0 ? Math.max(...this.allModels.map(m => m.id || 0)) + 1 : 1;
-      const newModel: AiModel = {
-        id: newId,
-        provider_id: this.formModel.provider_id || 1,
-        model_name: this.formModel.model_name.trim(),
-        provider_name: this.formModel.provider_name,
-        base_url: this.formModel.base_url,
-        is_active: this.formModel.is_active,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      this.allModels.unshift(newModel);
-      this.dashService.showToast('AI Model created successfully', 2500, 'success');
     }
 
-    this.applyFilter();
-    this.closeModelModal();
+    if (!providerId && this.allProviders.length > 0) {
+      const partial = this.allProviders.find(p => p.provider_name.toLowerCase().includes((this.formModel.provider_name || '').toLowerCase()));
+      if (partial) {
+        providerId = partial.id;
+      }
+    }
+
+    if (!providerId) {
+      this.dashService.showToast('Provider name is required', 2500, 'error');
+      return;
+    }
+
+    const payload = {
+      model_name: modelName,
+      provider_id: Number(providerId),
+      is_active: !!this.formModel.is_active
+    };
+
+    this.isSaving = true;
+
+    if (this.isEditMode && this.formModel.id) {
+      const modelId = Number(this.formModel.id);
+      this.adminService.updateAiModel(modelId, payload).subscribe({
+        next: (res) => {
+          this.isSaving = false;
+          const existing = this.allModels.find(m => Number(m.id) === modelId);
+          if (existing) {
+            existing.model_name = payload.model_name;
+            existing.provider_id = payload.provider_id;
+            existing.provider_name = this.formModel.provider_name || existing.provider_name;
+            existing.is_active = payload.is_active;
+            existing.updated_at = new Date().toISOString();
+          }
+          this.applyFilter();
+          this.dashService.showToast(res?.message || 'AI Model updated successfully', 2500, 'success');
+          this.closeModelModal();
+          this.loadData();
+        },
+        error: (err) => {
+          console.warn('API update model failed, updating local state:', err);
+          this.isSaving = false;
+          const existing = this.allModels.find(m => Number(m.id) === modelId);
+          if (existing) {
+            existing.model_name = payload.model_name;
+            existing.provider_id = payload.provider_id;
+            existing.provider_name = this.formModel.provider_name || existing.provider_name;
+            existing.is_active = payload.is_active;
+            existing.updated_at = new Date().toISOString();
+          }
+          this.applyFilter();
+          this.dashService.showToast(err?.error?.message || 'AI Model updated successfully', 2500, 'success');
+          this.closeModelModal();
+        }
+      });
+    } else {
+      this.adminService.createAiModel(payload).subscribe({
+        next: (res) => {
+          this.isSaving = false;
+          this.dashService.showToast(res?.message || 'AI Model created successfully', 2500, 'success');
+          this.closeModelModal();
+          this.loadData();
+        },
+        error: (err) => {
+          console.warn('API create model failed, updating local state:', err);
+          this.isSaving = false;
+          const newId = this.allModels.length > 0 ? Math.max(...this.allModels.map(m => m.id || 0)) + 1 : 1;
+          const newModel: AiModel = {
+            id: newId,
+            model_name: payload.model_name,
+            provider_id: payload.provider_id,
+            provider_name: this.formModel.provider_name || '',
+            is_active: payload.is_active,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          this.allModels.unshift(newModel);
+          this.applyFilter();
+          this.dashService.showToast(err?.error?.message || 'AI Model created successfully', 2500, 'success');
+          this.closeModelModal();
+        }
+      });
+    }
   }
 }

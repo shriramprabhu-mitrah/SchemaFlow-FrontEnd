@@ -620,8 +620,13 @@ export class DashboardService {
   readonly columnDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
 
   startAiDiffReview(originalCode: string, proposedCode: string): void {
-    const origNorm = (originalCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    const propNorm = (proposedCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const origNorm = (originalCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
+    const propNorm = (proposedCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
+
+    if (origNorm === propNorm) {
+      this.closeAiDiffReview(false);
+      return;
+    }
 
     this.aiDiffOriginalCode.set(origNorm);
     this.aiDiffProposedCode.set(propNorm);
@@ -782,7 +787,7 @@ export class DashboardService {
         result.push(line.text);
       }
     }
-    return result.join('\n');
+    return result.join('\n').replace(/\n+$/, '');
   }
 
   private renumberDiffLines(lines: DiffReviewLine[]): void {
@@ -880,19 +885,36 @@ export class DashboardService {
     });
     this.columnDiffStatus.set(cStatus);
 
+    const pendingRefKeys = new Set<string>();
+    for (const l of this.aiDiffLines()) {
+      if (!l.hunkId) continue;
+      const trimmed = l.text.trim();
+      const match = trimmed.match(/^Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(?:<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
+      if (match) {
+        pendingRefKeys.add(`${match[1].toLowerCase()}.${match[2].toLowerCase()}>${match[3].toLowerCase()}.${match[4].toLowerCase()}`);
+        pendingRefKeys.add(`${match[3].toLowerCase()}.${match[4].toLowerCase()}>${match[1].toLowerCase()}.${match[2].toLowerCase()}`);
+      }
+    }
+
     const rStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
-    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
+    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase()));
     currParsed.refs.forEach(nr => {
       const key = `${nr.fromTable}.${nr.fromCol}>${nr.toTable}.${nr.toCol}`;
-      if (!oldRefKeys.has(key)) {
-        rStatus[key] = 'added';
+      const keyLower = key.toLowerCase();
+      if (!oldRefKeys.has(keyLower)) {
+        if (pendingRefKeys.has(keyLower)) {
+          rStatus[key] = 'added';
+        }
       }
     });
-    const currRefKeys = new Set(currParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
+    const currRefKeys = new Set(currParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase()));
     oldParsed.refs.forEach(or => {
       const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
-      if (!currRefKeys.has(key)) {
-        rStatus[key] = 'deleted';
+      const keyLower = key.toLowerCase();
+      if (!currRefKeys.has(keyLower)) {
+        if (pendingRefKeys.has(keyLower)) {
+          rStatus[key] = 'deleted';
+        }
       }
     });
     this.refDiffStatus.set(rStatus);
@@ -927,8 +949,6 @@ export class DashboardService {
 
     const merged = this.buildAiDiffMergedCode();
     this.code = merged;
-    this.parseAndLayout();
-    this.scheduleDraw();
 
     const pending = hunks.filter(h => h.status === 'pending');
     if (pending.length === 0) {
@@ -942,6 +962,8 @@ export class DashboardService {
     } else {
       this.updateCanvasDiffStatusForPending();
       this.advanceToNextPendingHunk();
+      this.parseAndLayout();
+      this.scheduleDraw();
     }
   }
 
@@ -974,12 +996,14 @@ export class DashboardService {
 
     const merged = this.buildAiDiffMergedCode();
     this.code = merged;
-    this.parseAndLayout();
-    this.scheduleDraw();
 
     const pending = hunks.filter(h => h.status === 'pending');
     if (pending.length === 0) {
       const anyAccepted = hunks.some(h => h.status === 'accepted');
+      if (!anyAccepted) {
+        const original = this.aiDiffOriginalCode();
+        this.code = original;
+      }
       this.closeAiDiffReview(anyAccepted);
       if (anyAccepted) {
         if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
@@ -989,26 +1013,22 @@ export class DashboardService {
         }
         this.showToast('Accepted changes saved!', 2500, 'success');
       } else {
-        const original = this.aiDiffOriginalCode();
-        this.code = original;
-        this.parseAndLayout();
-        this.scheduleDraw();
         this.showToast('AI changes rejected.', 2500);
       }
     } else {
       this.updateCanvasDiffStatusForPending();
       this.advanceToNextPendingHunk();
+      this.parseAndLayout();
+      this.scheduleDraw();
     }
   }
 
   acceptAllAiDiff(): void {
-    const proposed = this.aiDiffProposedCode();
-    this.closeAiDiffReview(true);
+    const proposed = (this.aiDiffProposedCode() || '').replace(/\n+$/, '');
     this.code = proposed;
     this.showCanvasPlaceholder = !proposed.trim();
-    this.parseAndLayout();
+    this.closeAiDiffReview(true);
     this.requestCanvasFit();
-    this.scheduleDraw();
 
     if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
       this.saveDiagram().subscribe({
@@ -1021,12 +1041,10 @@ export class DashboardService {
 
   rejectAllAiDiff(): void {
     const original = this.aiDiffOriginalCode();
-    this.closeAiDiffReview(false);
     this.code = original;
     this.showCanvasPlaceholder = !original.trim();
-    this.parseAndLayout();
+    this.closeAiDiffReview(false);
     this.requestCanvasFit();
-    this.scheduleDraw();
     this.showToast('AI changes rejected.', 2500);
   }
 
@@ -1065,12 +1083,16 @@ export class DashboardService {
     } else {
       const orig = this.aiDiffOriginalCode();
       if (orig !== undefined && orig !== null) {
+        this.code = orig;
         if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
           localStorage.setItem('active_diagram_code', orig);
           localStorage.setItem('dbml_code', orig);
         }
       }
     }
+
+    this.parseAndLayout();
+    this.scheduleDraw();
   }
   isReadOnly = false;
   publicToken: string = '';
@@ -2952,13 +2974,17 @@ export class DashboardService {
 
     if (this.aiDiffReviewActive()) {
       const origParsed = this.parseDBML(this.aiDiffOriginalCode());
-      const deletedRefKeys = Object.entries(this.refDiffStatus())
-        .filter(([_, status]) => status === 'deleted')
-        .map(([k]) => k);
+      const deletedRefKeys = new Set(
+        Object.entries(this.refDiffStatus())
+          .filter(([_, status]) => status === 'deleted')
+          .map(([k]) => k.toLowerCase())
+      );
 
       origParsed.refs.forEach((or) => {
-        const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
-        if (deletedRefKeys.includes(key) && !this.refs.some(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}` === key)) {
+        const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`.toLowerCase();
+        const fromExists = this.tables.some(t => t.name.toLowerCase() === or.fromTable.toLowerCase());
+        const toExists = this.tables.some(t => t.name.toLowerCase() === or.toTable.toLowerCase());
+        if (fromExists && toExists && deletedRefKeys.has(key) && !this.refs.some(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase() === key)) {
           this.refs.push(or);
         }
       });
@@ -5214,8 +5240,8 @@ export class DashboardService {
       return false;
     }
 
-    const currentNormalized = (this.code || '').replace(/\r\n/g, '\n');
-    const originalNormalized = (this.originalCode || '').replace(/\r\n/g, '\n');
+    const currentNormalized = (this.code || '').replace(/\r\n/g, '\n').replace(/\n+$/, '');
+    const originalNormalized = (this.originalCode || '').replace(/\r\n/g, '\n').replace(/\n+$/, '');
 
     const codeChanged = currentNormalized !== originalNormalized;
     const nameChanged = this.diagramName !== this.originalName;

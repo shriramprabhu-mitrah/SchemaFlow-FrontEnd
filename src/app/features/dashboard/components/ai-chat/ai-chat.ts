@@ -2,6 +2,7 @@ import { Component, EventEmitter, Output, inject, signal, ViewChild, ElementRef,
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { AppConfigService } from '../../../../core/services/app-config.service';
 
@@ -93,6 +94,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     public svc = inject(DashboardService);
     private http = inject(HttpClient);
     private appConfig = inject(AppConfigService);
+    private sanitizer = inject(DomSanitizer);
     private streamingTimer: any = null;
 
     availableModels = signal<AiChatModel[]>([{ ...DEFAULT_DBNEXUS_MODEL }]);
@@ -505,8 +507,40 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         return dbmlStructureRegex.test(trimmed);
     }
 
+    formatAiErrorMessage(err: any): string {
+        let raw = '';
+        if (typeof err === 'string') {
+            raw = err;
+        } else if (typeof err?.error === 'string') {
+            try {
+                const parsed = JSON.parse(err.error);
+                raw = parsed?.message || parsed?.error || err.error;
+            } catch {
+                raw = err.error;
+            }
+        } else {
+            raw = err?.error?.message || err?.error?.error || err?.message || '';
+        }
+        raw = (raw || '').trim();
+
+        const statusCode = err?.error?.statusCode || err?.statusCode || err?.status;
+
+        if (
+            /rate limit or quota was exceeded/i.test(raw) ||
+            /Provider HTTP 429/i.test(raw) ||
+            /Rate limit reached for model/i.test(raw) ||
+            (statusCode === 502 && (/rate limit/i.test(raw) || /quota/i.test(raw) || /429/i.test(raw)))
+        ) {
+            return 'The provider rate limit or quota was exceeded. Try again later or check your quota.';
+        }
+        return raw || 'Failed to process message with AI model.';
+    }
+
     cleanDisplayText(text: string | null | undefined): string {
         if (!text) return '';
+        if (/rate limit or quota was exceeded/i.test(text) || /Provider HTTP 429/i.test(text) || /Rate limit reached for model/i.test(text)) {
+            return 'The provider rate limit or quota was exceeded. Try again later or check your quota.';
+        }
         // If text starts with "No existing DBML." or similar non-code preamble, strip it if there is further description
         const stripped = text.replace(/^No existing DBML\.?\s*/i, '').trim();
         return stripped || text.trim();
@@ -805,7 +839,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         const applyError = (err: any) => {
             this.isSavingApiKey.set(false);
             console.error('Failed to configure model API key:', err);
-            const errMsg = err?.error?.message || err?.error?.error || err?.message || 'Failed to configure API key for model';
+            const errMsg = this.formatAiErrorMessage(err);
             this.svc.showToast(errMsg, 3500, 'error');
         };
 
@@ -936,6 +970,20 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.http.post<any>(url, payload, { withCredentials: true }).subscribe({
             next: (res) => {
                 this.isThinking.set(false);
+                if (res && (res.statusCode === 502 || res.statusCode >= 400) && !res.data) {
+                    const errMsg = this.formatAiErrorMessage(res);
+                    this.svc.showToast(errMsg, 4000, 'error');
+                    const errorMsg: ChatMessage = {
+                        id: 'msg-err-' + Date.now(),
+                        sender: 'assistant',
+                        text: errMsg,
+                        modelName: currentModel.model_name,
+                        timestamp: new Date()
+                    };
+                    this.messages.update(prev => [...prev, errorMsg]);
+                    this.shouldScrollToBottom = true;
+                    return;
+                }
                 if (res && res.data) {
                     const data = res.data;
 
@@ -1080,13 +1128,13 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             error: (err) => {
                 this.isThinking.set(false);
                 console.error('AI chat error:', err);
-                const errMsg = err?.error?.message || err?.error?.error || err?.message || 'Failed to process message with AI model.';
+                const errMsg = this.formatAiErrorMessage(err);
                 this.svc.showToast(errMsg, 4000, 'error');
 
                 const errorMsg: ChatMessage = {
                     id: 'msg-err-' + Date.now(),
                     sender: 'assistant',
-                    text: `⚠️ ${errMsg}`,
+                    text: errMsg,
                     modelName: currentModel.model_name,
                     timestamp: new Date()
                 };
@@ -1377,7 +1425,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
                 let proposedCode = '';
                 if (!currentCode) {
-                    proposedCode = `${snippet}\n`;
+                    proposedCode = snippet;
                 } else {
                     const existingTables = this.extractTableNames(currentCode);
                     const newTables = this.extractTableNames(snippet);
@@ -1393,31 +1441,47 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                     // If deletion is requested/detected or multiple tables are returned (full schema),
                     // proposedCode must use the new snippet so deleted tables/columns/refs show up as deletions in Myers diff!
                     if (isDeletion || newTables.length > 1 || (existingTables.length > 0 && newTables.length >= existingTables.length)) {
-                        proposedCode = `${snippet}\n`;
+                        proposedCode = snippet;
                     } else if (hasOverlap && newTables.length === 1 && existingTables.length > 1 && !snippet.includes('Ref:')) {
                         // Isolated single-table update (e.g. user asked "add column to table_b" and AI returned only table_b without touching other tables)
                         let updatedCode = currentCode;
                         const tableName = newTables[0];
                         const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
                         const tableRegex = new RegExp(`\\bTable\\s+${escName}\\s*(\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\}`, 'i');
-                        const snippetTableRegex = new RegExp(`\\bTable\\s+${escName}\\s*(\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\}`, 'i');
-                        const snippetTableMatch = snippet.match(snippetTableRegex);
+                        const snippetTableMatch = snippet.match(tableRegex);
                         if (snippetTableMatch && tableRegex.test(updatedCode)) {
                             updatedCode = updatedCode.replace(tableRegex, snippetTableMatch[0]);
-                            proposedCode = `${updatedCode}\n`;
+                            proposedCode = updatedCode;
                         } else {
-                            proposedCode = `${snippet}\n`;
+                            proposedCode = snippet;
                         }
                     } else if (hasOverlap) {
-                        proposedCode = `${snippet}\n`;
+                        proposedCode = snippet;
                     } else {
-                        proposedCode = `${currentCode}\n\n${snippet}\n`;
+                        proposedCode = `${currentCode}\n\n${snippet}`;
                     }
                 }
 
+                // Ensure any standalone references referencing dropped / non-existent tables are purged from proposedCode
+                const proposedTableNames = new Set(this.extractTableNames(proposedCode));
+                if (proposedTableNames.size > 0) {
+                    const refLineRegex = /^[ \t]*Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(?:<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?[ \t]*(?:\r?\n|$)/gim;
+                    proposedCode = proposedCode.replace(refLineRegex, (match, fromT, _fromC, toT, _toC) => {
+                        if (!proposedTableNames.has(fromT.toLowerCase()) || !proposedTableNames.has(toT.toLowerCase())) {
+                            return '';
+                        }
+                        return match;
+                    });
+                }
+
+                // Strip any trailing newlines from proposedCode and currentCode so trailing newlines are never added or considered as a change
+                proposedCode = proposedCode.replace(/[\r\n]+$/, '');
+                const normCurrent = currentCode.replace(/[\r\n]+$/, '');
+                const normProposed = proposedCode;
+
                 // If changes are proposed, initiate AI Diff Review with Accept and Reject options
-                if (currentCode.trim() !== proposedCode.trim()) {
-                    this.svc.startAiDiffReview(currentCode, proposedCode);
+                if (normCurrent !== normProposed) {
+                    this.svc.startAiDiffReview(normCurrent, normProposed);
                     msg.applied = true;
                     this.messages.update(m => [...m]);
 
@@ -1425,21 +1489,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                         this.svc.showToast('AI changes ready for review. Click Accept or Reject.', 3000, 'info');
                     }
                 } else {
-                    this.svc.code = proposedCode;
-                    this.svc.showCanvasPlaceholder = !this.svc.code.trim();
-                    this.svc.parseAndLayout();
-                    this.svc.requestCanvasFit();
-                    this.svc.scheduleDraw();
-
-                    if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
-                        this.svc.emitCollabChange();
-                    }
-
                     msg.applied = true;
                     this.messages.update(m => [...m]);
 
                     if (showToast) {
-                        this.svc.showToast('AI query applied to DBML editor and diagram!', 2500, 'success');
+                        this.svc.showToast('Current DBML already matches AI response.', 2500, 'info');
                     }
                 }
             } finally {
@@ -1556,5 +1610,68 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 this.svc.showToast(errMsg, 3500, 'error');
             }
         });
+    }
+
+    private colorizedCache = new Map<string, SafeHtml>();
+
+    colorizeDbml(text: string | undefined): SafeHtml {
+        if (!text) return '';
+        const cached = this.colorizedCache.get(text);
+        if (cached) return cached;
+
+        let escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        const lines = escaped.split('\n');
+        const highlighted = lines.map(line => {
+            const commentIndex = line.indexOf('//');
+            let codePart = line;
+            let commentPart = '';
+            if (commentIndex !== -1) {
+                codePart = line.substring(0, commentIndex);
+                commentPart = `<span class="comment-line">${line.substring(commentIndex)}</span>`;
+            }
+
+            codePart = codePart.replace(
+                /\b(TableGroup|Table|Ref|Note|Project|enum|indexes)(:)?(?=\s|$)/gi,
+                (match, p1, p2) => `<span class="keyword">${p1}${p2 || ''}</span>`
+            );
+
+            codePart = codePart.replace(
+                /(<span class="keyword">TableGroup<\/span>)\s+("[^"]+"|[A-Za-z0-9_]+)/gi,
+                '$1 <span class="groupName">$2</span>'
+            );
+
+            codePart = codePart.replace(
+                /(&#039;.*?&#039;|'.*?')/g,
+                '<span class="attribute">$1</span>'
+            );
+
+            codePart = codePart.replace(
+                /^(\s*(?:["'`][^"'`]+["'`]|[A-Za-z0-9_.]+)\s+)(integer|varchar|text|timestamp|date|decimal|boolean|float|datetime|int|bigint|objectid|json|bson|array|uuid|map|mixed|char|blob|serial|numeric|real|double|tinyint|smallint|mediumint|binary|varbinary)\b/gim,
+                '$1<span class="datatype">$2</span>'
+            );
+
+            codePart = codePart.replace(
+                /(\([\d\s,]+\))/g,
+                '<span class="number">$1</span>'
+            );
+
+            codePart = codePart.replace(
+                /\[(.*?)\]/g,
+                '<span class="attribute">[$1]</span>'
+            );
+
+            return codePart + commentPart;
+        });
+
+        const safeHtml = this.sanitizer.bypassSecurityTrustHtml(highlighted.join('\n'));
+        if (this.colorizedCache.size > 200) {
+            this.colorizedCache.clear();
+        }
+        this.colorizedCache.set(text, safeHtml);
+        return safeHtml;
     }
 }

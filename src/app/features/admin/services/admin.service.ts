@@ -190,9 +190,32 @@ export class AdminService {
     return this.http.get(url, { withCredentials: true });
   }
 
-  deleteAiModel(id: number): Observable<any> {
-    const template = this.urls.aiModelById || 'http://localhost:4007/api/ai/models/{id}';
-    const url = template.replace('{id}', id.toString());
+  createAiModel(data: { model_name: string; provider_id: number; is_active?: boolean }): Observable<any> {
+    const url = this.urls.aiModelManage || (this.urls.aiChatModels ? this.urls.aiChatModels.replace(/\/$/, '') : '') || 'http://localhost:4007/api/ai/models';
+    return this.http.post(url, data, { withCredentials: true });
+  }
+
+  updateAiModel(id: number | string, data: { model_name?: string; provider_id?: number; is_active?: boolean }): Observable<any> {
+    let url: string;
+    if (this.urls.aiModelById) {
+      url = this.urls.aiModelById.replace(':id', id.toString()).replace('{id}', id.toString());
+    } else if (this.urls.aiModelManage) {
+      url = `${this.urls.aiModelManage.replace(/\/$/, '')}/${id}`;
+    } else {
+      url = `http://localhost:4007/api/ai/models/${id}`;
+    }
+    return this.http.put(url, data, { withCredentials: true });
+  }
+
+  deleteAiModel(id: number | string): Observable<any> {
+    let url: string;
+    if (this.urls.aiModelById) {
+      url = this.urls.aiModelById.replace(':id', id.toString()).replace('{id}', id.toString());
+    } else if (this.urls.aiModelManage) {
+      url = `${this.urls.aiModelManage.replace(/\/$/, '')}/${id}`;
+    } else {
+      url = `http://localhost:4007/api/ai/models/${id}`;
+    }
     return this.http.delete(url, { withCredentials: true });
   }
 
