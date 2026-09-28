@@ -113,7 +113,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   hasFeatureAccess(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (featureKey === 'code_compare' && !this.isLoggedIn) return true;
-    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' ||
+      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
+    if (isPlanExpired) return false;
+    return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
   }
 
   showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs'): boolean {
@@ -451,7 +454,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   // ============ VIEW DOCS ============
-  
+
   toggleDocs(e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
@@ -469,10 +472,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.svc.showDocs = false;
       this.svc.showDocsPlaceholder = false;
     } else {
-      if (this.svc.isDocUnlocked()) {
+      if (this.auth.isSuperAdmin()) {
         this.svc.showDocs = true;
         this.svc.showDocsPlaceholder = false;
       } else {
+        const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' ||
+          (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
+
         const canUse = this.entitlementService.canUseFeature('document_view');
         const ent = this.entitlementService.getEntitlement('document_view');
         const limit = ent?.effective_limit ?? ent?.limit_value;
@@ -482,14 +488,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
           (ent?.remaining !== undefined && ent.remaining <= 0)
         ));
 
-        if (isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
+        if (isPlanExpired || isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
           this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
           this.svc.showUpgradeModal('document_view');
           return;
         }
-        
-        this.svc.showDocs = false;
-        this.svc.showDocsPlaceholder = true;
+
+        if (this.svc.isDocUnlocked()) {
+          this.svc.showDocs = true;
+          this.svc.showDocsPlaceholder = false;
+        } else {
+          this.svc.showDocs = false;
+          this.svc.showDocsPlaceholder = true;
+        }
       }
 
       this.svc.sidebarInspectorTab.set(null);
@@ -502,7 +513,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     this.cdr.markForCheck();
   }
-  
+
 
   // ============ AUTH / SIGNOUT ============
 

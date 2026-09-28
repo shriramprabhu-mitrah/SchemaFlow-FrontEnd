@@ -108,11 +108,12 @@ export class ExportService {
       body.split('\n').forEach(line => {
         line = line.trim();
         if (!line || line.startsWith('//')) return;
-        const colMatch = line.match(/^["']?([A-Za-z0-9_]+)["']?\s+([A-Za-z0-9_()]+)\s*(?:\[(.*?)\])?/);
+        const colMatch = line.match(/^["']?([A-Za-z0-9_]+)["']?\s+([A-Za-z0-9_]+(?:\s*\([^)]*\))?)\s*(?:\[(.*?)\])?/);
         if (colMatch) {
           const colName = colMatch[1];
           if (colName === '_id') return; // Mongoose auto-generates _id
-          const colType = colMatch[2].toLowerCase();
+          const rawType = colMatch[2].toLowerCase();
+          const colType = rawType.replace(/\s*\([^)]*\)/g, '').trim();
           const attrs = (colMatch[3] || '').toLowerCase();
 
           let typeStr = 'String';

@@ -33,6 +33,7 @@
     "publicDiagram": "API_URL/api/diagrams/public/{token}"
   },
   "workspaceApiUrls": {
+    "validateMember": "API_URL/api/workspaces/validate-member",
     "workspaces": "API_URL/api/workspaces",
     "workspaceById": "API_URL/api/workspaces/{id}",
     "workspaceMembers": "API_URL/api/workspaces/{workspaceId}/members",

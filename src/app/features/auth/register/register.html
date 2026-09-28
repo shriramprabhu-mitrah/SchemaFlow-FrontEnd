@@ -156,8 +156,9 @@
             [class.is-valid]="password && isPasswordValid">
             <app-icons class="input-icon" name="lock" size="20"></app-icons>
             <input id="password" name="password" [type]="showPassword ? 'text' : 'password'"
-              placeholder="Create a strong password" [(ngModel)]="password" (ngModelChange)="passwordError = ''"
-              [disabled]="isLoading" required autocomplete="new-password" />
+              placeholder="Create a strong password" [(ngModel)]="password" (keydown)="preventWhitespace($event)"
+              (paste)="onPasswordPaste($event)" (input)="onPasswordInput($event)" [disabled]="isLoading" required
+              autocomplete="new-password" />
             <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [disabled]="isLoading"
               aria-label="Toggle password visibility">
               <app-icons *ngIf="!showPassword" name="eye" size="20"></app-icons>
@@ -241,8 +242,9 @@
             [class.is-valid]="confirmPassword && confirmPassword === password && isPasswordValid">
             <app-icons class="input-icon" name="lock" size="20"></app-icons>
             <input id="confirmPassword" name="confirmPassword" [type]="showConfirmPassword ? 'text' : 'password'"
-              placeholder="Repeat your password" [(ngModel)]="confirmPassword"
-              (ngModelChange)="confirmPasswordError = ''" [disabled]="isLoading" required autocomplete="new-password" />
+              placeholder="Repeat your password" [(ngModel)]="confirmPassword" (keydown)="preventWhitespace($event)"
+              (paste)="onConfirmPasswordPaste($event)" (input)="onConfirmPasswordInput($event)" [disabled]="isLoading"
+              required autocomplete="new-password" />
             <button type="button" class="password-toggle" (click)="toggleConfirmPasswordVisibility()"
               [disabled]="isLoading" aria-label="Toggle confirm password visibility">
               <app-icons *ngIf="!showConfirmPassword" name="eye" size="20"></app-icons>

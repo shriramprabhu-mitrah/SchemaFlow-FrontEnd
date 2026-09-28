@@ -120,9 +120,52 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
     });
   }
 
+  preventWhitespace(event: KeyboardEvent): void {
+    if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
+      event.preventDefault();
+    }
+  }
+
+  onPasswordPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text') || '';
+    const cleaned = text.replace(/\s/g, '');
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const val = input.value || '';
+      const newVal = val.substring(0, start) + cleaned + val.substring(end);
+      input.value = newVal;
+      this.password = newVal;
+      input.setSelectionRange(start + cleaned.length, start + cleaned.length);
+    } else {
+      this.password = (this.password + cleaned).replace(/\s/g, '');
+    }
+    if (this.error) {
+      this.error = null;
+    }
+  }
+
+  onPasswordInput(event?: Event): void {
+    const input = event?.target as HTMLInputElement;
+    const cleaned = (input ? input.value : this.password || '').replace(/\s/g, '');
+    this.password = cleaned;
+    if (input && input.value !== cleaned) {
+      input.value = cleaned;
+    }
+    if (this.error) {
+      this.error = null;
+    }
+  }
+
   unlock(): void {
     if (!this.password || !this.password.trim()) {
       this.error = 'Password cannot be empty or contain only spaces.';
+      return;
+    }
+    if (/\s/.test(this.password)) {
+      this.error = 'Password cannot contain whitespace.';
       return;
     }
     this.unlocking = true;

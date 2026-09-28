@@ -138,7 +138,7 @@ export class HeaderComponent implements OnInit {
     if (ent) {
       const limit = ent.effective_limit ?? (ent as any).limit_value;
       if (limit === -1) {
-        return true; 
+        return true;
       }
     }
 
@@ -222,7 +222,7 @@ export class HeaderComponent implements OnInit {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -242,7 +242,7 @@ export class HeaderComponent implements OnInit {
     }
     this.runWithUnsavedChangesCheck(() => {
       this.svc.requestSplitView();
-      
+
       const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
       const activeWsId = isTeam ? this.svc.activeWorkspaceId() : null;
       const createReq$ = (isTeam && activeWsId)
@@ -346,7 +346,7 @@ export class HeaderComponent implements OnInit {
           if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
             this.svc.emitCollabChange();
           } else {
-            this.svc.saveDiagram().subscribe({ error: () => {} });
+            this.svc.saveDiagram().subscribe({ error: () => { } });
           }
         }
       }, 1000);
@@ -390,7 +390,7 @@ export class HeaderComponent implements OnInit {
         this.svc.emitCollabChange();
       } else {
         this.svc.saveDiagram().subscribe({
-          error: () => {}
+          error: () => { }
         });
       }
     }
@@ -431,13 +431,20 @@ export class HeaderComponent implements OnInit {
       this.svc.authModalVisible.set(true);
       return;
     }
-    if (this.svc.isDocUnlocked()) {
-      this.svc.showDocs = !this.svc.showDocs;
-      if (this.svc.showDocs) {
-        this.svc.requestSplitView();
-      }
+
+    if (this.svc.showDocs) {
+      this.svc.showDocs = false;
       return;
     }
+
+    if (this.auth.isSuperAdmin()) {
+      this.svc.showDocs = true;
+      this.svc.requestSplitView();
+      return;
+    }
+
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' ||
+      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
 
     const canUse = this.entitlementService.canUseFeature('document_view');
     const ent = this.entitlementService.getEntitlement('document_view');
@@ -448,10 +455,18 @@ export class HeaderComponent implements OnInit {
       (ent?.remaining !== undefined && ent.remaining <= 0)
     ));
 
-    if (isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
+    if (isPlanExpired || isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
       this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
       this.svc.showUpgradeModal('document_view');
       return;
+    }
+
+    if (this.svc.isDocUnlocked()) {
+      this.svc.showDocs = true;
+      this.svc.requestSplitView();
+    } else {
+      this.svc.showDocs = false;
+      this.svc.showDocsPlaceholder = true;
     }
 
     this.svc.showDocs = false;
@@ -1050,7 +1065,7 @@ export class HeaderComponent implements OnInit {
       this.svc.diagramId.set(null);
       this.svc.parseAndLayout();
       this.svc.updateOriginalState();
-      
+
       this.router.navigate([], {
         queryParams: { sample: type, id: null },
         queryParamsHandling: 'merge'

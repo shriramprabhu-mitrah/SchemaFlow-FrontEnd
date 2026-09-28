@@ -16,7 +16,12 @@
     border-radius: 5px;
     font-size: 11px;
     font-weight: 500;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 280px;
+    width: max-content;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    text-align: center;
     z-index: 9999;
     pointer-events: none;
     animation: tt-fade 0.15s ease-out;
