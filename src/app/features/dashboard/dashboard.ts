@@ -335,10 +335,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     const ent = this.documentViewEntitlement;
     if (!ent) return true;
     const limit = ent.effective_limit ?? ent.limit_value;
-    if (limit === -1) return false;
-    if (limit === undefined || limit === null || limit === 0) return true;
-    if (ent.used !== undefined && ent.used >= limit) return true;
-    if (ent.remaining !== undefined && ent.remaining <= 0) return true;
+    if (Number(limit) === -1) return false;
+    if (limit === undefined || limit === null || Number(limit) === 0) return true;
+    if (ent.used !== undefined && Number(ent.used) >= Number(limit)) return true;
+    if (ent.remaining !== undefined && Number(ent.remaining) <= 0) return true;
     return false;
   }
 
