@@ -541,7 +541,7 @@
           <label class="import-modal-label" for="conn-string-input">Connection URL</label>
           <div class="input-wrapper">
             <textarea id="conn-string-input" class="modal-textarea-field" rows="3"
-              placeholder="postgresql://postgres:password@localhost:5432/mailService?schemas=public"
+              [placeholder]="connStringDatabaseType === 'mssql' ? 'Server=localhost,1433;Database=student_db;User Id=sa;Password=SqlServer@12345;Encrypt=false;TrustServerCertificate=true;' : (connStringDatabaseType === 'mysql' ? 'mysql://root:password@localhost:3306/dbname' : 'postgresql://postgres:password@localhost:5432/mailService?schemas=public')"
               [(ngModel)]="connStringValue" spellcheck="false" autocomplete="off"></textarea>
           </div>
           <span class="field-hint" style="font-size: 11.5px; color: #8a99b5; margin-top: 5px; display: block;">

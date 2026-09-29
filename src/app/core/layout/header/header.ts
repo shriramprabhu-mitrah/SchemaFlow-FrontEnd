@@ -776,8 +776,13 @@ export class HeaderComponent implements OnInit {
     const port = this.connPort || (this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' ? 3306 : 1433);
     const db = this.connDatabase.trim();
     const user = this.connUsername.trim();
-    const pass = this.connPassword.trim();
+    const pass = this.connPassword;
     const schema = this.connSchema.trim() || 'public';
+
+    if (this.connStringDatabaseType === 'mssql') {
+      const authPart = user ? `User Id=${user};Password=${pass};` : '';
+      return `Server=${host},${port};Database=${db};${authPart}Encrypt=false;TrustServerCertificate=true;`;
+    }
 
     const userPass = user ? (pass ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}@` : `${encodeURIComponent(user)}@`) : '';
 
@@ -785,8 +790,6 @@ export class HeaderComponent implements OnInit {
       return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schemas=${schema}` : ''}`;
     } else if (this.connStringDatabaseType === 'mysql') {
       return `mysql://${userPass}${host}:${port}/${db}`;
-    } else if (this.connStringDatabaseType === 'mssql') {
-      return `mssql://${userPass}${host}:${port}/${db}`;
     }
 
     return `postgresql://${userPass}${host}:${port}/${db}`;
