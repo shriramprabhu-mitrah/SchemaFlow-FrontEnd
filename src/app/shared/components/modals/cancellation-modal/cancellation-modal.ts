@@ -30,7 +30,7 @@ export class CancellationModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.contactForm = this.fb.group({
-      contact_type: ['cancellation_request'],
+      enquiry_type: ['cancellation_request'],
       project_details: ['', Validators.required],
       first_name: ['', Validators.required],
       last_name: ['', Validators.required],
@@ -40,13 +40,7 @@ export class CancellationModalComponent implements OnInit {
     });
   }
 
-  get contactType() {
-    return this.contactForm.get('contact_type')?.value;
-  }
 
-  setContactType(type: 'email_me' | 'book_call') {
-    this.contactForm.patchValue({ contact_type: type });
-  }
 
   @HostListener('document:click')
   onDocumentClick() {
@@ -59,7 +53,7 @@ export class CancellationModalComponent implements OnInit {
     this.submitError = '';
     this.showCountryDropdown = false;
     this.contactForm.reset();
-    this.contactForm.patchValue({ contact_type: 'email_me' });
+    this.contactForm.patchValue({ enquiry_type: 'cancellation_request' });
     this.contactForm.markAsUntouched();
     this.contactForm.markAsPristine();
     this.close.emit();

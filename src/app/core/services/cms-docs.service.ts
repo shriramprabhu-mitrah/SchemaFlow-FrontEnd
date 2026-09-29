@@ -1298,7 +1298,7 @@ DB Nexus reserves the right to adjust plan pricing, feature packages, and billin
 
 If you have questions regarding this Refund & Cancellation Policy or wish to clarify your billing cycle details, please contact:
 
-- **Support**: sales@dbnexus.com
+- **Support**: sales@dbnexus.io
 - **Platform**: DB Nexus Documentation & Support Portal
 
 ---
