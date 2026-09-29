@@ -1094,6 +1094,12 @@ export class DashboardService {
     this.parseAndLayout();
     this.scheduleDraw();
   }
+
+  showAiDiffEditBlockedToast(): void {
+    if (this.toastMessage() === 'Please accept or reject the AI changes before editing.') return;
+    this.showToast('Please accept or reject the AI changes before editing.', 3000, 'error');
+  }
+
   isReadOnly = false;
   publicToken: string = '';
   isDiagramPublic: boolean = true;

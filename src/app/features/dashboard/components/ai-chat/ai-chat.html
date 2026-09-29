@@ -266,7 +266,7 @@
                 d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" />
             </svg>
           </span>
-          <span class="thinking-text">Thinking</span>
+          <span class="thinking-text">{{ thinkingStatus() }}</span>
           <span class="thinking-dots">
             <span class="t-dot"></span>
             <span class="t-dot"></span>
@@ -284,8 +284,8 @@
   <!-- Bottom Input Box -->
   <div class="ai-chat-footer">
     <div class="input-card-wrap">
-      <textarea class="ai-input-textarea" [(ngModel)]="promptText" (keydown)="onKeyDown($event)" rows="2"
-        placeholder="Ask me anything about your diagram..."></textarea>
+      <textarea #promptTextarea class="ai-input-textarea" [(ngModel)]="promptText" (input)="autoExpandTextarea()"
+        (keydown)="onKeyDown($event)" rows="1" placeholder="Ask me anything about your diagram..."></textarea>
 
       <div class="input-footer-row">
         <span class="input-hint-text">Press Enter to send</span>
@@ -349,6 +349,39 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Usage Limit Row (Displayed only when dbnexus AI default model is selected) -->
+    <div class="ai-usage-limit-container" *ngIf="isNoApiKeyRequired(selectedModel())">
+      <!-- Pop-up Card when clicked -->
+      <div class="ai-usage-popup-card" *ngIf="isUsagePopupOpen()" (click)="$event.stopPropagation()">
+        <div class="usage-popup-header">
+          <span class="usage-popup-title">Used: {{ formatNumber(usedTokens()) }} / {{ formatNumber(getMaxTokens()) }} tokens</span>
+          <span class="usage-info-icon" [attr.title]="'Monthly token usage limit for ' + (selectedModel()?.model_name || 'dbnexus AI')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </span>
+        </div>
+        <div class="usage-progress-track">
+          <div class="usage-progress-bar" [style.width.%]="getUsagePercentage()"></div>
+        </div>
+        <div class="usage-reset-row">
+          <span>Reset on: {{ getResetDate() }}</span>
+        </div>
+      </div>
+
+      <!-- Trigger Button -->
+      <button type="button" class="ai-usage-trigger-btn" (click)="toggleUsagePopup($event)" aria-label="Toggle usage limit details">
+        <svg class="usage-gauge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.34 19a10 10 0 1 1 17.32 0"></path>
+          <path d="m12 14-3.5-3.5"></path>
+          <circle cx="12" cy="14" r="1.5" fill="currentColor"></circle>
+        </svg>
+        <span class="usage-trigger-text">You have used {{ getUsagePercentage() }}% of your usage limit</span>
+      </button>
     </div>
   </div>
 

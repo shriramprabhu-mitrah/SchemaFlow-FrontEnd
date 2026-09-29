@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, signal, ViewChild, ElementRef, AfterViewChecked, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Output, inject, signal, effect, ViewChild, ElementRef, AfterViewChecked, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -6,6 +6,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { AppConfigService } from '../../../../core/services/app-config.service';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 export interface ChatMessage {
     id: string;
@@ -78,7 +79,7 @@ export const DEFAULT_DBNEXUS_MODEL: AiChatModel = {
     provider_id: 7,
     model_name: 'dbnexus-1.0',
     provider_name: 'dbnexus AI',
-    has_api_key: true
+    has_api_key: false
 };
 
 @Component({
@@ -91,12 +92,25 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     @Output() close = new EventEmitter<void>();
     @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
     @ViewChild('messagesEnd') private messagesEnd?: ElementRef<HTMLDivElement>;
+    @ViewChild('promptTextarea') private promptTextarea?: ElementRef<HTMLTextAreaElement>;
+
+    constructor() {
+        effect(() => {
+            const text = this.promptText();
+            if (!text) {
+                this.resetTextareaHeight();
+            } else {
+                setTimeout(() => this.autoExpandTextarea(), 0);
+            }
+        });
+    }
 
     public svc = inject(DashboardService);
     private http = inject(HttpClient);
     private appConfig = inject(AppConfigService);
     private entitlementService = inject(EntitlementService);
     private sanitizer = inject(DomSanitizer);
+    private auth = inject(AuthService);
     private streamingTimer: any = null;
 
     availableModels = signal<AiChatModel[]>([{ ...DEFAULT_DBNEXUS_MODEL }]);
@@ -122,6 +136,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     apiKeyInput = '';
     maxTokensInput = 4096;
 
+    // Usage Limit Pop-up Card State (dbnexus AI default model)
+    isUsagePopupOpen = signal<boolean>(false);
+    usedTokens = signal<number>(this.loadStoredUsedTokens());
+
     sessionTitle = signal<string>(this.formatSessionTitle());
     promptText = signal<string>('');
     isThinking = signal<boolean>(false);
@@ -130,6 +148,8 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     applyingSnippetMsgId = signal<string | null>(null);
     isCreatingSession = signal<boolean>(false);
     isDeletingChat = signal<boolean>(false);
+    private statusTimers: any[] = [];
+    thinkingStatus = signal<string>('Preparing');
 
     readonly promptCards: PromptCard[] = [
         {
@@ -193,9 +213,36 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     ngOnDestroy(): void {
+        this.stopThinkingStatusCycle();
         if (this.streamingTimer) {
             clearInterval(this.streamingTimer);
             this.streamingTimer = null;
+        }
+    }
+
+    private startThinkingStatusCycle(): void {
+        this.stopThinkingStatusCycle();
+        this.thinkingStatus.set('Preparing');
+
+        const t1 = setTimeout(() => {
+            if (this.isThinking() && this.thinkingStatus() === 'Preparing') {
+                this.thinkingStatus.set('Thinking');
+            }
+        }, 1800);
+
+        const t2 = setTimeout(() => {
+            if (this.isThinking() && (this.thinkingStatus() === 'Preparing' || this.thinkingStatus() === 'Thinking')) {
+                this.thinkingStatus.set('Processing');
+            }
+        }, 4800);
+
+        this.statusTimers.push(t1, t2);
+    }
+
+    private stopThinkingStatusCycle(): void {
+        if (this.statusTimers && this.statusTimers.length > 0) {
+            this.statusTimers.forEach(t => clearTimeout(t));
+            this.statusTimers = [];
         }
     }
 
@@ -546,6 +593,19 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         return raw || 'Failed to process message with AI model.';
     }
 
+    isAiErrorContent(text: string | null | undefined): boolean {
+        if (!text) return false;
+        const lower = text.trim().toLowerCase();
+        return lower.includes('rate limit or quota was exceeded') ||
+            lower.includes('provider http 429') ||
+            lower.includes('rate limit reached for model') ||
+            lower.includes('failed to process message with ai model') ||
+            lower.includes('internal server error') ||
+            lower.includes('bad gateway') ||
+            lower.includes('invalid api key') ||
+            lower.startsWith('error:');
+    }
+
     cleanDisplayText(text: string | null | undefined): string {
         if (!text) return '';
         if (/rate limit or quota was exceeded/i.test(text) || /Provider HTTP 429/i.test(text) || /Rate limit reached for model/i.test(text)) {
@@ -604,25 +664,74 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             (model.provider_name?.toLowerCase() === 'dbnexus ai');
     }
 
+    /**
+     * Checks if the user has provided or configured an API key for the model.
+     * Note: dbnexus AI returns false here because it does not require/have a user API key.
+     */
+    hasUserApiKey(model: AiChatModel | null | undefined): boolean {
+        if (!model) return false;
+        if (this.isNoApiKeyRequired(model)) return false;
+        return !!(
+            model.has_api_key === true ||
+            (typeof model.has_api_key === 'string' && model.has_api_key === 'true') ||
+            (model.api_key && typeof model.api_key === 'string' && model.api_key.trim().length > 0) ||
+            this.getSavedApiKey(model)
+        );
+    }
+
+    /**
+     * Checks if the model is ready to be used (either dbnexus AI or has a valid user API key).
+     */
     hasValidApiKey(model: AiChatModel | null | undefined): boolean {
         if (!model) return false;
         if (this.isNoApiKeyRequired(model)) return true;
-        return !!(model.has_api_key || model.api_key || this.getSavedApiKey(model));
+        return this.hasUserApiKey(model);
+    }
+
+    /**
+     * Determines which model should be automatically selected:
+     * - If the user has an API key for any model, that model is selected automatically.
+     * - If the user has no API key for any model, dbnexus AI is selected as default.
+     */
+    getAutoSelectedModel(models: AiChatModel[], preferredModelId?: number | string | null): AiChatModel {
+        const dbnexusModel = models.find(m => this.isNoApiKeyRequired(m)) || { ...DEFAULT_DBNEXUS_MODEL };
+        const modelsWithApiKey = models.filter(m => this.hasUserApiKey(m));
+
+        if (modelsWithApiKey.length > 0) {
+            // 1. If preferredModelId is among modelsWithApiKey, use it
+            if (preferredModelId !== undefined && preferredModelId !== null) {
+                const matchedPreferred = modelsWithApiKey.find(m => String(m.id) === String(preferredModelId));
+                if (matchedPreferred) return matchedPreferred;
+            }
+
+            // 2. If user previously selected a model that has an API key, keep it
+            const savedId = localStorage.getItem('ai_selected_model_id');
+            if (savedId) {
+                const savedMatch = modelsWithApiKey.find(m => String(m.id) === savedId);
+                if (savedMatch) return savedMatch;
+            }
+
+            // 3. Otherwise, automatically select the first model that has an API key
+            return modelsWithApiKey[0];
+        }
+
+        // If the user has no API key for any model, dbnexus AI is the default
+        return dbnexusModel;
     }
 
     private syncModelWithSession(modelId: number): void {
         const models = this.availableModels();
-        if (models.length > 0) {
+        if (models.length > 0 && !this.isLoadingModels()) {
             const matched = models.find(m => Number(m.id) === Number(modelId));
-            if (matched) {
-                if (this.hasValidApiKey(matched)) {
-                    this.selectedModel.set(matched);
-                } else {
-                    const defaultModel = models.find(m => this.isNoApiKeyRequired(m)) || { ...DEFAULT_DBNEXUS_MODEL };
-                    this.selectedModel.set(defaultModel);
-                }
-                this.pendingModelIdFromSession = null;
+            if (matched && this.hasUserApiKey(matched)) {
+                this.selectedModel.set(matched);
+                localStorage.setItem('ai_selected_model_id', String(matched.id));
+            } else {
+                const modelToSelect = this.getAutoSelectedModel(models);
+                this.selectedModel.set(modelToSelect);
+                localStorage.setItem('ai_selected_model_id', String(modelToSelect.id));
             }
+            this.pendingModelIdFromSession = null;
         }
     }
 
@@ -649,55 +758,32 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 const defaultModelIdx = data.findIndex(m => Number(m.id) === 21 || m.model_name?.toLowerCase() === 'dbnexus-1.0');
                 if (defaultModelIdx === -1) {
                     data = [{ ...DEFAULT_DBNEXUS_MODEL }, ...data];
-                } else {
-                    data[defaultModelIdx] = {
-                        ...data[defaultModelIdx],
-                        has_api_key: true
-                    };
                 }
 
                 // Restore any locally stored API keys if not returned by server
                 data.forEach(m => {
                     if (this.isNoApiKeyRequired(m)) {
-                        m.has_api_key = true;
                         return;
                     }
                     const savedKey = this.getSavedApiKey(m);
-                    const isConfiguredOnServer = !!(m.has_api_key || m.api_key || (m as any).is_configured || (m as any).has_config);
+                    const isConfiguredOnServer = !!(m.has_api_key || (m.api_key && m.api_key.trim().length > 0) || (m as any).is_configured || (m as any).has_config);
                     if (!m.api_key && savedKey) {
                         m.api_key = savedKey;
                         m.has_api_key = true;
-                    } else if (m.api_key || isConfiguredOnServer) {
+                    } else if (isConfiguredOnServer) {
                         m.has_api_key = true;
                     }
                 });
 
                 this.availableModels.set(data);
 
-                const dbnexusModel = data.find(m => this.isNoApiKeyRequired(m)) || { ...DEFAULT_DBNEXUS_MODEL };
-
-                if (data.length > 0) {
-                    if (this.pendingModelIdFromSession) {
-                        const sessionMatched = data.find(m => Number(m.id) === Number(this.pendingModelIdFromSession));
-                        if (sessionMatched && this.hasValidApiKey(sessionMatched)) {
-                            this.selectedModel.set(sessionMatched);
-                            this.pendingModelIdFromSession = null;
-                            return;
-                        }
-                        this.pendingModelIdFromSession = null;
-                    }
-
-                    const savedId = localStorage.getItem('ai_selected_model_id');
-                    const matched = savedId ? data.find(m => String(m.id) === savedId) : null;
-                    // If user has a saved model and it has an API key configured, use it;
-                    // Otherwise, for users without API key, use dbnexus AI as default
-                    if (matched && this.hasValidApiKey(matched)) {
-                        this.selectedModel.set(matched);
-                    } else {
-                        this.selectedModel.set(dbnexusModel);
-                        localStorage.setItem('ai_selected_model_id', String(dbnexusModel.id));
-                    }
-                }
+                // Auto-select:
+                // If user has an API key for a model, select that model automatically.
+                // If user has no API key for any model, select dbnexus AI as default.
+                const modelToSelect = this.getAutoSelectedModel(data, this.pendingModelIdFromSession);
+                this.selectedModel.set(modelToSelect);
+                localStorage.setItem('ai_selected_model_id', String(modelToSelect.id));
+                this.pendingModelIdFromSession = null;
             },
             error: (err) => {
                 console.error('Failed to load AI models from API:', err);
@@ -792,12 +878,12 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.pendingModelForApiKey = null;
         this.apiKeyInput = '';
 
-        // If currently selected model has no valid API key, revert to default dbnexus AI
+        // If currently selected model has no valid API key, revert to best available model
         const current = this.selectedModel();
         if (!this.hasValidApiKey(current)) {
-            const dbnexusModel = this.availableModels().find(m => this.isNoApiKeyRequired(m)) || { ...DEFAULT_DBNEXUS_MODEL };
-            this.selectedModel.set(dbnexusModel);
-            localStorage.setItem('ai_selected_model_id', String(dbnexusModel.id));
+            const bestModel = this.getAutoSelectedModel(this.availableModels());
+            this.selectedModel.set(bestModel);
+            localStorage.setItem('ai_selected_model_id', String(bestModel.id));
         }
     }
 
@@ -897,6 +983,37 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.sendMessage();
     }
 
+    autoExpandTextarea(): void {
+        const el = this.promptTextarea?.nativeElement;
+        if (!el) return;
+        // Temporarily reset height to auto to calculate accurate scrollHeight
+        el.style.height = 'auto';
+        const minHeight = 36;
+        const maxHeight = 120; // Limit: up to ~6 lines of text as shown in screenshot; scroll when exceeding
+        const contentHeight = el.scrollHeight;
+        if (contentHeight > maxHeight) {
+            el.style.height = `${maxHeight}px`;
+            el.style.overflowY = 'auto';
+        } else {
+            el.style.height = `${Math.max(minHeight, contentHeight)}px`;
+            el.style.overflowY = 'hidden';
+        }
+    }
+
+    resetTextareaHeight(): void {
+        const el = this.promptTextarea?.nativeElement;
+        if (!el) return;
+        el.style.height = '36px';
+        el.style.overflowY = 'hidden';
+    }
+
+    @HostListener('window:resize')
+    onWindowResize(): void {
+        if (this.promptText()) {
+            this.autoExpandTextarea();
+        }
+    }
+
     onKeyDown(event: KeyboardEvent): void {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
@@ -920,16 +1037,19 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
         let currentModel = this.selectedModel();
         if (!currentModel) {
-            currentModel = this.availableModels().find(m => this.isNoApiKeyRequired(m)) || { ...DEFAULT_DBNEXUS_MODEL };
+            currentModel = this.getAutoSelectedModel(this.availableModels());
             this.selectedModel.set(currentModel);
+            localStorage.setItem('ai_selected_model_id', String(currentModel.id));
         }
 
         if (!this.hasValidApiKey(currentModel)) {
-            const dbnexusModel = this.availableModels().find(m => this.isNoApiKeyRequired(m)) || { ...DEFAULT_DBNEXUS_MODEL };
-            currentModel = dbnexusModel;
-            this.selectedModel.set(dbnexusModel);
-            localStorage.setItem('ai_selected_model_id', String(dbnexusModel.id));
-            this.svc.showToast('Using dbnexus AI (no API key required)', 2500, 'info');
+            const bestModel = this.getAutoSelectedModel(this.availableModels());
+            currentModel = bestModel;
+            this.selectedModel.set(bestModel);
+            localStorage.setItem('ai_selected_model_id', String(bestModel.id));
+            if (this.isNoApiKeyRequired(bestModel)) {
+                this.svc.showToast('Using dbnexus AI (no API key required)', 2500, 'info');
+            }
         }
 
         const userMsg: ChatMessage = {
@@ -941,6 +1061,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
         this.messages.update(prev => [...prev, userMsg]);
         this.promptText.set('');
+        this.resetTextareaHeight();
         this.isThinking.set(true);
         this.shouldScrollToBottom = true;
         this.scrollToBottom();
@@ -980,184 +1101,362 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         if (!url) {
             this.svc.showToast('AI Chat endpoint not configured', 3000, 'error');
             this.isThinking.set(false);
+            this.stopThinkingStatusCycle();
+            this.messages.update(prev => prev.filter(m => m.id !== userMsg.id));
+            if (!this.promptText()) {
+                this.promptText.set(text);
+                setTimeout(() => this.autoExpandTextarea(), 0);
+            }
+            return;
+        }
+        //replaced code
+
+        this.startThinkingStatusCycle();
+
+        const token = this.auth.getToken();
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream'
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify({ ...payload, stream: true })
+        }).then(async (response) => {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('text/event-stream') && response.body) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+
+                    const parts = buffer.split(/\r?\n\r?\n/);
+                    buffer = parts.pop() || '';
+
+                    for (const part of parts) {
+                        if (!part.trim()) continue;
+                        let eventType = 'message';
+                        let dataStr = '';
+
+                        for (const line of part.split(/\r?\n/)) {
+                            if (line.startsWith('event:')) {
+                                eventType = line.slice(6).trim();
+                            } else if (line.startsWith('data:')) {
+                                dataStr = line.slice(5).trim();
+                            }
+                        }
+
+                        if (!dataStr) continue;
+
+                        try {
+                            const parsedData = JSON.parse(dataStr);
+                            if (eventType === 'status') {
+                                if (parsedData.status) {
+                                    this.thinkingStatus.set(parsedData.status);
+                                }
+                            } else if (eventType === 'complete') {
+                                this.isThinking.set(false);
+                                this.stopThinkingStatusCycle();
+                                this.handleChatSuccessResponse(parsedData, userMsg, currentModel);
+                            } else if (eventType === 'error') {
+                                this.isThinking.set(false);
+                                this.stopThinkingStatusCycle();
+                                this.handleChatErrorResponse(parsedData, currentModel, userMsg);
+                            }
+                        } catch (e) {
+                            console.warn('Error parsing SSE event chunk:', e);
+                        }
+                    }
+                }
+            } else {
+                let parsedJson: any = null;
+                try {
+                    parsedJson = await response.json();
+                } catch {
+                    parsedJson = { statusCode: response.status, message: response.statusText };
+                }
+                this.isThinking.set(false);
+                this.stopThinkingStatusCycle();
+
+                if (!response.ok) {
+                    this.handleChatErrorResponse(parsedJson, currentModel, userMsg);
+                } else {
+                    this.handleChatSuccessResponse(parsedJson, userMsg, currentModel);
+                }
+            }
+        }).catch((err) => {
+            this.isThinking.set(false);
+            this.stopThinkingStatusCycle();
+            this.handleChatErrorResponse(err, currentModel, userMsg);
+        });
+    }
+
+    private handleChatSuccessResponse(res: any, userMsg: ChatMessage, currentModel: AiChatModel): void {
+        const isHttpError = !res ||
+            (typeof res.statusCode === 'number' && res.statusCode >= 400) ||
+            (typeof res.status === 'number' && res.status >= 400) ||
+            res.success === false;
+
+        if (isHttpError && !res?.data) {
+            this.handleChatErrorResponse(res, currentModel, userMsg);
             return;
         }
 
-        this.http.post<any>(url, payload, { withCredentials: true }).subscribe({
-            next: (res) => {
-                this.isThinking.set(false);
-                if (res && (res.statusCode === 502 || res.statusCode >= 400) && !res.data) {
-                    const errMsg = this.formatAiErrorMessage(res);
-                    this.svc.showToast(errMsg, 4000, 'error');
-                    const errorMsg: ChatMessage = {
-                        id: 'msg-err-' + Date.now(),
-                        sender: 'assistant',
-                        text: errMsg,
-                        modelName: currentModel.model_name,
-                        timestamp: new Date()
-                    };
-                    this.messages.update(prev => [...prev, errorMsg]);
-                    this.shouldScrollToBottom = true;
-                    return;
-                }
-                if (res && res.data) {
-                    const data = res.data;
+        // Check if the response body contains an error message rather than a valid answer
+        const rawContent = res?.data?.answer || res?.data?.explanation || res?.message || '';
+        if (!res?.data?.dbml_query && this.isAiErrorContent(rawContent)) {
+            this.handleChatErrorResponse(rawContent || res, currentModel, userMsg);
+            return;
+        }
 
-                    if (data.sessionId !== undefined && data.sessionId !== null) {
-                        this.currentSessionId.set(data.sessionId);
-                    }
-                    if (data.sessionName) {
-                        this.sessionTitle.set(data.sessionName);
-                    }
+        if (res && res.data) {
+            const data = res.data;
 
-                    // Extract display explanation or answer
-                    let displayText = data.explanation ? this.cleanDisplayText(data.explanation) : '';
-                    let dbmlQuery = data.dbml_query || '';
-
-                    // If dbmlQuery is not valid DBML (e.g. "No existing DBML."), discard it
-                    if (dbmlQuery && !this.isDbmlCode(dbmlQuery)) {
-                        dbmlQuery = '';
-                    }
-
-                    if (!displayText && data.answer) {
-                        if (dbmlQuery && data.answer.includes(dbmlQuery)) {
-                            displayText = this.cleanDisplayText(data.answer.replace(dbmlQuery, '').trim());
-                        } else {
-                            const parsed = this.parseAnswer(data.answer);
-                            displayText = parsed.displayText;
-                            if (parsed.dbmlQuery && !dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
-                                dbmlQuery = parsed.dbmlQuery;
-                            }
-                        }
-                    }
-
-                    if (!dbmlQuery && data.answer) {
-                        const parsed = this.parseAnswer(data.answer);
-                        if (parsed.dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
-                            dbmlQuery = parsed.dbmlQuery;
-                            if (!displayText) {
-                                displayText = parsed.displayText;
-                            }
-                        }
-                    }
-
-                    if (!dbmlQuery && displayText) {
-                        const parsed = this.parseAnswer(displayText);
-                        if (parsed.dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
-                            dbmlQuery = parsed.dbmlQuery;
-                            displayText = parsed.displayText || displayText;
-                        }
-                    }
-
-                    if (dbmlQuery && !this.isDbmlCode(dbmlQuery)) {
-                        dbmlQuery = '';
-                    }
-
-                    if (displayText) {
-                        displayText = this.cleanDisplayText(displayText);
-                    }
-
-                    if (!displayText) {
-                        displayText = res.message || 'Processed successfully';
-                    }
-
-                    const trimmedDbml = dbmlQuery ? dbmlQuery.trim() : undefined;
-                    const hasSnippet = !!trimmedDbml;
-                    const histId = data.messageId ? Number(data.messageId) : undefined;
-
-                    // Associate the user's preceding message with this historyId
-                    if (histId) {
-                        this.messages.update(prev => prev.map(m => m.id === userMsg.id ? { ...m, historyId: histId } : m));
-                    }
-
-                    const assistantMsg: ChatMessage = {
-                        id: 'msg-' + (data.messageId || Date.now()),
-                        historyId: histId,
-                        sender: 'assistant',
-                        text: displayText,
-                        codeSnippet: trimmedDbml,
-                        displayCodeSnippet: hasSnippet ? '' : undefined,
-                        displayText: '',
-                        isStreaming: true,
-                        streamingStage: hasSnippet ? 'code' : 'text',
-                        modelName: data.modelName || currentModel.model_name,
-                        providerName: data.providerName || currentModel.provider_name,
-                        summarize: data.summarize || undefined,
-                        timestamp: data.createdAt ? new Date(data.createdAt) : new Date(),
-                        applied: false
-                    };
-
-                    this.messages.update(prev => [...prev, assistantMsg]);
-
-                    // Stream line by line like ChatGPT
-                    // Query will be applied ONLY AFTER the chat response has completely displayed
-                    this.streamMessageLineByLine(assistantMsg, displayText, trimmedDbml, () => {
-                        if (assistantMsg.codeSnippet && !assistantMsg.applied && this.isDbmlCode(assistantMsg.codeSnippet)) {
-                            this.applySnippet(assistantMsg, true);
-                        }
-                    });
-                } else {
-                    let fallbackSnippet: string | undefined;
-                    let fallbackText = res?.message || 'Response received.';
-                    if (res?.message) {
-                        const parsed = this.parseAnswer(res.message);
-                        if (parsed.dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
-                            fallbackSnippet = parsed.dbmlQuery;
-                            fallbackText = parsed.displayText || fallbackText;
-                        } else {
-                            fallbackText = parsed.displayText || fallbackText;
-                        }
-                    }
-
-                    if (fallbackText) {
-                        fallbackText = this.cleanDisplayText(fallbackText);
-                    }
-
-                    const trimmedFallbackSnippet = (fallbackSnippet && this.isDbmlCode(fallbackSnippet)) ? fallbackSnippet.trim() : undefined;
-                    const hasFallbackSnippet = !!trimmedFallbackSnippet;
-                    const fallbackMsg: ChatMessage = {
-                        id: 'msg-' + Date.now(),
-                        sender: 'assistant',
-                        text: fallbackText,
-                        codeSnippet: trimmedFallbackSnippet,
-                        displayCodeSnippet: hasFallbackSnippet ? '' : undefined,
-                        displayText: '',
-                        isStreaming: true,
-                        streamingStage: hasFallbackSnippet ? 'code' : 'text',
-                        modelName: currentModel.model_name,
-                        timestamp: new Date(),
-                        applied: false
-                    };
-
-                    this.messages.update(prev => [...prev, fallbackMsg]);
-
-                    // Stream line by line like ChatGPT
-                    // Query will be applied ONLY AFTER the chat response has completely displayed
-                    this.streamMessageLineByLine(fallbackMsg, fallbackText, trimmedFallbackSnippet, () => {
-                        if (fallbackMsg.codeSnippet && !fallbackMsg.applied && this.isDbmlCode(fallbackMsg.codeSnippet)) {
-                            this.applySnippet(fallbackMsg, true);
-                        }
-                    });
-                }
-                this.shouldScrollToBottom = true;
-            },
-            error: (err) => {
-                this.isThinking.set(false);
-                console.error('AI chat error:', err);
-                const errMsg = this.formatAiErrorMessage(err);
-                this.svc.showToast(errMsg, 4000, 'error');
-
-                const errorMsg: ChatMessage = {
-                    id: 'msg-err-' + Date.now(),
-                    sender: 'assistant',
-                    text: errMsg,
-                    modelName: currentModel.model_name,
-                    timestamp: new Date()
-                };
-                this.messages.update(prev => [...prev, errorMsg]);
-                this.shouldScrollToBottom = true;
+            if (data.sessionId !== undefined && data.sessionId !== null) {
+                this.currentSessionId.set(data.sessionId);
             }
-        });
+            if (data.sessionName) {
+                this.sessionTitle.set(data.sessionName);
+            }
+
+            // Extract display explanation or answer
+            let displayText = data.explanation ? this.cleanDisplayText(data.explanation) : '';
+            let dbmlQuery = data.dbml_query || '';
+
+            // If dbmlQuery is not valid DBML (e.g. "No existing DBML."), discard it
+            if (dbmlQuery && !this.isDbmlCode(dbmlQuery)) {
+                dbmlQuery = '';
+            }
+
+            if (!displayText && data.answer) {
+                if (dbmlQuery && data.answer.includes(dbmlQuery)) {
+                    displayText = this.cleanDisplayText(data.answer.replace(dbmlQuery, '').trim());
+                } else {
+                    const parsed = this.parseAnswer(data.answer);
+                    displayText = parsed.displayText;
+                    if (parsed.dbmlQuery && !dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
+                        dbmlQuery = parsed.dbmlQuery;
+                    }
+                }
+            }
+
+            if (!dbmlQuery && data.answer) {
+                const parsed = this.parseAnswer(data.answer);
+                if (parsed.dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
+                    dbmlQuery = parsed.dbmlQuery;
+                    if (!displayText) {
+                        displayText = parsed.displayText;
+                    }
+                }
+            }
+
+            if (!dbmlQuery && displayText) {
+                const parsed = this.parseAnswer(displayText);
+                if (parsed.dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
+                    dbmlQuery = parsed.dbmlQuery;
+                    displayText = parsed.displayText || displayText;
+                }
+            }
+
+            if (dbmlQuery && !this.isDbmlCode(dbmlQuery)) {
+                dbmlQuery = '';
+            }
+
+            if (displayText) {
+                displayText = this.cleanDisplayText(displayText);
+            }
+
+            if (!displayText) {
+                displayText = res.message || 'Processed successfully';
+            }
+
+            const trimmedDbml = dbmlQuery ? dbmlQuery.trim() : undefined;
+            const hasSnippet = !!trimmedDbml;
+            const histId = data.messageId ? Number(data.messageId) : undefined;
+
+            // Associate the user's preceding message with this historyId
+            if (histId) {
+                this.messages.update(prev => prev.map(m => m.id === userMsg.id ? { ...m, historyId: histId } : m));
+            }
+
+            const assistantMsg: ChatMessage = {
+                id: 'msg-' + (data.messageId || Date.now()),
+                historyId: histId,
+                sender: 'assistant',
+                text: displayText,
+                codeSnippet: trimmedDbml,
+                displayCodeSnippet: hasSnippet ? '' : undefined,
+                displayText: '',
+                isStreaming: true,
+                streamingStage: hasSnippet ? 'code' : 'text',
+                modelName: data.modelName || currentModel.model_name,
+                providerName: data.providerName || currentModel.provider_name,
+                summarize: data.summarize || undefined,
+                timestamp: data.createdAt ? new Date(data.createdAt) : new Date(),
+                applied: false
+            };
+
+            this.messages.update(prev => [...prev, assistantMsg]);
+
+            // Stream line by line like ChatGPT
+            // Query will be applied ONLY AFTER the chat response has completely displayed
+            this.streamMessageLineByLine(assistantMsg, displayText, trimmedDbml, () => {
+                if (assistantMsg.codeSnippet && !assistantMsg.applied && this.isDbmlCode(assistantMsg.codeSnippet)) {
+                    this.applySnippet(assistantMsg, true);
+                }
+            });
+        } else {
+            let fallbackSnippet: string | undefined;
+            let fallbackText = res?.message || 'Response received.';
+            if (res?.message) {
+                const parsed = this.parseAnswer(res.message);
+                if (parsed.dbmlQuery && this.isDbmlCode(parsed.dbmlQuery)) {
+                    fallbackSnippet = parsed.dbmlQuery;
+                    fallbackText = parsed.displayText || fallbackText;
+                } else {
+                    fallbackText = parsed.displayText || fallbackText;
+                }
+            }
+
+            if (fallbackText) {
+                fallbackText = this.cleanDisplayText(fallbackText);
+            }
+
+            const trimmedFallbackSnippet = (fallbackSnippet && this.isDbmlCode(fallbackSnippet)) ? fallbackSnippet.trim() : undefined;
+            const hasFallbackSnippet = !!trimmedFallbackSnippet;
+            const fallbackMsg: ChatMessage = {
+                id: 'msg-' + Date.now(),
+                sender: 'assistant',
+                text: fallbackText,
+                codeSnippet: trimmedFallbackSnippet,
+                displayCodeSnippet: hasFallbackSnippet ? '' : undefined,
+                displayText: '',
+                isStreaming: true,
+                streamingStage: hasFallbackSnippet ? 'code' : 'text',
+                modelName: currentModel.model_name,
+                timestamp: new Date(),
+                applied: false
+            };
+
+            this.messages.update(prev => [...prev, fallbackMsg]);
+
+            // Stream line by line like ChatGPT
+            // Query will be applied ONLY AFTER the chat response has completely displayed
+            this.streamMessageLineByLine(fallbackMsg, fallbackText, trimmedFallbackSnippet, () => {
+                if (fallbackMsg.codeSnippet && !fallbackMsg.applied && this.isDbmlCode(fallbackMsg.codeSnippet)) {
+                    this.applySnippet(fallbackMsg, true);
+                }
+            });
+        }
+
+        // Update token usage for dbnexus AI
+        if (this.isNoApiKeyRequired(currentModel)) {
+            const rawTokens = res?.data?.used_tokens ?? res?.data?.tokens_used ?? res?.data?.usedTokens ??
+                res?.data?.usage?.total_tokens ?? res?.data?.total_tokens ?? res?.data?.tokens ??
+                res?.used_tokens ?? res?.tokens_used ?? res?.total_tokens;
+
+            if (rawTokens !== undefined && rawTokens !== null && !isNaN(Number(rawTokens))) {
+                const countNum = Number(rawTokens);
+                if (res?.data?.is_cumulative || res?.data?.used_tokens !== undefined || res?.data?.tokens_used !== undefined) {
+                    this.updateUsedTokens(countNum);
+                } else {
+                    this.updateUsedTokens(this.usedTokens() + countNum);
+                }
+            } else {
+                const queryText = userMsg?.text || '';
+                const respText = (res?.data?.explanation || res?.data?.answer || res?.message || '') + (res?.data?.dbml_query || '');
+                const estimatedTokens = Math.max(15, Math.ceil((queryText.length + respText.length) / 4));
+                this.updateUsedTokens(this.usedTokens() + estimatedTokens);
+            }
+        }
+
+        this.shouldScrollToBottom = true;
+    }
+
+    private handleChatErrorResponse(err: any, currentModel: AiChatModel, userMsg?: ChatMessage): void {
+        console.error('AI chat error:', err);
+        const errMsg = this.formatAiErrorMessage(err);
+        this.svc.showToast(errMsg, 4000, 'error');
+
+        // The error should only be displayed in the toaster, not in the chat as response
+        if (userMsg) {
+            this.messages.update(prev => prev.filter(m => m.id !== userMsg.id));
+            if (!this.promptText()) {
+                this.promptText.set(userMsg.text);
+                setTimeout(() => this.autoExpandTextarea(), 0);
+            }
+        }
+        this.isThinking.set(false);
+        this.stopThinkingStatusCycle();
+    }
+
+    loadStoredUsedTokens(): number {
+        if (typeof window === 'undefined') return 13635;
+        const stored = localStorage.getItem('dbnexus_ai_used_tokens');
+        if (stored && !isNaN(Number(stored))) {
+            return Number(stored);
+        }
+        return 13635;
+    }
+
+    getMaxTokens(): number {
+        const model = this.selectedModel();
+        if (model && model.max_tokens && typeof model.max_tokens === 'number' && model.max_tokens > 0) {
+            return model.max_tokens;
+        }
+        const dbnexus = this.availableModels().find(m => this.isNoApiKeyRequired(m));
+        if (dbnexus && dbnexus.max_tokens && typeof dbnexus.max_tokens === 'number' && dbnexus.max_tokens > 0) {
+            return dbnexus.max_tokens;
+        }
+        return 50000;
+    }
+
+    getUsagePercentage(): number {
+        const max = this.getMaxTokens();
+        if (!max || max <= 0) return 0;
+        const pct = Math.round((this.usedTokens() / max) * 100);
+        return Math.min(100, Math.max(0, pct));
+    }
+
+    getResetDate(): string {
+        const now = new Date();
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        return `1 ${monthNames[nextMonth.getMonth()]} ${nextMonth.getFullYear()}`;
+    }
+
+    formatNumber(val: number): string {
+        return (val || 0).toLocaleString('en-US');
+    }
+
+    toggleUsagePopup(event?: Event): void {
+        if (event) event.stopPropagation();
+        this.isUsagePopupOpen.update(v => !v);
+    }
+
+    closeUsagePopup(): void {
+        this.isUsagePopupOpen.set(false);
+    }
+
+    updateUsedTokens(newCount: number): void {
+        const max = this.getMaxTokens();
+        const capped = Math.min(max, Math.max(0, newCount));
+        this.usedTokens.set(capped);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('dbnexus_ai_used_tokens', String(capped));
+        }
     }
 
     toggleModelDropdown(event?: Event): void {
@@ -1174,6 +1473,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         const target = event.target as HTMLElement | null;
         if (!target?.closest('.model-dropdown-container')) {
             this.isModelDropdownOpen.set(false);
+        }
+        if (!target?.closest('.ai-usage-limit-container')) {
+            this.isUsagePopupOpen.set(false);
         }
     }
 
@@ -1313,7 +1615,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
         let currentModel = this.selectedModel();
         if (!this.hasValidApiKey(currentModel)) {
-            currentModel = this.availableModels().find(m => this.isNoApiKeyRequired(m)) || { ...DEFAULT_DBNEXUS_MODEL };
+            currentModel = this.getAutoSelectedModel(this.availableModels());
             this.selectedModel.set(currentModel);
             localStorage.setItem('ai_selected_model_id', String(currentModel.id));
         }
@@ -1452,7 +1754,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                     const combinedContext = `${userQuery} ${msg.text || ''}`.toLowerCase();
                     const deletionKeywords = /\b(?:delete|deleted|deleting|drop|dropped|dropping|remove|removed|removing|destroy|truncate|eliminate|omit|omitted)\b/i;
                     const isDeletion = deletionKeywords.test(combinedContext) ||
-                                       missingTables.some(t => combinedContext.includes(t.toLowerCase()));
+                        missingTables.some(t => combinedContext.includes(t.toLowerCase()));
 
                     // If deletion is requested/detected or multiple tables are returned (full schema),
                     // proposedCode must use the new snippet so deleted tables/columns/refs show up as deletions in Myers diff!

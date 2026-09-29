@@ -191,6 +191,10 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
 
   onTextInput(e: Event): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     const ta = e.target as HTMLTextAreaElement;
     const val = ta.value;
     this.displayCode = val;
@@ -576,6 +580,51 @@ export class EditorComponent implements OnInit, OnDestroy {
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+    }
+  }
+
+  onEditorAreaClick(event: MouseEvent): void {
+    if (!this.svc.aiDiffReviewActive()) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, .diff-hunk-inline-actions, .diff-review-floating-bar')) {
+      return;
+    }
+    this.svc.showAiDiffEditBlockedToast();
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeyDown(event: KeyboardEvent): void {
+    if (!this.svc.aiDiffReviewActive()) return;
+
+    // Check target: if user is typing in ai-chat or a modal / dialog / any standard input, don't block
+    const target = event.target as HTMLElement | null;
+    if (target) {
+      if (target.closest('app-ai-chat, input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
+      if (target.closest('.modal-content, .modal-backdrop, [role="dialog"], .dialog, .auth-modal')) {
+        return;
+      }
+    }
+
+    const isCtrlOrMeta = event.ctrlKey || event.metaKey;
+    const key = event.key;
+
+    // Edit shortcuts: Ctrl+V, Ctrl+X, Ctrl+Z, Ctrl+Y
+    const isEditShortcut = isCtrlOrMeta && ['v', 'V', 'x', 'X', 'z', 'Z', 'y', 'Y'].includes(key);
+
+    // Typing keys: printable character, Backspace, Delete, Enter, Tab
+    // If the event target is inside #editor-pane or #editor-scroll or .editor-diff-review-view, block all typing keys!
+    const isInsideEditorPane = !!target?.closest('#editor-pane, #editor-scroll, .editor-diff-review-view');
+    const isTypingKey = !isCtrlOrMeta && !event.altKey && (
+      key === 'Backspace' || key === 'Delete' || key === 'Enter' || key === 'Tab' || (
+        isInsideEditorPane ? key.length === 1 : false
+      )
+    );
+
+    if (isEditShortcut || isTypingKey) {
+      event.preventDefault();
+      this.svc.showAiDiffEditBlockedToast();
     }
   }
 }

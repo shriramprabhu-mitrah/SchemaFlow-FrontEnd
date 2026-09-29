@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, computed, effect } from '@angular/core';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
@@ -19,7 +19,14 @@ export class Toast implements OnInit, OnDestroy {
   constructor(
     public svc: DashboardService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    effect(() => {
+      // Re-render whenever toast state changes
+      this.svc.toastMessage();
+      this.svc.toastType();
+      this.cdr.markForCheck();
+    });
+  }
 
   ngOnInit(): void {
     // Re-render whenever toast state changes

@@ -2679,43 +2679,47 @@ body.light-theme #extra-controls {
   display: flex;
   align-items: center;
   gap: 18px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: #141d31;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 6px 18px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   font-size: 12px;
   font-weight: 600;
   user-select: none;
   pointer-events: none;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
   .legend-item {
     display: flex;
     align-items: center;
     gap: 6px;
+    letter-spacing: 0.01em;
 
     &.added {
-      color: #10b981;
+      color: #34d399;
       .dash-added {
-        color: #10b981;
+        color: #34d399;
         letter-spacing: -2px;
         font-weight: 900;
       }
     }
 
     &.modified {
-      color: #f59e0b;
+      color: #fbbf24;
       .dash-modified {
-        color: #f59e0b;
+        color: #fbbf24;
         letter-spacing: -2px;
         font-weight: 900;
       }
     }
 
     &.deleted {
-      color: #ef4444;
+      color: #f87171;
       .dash-deleted {
-        color: #ef4444;
+        color: #f87171;
         letter-spacing: -2px;
         font-weight: 900;
       }
@@ -2723,9 +2727,37 @@ body.light-theme #extra-controls {
   }
 }
 
-:host-context(body.dark-theme) .canvas-diff-legend,
-body.dark-theme .canvas-diff-legend {
-  background: #1e293b !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+/* Light mode styles */
+html.light-theme .canvas-diff-legend,
+body.light-theme .canvas-diff-legend,
+:host-context(body.light-theme) .canvas-diff-legend,
+[data-theme="light"] .canvas-diff-legend,
+.light-theme .canvas-diff-legend,
+.canvas-diff-legend.light {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+
+  .legend-item {
+    &.added {
+      color: #059669 !important;
+      .dash-added {
+        color: #059669 !important;
+      }
+    }
+
+    &.modified {
+      color: #d97706 !important;
+      .dash-modified {
+        color: #d97706 !important;
+      }
+    }
+
+    &.deleted {
+      color: #dc2626 !important;
+      .dash-deleted {
+        color: #dc2626 !important;
+      }
+    }
+  }
 }
