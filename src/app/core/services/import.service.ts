@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
+import { AuthService } from './auth.service';
+
 export type SqlDialect = 'postgres' | 'mysql' | 'sqlserver' | 'oracle' | 'sqlite' | 'mongodb';
 
 export interface ImportRequest {
@@ -31,7 +33,8 @@ export class ImportService {
 
   constructor(
     private http: HttpClient,
-    private appConfig: AppConfigService
+    private appConfig: AppConfigService,
+    private authService: AuthService
   ) {}
 
   /**
@@ -72,6 +75,27 @@ export class ImportService {
     }
 
     return this.http.post(url, body, { responseType: 'text' });
+  }
+
+  /**
+   * Generates DBML schema from database connection string
+   */
+  generateFromConnectionString(databaseType: string, connectionString: string): Observable<string> {
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml || 'http://192.168.1.84:4000/api/dbml/generate';
+    const token = this.authService ? this.authService.getToken() : null;
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const body = {
+      databaseType,
+      connectionString
+    };
+
+    return this.http.post(url, body, { headers, responseType: 'text' });
   }
 
   /**

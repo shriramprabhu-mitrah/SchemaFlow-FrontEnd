@@ -710,9 +710,14 @@ export class DashboardService {
   }
 
   openImportModal$ = new Subject<string>();
+  openConnectionStringModal$ = new Subject<void>();
 
   openImportModal(dialect: string): void {
     this.openImportModal$.next(dialect);
+  }
+
+  openConnectionStringModal(): void {
+    this.openConnectionStringModal$.next();
   }
 
   formatVersionDate(dateStr: string | Date): string {

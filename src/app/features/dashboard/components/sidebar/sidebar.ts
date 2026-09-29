@@ -183,6 +183,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.openImportDialect(dialect, e);
   }
 
+  openConnectionStringModal(e?: Event): void {
+    if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
+    this.importMenuOpen = false;
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      return;
+    }
+    if (!this.entitlementService.canUseFeature('import_sql')) {
+      if (!this.entitlementService.orgHasFeature('import_sql')) {
+        this.svc.showUpgradeModal('import_sql');
+      }
+      return;
+    }
+    this.svc.openConnectionStringModal();
+    this.cdr.markForCheck();
+  }
+
   hasDbmlErrors(): boolean {
     return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;
   }

@@ -44,7 +44,8 @@
   "importExportApiUrls": {
     "validateSql": "http://192.168.1.84:4000/api/validate/sql",
     "import": "http://192.168.1.84:4000/api/import",
-    "export": "http://192.168.1.84:4000/api/export/{id}"
+    "export": "http://192.168.1.84:4000/api/export/{id}",
+    "generateDbml": "http://192.168.1.84:4000/api/dbml/generate"
   },
   "pricingApiUrls": {
     "plans": "http://192.168.1.84:4000/api/pricing/plans",

@@ -44,7 +44,8 @@
   "importExportApiUrls": {
     "validateSql": "API_URL/api/validate/sql",
     "import": "API_URL/api/import",
-    "export": "API_URL/api/export/{id}"
+    "export": "API_URL/api/export/{id}",
+    "generateDbml": "API_URL/api/dbml/generate"
   },
   "pricingApiUrls": {
     "plans": "API_URL/api/pricing/plans",

@@ -71,7 +71,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         req.url.includes('/auth/reset-password') ||
         req.url.includes('/auth/forget-password') ||
         req.url.includes('/api/diagrams/public') ||
-        req.url.includes('/api/pricing');
+        req.url.includes('/api/pricing') ||
+        req.url.includes('/api/dbml/generate') ||
+        req.url.includes('/api/import');
 
       if (error.status === 401 && !isBypassedUrl) {
         return auth.refreshToken().pipe(
