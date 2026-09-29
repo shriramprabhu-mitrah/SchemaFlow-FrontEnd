@@ -24,11 +24,14 @@ export class EnquiriesManagementComponent implements OnInit {
   page = 1;
   limit = 10;
   showLimitDropdown = false;
+  showTypeDropdown = false;
+  filterType = '';
   totalFilteredCount = 0;
 
   @HostListener('document:click')
   onDocumentClick() {
     this.showLimitDropdown = false;
+    this.showTypeDropdown = false;
   }
   
   sortColumn = 'created_at';
@@ -87,7 +90,7 @@ export class EnquiriesManagementComponent implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.admin.getEnquiries(this.page, this.limit, this.search, this.sortColumn, this.sortAsc).subscribe({
+    this.admin.getEnquiries(this.page, this.limit, this.search, this.sortColumn, this.sortAsc, this.filterType).subscribe({
       next: (res) => {
         this.allEnquiries = res?.data || res || [];
         this.totalFilteredCount = res?.total || res?.meta?.total || this.allEnquiries.length;
@@ -111,6 +114,13 @@ export class EnquiriesManagementComponent implements OnInit {
   }
 
   onLimitChange(): void {
+    this.page = 1;
+    this.load();
+  }
+
+  onTypeFilterChange(type: string): void {
+    this.filterType = type;
+    this.showTypeDropdown = false;
     this.page = 1;
     this.load();
   }

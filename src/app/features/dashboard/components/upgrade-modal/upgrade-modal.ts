@@ -737,7 +737,7 @@ export class UpgradeModalComponent implements OnInit {
     const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000';
     const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
     const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
-    const planType = `${plan.slug}_${this.isAnnual ? 'yearly' : 'monthly'}`;
+    const planType = `${plan.slug}_${this.isAnnual ? 'annual' : 'monthly'}`;
 
     this.http.post<any>(createSubUrl, {
       planType: planType,
