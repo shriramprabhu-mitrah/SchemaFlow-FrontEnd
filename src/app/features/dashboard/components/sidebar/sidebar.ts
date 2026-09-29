@@ -113,9 +113,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   hasFeatureAccess(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (featureKey === 'code_compare' && !this.isLoggedIn) return true;
-    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' ||
-      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
-    if (isPlanExpired) return false;
+    if (this.auth.getCurrentPlanStatus() === 'expired') return false;
     return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
   }
 
@@ -125,7 +123,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       case 'import':
         return !this.hasFeatureAccess('import_sql');
       case 'export':
-        return !this.hasFeatureAccess('export_image') || !this.hasFeatureAccess('export_sql');
+        return !this.hasFeatureAccess('export_image') && !this.hasFeatureAccess('export_sql');
       case 'share':
         return !this.hasFeatureAccess('share_diagram');
       case 'versions':
@@ -134,6 +132,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
       case 'refs':
         return !this.hasFeatureAccess('table_relationships');
       case 'docs':
+        if (this.svc.isDocUnlocked()) {
+          if (this.auth.getCurrentPlanStatus() !== 'expired') {
+            return false;
+          }
+        }
         return !this.hasFeatureAccess('document_view');
       case 'compare':
         return !this.hasFeatureAccess('code_compare');
@@ -476,31 +479,33 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.svc.showDocs = true;
         this.svc.showDocsPlaceholder = false;
       } else {
-        const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' ||
-          (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
-
         const canUse = this.entitlementService.canUseFeature('document_view');
         const ent = this.entitlementService.getEntitlement('document_view');
         const limit = ent?.effective_limit ?? ent?.limit_value;
-        const isLimitReached = !canUse || (limit !== undefined && limit !== null && limit !== -1 && (
-          limit === 0 ||
-          (ent?.used !== undefined && ent.used >= limit) ||
-          (ent?.remaining !== undefined && ent.remaining <= 0)
+        const isLimitReached = !canUse || (limit !== undefined && limit !== null && Number(limit) !== -1 && (
+          Number(limit) === 0 ||
+          (ent?.used !== undefined && Number(ent.used) >= Number(limit)) ||
+          (ent?.remaining !== undefined && Number(ent.remaining) <= 0)
         ));
 
-        if (isPlanExpired || isLimitReached || !this.entitlementService.orgHasFeature('document_view')) {
-          this.svc.showToast('Docs view count is completed. To view docs, please buy docs or upgrade your plan.', 4000, 'error');
+        if (this.auth.getCurrentPlanStatus() === 'expired' || !this.entitlementService.orgHasFeature('document_view')) {
           this.svc.showUpgradeModal('document_view');
           return;
         }
 
-        if (this.svc.isDocUnlocked()) {
+        if (this.svc.isDocUnlocked() || Number(limit) === -1) {
           this.svc.showDocs = true;
           this.svc.showDocsPlaceholder = false;
-        } else {
-          this.svc.showDocs = false;
-          this.svc.showDocsPlaceholder = true;
+          return;
         }
+
+        if (isLimitReached) {
+          this.svc.showUpgradeModal('document_view');
+          return;
+        }
+
+        this.svc.showDocs = false;
+        this.svc.showDocsPlaceholder = true;
       }
 
       this.svc.sidebarInspectorTab.set(null);

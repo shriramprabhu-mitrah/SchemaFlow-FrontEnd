@@ -14,7 +14,6 @@ import { DiffCheckerComponent } from './components/diff-checker/diff-checker';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { Subscription, Observable } from 'rxjs';
-import { Toast } from '../../shared/toaster/toast/toast';
 
 @Component({
   selector: 'app-dashboard',
@@ -27,8 +26,7 @@ import { Toast } from '../../shared/toaster/toast/toast';
     CanvasComponent,
     DiffCheckerComponent,
     ButtonComponent,
-    LoaderComponent,
-    Toast
+    LoaderComponent
   ],
   templateUrl: './dashboard.html',
 })
@@ -335,10 +333,10 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     const ent = this.documentViewEntitlement;
     if (!ent) return true;
     const limit = ent.effective_limit ?? ent.limit_value;
-    if (limit === -1) return false;
-    if (limit === undefined || limit === null || limit === 0) return true;
-    if (ent.used !== undefined && ent.used >= limit) return true;
-    if (ent.remaining !== undefined && ent.remaining <= 0) return true;
+    if (Number(limit) === -1) return false;
+    if (limit === undefined || limit === null || Number(limit) === 0) return true;
+    if (ent.used !== undefined && Number(ent.used) >= Number(limit)) return true;
+    if (ent.remaining !== undefined && Number(ent.remaining) <= 0) return true;
     return false;
   }
 
