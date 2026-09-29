@@ -435,7 +435,8 @@
   display: flex !important;
   flex-direction: column !important;
   gap: 10px !important;
-  margin: 12px 0 14px !important;
+  margin: 3px 0 0px !important;
+  min-height: 85px !important;
 
   .key-spec-item {
     display: flex !important;
@@ -456,7 +457,7 @@
   width: 100% !important;
   height: 1px !important;
   background: rgba(255, 255, 255, 0.08) !important;
-  margin: 8px 0 14px !important;
+  margin: 2px 0 5px !important;
 }
 
 /* CARD BULLET FEATURES */
@@ -525,7 +526,10 @@
 .card-addons-section {
   width: 100% !important;
   margin-top: auto !important;
-  padding-top: 21px !important;
+  padding-top: 16px !important;
+  min-height: 105px !important;
+  display: flex !important;
+  flex-direction: column !important;
 
   .card-addons-divider {
     width: 100% !important;
@@ -546,6 +550,7 @@
     display: flex !important;
     flex-direction: column !important;
     gap: 6px !important;
+    min-height: 50px !important;
   }
 
   .addon-item {
@@ -588,6 +593,7 @@
 /* CARD ACTIONS (CREATIVE GRADIENTS PILLS) */
 .card-action {
   width: 100% !important;
+  min-height: 74px !important;
 
   .no-card-required {
     font-size: 12px !important;

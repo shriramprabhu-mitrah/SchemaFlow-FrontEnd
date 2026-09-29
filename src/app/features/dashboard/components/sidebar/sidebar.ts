@@ -113,9 +113,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   hasFeatureAccess(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (featureKey === 'code_compare' && !this.isLoggedIn) return true;
-    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
-      (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
-    if (isPlanExpired) return false;
+    if (this.auth.getCurrentPlanStatus() === 'expired') return false;
     return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
   }
 
@@ -125,7 +123,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       case 'import':
         return !this.hasFeatureAccess('import_sql');
       case 'export':
-        return !this.hasFeatureAccess('export_image') || !this.hasFeatureAccess('export_sql');
+        return !this.hasFeatureAccess('export_image') && !this.hasFeatureAccess('export_sql');
       case 'share':
         return !this.hasFeatureAccess('share_diagram');
       case 'versions':
@@ -135,9 +133,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return !this.hasFeatureAccess('table_relationships');
       case 'docs':
         if (this.svc.isDocUnlocked()) {
-          const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
-            (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
-          if (!isPlanExpired) {
+          if (this.auth.getCurrentPlanStatus() !== 'expired') {
             return false;
           }
         }
@@ -472,9 +468,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.svc.showDocs = true;
         this.svc.showDocsPlaceholder = false;
       } else {
-        const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
-          (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
-
         const canUse = this.entitlementService.canUseFeature('document_view');
         const ent = this.entitlementService.getEntitlement('document_view');
         const limit = ent?.effective_limit ?? ent?.limit_value;
@@ -484,7 +477,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           (ent?.remaining !== undefined && Number(ent.remaining) <= 0)
         ));
 
-        if (isPlanExpired || !this.entitlementService.orgHasFeature('document_view')) {
+        if (this.auth.getCurrentPlanStatus() === 'expired' || !this.entitlementService.orgHasFeature('document_view')) {
           this.svc.showUpgradeModal('document_view');
           return;
         }
