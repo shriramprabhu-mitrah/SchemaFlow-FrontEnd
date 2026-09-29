@@ -1081,7 +1081,7 @@ export class DashboardService {
           this.updateEditorErrors();
           this.checkInvalidRefsTimeout();
           const errMsg = error?.error?.message || error?.message || 'DBML Validation Failed';
-          this.showToast(errMsg, 4000, 'error', 'editor');
+          this.showToast(errMsg, 4000, 'error');
 
           return EMPTY;
         })
@@ -1100,10 +1100,10 @@ export class DashboardService {
       if (errorList.length > 0) {
         const firstErrMessage = typeof errorList[0] === 'string' ? errorList[0] : errorList[0]?.message;
         if (firstErrMessage) {
-          this.showToast(firstErrMessage, 5000, 'error', 'editor');
+          this.showToast(firstErrMessage, 5000, 'error');
         }
       } else if (this.editorErrors().length > 0) {
-        this.showToast(this.editorErrors()[0].message, 5000, 'error', 'editor');
+        this.showToast(this.editorErrors()[0].message, 5000, 'error');
       } else {
         const currentMsg = this.toastMessage();
         if (
@@ -1114,7 +1114,8 @@ export class DashboardService {
             currentMsg.includes('Table') ||
             currentMsg.includes('Note') ||
             currentMsg.includes('Syntax error') ||
-            currentMsg.includes('DBML'))
+            currentMsg.includes('DBML') ||
+            currentMsg.includes('Type mismatch'))
         ) {
           this.toastMessage.set(null);
         }
