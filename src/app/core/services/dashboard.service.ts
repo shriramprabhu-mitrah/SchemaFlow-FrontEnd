@@ -426,23 +426,7 @@ export class DashboardService {
   }
 
   getTableWidth(tableName?: string, columns: Column[] = []): number {
-    let maxContentWidth = this.CARD_W;
-    for (const c of columns) {
-      const prefixLen = (c.pk ? 3 : 0) + (c.fk ? 3 : 0) + (c.unique && !c.pk ? 3 : 0);
-      const nameLen = (c.name || '').length + prefixLen;
-      const typeLen = (c.type || '').length;
-      const neededWidth = Math.ceil((nameLen + typeLen) * 7.5 + 40);
-      if (neededWidth > maxContentWidth) {
-        maxContentWidth = neededWidth;
-      }
-    }
-    if (tableName) {
-      const headerNeeded = Math.ceil(((tableName || '').length + 6) * 8.5 + 40);
-      if (headerNeeded > maxContentWidth) {
-        maxContentWidth = headerNeeded;
-      }
-    }
-    return Math.min(380, Math.max(this.CARD_W, maxContentWidth));
+    return this.CARD_W;
   }
 
   private _code = '';

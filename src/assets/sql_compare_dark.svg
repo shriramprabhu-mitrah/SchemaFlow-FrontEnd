@@ -1,0 +1,364 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1909 870" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:auto;max-width:100%" xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTplYzI2Mjg1NC01MjFjLTQ0NWYtYmUwOS1hYjU0Y2U0MjUxMDkAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaA3yHZyUzhpGpQb3dnc7y/8AAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo5ZjJjNTgyMS0wNjZkLTQyZTctODlmZS03MTQ3ODMyMzQ1YjRscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNo/R2FjBvRscXKKvvSclesEgAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFgg+xelUdKjmgz3vKgT/uhVV9rT1CtwEOnfUdcL0N6qK5GkZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaGUFs10QPTfy65brtGtXEREAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRNAAAAAAAAAAAAAAAAAGRoYXNoWCCbeFSP9DDam9r5B3ndUicy8tJmy74tHjaWKAY2HybZd2RuYW1lbmp1bWJmIG1hbmlmZXN0amV4Y2x1c2lvbnOBomVzdGFydBj5Zmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOmVjMjYyODU0LTUyMWMtNDQ1Zi1iZTA5LWFiNTRjZTQyNTEwOS9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjMyYWE5ZWZkLTA1NjQtNGUzYy05ZTY0LTI3NjEyNmI3OGI5ZXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCD7F6VR0qOaDPe8qBP+6FVX2tPUK3AQ6d9R1wvQ3qorkaJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggquNd7iXYAu/Cz0xZKV4BOKhEHNap9TMkctYLcnMCd/+iY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggyQamoopKS9ZQAHMbE3gT2H/Y2ucQ3WuXda9+yx4NRL90Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQM11E/VUPBqSTqZlylhJOFwjAel1wElelpwynDGdyksw9+BX7ImrL/EYLe7FpJcfbtwpIoa+oWSg076Qwp29K08=</c2pa:manifest></metadata>
+<defs>
+<pattern id="hz" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="8" height="8" fill="#050914"/><rect width="3" height="8" fill="#0f1729"/></pattern>
+<clipPath id="cl"><rect x="0" y="98" width="947" height="772"/></clipPath>
+<clipPath id="cr"><rect x="963" y="98" width="946" height="772"/></clipPath>
+<filter id="gl" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="4"/></filter></defs>
+<style>text{font-family:Inter,"Segoe UI",Arial,sans-serif}
+.m{font-family:Consolas,"SF Mono","Courier New",monospace;font-size:13px;fill:#e2e8f4;white-space:pre}
+.c{font-family:Consolas,"SF Mono","Courier New",monospace;font-size:12.5px;font-weight:700;fill:#fff;white-space:pre}
+.n{font-family:Consolas,"SF Mono","Courier New",monospace;font-size:12px;text-anchor:end;white-space:pre}
+.b{font-size:13.5px;font-weight:700}.s{font-size:11.5px;font-weight:700}</style>
+<rect width="1909" height="870" fill="#0e172a"/>
+<line x1="0" y1="52.5" x2="1909" y2="52.5" stroke="#1d2b45"/>
+<rect x="16.500" y="10.500" width="33" height="33" rx="8" fill="#18263f" stroke="#243a5e"/><path d="M36 20l-6 7 6 7" stroke="#9fb0cc" stroke-width="1.800" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="64" y="32" font-size="15.500" font-weight="700" fill="#fff" textLength="98" lengthAdjust="spacingAndGlyphs">SQL Compare</text>
+<rect x="1655.500" y="10.500" width="170" height="34" rx="8" fill="#101a30" stroke="#1f2f4f"/>
+<rect x="1724.500" y="14.500" width="96" height="25" rx="5" fill="#1e3154" stroke="#2fb5ad"/>
+<path d="M1672 33l1-4 8-8 3 3-8 8zM1680 34h5" fill="none" stroke="#aab4c8" stroke-width="1.200" stroke-linejoin="round"/>
+<text x="1690" y="31" font-size="12.500" font-weight="600" fill="#b6bfd0" textLength="23" lengthAdjust="spacingAndGlyphs">Edit</text>
+<g fill="none" stroke="#3fc7bf" stroke-width="1.300"><rect x="1737.500" y="21.500" width="11" height="11" rx="1.500"/><path d="M1743 21.500v11M1739.500 25h1.500M1739.500 28h1.500M1745 25h1.500M1745 28h1.500"/></g>
+<text x="1757" y="31" font-size="12.500" font-weight="600" fill="#3fc7bf" textLength="51" lengthAdjust="spacingAndGlyphs">Compare</text>
+<rect x="1837" y="16" width="67" height="27" rx="6" fill="#3ec5c1" opacity=".35" filter="url(#gl)"/><rect x="1837" y="14" width="67" height="27" rx="6" fill="#3ec5c1"/>
+<text x="1870.500" y="32" font-size="14" font-weight="700" fill="#fff" text-anchor="middle" textLength="33" lengthAdjust="spacingAndGlyphs">Clear</text>
+<rect x="0" y="53" width="1909" height="44" fill="#111d35"/><rect x="0" y="96" width="1909" height="2" fill="#243a66"/>
+<rect x="16.5" y="64.5" width="88" height="23" rx="5" fill="#391f38" stroke="#8a2f47"/>
+<g fill="none" stroke="#f0656f" stroke-width="1.300"><circle cx="33" cy="75.500" r="5.500"/><path d="M33 72.500v3.500l2 1"/></g><text class="s" x="44" y="80" fill="#f0656f" textLength="49" lengthAdjust="spacingAndGlyphs">HISTORY</text>
+<rect x="115.5" y="63.5" width="117" height="25" rx="5" fill="#331f30" stroke="#7a2b3f"/>
+<g fill="none" stroke="#f0656f" stroke-width="1.500"><circle cx="134" cy="75.500" r="6.500"/><path d="M130.500 75.500h7"/></g><text class="b" x="148" y="81" fill="#f0656f" textLength="74" lengthAdjust="spacingAndGlyphs">10 removals</text>
+<rect x="796.5" y="63.5" width="63" height="24" rx="5" fill="#182640" stroke="#2a3d63"/>
+<text x="828" y="80" font-size="12" font-weight="600" fill="#a8b3c8" text-anchor="middle" textLength="42" lengthAdjust="spacingAndGlyphs">44 lines</text>
+<rect x="872.5" y="63.5" width="72" height="24" rx="5" fill="#18263f" stroke="#2a3d63"/>
+<g fill="none" stroke="#3fc7bf" stroke-width="1.200"><rect x="888.5" y="70.500" width="7" height="7" rx="1"/><path d="M886 73v6h6"/></g><text x="902" y="79" font-size="12.500" font-weight="600" fill="#3fc7bf" textLength="30" lengthAdjust="spacingAndGlyphs">Copy</text>
+<rect x="975.5" y="63.5" width="79" height="25" rx="5" fill="#0f3a40" stroke="#1f7a66"/>
+<path d="M987 75l3 3 5-6" stroke="#4fe3a0" stroke-width="1.800" fill="none"/><text class="s" x="1003" y="80" fill="#4fe3a0" textLength="41" lengthAdjust="spacingAndGlyphs">LATEST</text>
+<rect x="1066.5" y="63.5" width="117" height="25" rx="5" fill="#0f3540" stroke="#1c6b62"/>
+<g fill="none" stroke="#4fe3a0" stroke-width="1.500"><circle cx="1084" cy="75.500" r="6.500"/><path d="M1080.500 75.500h7M1084 72v7"/></g><text class="b" x="1098" y="81" fill="#4fe3a0" textLength="76" lengthAdjust="spacingAndGlyphs">16 additions</text>
+<rect x="1756.5" y="63.5" width="62" height="24" rx="5" fill="#182640" stroke="#2a3d63"/>
+<text x="1787" y="80" font-size="12" font-weight="600" fill="#a8b3c8" text-anchor="middle" textLength="42" lengthAdjust="spacingAndGlyphs">50 lines</text>
+<rect x="1831.5" y="63.5" width="72" height="24" rx="5" fill="#18263f" stroke="#2a3d63"/>
+<g fill="none" stroke="#3fc7bf" stroke-width="1.200"><rect x="1847.5" y="70.500" width="7" height="7" rx="1"/><path d="M1845 73v6h6"/></g><text x="1861" y="79" font-size="12.500" font-weight="600" fill="#3fc7bf" textLength="30" lengthAdjust="spacingAndGlyphs">Copy</text>
+<rect x="0" y="98" width="947" height="772" fill="#09101e"/>
+<g clip-path="url(#cl)">
+<rect x="0" y="98" width="53" height="25" fill="#0d1628"/><rect x="53" y="98" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="122" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="115" fill="#7f9bc6">1</text>
+<text class="m" x="68.0 75.2 82.3 89.5 96.6 103.8 110.9 118.1 125.2 132.4 139.5 146.7 153.8" y="115" xml:space="preserve">Table users {</text>
+<rect x="0" y="123" width="947" height="25" fill="#2e1824"/><rect x="0" y="123" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="123" width="3" height="25" fill="#ef4444"/><rect x="56" y="123" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="147" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="140" fill="#f07a7f">2 -</text>
+<text class="m" x="87.3 94.5 101.6" y="140" xml:space="preserve">id </text>
+<rect x="108.8" y="127.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="113.2 120.4 127.5" y="140">int</text>
+<text class="m" x="140.2 147.3 154.5 161.6 168.8 175.9 183.1 190.2 197.4 204.6 211.7 218.8 226.0 233.1 240.3 247.4" y="140" xml:space="preserve"> [pk, increment]</text>
+<rect x="0" y="148" width="947" height="25" fill="#2e1824"/><rect x="0" y="148" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="148" width="3" height="25" fill="#ef4444"/><rect x="56" y="148" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="172" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="165" fill="#f07a7f">3 -</text>
+<text class="m" x="87.3 94.5 101.6 108.8 115.9 123.0 130.2 137.3 144.5 151.7 158.8 165.9 173.1" y="165" xml:space="preserve">name varchar(</text>
+<rect x="180.2" y="152.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="184.8 191.9 199.1" y="165">100</text>
+<text class="m" x="211.7" y="165" xml:space="preserve">)</text>
+<rect x="0" y="173" width="947" height="25" fill="#2e1824"/><rect x="0" y="173" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="173" width="3" height="25" fill="#ef4444"/><rect x="56" y="173" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="197" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="190" fill="#f07a7f">4 -</text>
+<text class="m" x="87.3 94.5 101.6 108.8 115.9 123.0 130.2 137.3 144.5 151.7 158.8 165.9 173.1 180.2" y="190" xml:space="preserve">email varchar(</text>
+<rect x="187.4" y="177.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="191.9 199.1 206.2" y="190">150</text>
+<text class="m" x="218.9 226.0 233.2 240.3 247.5 254.6 261.8 268.9 276.1 283.2" y="190" xml:space="preserve">) [unique]</text>
+<rect x="0" y="198" width="53" height="25" fill="#0d1628"/><rect x="53" y="198" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="222" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="215" fill="#7f9bc6">5</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6 196.7 203.9 211.0 218.1 225.3" y="215" xml:space="preserve">password varchar(255)</text>
+<rect x="0" y="223" width="947" height="25" fill="url(#hz)"/>
+<rect x="0" y="248" width="53" height="25" fill="#0d1628"/><rect x="53" y="248" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="272" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="265" fill="#7f9bc6">6</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6 196.7 203.9 211.0 218.1" y="265" xml:space="preserve">created_at timestamp</text>
+<rect x="0" y="273" width="947" height="25" fill="url(#hz)"/>
+<rect x="0" y="298" width="53" height="25" fill="#0d1628"/><rect x="53" y="298" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="322" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="315" fill="#7f9bc6">7</text>
+<text class="m" x="68.0" y="315" xml:space="preserve">}</text>
+<rect x="0" y="323" width="53" height="25" fill="#0d1628"/><rect x="53" y="323" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="347" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="340" fill="#7f9bc6">8</text>
+<rect x="0" y="348" width="53" height="25" fill="#0d1628"/><rect x="53" y="348" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="372" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="365" fill="#7f9bc6">9</text>
+<text class="m" x="68.0 75.2 82.3 89.5 96.6 103.8 110.9 118.1 125.2 132.4 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6 196.7" y="365" xml:space="preserve">Table departments {</text>
+<rect x="0" y="373" width="53" height="25" fill="#0d1628"/><rect x="53" y="373" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="397" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="390" fill="#7f9bc6">10</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6 196.7 203.9 211.0 218.1 225.3 232.4" y="390" xml:space="preserve">id int [pk, increment]</text>
+<rect x="0" y="398" width="947" height="25" fill="#2e1824"/><rect x="0" y="398" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="398" width="3" height="25" fill="#ef4444"/><rect x="56" y="398" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="422" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="415" fill="#f07a7f">11 -</text>
+<text class="m" x="87.3 94.5 101.6 108.8 115.9 123.0 130.2 137.3 144.5 151.7 158.8 165.9 173.1" y="415" xml:space="preserve">name varchar(</text>
+<rect x="180.2" y="402.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="184.8 191.9 199.1" y="415">100</text>
+<text class="m" x="211.7" y="415" xml:space="preserve">)</text>
+<rect x="0" y="423" width="53" height="25" fill="#0d1628"/><rect x="53" y="423" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="447" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="440" fill="#7f9bc6">12</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6" y="440" xml:space="preserve">description text</text>
+<rect x="0" y="448" width="947" height="25" fill="url(#hz)"/>
+<rect x="0" y="473" width="53" height="25" fill="#0d1628"/><rect x="53" y="473" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="497" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="490" fill="#7f9bc6">13</text>
+<text class="m" x="68.0" y="490" xml:space="preserve">}</text>
+<rect x="0" y="498" width="53" height="25" fill="#0d1628"/><rect x="53" y="498" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="522" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="515" fill="#7f9bc6">14</text>
+<rect x="0" y="523" width="53" height="25" fill="#0d1628"/><rect x="53" y="523" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="547" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="540" fill="#7f9bc6">15</text>
+<text class="m" x="68.0 75.2 82.3 89.5 96.6 103.8 110.9 118.1 125.2 132.4 139.5 146.7 153.8 160.9 168.1 175.2 182.4" y="540" xml:space="preserve">Table employees {</text>
+<rect x="0" y="548" width="947" height="25" fill="#2e1824"/><rect x="0" y="548" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="548" width="3" height="25" fill="#ef4444"/><rect x="56" y="548" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="572" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="565" fill="#f07a7f">16 -</text>
+<text class="m" x="87.3 94.5 101.6" y="565" xml:space="preserve">id </text>
+<rect x="108.8" y="552.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="113.2 120.4 127.5" y="565">int</text>
+<text class="m" x="140.2 147.3 154.5 161.6 168.8 175.9 183.1 190.2 197.4 204.6 211.7 218.8 226.0 233.1 240.3 247.4" y="565" xml:space="preserve"> [pk, increment]</text>
+<rect x="0" y="573" width="53" height="25" fill="#0d1628"/><rect x="53" y="573" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="597" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="590" fill="#7f9bc6">17</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6 196.7" y="590" xml:space="preserve">department_id int</text>
+<rect x="0" y="598" width="947" height="25" fill="#2e1824"/><rect x="0" y="598" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="598" width="3" height="25" fill="#ef4444"/><rect x="56" y="598" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="622" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="615" fill="#f07a7f">18 -</text>
+<text class="m" x="87.3 94.5 101.6 108.8 115.9 123.0 130.2 137.3 144.5 151.7 158.8 165.9 173.1" y="615" xml:space="preserve">name varchar(</text>
+<rect x="180.2" y="602.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="184.8 191.9 199.1" y="615">100</text>
+<text class="m" x="211.7" y="615" xml:space="preserve">)</text>
+<rect x="0" y="623" width="947" height="25" fill="#2e1824"/><rect x="0" y="623" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="623" width="3" height="25" fill="#ef4444"/><rect x="56" y="623" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="647" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="640" fill="#f07a7f">19 -</text>
+<text class="m" x="87.3 94.5 101.6 108.8 115.9 123.0 130.2 137.3 144.5 151.7 158.8 165.9 173.1 180.2" y="640" xml:space="preserve">email varchar(</text>
+<rect x="187.4" y="627.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="191.9 199.1 206.2" y="640">150</text>
+<text class="m" x="218.9" y="640" xml:space="preserve">)</text>
+<rect x="0" y="648" width="947" height="25" fill="#2e1824"/><rect x="0" y="648" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="648" width="3" height="25" fill="#ef4444"/><rect x="56" y="648" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="672" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="665" fill="#f07a7f">20 -</text>
+<text class="m" x="87.3 94.5 101.6 108.8 115.9 123.0 130.2 137.3 144.5 151.7 158.8 165.9 173.1 180.2 187.4" y="665" xml:space="preserve">salary decimal(</text>
+<rect x="194.6" y="652.5" width="23.3" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="199.1 206.2" y="665">10</text>
+<text class="m" x="218.9 226.0 233.2" y="665" xml:space="preserve">,2)</text>
+<rect x="0" y="673" width="947" height="25" fill="url(#hz)"/>
+<rect x="0" y="698" width="53" height="25" fill="#0d1628"/><rect x="53" y="698" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="722" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="715" fill="#7f9bc6">21</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2" y="715" xml:space="preserve">joined_at date</text>
+<rect x="0" y="723" width="53" height="25" fill="#0d1628"/><rect x="53" y="723" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="747" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="740" fill="#7f9bc6">22</text>
+<text class="m" x="68.0" y="740" xml:space="preserve">}</text>
+<rect x="0" y="748" width="53" height="25" fill="#0d1628"/><rect x="53" y="748" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="772" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="765" fill="#7f9bc6">23</text>
+<rect x="0" y="773" width="53" height="25" fill="#0d1628"/><rect x="53" y="773" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="797" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="790" fill="#7f9bc6">24</text>
+<text class="m" x="68.0 75.2 82.3 89.5 96.6 103.8 110.9 118.1 125.2 132.4 139.5 146.7 153.8 160.9 168.1 175.2" y="790" xml:space="preserve">Table projects {</text>
+<rect x="0" y="798" width="53" height="25" fill="#0d1628"/><rect x="53" y="798" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="822" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="815" fill="#7f9bc6">25</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6 196.7 203.9 211.0 218.1 225.3 232.4" y="815" xml:space="preserve">id int [pk, increment]</text>
+<rect x="0" y="823" width="947" height="25" fill="#2e1824"/><rect x="0" y="823" width="57" height="25" fill="#5a2029"/>
+<rect x="0" y="823" width="3" height="25" fill="#ef4444"/><rect x="56" y="823" width="2" height="25" fill="#b83a4a"/>
+<rect x="0" y="847" width="947" height="1" fill="#45202c"/>
+<text class="n" x="46" y="840" fill="#f07a7f">26 -</text>
+<text class="m" x="87.3 94.5 101.6 108.8 115.9 123.0 130.2 137.3 144.5 151.7 158.8 165.9 173.1" y="840" xml:space="preserve">name varchar(</text>
+<rect x="180.2" y="827.5" width="30.5" height="16" rx="3" fill="#7f2a33" stroke="#b23a48"/>
+<text class="c" x="184.8 191.9 199.1" y="840">150</text>
+<text class="m" x="211.7" y="840" xml:space="preserve">)</text>
+<rect x="0" y="848" width="53" height="25" fill="#0d1628"/><rect x="53" y="848" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="872" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="865" fill="#7f9bc6">27</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4 189.6" y="865" xml:space="preserve">description text</text>
+<rect x="0" y="873" width="53" height="25" fill="#0d1628"/><rect x="53" y="873" width="2" height="25" fill="#293e66"/>
+<rect x="0" y="897" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="46" y="890" fill="#7f9bc6">28</text>
+<text class="m" x="82.3 89.5 96.6 103.8 110.9 118.0 125.2 132.3 139.5 146.7 153.8 160.9 168.1 175.2 182.4" y="890" xml:space="preserve">start_date date</text>
+</g>
+<rect x="963" y="98" width="946" height="772" fill="#09101e"/>
+<g clip-path="url(#cr)">
+<rect x="963" y="98" width="54" height="25" fill="#0d1628"/><rect x="1017" y="98" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="122" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="115" fill="#7f9bc6">1</text>
+<text class="m" x="1031.0 1038.2 1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.7 1116.8" y="115" xml:space="preserve">Table users {</text>
+<rect x="963" y="123" width="947" height="25" fill="#0b2d32"/><rect x="963" y="123" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="123" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="123" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="147" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="140" fill="#4de3a3">2 +</text>
+<text class="m" x="1050.3 1057.5 1064.6" y="140" xml:space="preserve">id </text>
+<rect x="1071.8" y="127.5" width="51.9" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1076.2 1083.4 1090.5 1097.7 1104.8 1112.0" y="140">bigint</text>
+<text class="m" x="1124.7 1131.8 1139.0 1146.1 1153.2 1160.4 1167.6 1174.7 1181.9 1189.0 1196.2 1203.3 1210.5 1217.6 1224.8 1231.9" y="140" xml:space="preserve"> [pk, increment]</text>
+<rect x="963" y="148" width="947" height="25" fill="#0b2d32"/><rect x="963" y="148" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="148" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="148" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="172" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="165" fill="#4de3a3">3 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1" y="165" xml:space="preserve">name varchar(</text>
+<rect x="1143.2" y="152.5" width="30.5" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1147.8 1154.9 1162.0" y="165">150</text>
+<text class="m" x="1174.7" y="165" xml:space="preserve">)</text>
+<rect x="963" y="173" width="947" height="25" fill="#0b2d32"/><rect x="963" y="173" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="173" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="173" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="197" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="190" fill="#4de3a3">4 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1 1143.2" y="190" xml:space="preserve">email varchar(</text>
+<rect x="1150.4" y="177.5" width="30.5" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1154.9 1162.0 1169.2" y="190">200</text>
+<text class="m" x="1181.8 1189.0 1196.1 1203.3 1210.4 1217.6 1224.8 1231.9 1239.0 1246.2" y="190" xml:space="preserve">) [unique]</text>
+<rect x="963" y="198" width="54" height="25" fill="#0d1628"/><rect x="1017" y="198" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="222" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="215" fill="#7f9bc6">5</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5 1159.7 1166.8 1174.0 1181.1 1188.3" y="215" xml:space="preserve">password varchar(255)</text>
+<rect x="963" y="223" width="947" height="25" fill="#0b2d32"/><rect x="963" y="223" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="223" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="223" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="247" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="240" fill="#4de3a3">6 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1 1143.2 1150.4 1157.5 1164.7" y="240" xml:space="preserve">phone varchar(20)</text>
+<rect x="963" y="248" width="54" height="25" fill="#0d1628"/><rect x="1017" y="248" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="272" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="265" fill="#7f9bc6">7</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5 1159.7 1166.8 1174.0 1181.1" y="265" xml:space="preserve">created_at timestamp</text>
+<rect x="963" y="273" width="947" height="25" fill="#0b2d32"/><rect x="963" y="273" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="273" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="273" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="297" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="290" fill="#4de3a3">8 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1 1143.2 1150.4 1157.5 1164.7 1171.8 1179.0 1186.1" y="290" xml:space="preserve">updated_at timestamp</text>
+<rect x="963" y="298" width="54" height="25" fill="#0d1628"/><rect x="1017" y="298" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="322" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="315" fill="#7f9bc6">9</text>
+<text class="m" x="1031.0" y="315" xml:space="preserve">}</text>
+<rect x="963" y="323" width="54" height="25" fill="#0d1628"/><rect x="1017" y="323" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="347" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="340" fill="#7f9bc6">10</text>
+<rect x="963" y="348" width="54" height="25" fill="#0d1628"/><rect x="1017" y="348" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="372" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="365" fill="#7f9bc6">11</text>
+<text class="m" x="1031.0 1038.2 1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.7 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5 1159.7" y="365" xml:space="preserve">Table departments {</text>
+<rect x="963" y="373" width="54" height="25" fill="#0d1628"/><rect x="1017" y="373" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="397" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="390" fill="#7f9bc6">12</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5 1159.7 1166.8 1174.0 1181.1 1188.3 1195.5" y="390" xml:space="preserve">id int [pk, increment]</text>
+<rect x="963" y="398" width="947" height="25" fill="#0b2d32"/><rect x="963" y="398" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="398" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="398" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="422" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="415" fill="#4de3a3">13 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1" y="415" xml:space="preserve">name varchar(</text>
+<rect x="1143.2" y="402.5" width="30.5" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1147.8 1154.9 1162.0" y="415">150</text>
+<text class="m" x="1174.7" y="415" xml:space="preserve">)</text>
+<rect x="963" y="423" width="54" height="25" fill="#0d1628"/><rect x="1017" y="423" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="447" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="440" fill="#7f9bc6">14</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5" y="440" xml:space="preserve">description text</text>
+<rect x="963" y="448" width="947" height="25" fill="#0b2d32"/><rect x="963" y="448" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="448" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="448" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="472" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="465" fill="#4de3a3">15 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1 1143.2 1150.4 1157.5 1164.7 1171.8 1179.0 1186.1 1193.3" y="465" xml:space="preserve">location varchar(100)</text>
+<rect x="963" y="473" width="54" height="25" fill="#0d1628"/><rect x="1017" y="473" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="497" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="490" fill="#7f9bc6">16</text>
+<text class="m" x="1031.0" y="490" xml:space="preserve">}</text>
+<rect x="963" y="498" width="54" height="25" fill="#0d1628"/><rect x="1017" y="498" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="522" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="515" fill="#7f9bc6">17</text>
+<rect x="963" y="523" width="54" height="25" fill="#0d1628"/><rect x="1017" y="523" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="547" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="540" fill="#7f9bc6">18</text>
+<text class="m" x="1031.0 1038.2 1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.7 1116.8 1124.0 1131.1 1138.2 1145.4" y="540" xml:space="preserve">Table employees {</text>
+<rect x="963" y="548" width="947" height="25" fill="#0b2d32"/><rect x="963" y="548" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="548" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="548" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="572" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="565" fill="#4de3a3">19 +</text>
+<text class="m" x="1050.3 1057.5 1064.6" y="565" xml:space="preserve">id </text>
+<rect x="1071.8" y="552.5" width="51.9" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1076.2 1083.4 1090.5 1097.7 1104.8 1112.0" y="565">bigint</text>
+<text class="m" x="1124.7 1131.8 1139.0 1146.1 1153.2 1160.4 1167.6 1174.7 1181.9 1189.0 1196.2 1203.3 1210.5 1217.6 1224.8 1231.9" y="565" xml:space="preserve"> [pk, increment]</text>
+<rect x="963" y="573" width="54" height="25" fill="#0d1628"/><rect x="1017" y="573" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="597" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="590" fill="#7f9bc6">20</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5 1159.7" y="590" xml:space="preserve">department_id int</text>
+<rect x="963" y="598" width="947" height="25" fill="#0b2d32"/><rect x="963" y="598" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="598" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="598" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="622" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="615" fill="#4de3a3">21 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1" y="615" xml:space="preserve">name varchar(</text>
+<rect x="1143.2" y="602.5" width="30.5" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1147.8 1154.9 1162.0" y="615">150</text>
+<text class="m" x="1174.7" y="615" xml:space="preserve">)</text>
+<rect x="963" y="623" width="947" height="25" fill="#0b2d32"/><rect x="963" y="623" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="623" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="623" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="647" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="640" fill="#4de3a3">22 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1 1143.2" y="640" xml:space="preserve">email varchar(</text>
+<rect x="1150.4" y="627.5" width="30.5" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1154.9 1162.0 1169.2" y="640">200</text>
+<text class="m" x="1181.8" y="640" xml:space="preserve">)</text>
+<rect x="963" y="648" width="947" height="25" fill="#0b2d32"/><rect x="963" y="648" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="648" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="648" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="672" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="665" fill="#4de3a3">23 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1 1143.2 1150.4" y="665" xml:space="preserve">salary decimal(</text>
+<rect x="1157.5" y="652.5" width="23.3" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1162.0 1169.2" y="665">12</text>
+<text class="m" x="1181.8 1189.0 1196.1" y="665" xml:space="preserve">,2)</text>
+<rect x="963" y="673" width="947" height="25" fill="#0b2d32"/><rect x="963" y="673" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="673" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="673" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="697" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="690" fill="#4de3a3">24 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1 1143.2 1150.4 1157.5 1164.7 1171.8 1179.0 1186.1 1193.3 1200.5 1207.6 1214.8" y="690" xml:space="preserve">designation varchar(100)</text>
+<rect x="963" y="698" width="54" height="25" fill="#0d1628"/><rect x="1017" y="698" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="722" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="715" fill="#7f9bc6">25</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2" y="715" xml:space="preserve">joined_at date</text>
+<rect x="963" y="723" width="54" height="25" fill="#0d1628"/><rect x="1017" y="723" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="747" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="740" fill="#7f9bc6">26</text>
+<text class="m" x="1031.0" y="740" xml:space="preserve">}</text>
+<rect x="963" y="748" width="54" height="25" fill="#0d1628"/><rect x="1017" y="748" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="772" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="765" fill="#7f9bc6">27</text>
+<rect x="963" y="773" width="54" height="25" fill="#0d1628"/><rect x="1017" y="773" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="797" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="790" fill="#7f9bc6">28</text>
+<text class="m" x="1031.0 1038.2 1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.7 1116.8 1124.0 1131.1 1138.2" y="790" xml:space="preserve">Table projects {</text>
+<rect x="963" y="798" width="54" height="25" fill="#0d1628"/><rect x="1017" y="798" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="822" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="815" fill="#7f9bc6">29</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5 1159.7 1166.8 1174.0 1181.1 1188.3 1195.5" y="815" xml:space="preserve">id int [pk, increment]</text>
+<rect x="963" y="823" width="947" height="25" fill="#0b2d32"/><rect x="963" y="823" width="58" height="25" fill="#0d4f44"/>
+<rect x="963" y="823" width="3" height="25" fill="#1ed08a"/><rect x="1020" y="823" width="2" height="25" fill="#22c987"/>
+<rect x="963" y="847" width="947" height="1" fill="#0f4a44"/>
+<text class="n" x="1010" y="840" fill="#4de3a3">30 +</text>
+<text class="m" x="1050.3 1057.5 1064.6 1071.8 1078.9 1086.0 1093.2 1100.3 1107.5 1114.6 1121.8 1129.0 1136.1" y="840" xml:space="preserve">name varchar(</text>
+<rect x="1143.2" y="827.5" width="30.5" height="16" rx="3" fill="#0d6c55" stroke="#14a37f"/>
+<text class="c" x="1147.8 1154.9 1162.0" y="840">200</text>
+<text class="m" x="1174.7" y="840" xml:space="preserve">)</text>
+<rect x="963" y="848" width="54" height="25" fill="#0d1628"/><rect x="1017" y="848" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="872" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="865" fill="#7f9bc6">31</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4 1152.5" y="865" xml:space="preserve">description text</text>
+<rect x="963" y="873" width="54" height="25" fill="#0d1628"/><rect x="1017" y="873" width="2" height="25" fill="#293e66"/>
+<rect x="963" y="897" width="947" height="1" fill="#0f182b"/>
+<text class="n" x="1010" y="890" fill="#7f9bc6">32</text>
+<text class="m" x="1045.3 1052.5 1059.6 1066.8 1073.9 1081.0 1088.2 1095.3 1102.5 1109.6 1116.8 1124.0 1131.1 1138.2 1145.4" y="890" xml:space="preserve">start_date date</text>
+</g>
+<rect x="957" y="53" width="6" height="817" fill="#111c33"/><line x1="957.500" y1="53" x2="957.500" y2="870" stroke="#22335a"/><line x1="962.500" y1="53" x2="962.500" y2="870" stroke="#22335a"/>
+<rect x="947" y="98" width="10" height="772" fill="#0b1426"/><path d="M949 106l3-3 3 3z" fill="#2a7a80"/><rect x="948" y="110" width="8" height="456" rx="4" fill="#215c61"/><path d="M949 857l3 3 3-3z" fill="#2a7a80"/>
+<rect x="150" y="866" width="40" height="4" fill="#3a4560"/>
+</svg>
