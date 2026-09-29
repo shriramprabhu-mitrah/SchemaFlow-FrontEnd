@@ -201,15 +201,26 @@ export class DocsComponent implements OnInit, OnDestroy {
       this.collapsedTables.delete(currentTable);
     }
     this.selectedTables = newSet;
-
-    // Scroll target table card into view and trigger highlight pulse
+    // Scroll target table card into view and align top header at top of page container
     setTimeout(() => {
       const cardEl = document.getElementById('docs-card-' + tableName);
       if (cardEl) {
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const scrollContainer = cardEl.closest('.docs-scroll') as HTMLElement | null;
+        if (scrollContainer) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const cardRect = cardEl.getBoundingClientRect();
+          const targetScrollTop = Math.max(0, scrollContainer.scrollTop + (cardRect.top - containerRect.top) - 16);
+          scrollContainer.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          });
+        } else {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       }
       this.cdr.detectChanges();
     }, 50);
+
 
     setTimeout(() => {
       if (this.flashHighlightedTable === tableName) {

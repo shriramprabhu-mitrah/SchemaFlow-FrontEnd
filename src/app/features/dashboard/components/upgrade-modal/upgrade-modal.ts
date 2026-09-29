@@ -21,6 +21,23 @@ import { environment } from '../../../../../environment/environment';
 })
 export class UpgradeModalComponent implements OnInit {
   private _visible = false;
+  private checkLimitWarning(): void {
+    if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
+      const planSlug = this.auth.getCurrentPlanSlug();
+      const planStatus = this.auth.getCurrentPlanStatus();
+      const isFree = planSlug === 'free' || !planSlug;
+      const isExpired = planStatus === 'expired';
+      
+      if (isFree || isExpired) {
+        this.showLimitWarning = false;
+      } else {
+        this.showLimitWarning = true;
+      }
+    } else {
+      this.showLimitWarning = false;
+    }
+  }
+
   @Input()
   set visible(val: boolean) {
     this._visible = val;
@@ -34,16 +51,13 @@ export class UpgradeModalComponent implements OnInit {
             this.currentPlanSlug = res?.data?.purchasedPlan?.slug || '';
             this.currentPlanStatus = res?.data?.purchasedPlan?.status || '';
             this.hasUsedTrial = res?.data?.hasUsedTrial || false;
+            this.checkLimitWarning();
             this.cdr.detectChanges();
           }
         });
       }
 
-      if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
-        this.showLimitWarning = true;
-      } else {
-        this.showLimitWarning = false;
-      }
+      this.checkLimitWarning();
       // Only show loader if we don't have plans loaded yet
       if (this.plans.length === 0) {
         this.loading = true;
@@ -60,11 +74,7 @@ export class UpgradeModalComponent implements OnInit {
   @Input()
   set featureKey(val: string) {
     this._featureKey = val || '';
-    if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
-      this.showLimitWarning = true;
-    } else {
-      this.showLimitWarning = false;
-    }
+    this.checkLimitWarning();
     if (this.allPlans.length > 0) {
       this.applyFeatureFilter();
       this.cdr.detectChanges();
@@ -524,6 +534,15 @@ export class UpgradeModalComponent implements OnInit {
   isCtaDisabled(plan: any): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
+
+    // Check if actively in an org workspace but not an admin
+    const isActiveOrg = this.auth.getOrganizationId() !== null;
+    if (isActiveOrg && !this.auth.isOrganizationAdmin()) return true;
+
+    // Check if user is a member of any organization from their workspace list
+    const isMemberOfAnyOrg = this.svc.workspaces().some(w => w.type === 'organization' && w.permission === 'member');
+    if (isMemberOfAnyOrg && (plan.slug === 'team' || plan.plan_type === 'organization')) return true;
+
     if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) return true;
     if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) return true;
     if (this.currentPlanStatus === 'expired') return false;

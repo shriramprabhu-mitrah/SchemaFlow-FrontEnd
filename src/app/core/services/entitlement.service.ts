@@ -278,14 +278,14 @@ export class EntitlementService {
       if (isEnabled) {
         // Numeric limit check
         const limit = ent.effective_limit ?? (ent as any).limit_value;
-        if (limit !== undefined && limit !== null && limit !== -1) {
-          if (limit === 0) {
+        if (limit !== undefined && limit !== null && Number(limit) !== -1) {
+          if (Number(limit) === 0) {
             return false;
           }
-          if (ent.remaining !== undefined && ent.remaining <= 0) {
+          if (ent.remaining !== undefined && Number(ent.remaining) <= 0) {
             return false;
           }
-          if (ent.used !== undefined && ent.used >= limit) {
+          if (ent.used !== undefined && Number(ent.used) >= Number(limit)) {
             return false;
           }
         }
@@ -308,14 +308,14 @@ export class EntitlementService {
         if (isTrue) {
           // Check numeric limit in cache if present
           const limit = userEnt.effective_limit ?? userEnt.limit_value;
-          if (limit !== undefined && limit !== null && limit !== -1) {
-            if (limit === 0) {
+          if (limit !== undefined && limit !== null && Number(limit) !== -1) {
+            if (Number(limit) === 0) {
               return false;
             }
-            if (userEnt.remaining !== undefined && userEnt.remaining <= 0) {
+            if (userEnt.remaining !== undefined && Number(userEnt.remaining) <= 0) {
               return false;
             }
-            if (userEnt.used !== undefined && userEnt.used >= limit) {
+            if (userEnt.used !== undefined && Number(userEnt.used) >= Number(limit)) {
               return false;
             }
           }
@@ -338,11 +338,11 @@ export class EntitlementService {
         const isValTrue = fallbackEnt.value !== 'false' && (fallbackEnt.value as any) !== false;
         if (!isValTrue) return false;
         const limit = (fallbackEnt as any).limit_value;
-        if (limit !== undefined && limit !== null && limit !== -1) {
-          if ((fallbackEnt as any).remaining !== undefined && (fallbackEnt as any).remaining <= 0) {
+        if (limit !== undefined && limit !== null && Number(limit) !== -1) {
+          if ((fallbackEnt as any).remaining !== undefined && Number((fallbackEnt as any).remaining) <= 0) {
             return false;
           }
-          if ((fallbackEnt as any).used !== undefined && (fallbackEnt as any).used >= limit) {
+          if ((fallbackEnt as any).used !== undefined && Number((fallbackEnt as any).used) >= Number(limit)) {
             return false;
           }
         }

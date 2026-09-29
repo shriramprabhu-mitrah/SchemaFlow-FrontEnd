@@ -143,31 +143,38 @@
             <div class="card-price">
               <!-- Paid Plan -->
               <ng-container *ngIf="+plan.price_monthly > 0 && plan.slug !== 'enterprise'">
-                <div class="price-val-row">
-                  <span class="currency">{{ getCurrencySymbol() }}</span>
-                  <span class="price-amount">{{ getPrice(plan) }}</span>
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                  <div class="price-val-row">
+                    <span class="currency">{{ getCurrencySymbol() }}</span>
+                    <span class="price-amount">{{ getPrice(plan) }}</span>
+                  </div>
+                  <span class="price-period" style="font-size: 14px; opacity: 0.7;">
+                    /month
+                  </span>
                 </div>
-                <span class="price-period">
-                  {{ (plan.plan_type === 'organization' || plan.is_per_seat) ? 'per member / month' : 'per month' }}
-                </span>
-                <div class="annual-billed-label" *ngIf="isAnnual"
-                  style="font-size: 11px; opacity: 0.6; margin-top: 4px;">
+                <div class="annual-billed-label" [style.visibility]="isAnnual ? 'visible' : 'hidden'">
                   Billed annually ({{ getCurrencySymbol() }}{{ getAnnualTotal(plan) }}/yr)
                 </div>
               </ng-container>
 
               <!-- Free Plan -->
               <ng-container *ngIf="(plan.price_monthly === 0 || plan.slug === 'free') && plan.slug !== 'enterprise'">
-                <div class="price-val-row">
-                  <span class="price-amount">Free</span>
+                <div style="display: flex; align-items: baseline;gap: 6px;">
+                  <div class="price-val-row">
+                    <span class="price-amount">Free</span>
+                  </div>
                 </div>
-                <span class="price-period">and it's forever</span>
+                <div class="annual-billed-label" style="color: #64748b; font-size: 11px;">
+                  and it's forever
+                </div>
               </ng-container>
 
               <!-- Enterprise Plan -->
               <ng-container *ngIf="plan.slug === 'enterprise'">
-                <span class="price-title" style="font-size: 26px;">Custom Quote</span>
-                <span class="price-period">Contact Sales</span>
+                <div style="display: flex; align-items: baseline; justify-content: center; gap: 6px;">
+                  <span class="price-title" style="font-size: 26px; font-weight: 700; color: #1e293b;">Custom Quote</span>
+                  <span class="price-period" style="font-size: 14px; opacity: 0.7;">Contact Sales</span>
+                </div>
               </ng-container>
             </div>
 
@@ -230,7 +237,7 @@
             </div>
 
             <!-- ADD-ONS SECTION -->
-            <div class="card-addons-section" *ngIf="plan.slug === 'premium' || plan.slug === 'pro' || plan.slug === 'team' || plan.slug === 'business' || plan.slug === 'organization'">
+            <div class="card-addons-section" *ngIf="plan.slug !== 'free' && plan.slug !== 'enterprise'">
               <div class="card-addons-divider"></div>
               <div class="addons-header">Add-ons:</div>
               <div class="addons-list">

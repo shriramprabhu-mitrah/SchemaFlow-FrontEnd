@@ -98,8 +98,11 @@
             <td>{{ c.type }}</td>
             <td>
               <span class="pk-badge" *ngIf="c.pk">PK</span>
-              <span class="attr-badge attr-fk" *ngIf="c.fk">FK<span *ngIf="c.fkTable && c.fkCol"> ({{ c.fkTable }}.{{
-                  c.fkCol }})</span></span>
+              <span class="attr-badge attr-fk" *ngIf="c.fk" [class.clickable-fk]="!!c.fkTable"
+                  (click)="c.fkTable ? viewTableDetails(c.fkTable, t.name, $event) : null"
+                  [title]="c.fkTable ? 'Jump to table ' + c.fkTable : ''">FK<span *ngIf="c.fkTable && c.fkCol"> ({{
+                    c.fkTable }}.{{
+                    c.fkCol }})</span></span>
               <span class="attr-badge attr-increment" *ngIf="c.increment">AUTO</span>
               <span class="attr-badge attr-unique" *ngIf="c.unique">UNIQUE</span>
               <span class="attr-badge attr-notnull" *ngIf="c.notNull">NOT NULL</span>
