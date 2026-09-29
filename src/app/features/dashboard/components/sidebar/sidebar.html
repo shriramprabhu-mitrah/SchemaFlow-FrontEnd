@@ -277,9 +277,13 @@
     </div>
 
     <!-- AI Assistant Button -->
-    <div class="activity-nav-item ai-item tt tt-right"
-      [class.active]="svc.showAiChat()" (click)="toggleAiChat($event)"
-      data-tt="DBNexus AI" aria-label="DBNexus AI">
+    <div class="activity-nav-item ai-item tt tt-right" *ngIf="!isCanViewOnly"
+      [class.active]="svc.showAiChat()" [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      (click)="toggleAiChat($event)"
+      [attr.data-tt]="!isLoggedIn ? 'Sign in for DBNexus AI' : (isSampleDiagram() ? 'DBNexus AI is disabled for sample diagrams' : 'DBNexus AI')"
+      aria-label="DBNexus AI">
+      <app-icons *ngIf="showCrown('ai')" class="sidebar-crown-badge" name="premium-crown" size="10"
+        color="#f59e0b"></app-icons>
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

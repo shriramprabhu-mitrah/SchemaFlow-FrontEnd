@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { AppConfigService } from '../../../../core/services/app-config.service';
+import { EntitlementService } from '../../../../core/services/entitlement.service';
 
 export interface ChatMessage {
     id: string;
@@ -94,6 +95,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     public svc = inject(DashboardService);
     private http = inject(HttpClient);
     private appConfig = inject(AppConfigService);
+    private entitlementService = inject(EntitlementService);
     private sanitizer = inject(DomSanitizer);
     private streamingTimer: any = null;
 
@@ -178,6 +180,14 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     private shouldScrollToBottom = false;
 
     ngOnInit(): void {
+        if (!this.entitlementService.canUseFeature('ai_chat')) {
+            this.close.emit();
+            this.svc.closeAiChat();
+            if (!this.entitlementService.orgHasFeature('ai_chat')) {
+                this.svc.showUpgradeModal('ai_chat');
+            }
+            return;
+        }
         this.loadModels();
         this.loadLatestSessionAndHistory();
     }
@@ -895,6 +905,12 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     sendMessage(): void {
+        if (!this.entitlementService.canUseFeature('ai_chat')) {
+            if (!this.entitlementService.orgHasFeature('ai_chat')) {
+                this.svc.showUpgradeModal('ai_chat');
+            }
+            return;
+        }
         const text = this.promptText().trim();
         if (!text || this.isThinking()) return;
         if (this.streamingTimer) {
