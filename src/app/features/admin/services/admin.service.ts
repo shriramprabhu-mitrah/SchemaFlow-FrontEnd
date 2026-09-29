@@ -154,10 +154,11 @@ export class AdminService {
   }
 
   // ── Enquiries ──
-  getEnquiries(page = 1, limit = 10, search = '', sortColumn = 'created_at', sortAsc = false): Observable<any> {
+  getEnquiries(page = 1, limit = 10, search = '', sortColumn = 'created_at', sortAsc = false, enquiryType = ''): Observable<any> {
     let params = new HttpParams()
       .set('page', page).set('limit', limit).set('sortColumn', sortColumn).set('sortAsc', sortAsc);
     if (search) params = params.set('search', search);
+    if (enquiryType) params = params.set('enquiry_type', enquiryType);
     return this.http.get(this.urls.enquiries, { params, withCredentials: true });
   }
 }

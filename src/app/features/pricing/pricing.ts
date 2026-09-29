@@ -845,7 +845,7 @@ export class PricingComponent implements OnInit {
     const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
     const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
 
-    const planType = `${plan.slug}_${this.isAnnual ? 'yearly' : 'monthly'}`;
+    const planType = `${plan.slug}_${this.isAnnual ? 'annual' : 'monthly'}`;
 
     this.http.post<any>(createSubUrl, {
       planType: planType,

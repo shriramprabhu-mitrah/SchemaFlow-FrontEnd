@@ -4,13 +4,15 @@ import { Observable } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
 export interface EnquiryData {
-  contact_type: 'email_me' | 'book_call';
+  contact_type?: string;
   project_details?: string;
   first_name: string;
   last_name: string;
   company_email: string;
   phone_number?: string;
-  country: string;
+  country?: string;
+  enquiry_type?: string;
+  image_url?: string;
 }
 
 @Injectable({
