@@ -467,7 +467,21 @@
 .attr-fk {
   background: rgba(249, 115, 22, 0.15);
   color: #ffb877;
+
+
+  &.clickable-fk {
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+
+    &:hover {
+      background: rgba(249, 115, 22, 0.35);
+      color: #ffd8b3;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+    }
+  }
 }
+
 
 .attr-default {
   background: rgba(234, 179, 8, 0.15);

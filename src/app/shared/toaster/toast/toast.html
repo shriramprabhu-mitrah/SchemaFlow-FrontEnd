@@ -5,13 +5,9 @@
   [class.toast-info]="svc.toastType() === 'info'"
   [class.toast-dark]="isDark()"
   [class.toast-light]="!isDark()"
-  [class.toast-editor]="location === 'editor'"
-  [class.toast-canvas]="location === 'canvas'"
-  [class.toast-global]="location === 'global'"
-  [ngStyle]="location === 'editor' ? editorStyle() : {}">
+  role="alert"
+  aria-live="assertive">
 
-  <!-- CANVAS & GLOBAL toast: title + message + × -->
-  <ng-container *ngIf="location === 'canvas' || location === 'global'">
     <div class="toast-header">
       <span class="toast-title">
         {{ svc.toastType() === 'success' ? 'Success' : svc.toastType() === 'error' ? 'Error' : 'Info' }}
@@ -19,34 +15,4 @@
       <button class="toast-dismiss" (click)="dismiss()" aria-label="Dismiss">×</button>
     </div>
     <div class="toast-body">{{ svc.toastMessage() }}</div>
-  </ng-container>
-
-  <!-- EDITOR toast: icon + message + × (keep unchanged) -->
-  <ng-container *ngIf="location === 'editor'">
-    <div class="toast-content">
-      <svg *ngIf="svc.toastType() === 'success'" class="toast-icon" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
-      </svg>
-      <svg *ngIf="svc.toastType() === 'error'" class="toast-icon" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <svg *ngIf="svc.toastType() === 'info'" class="toast-icon" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-      </svg>
-      <span class="toast-text" [title]="svc.toastMessage() || ''">{{ svc.toastMessage() }}</span>
-      <button class="toast-dismiss" (click)="dismiss()" aria-label="Dismiss">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"
-          stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-    <div class="toast-progress"></div>
-  </ng-container>
-
 </div>
