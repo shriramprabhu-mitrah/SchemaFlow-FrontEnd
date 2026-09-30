@@ -1255,17 +1255,27 @@ export class DashboardService {
   readonly _activeWorkspaceName = signal<string>('Personal');
   readonly paneMode = signal<'split' | 'editor' | 'canvas'>('split');
   readonly sidebarCollapsed = signal<boolean>(false);
+  readonly EXPANDED_AI_CHAT_WIDTH = 620;
+  readonly MIN_AI_CHAT_WIDTH = 280;
+  readonly MAX_AI_CHAT_WIDTH = 850;
+  readonly AI_CHAT_EXPAND_THRESHOLD = 540;
+
   readonly showAiChat = signal<boolean>(false);
   readonly aiChatWidth = signal<number | null>(null);
   readonly isAiChatExpanded = signal<boolean>(false);
+  private preExpandAiChatWidth: number | null = null;
   private prevEditorWidthPct: number | null = null;
+  private preExpandEditorWidthPct: number | null = null;
   workspacesFetched = false;
 
   toggleAiChat(force?: boolean): void {
     const next = force !== undefined ? force : !this.showAiChat();
     this.showAiChat.set(next);
     if (next) {
+      this.isAiChatExpanded.set(false);
+      // Default width is null, so it splits editor space 50/50 equally with DBML area
       this.aiChatWidth.set(null);
+      this.preExpandAiChatWidth = null;
       if (this.paneMode() === 'canvas') {
         this.setPaneMode('split');
       }
@@ -1274,7 +1284,10 @@ export class DashboardService {
         this.editorWidthPct.set(50);
       }
     } else {
+      this.isAiChatExpanded.set(false);
       this.aiChatWidth.set(null);
+      this.preExpandAiChatWidth = null;
+      this.preExpandEditorWidthPct = null;
       if (this.prevEditorWidthPct !== null) {
         this.editorWidthPct.set(this.prevEditorWidthPct);
         this.prevEditorWidthPct = null;
@@ -1283,13 +1296,35 @@ export class DashboardService {
   }
 
   toggleAiChatExpand(): void {
-    if (this.isAiChatExpanded() || this.aiChatWidth() !== null) {
+    if (this.isAiChatExpanded()) {
+      // COLLAPSE BACK TO SAME WIDTH AS DBML AREA (OR CUSTOM DRAGGED WIDTH)
       this.isAiChatExpanded.set(false);
-      this.aiChatWidth.set(null);
+      const restoreWidth = (this.preExpandAiChatWidth && this.preExpandAiChatWidth < this.AI_CHAT_EXPAND_THRESHOLD)
+        ? this.preExpandAiChatWidth
+        : null;
+      this.aiChatWidth.set(restoreWidth);
+      this.preExpandAiChatWidth = null;
+
+      // Restore editor container percentage if widened during expand
+      if (this.preExpandEditorWidthPct !== null) {
+        this.editorWidthPct.set(this.preExpandEditorWidthPct);
+        this.preExpandEditorWidthPct = null;
+      }
     } else {
+      // EXPAND
+      const currentWidth = this.aiChatWidth();
+      if (currentWidth && currentWidth < this.AI_CHAT_EXPAND_THRESHOLD) {
+        this.preExpandAiChatWidth = currentWidth;
+      } else {
+        this.preExpandAiChatWidth = null;
+      }
+
       this.isAiChatExpanded.set(true);
-      this.aiChatWidth.set(620);
+      this.aiChatWidth.set(this.EXPANDED_AI_CHAT_WIDTH);
+
+      // In split view, ensure editor container is at least 60% so expanded chat and DBML code editor both fit
       if (this.paneMode() === 'split' && this.editorWidthPct() < 60) {
+        this.preExpandEditorWidthPct = this.editorWidthPct();
         this.editorWidthPct.set(60);
       }
     }
@@ -1299,14 +1334,16 @@ export class DashboardService {
     if (width === null) {
       this.aiChatWidth.set(null);
       this.isAiChatExpanded.set(false);
+      this.preExpandAiChatWidth = null;
       return;
     }
-    const clamped = Math.max(280, Math.min(width, 850));
+    const clamped = Math.max(this.MIN_AI_CHAT_WIDTH, Math.min(width, this.MAX_AI_CHAT_WIDTH));
     this.aiChatWidth.set(clamped);
-    if (clamped >= 540) {
+    if (clamped >= this.AI_CHAT_EXPAND_THRESHOLD) {
       this.isAiChatExpanded.set(true);
     } else {
       this.isAiChatExpanded.set(false);
+      this.preExpandAiChatWidth = clamped;
     }
   }
 
@@ -1314,6 +1351,8 @@ export class DashboardService {
     this.showAiChat.set(false);
     this.isAiChatExpanded.set(false);
     this.aiChatWidth.set(null);
+    this.preExpandAiChatWidth = null;
+    this.preExpandEditorWidthPct = null;
     if (this.prevEditorWidthPct !== null) {
       this.editorWidthPct.set(this.prevEditorWidthPct);
       this.prevEditorWidthPct = null;
