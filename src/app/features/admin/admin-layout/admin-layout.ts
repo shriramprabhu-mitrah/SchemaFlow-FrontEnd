@@ -23,6 +23,7 @@ export class AdminLayoutComponent {
     { path: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
     { path: '/admin/plans', icon: 'plans', label: 'Plans' },
     { path: '/admin/features', icon: 'features', label: 'Features' },
+    { path: '/admin/ai-configs', icon: 'ai-configs', label: 'AI configs' },
     { path: '/admin/organizations', icon: 'organizations', label: 'Organizations' },
     { path: '/admin/users', icon: 'users', label: 'Users' },
     { path: '/admin/subscriptions', icon: 'subscriptions', label: 'Subscriptions' },

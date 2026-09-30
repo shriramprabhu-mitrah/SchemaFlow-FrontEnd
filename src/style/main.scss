@@ -35,7 +35,8 @@
 @use 'organization-features';
 @use 'diff-checker';
 @use 'interactive-preview';
-@use '../app/features/profile/_profile.scss';
+@use 'ai-chat';
+@use '../app/features/profile/profile';
 
 /* ==========================================
    GLOBAL CUSTOM SCROLLBAR COLORS & VARIABLES

@@ -1,5 +1,7 @@
 <div class="workspace-modal-backdrop" *ngIf="visible">
-  <div class="workspace-modal-container" (click)="onContainerClick($event)">
+  <div class="workspace-modal-container"
+    [class.compact-modal]="activeTab === 'create-workspace' || activeTab === 'edit-workspace'"
+    (click)="onContainerClick($event)">
     <app-loader *ngIf="isCreatingWorkspace || isUpdatingWorkspace"
       [text]="isCreatingWorkspace ? 'Creating workspace...' : 'Updating workspace...'"></app-loader>
 

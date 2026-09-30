@@ -138,7 +138,7 @@ export class HeaderComponent implements OnInit {
     if (ent) {
       const limit = ent.effective_limit ?? (ent as any).limit_value;
       if (limit === -1) {
-        return true; 
+        return true;
       }
     }
 
@@ -222,7 +222,7 @@ export class HeaderComponent implements OnInit {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -242,7 +242,7 @@ export class HeaderComponent implements OnInit {
     }
     this.runWithUnsavedChangesCheck(() => {
       this.svc.requestSplitView();
-      
+
       const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
       const activeWsId = isTeam ? this.svc.activeWorkspaceId() : null;
       const createReq$ = (isTeam && activeWsId)
@@ -346,7 +346,7 @@ export class HeaderComponent implements OnInit {
           if (this.svc.diagramWorkspaceType() === 'Team' && this.svc.socketService.isConnected) {
             this.svc.emitCollabChange();
           } else {
-            this.svc.saveDiagram().subscribe({ error: () => {} });
+            this.svc.saveDiagram().subscribe({ error: () => { } });
           }
         }
       }, 1000);
@@ -390,7 +390,7 @@ export class HeaderComponent implements OnInit {
         this.svc.emitCollabChange();
       } else {
         this.svc.saveDiagram().subscribe({
-          error: () => {}
+          error: () => { }
         });
       }
     }
@@ -443,7 +443,7 @@ export class HeaderComponent implements OnInit {
       return;
     }
 
-    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' ||
       (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
 
     const canUse = this.entitlementService.canUseFeature('document_view');
@@ -468,6 +468,9 @@ export class HeaderComponent implements OnInit {
       this.svc.showDocs = false;
       this.svc.showDocsPlaceholder = true;
     }
+
+    this.svc.showDocs = false;
+    this.svc.showDocsPlaceholder = true;
   }
 
   toggleVersionHistory(): void {
@@ -1062,7 +1065,7 @@ export class HeaderComponent implements OnInit {
       this.svc.diagramId.set(null);
       this.svc.parseAndLayout();
       this.svc.updateOriginalState();
-      
+
       this.router.navigate([], {
         queryParams: { sample: type, id: null },
         queryParamsHandling: 'merge'

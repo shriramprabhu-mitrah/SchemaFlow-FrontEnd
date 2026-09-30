@@ -636,6 +636,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const trunkXByAnchor: Record<string, number> = {};
     this.svc.refs.forEach((ref, i) => {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) return;
+      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) return;
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return;
 
@@ -1627,10 +1628,38 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         };
       }
 
+      if (c.name.length > 15 && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
+        this.activeTooltip = {
+          x: t.x + 12,
+          y: textY,
+          label: c.name
+        };
+      }
+
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
       ctx.textAlign = 'right';
-      ctx.fillText(typeText, t.x + tableW - padding, textY);
+
+      let colDiff: 'added' | 'modified' | 'deleted' | null = null;
+      if (this.svc.aiDiffReviewActive()) {
+        colDiff = this.svc.columnDiffStatus()[`${t.name}.${c.name}`] || null;
+      }
+
+      if (colDiff) {
+        const badgeText = colDiff === 'added' ? ' [Added]' : ' [Modified]';
+        const badgeColor = colDiff === 'added' ? '#10b981' : '#f59e0b';
+
+        ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const badgeWidth = ctx.measureText(badgeText).width;
+        ctx.fillStyle = badgeColor;
+        ctx.fillText(badgeText, t.x + t.width - 12, textY);
+
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
+        ctx.fillText(c.type, t.x + t.width - 12 - badgeWidth - 3, textY);
+      } else {
+        ctx.fillText(c.type, t.x + t.width - 12, textY);
+      }
     });
 
     const hiddenCount = t.columns.length - visibleColumns.length;
@@ -1668,6 +1697,30 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.strokeStyle = isLight ? '#cbd5e1' : 'rgba(255,255,255,0.08)';
     ctx.lineWidth = 1;
     ctx.stroke();
+
+    // AI Diff Review: draw badge and dashed border
+    if (this.svc.aiDiffReviewActive()) {
+      const diffStatus = this.svc.tableDiffStatus()[t.name];
+      if (diffStatus) {
+        const badgeColor = diffStatus === 'added' ? '#10b981' : (diffStatus === 'modified' ? '#f59e0b' : '#ef4444');
+        const badgeText = diffStatus === 'added' ? '[Added]' : (diffStatus === 'modified' ? '[Modified]' : '[Deleted]');
+
+        ctx.save();
+        ctx.fillStyle = badgeColor;
+        ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(badgeText, t.x + t.width / 2, t.y - 6);
+
+        // Dashed border around table
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = badgeColor;
+        ctx.lineWidth = 1.8;
+        this.roundRectPath(ctx, t.x - 2, t.y - 2, t.width + 4, t.height + 4, 3);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   }
 
   isRefInvalid(ref: any): boolean {
@@ -1683,6 +1736,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     // 1. Gather all path information in the original iteration order to preserve correct waypoint anchoring calculation
     const computedRefs = this.svc.refs.map((ref, i) => {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) {
+        return null;
+      }
+      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) {
         return null;
       }
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
@@ -1785,11 +1841,35 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const defaultLineColor = isLight ? '#94a3b8' : '#70c8c3';
       const baseColor = isInvalid ? '#ef4444' : (ref.color || defaultLineColor);
       const activeColor = isInvalid ? '#f87171' : (ref.color || (isLight ? '#3b82f6' : '#70c8c3'));
-      ctx.strokeStyle = isActive ? activeColor : baseColor;
+
+      // AI Diff Review status for this relation
+      let diffStatus: 'added' | 'modified' | 'deleted' | null = null;
+      if (this.svc.aiDiffReviewActive()) {
+        const refKey = `${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}->${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}`;
+        const revKey = `${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}->${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}`;
+        const rDiff = this.svc.refDiffStatus()[refKey] || this.svc.refDiffStatus()[revKey];
+        const fromTDiff = this.svc.tableDiffStatus()[ref.fromTable];
+        const toTDiff = this.svc.tableDiffStatus()[ref.toTable];
+
+        if (rDiff === 'added' || fromTDiff === 'added' || toTDiff === 'added') {
+          diffStatus = 'added';
+        } else if (rDiff === 'modified' || fromTDiff === 'modified' || toTDiff === 'modified') {
+          diffStatus = 'modified';
+        } else if (rDiff === 'deleted' || fromTDiff === 'deleted' || toTDiff === 'deleted') {
+          diffStatus = 'deleted';
+        }
+      }
+
+      const diffColor = diffStatus === 'added' ? '#10b981' : (diffStatus === 'modified' ? '#f59e0b' : '#ef4444');
+      const finalLineColor = diffStatus ? diffColor : (isActive ? activeColor : baseColor);
+
+      ctx.strokeStyle = finalLineColor;
       ctx.lineWidth = this.exporting ? (isActive ? 2.2 : 1.5) : (isActive ? 2.4 : 1.8);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      if (isInvalid) {
+      if (diffStatus) {
+        ctx.setLineDash([6, 4]);
+      } else if (isInvalid) {
         ctx.setLineDash([6, 4]);
       } else {
         ctx.setLineDash([]);
@@ -1807,7 +1887,39 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.fillStyle = isActive ? activeColor : baseColor;
+      // Draw diff badge along the relation line (near the midpoint)
+      if (diffStatus && ortho.length >= 2) {
+        const midIdx = Math.floor((ortho.length - 1) / 2);
+        const p1 = ortho[midIdx];
+        const p2 = ortho[midIdx + 1] || ortho[midIdx];
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+
+        ctx.save();
+        ctx.setLineDash([]);
+        const labelText = diffStatus === 'added' ? '[Added]' : (diffStatus === 'modified' ? '[Modified]' : '[Deleted]');
+        const labelColor = diffColor;
+        ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const textWidth = ctx.measureText(labelText).width;
+
+        ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.94)' : 'rgba(24, 30, 42, 0.94)';
+        ctx.beginPath();
+        const padX = 5;
+        const padY = 2;
+        this.roundRectPath(ctx, midX - textWidth / 2 - padX, midY - 7 - padY, textWidth + padX * 2, 14 + padY * 2, 3);
+        ctx.fill();
+        ctx.strokeStyle = labelColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(labelText, midX, midY);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = finalLineColor;
 
       const isStartPk = this.svc.isPrimaryKey(ref.fromTable, ref.fromCol);
       const isEndPk = this.svc.isPrimaryKey(ref.toTable, ref.toCol);
@@ -1834,7 +1946,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
         ctx.fillStyle = isLight ? '#ffffff' : '#161f33';
         ctx.fill();
-        ctx.strokeStyle = isActive ? activeColor : baseColor;
+        ctx.strokeStyle = finalLineColor;
         ctx.lineWidth = 1.8;
         ctx.stroke();
       };
@@ -1855,7 +1967,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.moveTo(x1, y1);
         ctx.lineTo(pt.x, pt.y);
         ctx.lineTo(x2, y2);
-        ctx.strokeStyle = isActive ? activeColor : baseColor;
+        ctx.strokeStyle = finalLineColor;
         ctx.lineWidth = isActive ? 2.5 : 1.8;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -1972,8 +2084,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.fillText('!', pt.x, pt.y);
         ctx.restore();
 
-        // If target table does not exist on canvas, draw an indicator pill with missing table name
-        if (!geometry[ref.toTable] && ortho.length >= 2) {
+        // If target table does not exist on canvas, draw an indicator pill with missing table name (only when not in diff review)
+        if (!this.svc.aiDiffReviewActive() && !geometry[ref.toTable] && ortho.length >= 2) {
           const endPt = ortho[ortho.length - 1];
           ctx.save();
           ctx.setLineDash([]);
@@ -1995,7 +2107,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           ctx.textBaseline = 'middle';
           ctx.fillText(label, px + 8, py + ph / 2);
           ctx.restore();
-        } else if (!geometry[ref.fromTable] && ortho.length >= 2) {
+        } else if (!this.svc.aiDiffReviewActive() && !geometry[ref.fromTable] && ortho.length >= 2) {
           const startPt = ortho[0];
           ctx.save();
           ctx.setLineDash([]);
@@ -2856,6 +2968,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const groupColorIcon = this.findGroupColorIconAt(wp.x, wp.y);
     if (groupColorIcon) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       if (!this.auth.isLoggedIn()) {
         this.svc.authModalVisible.set(true);
         return;
@@ -2880,6 +2996,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         const headerH = 26;
 
         if (wp.x >= x && wp.x <= x + w && wp.y >= y && wp.y <= y + headerH) {
+          if (this.svc.aiDiffReviewActive()) {
+            this.svc.showAiDiffEditBlockedToast();
+            return;
+          }
           // Check if user clicked the toggle arrow at the leftmost 30px
           if (wp.x >= x && wp.x <= x + 30) {
             if (this.svc.collapsedGroups.has(g.name)) {
@@ -2924,6 +3044,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const tableHeaderIcon = this.findTableHeaderIconAt(wp.x, wp.y);
     if (tableHeaderIcon) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       const table = this.svc.tables.find((item) => item.name === tableHeaderIcon.tableName);
       if (tableHeaderIcon.type === 'settings' && table) {
         if (!this.auth.isLoggedIn()) {
@@ -2937,10 +3061,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-
-
     const iconHit = this.findConnectionIconAt(wp.x, wp.y);
     if (iconHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       const ref = this.svc.refs[iconHit.refIndex];
       if (!ref) return;
 
@@ -2971,6 +3097,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
     if (endpointHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       const ref = this.svc.refs[endpointHit.refIndex];
       this.reconnectDraft = {
         refIndex: endpointHit.refIndex,
@@ -2987,6 +3117,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
     if (cornerHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       this.materializeWaypoints(this.svc.refs[cornerHit.refIndex], geometry, cornerHit.refIndex, anchorUsage);
       this.isDraggingWaypoint = true;
       this.dragConnectionIndex = cornerHit.refIndex;
@@ -2998,6 +3132,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
     if (midpointHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       const ref = this.svc.refs[midpointHit.refIndex];
       const waypoints = this.materializeWaypoints(ref, geometry, midpointHit.refIndex, anchorUsage);
       waypoints.splice(midpointHit.insertAt, 0, { x: wp.x, y: wp.y });
@@ -3011,6 +3149,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const columnHit = this.findColumnAt(wp.x, wp.y);
     if (columnHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       this.connectionDraft = {
         fromTable: columnHit.table.name,
         fromColumn: columnHit.column.name,
@@ -3024,6 +3166,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const hit = this.findTableAt(wp.x, wp.y);
     if (hit) {
+      if (this.svc.aiDiffReviewActive()) {
+        this.svc.showAiDiffEditBlockedToast();
+        return;
+      }
       this.draggingTable = hit.name;
       this.dragTableStartPos = { x: hit.x, y: hit.y };
       this.dragOffset = { x: wp.x - hit.x, y: wp.y - hit.y };
@@ -3034,6 +3180,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const lineHit = this.findHoveredConnectionIndex(wp.x, wp.y, geometry);
+    if (lineHit !== -1 && this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.svc.isReadOnly && !this.isSampleDiagram()) {
       this.svc.selectedConnectionIndex = lineHit;
       if (lineHit !== -1) {
@@ -3315,6 +3465,27 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.svc.tool === 'pan') {
       canvas.style.cursor = 'grab';
       return;
+    }
+
+    if (this.svc.aiDiffReviewActive()) {
+      const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
+      const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
+      const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
+      const tableHit = this.findTableAt(wp.x, wp.y);
+      if (
+        endpointHit ||
+        this.hoveredIcon ||
+        this.hoveredTableHeaderIcon ||
+        this.hoveredGroupColorIcon ||
+        cornerHit ||
+        midpointHit ||
+        this.svc.hoveredConnectionIndex !== -1 ||
+        tableHit ||
+        this.hoveredGroupName
+      ) {
+        canvas.style.cursor = 'not-allowed';
+        return;
+      }
     }
     if (this.draggingTable) {
       canvas.style.cursor = 'move';
@@ -3729,6 +3900,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onCanvasContextMenu(e: MouseEvent): void {
     e.preventDefault();
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (this.inlineEdit.visible) {
       this.commitInlineEdit();
     }
@@ -3920,6 +4095,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleLayoutMenu(event?: MouseEvent): void {
     if (event) {
       event.stopPropagation();
+    }
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
     }
     if (this.isReadOnly) return;
     this.showLayoutMenu = !this.showLayoutMenu;
@@ -4158,6 +4337,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createTable(): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     const rect = this.canvasWrapRef.nativeElement.getBoundingClientRect();
     let x = (rect.width / 2 - this.svc.view.x) / this.svc.view.scale - this.svc.CARD_W / 2;
     let y = (rect.height / 2 - this.svc.view.y) / this.svc.view.scale - 70;
@@ -4197,6 +4380,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openTableModal(table: TableDef, isNew = false): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.auth.isLoggedIn()) {
       this.svc.authModalVisible.set(true);
       return;
@@ -4490,6 +4677,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openGroupModal(groupName: string): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.entitlementService.canUseFeature('table_group')) {
       if (!this.entitlementService.orgHasFeature('table_group')) {
         this.svc.showUpgradeModal();
@@ -4946,6 +5137,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     connectionIndex: number,
     groupName: string | null = null
   ): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (this.svc.isReadOnly) return;
     if (!this.auth.isLoggedIn()) {
       this.svc.authModalVisible.set(true);
@@ -5242,12 +5437,20 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private handleEmptyMenuAction(label: string): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (label === 'Add Table') {
       this.svc.addTableAt(this.contextMenuWorldPoint.x, this.contextMenuWorldPoint.y);
     }
   }
 
   private deleteTable(tableName: string): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     this.deleteConfirm = {
       visible: true,
       tableName: tableName
@@ -5441,6 +5644,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ============ INLINE EDITS ============ */
 
   private openInlineEditForColumn(table: TableDef, column: Column): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     const rowIndex = table.columns.findIndex((c) => c.name === column.name);
     if (rowIndex === -1) return;
     const rowY = table.y + this.svc.HEADER_H + rowIndex * this.svc.ROW_H;
@@ -5468,6 +5675,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private openInlineEditForTable(table: TableDef): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     this.contextMenu.visible = false;
     this.inlineEdit = {
       visible: true,
@@ -5568,6 +5779,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** Add a new note at the center of the current canvas viewport */
   addNoteAtCenter(): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.entitlementService.canUseFeature('diagram_notes')) {
       if (!this.entitlementService.orgHasFeature('diagram_notes')) {
         this.svc.showUpgradeModal();
@@ -5604,6 +5819,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startNoteDrag(event: MouseEvent | TouchEvent, note: DiagramNote): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (this.editingNoteId !== null) {
       this.commitEditNoteName();
     }
@@ -5641,6 +5860,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   startNoteResize(event: MouseEvent | TouchEvent, note: DiagramNote, dir: string = 'se'): void {
     event.stopPropagation();
     event.preventDefault();
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.entitlementService.canUseFeature('diagram_notes')) {
       if (!this.entitlementService.orgHasFeature('diagram_notes')) {
         this.svc.showUpgradeModal();
@@ -5715,6 +5938,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleNoteMenu(event: MouseEvent, noteId: number): void {
     event.stopPropagation();
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.entitlementService.canUseFeature('diagram_notes')) {
       if (!this.entitlementService.orgHasFeature('diagram_notes')) {
         this.svc.showUpgradeModal();
@@ -5784,6 +6011,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   selectNote(event: MouseEvent | TouchEvent, noteId: number): void {
     event.stopPropagation();
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     this.selectedNoteId = noteId;
     if (this.editingNoteBodyId !== noteId) {
       this.editingNoteBodyId = null;
@@ -5805,6 +6036,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   editNoteBody(event: MouseEvent | TouchEvent, noteId: number): void {
     event.stopPropagation();
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.entitlementService.canUseFeature('diagram_notes')) {
       if (!this.entitlementService.orgHasFeature('diagram_notes')) {
         this.svc.showUpgradeModal();
@@ -5826,6 +6061,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openDeleteNoteConfirm(note: DiagramNote): void {
+    if (this.svc.aiDiffReviewActive()) {
+      this.svc.showAiDiffEditBlockedToast();
+      return;
+    }
     if (!this.entitlementService.canUseFeature('diagram_notes')) {
       if (!this.entitlementService.orgHasFeature('diagram_notes')) {
         this.svc.showUpgradeModal();

@@ -23,7 +23,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   ];
   const isPublicUrl = publicUrls.some(p => req.url.includes(p));
 
-  if (baseUrl && req.url.startsWith(baseUrl)) {
+  const isApiRequest = (baseUrl && req.url.startsWith(baseUrl)) || req.url.includes('/api/');
+
+  if (isApiRequest) {
     const token = auth.getToken();
     if (token && !isPublicUrl) {
       req = req.clone({

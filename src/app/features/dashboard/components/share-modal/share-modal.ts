@@ -187,6 +187,9 @@ export class ShareModalComponent implements OnInit {
     } else if (/\s/.test(this.password)) {
       this.passwordError = 'Password cannot contain whitespace.';
       return;
+    } else if (this.password.startsWith(' ') || this.password.endsWith(' ')) {
+      this.passwordError = 'Password cannot  end with a space.';
+      return;
     } else {
       this.passwordError = null;
     }

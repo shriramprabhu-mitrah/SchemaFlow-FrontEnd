@@ -161,4 +161,81 @@ export class AdminService {
     if (enquiryType) params = params.set('enquiry_type', enquiryType);
     return this.http.get(this.urls.enquiries, { params, withCredentials: true });
   }
+
+  // ── AI Model Providers ──
+  getAiProviders(): Observable<any> {
+    const url = this.urls.aiProviders || 'http://localhost:4007/api/ai/admin/providers';
+    return this.http.get(url, { withCredentials: true });
+  }
+
+  createAiProvider(data: { provider_name: string; base_url: string; is_active: boolean }): Observable<any> {
+    const url = this.urls.aiProviderManage || 'http://localhost:4007/api/ai/providers';
+    return this.http.post(url, data, { withCredentials: true });
+  }
+
+  updateAiProvider(id: number, data: { provider_name: string; base_url: string; is_active: boolean }): Observable<any> {
+    const template = this.urls.aiProviderById || 'http://localhost:4007/api/ai/providers/{id}';
+    const url = template.replace('{id}', id.toString());
+    return this.http.put(url, data, { withCredentials: true });
+  }
+
+  deleteAiProvider(id: number): Observable<any> {
+    const template = this.urls.aiProviderById || 'http://localhost:4007/api/ai/providers/{id}';
+    const url = template.replace('{id}', id.toString());
+    return this.http.delete(url, { withCredentials: true });
+  }
+
+  // ── AI Models Catalog ──
+  getAiModels(): Observable<any> {
+    const url = this.urls.aiModels || 'http://localhost:4007/api/ai/admin/models';
+    return this.http.get(url, { withCredentials: true });
+  }
+
+  createAiModel(data: { model_name: string; provider_id: number; is_active?: boolean }): Observable<any> {
+    const url = this.urls.aiModelManage || (this.urls.aiChatModels ? this.urls.aiChatModels.replace(/\/$/, '') : '') || 'http://localhost:4007/api/ai/models';
+    return this.http.post(url, data, { withCredentials: true });
+  }
+
+  updateAiModel(id: number | string, data: { model_name?: string; provider_id?: number; is_active?: boolean }): Observable<any> {
+    let url: string;
+    if (this.urls.aiModelById) {
+      url = this.urls.aiModelById.replace(':id', id.toString()).replace('{id}', id.toString());
+    } else if (this.urls.aiModelManage) {
+      url = `${this.urls.aiModelManage.replace(/\/$/, '')}/${id}`;
+    } else {
+      url = `http://localhost:4007/api/ai/models/${id}`;
+    }
+    return this.http.put(url, data, { withCredentials: true });
+  }
+
+  deleteAiModel(id: number | string): Observable<any> {
+    let url: string;
+    if (this.urls.aiModelById) {
+      url = this.urls.aiModelById.replace(':id', id.toString()).replace('{id}', id.toString());
+    } else if (this.urls.aiModelManage) {
+      url = `${this.urls.aiModelManage.replace(/\/$/, '')}/${id}`;
+    } else {
+      url = `http://localhost:4007/api/ai/models/${id}`;
+    }
+    return this.http.delete(url, { withCredentials: true });
+  }
+
+  // ── AI Model Config ──
+  getModelConfig(modelId: number | string): Observable<any> {
+    const template = this.urls.aiModelConfig || 'http://localhost:4007/api/ai/models/:modelId/config';
+    const url = template
+      .replace(':modelId', modelId.toString())
+      .replace('{modelId}', modelId.toString())
+      .replace('{id}', modelId.toString());
+    return this.http.get(url, { withCredentials: true });
+  }
+
+  saveModelConfig(modelId: number | string, data: { api_key: string; max_tokens?: number; is_active?: boolean }): Observable<any> {
+    const template = this.urls.aiModelConfig || 'http://localhost:4007/api/ai/models/:modelId/config';
+    const url = template
+      .replace(':modelId', modelId.toString())
+      .replace('{modelId}', modelId.toString())
+      .replace('{id}', modelId.toString());
+    return this.http.put(url, data, { withCredentials: true });
+  }
 }

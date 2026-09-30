@@ -648,7 +648,7 @@ export class UpgradeModalComponent implements OnInit {
       this.loading = true;
       this.orgService.upgrade(orgId, plan.slug).subscribe({
         next: (res) => {
-          const localSubId = res.data?.subscription_id || res.subscription_id; 
+          const localSubId = res.data?.subscription_id || res.subscription_id;
 
           // Check if the plan requires payment (status will be 'expired' or pending)
           if (res.data?.status === 'expired' && localSubId) {

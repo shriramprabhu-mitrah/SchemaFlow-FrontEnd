@@ -530,12 +530,15 @@
             &::-webkit-scrollbar {
               width: 5px;
             }
+
             &::-webkit-scrollbar-track {
               background: transparent;
             }
+
             &::-webkit-scrollbar-thumb {
               background: rgba(148, 163, 184, 0.3);
               border-radius: 4px;
+
               &:hover {
                 background: rgba(148, 163, 184, 0.5);
               }
@@ -3920,7 +3923,7 @@ body.light-theme {
         }
       }
 
-      > .members-section-box {
+      >.members-section-box {
         display: flex !important;
         flex-direction: column !important;
         flex: 1 1 auto !important;
@@ -3943,12 +3946,15 @@ body.light-theme {
           &::-webkit-scrollbar {
             width: 5px !important;
           }
+
           &::-webkit-scrollbar-track {
             background: transparent !important;
           }
+
           &::-webkit-scrollbar-thumb {
             background: #cbd5e1 !important;
             border-radius: 4px !important;
+
             &:hover {
               background: #94a3b8 !important;
             }
@@ -4521,5 +4527,3 @@ body.light-theme {
   line-height: 1.4;
   letter-spacing: 0.02em;
 }
-
-

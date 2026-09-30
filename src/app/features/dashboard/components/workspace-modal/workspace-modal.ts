@@ -1052,11 +1052,11 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
               if (!emailStr) continue;
 
               const isValid = item?.valid === true ||
-                              item?.valid === 'true' ||
-                              item?.valid === 1 ||
-                              item?.isValid === true ||
-                              item?.status === 'valid' ||
-                              (item?.valid === undefined && !item?.error && item?.valid !== false && !item?.message?.toLowerCase().includes('not registered'));
+                item?.valid === 'true' ||
+                item?.valid === 1 ||
+                item?.isValid === true ||
+                item?.status === 'valid' ||
+                (item?.valid === undefined && !item?.error && item?.valid !== false && !item?.message?.toLowerCase().includes('not registered'));
 
               if (isValid) {
                 validEmailsToAdd.push(emailStr);

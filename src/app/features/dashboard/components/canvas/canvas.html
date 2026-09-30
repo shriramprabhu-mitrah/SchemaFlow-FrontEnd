@@ -18,6 +18,13 @@
     <span style="line-height: 1.4;">You are viewing this diagram in Read-Only mode. You cannot make structural changes, but you can move tables around.</span>
   </div>
 
+  <!-- Top Diff Legend (as shown in user's image) -->
+  <div class="canvas-diff-legend" *ngIf="svc.aiDiffReviewActive()" [class.light]="svc.theme() === 'light'">
+    <span class="legend-item added"><span class="legend-dash dash-added">---</span> Added</span>
+    <span class="legend-item modified"><span class="legend-dash dash-modified">---</span> Modified</span>
+    <span class="legend-item deleted"><span class="legend-dash dash-deleted">---</span> Deleted</span>
+  </div>
+
   <div id="canvas-wrap" #canvasWrap>
     <canvas #canvas (mousedown)="onCanvasMouseDown($event)" (contextmenu)="onCanvasContextMenu($event)"
       (mouseleave)="onCanvasMouseLeave()"></canvas>
@@ -34,7 +41,7 @@
       [style.border-radius.px]="6 * svc.view.scale" [style.pointer-events]="'all'">
 
       <!-- Double-click to edit hint, shown on hover -->
-      <div class="sticky-note-hover-hint" *ngIf="!svc.isReadOnly && !isSampleDiagram()">Double-click to edit</div>
+      <div class="sticky-note-hover-hint" *ngIf="!svc.isReadOnly && !isSampleDiagram() && !svc.aiDiffReviewActive()">Double-click to edit</div>
 
       <!-- Inner card: clips content (header + textarea) properly -->
       <div class="sticky-note-inner" [style.background-color]="note.color || '#FFE28B'"
@@ -90,10 +97,10 @@
         <textarea class="sticky-note-body"
           [placeholder]="svc.isReadOnly || isSampleDiagram() ? '' : 'Write something...'" [(ngModel)]="note.text"
           (mousedown)="onNoteBodyMouseDown($event, note)"
-          (dblclick)="!svc.isReadOnly && !isSampleDiagram() && editNoteBody($event, note.id)"
+          (dblclick)="!svc.isReadOnly && !isSampleDiagram() && !svc.aiDiffReviewActive() && editNoteBody($event, note.id)"
           (input)="onNoteTextChange(note)"
-          [readonly]="svc.isReadOnly || isSampleDiagram() || editingNoteBodyId !== note.id"
-          [style.cursor]="svc.isReadOnly || isSampleDiagram() ? 'default' : (editingNoteBodyId === note.id ? 'text' : 'move')"
+          [readonly]="svc.aiDiffReviewActive() || svc.isReadOnly || isSampleDiagram() || editingNoteBodyId !== note.id"
+          [style.cursor]="svc.aiDiffReviewActive() ? 'not-allowed' : (svc.isReadOnly || isSampleDiagram() ? 'default' : (editingNoteBodyId === note.id ? 'text' : 'move'))"
           [style.color]="note.textColor || '#000000'" [style.font-size.px]="12 * svc.view.scale"
           [style.padding]="(6 * svc.view.scale) + 'px ' + (8 * svc.view.scale) + 'px'"></textarea>
 

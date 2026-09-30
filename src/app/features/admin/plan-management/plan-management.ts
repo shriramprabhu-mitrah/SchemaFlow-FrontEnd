@@ -277,7 +277,7 @@ export class PlanManagementComponent implements OnInit {
     let val = cleaned === '' ? 0 : Math.max(0, parseInt(cleaned, 10) || 0);
     if (part === 'hours' && val > 23) val = 23;
     if (part === 'mins' && val > 59) val = 59;
-    
+
     if (part === 'days') this.commonTrialDaysPart = val;
     if (part === 'hours') this.commonTrialHoursPart = val;
     if (part === 'mins') this.commonTrialMinsPart = val;
@@ -363,13 +363,13 @@ export class PlanManagementComponent implements OnInit {
     this.cdr.detectChanges();
     try {
       this.appRef.tick();
-    } catch {}
+    } catch { }
     setTimeout(() => {
       this.cdr.markForCheck();
       this.cdr.detectChanges();
       try {
         this.appRef.tick();
-      } catch {}
+      } catch { }
     }, 0);
   }
 

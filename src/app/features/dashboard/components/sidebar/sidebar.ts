@@ -65,11 +65,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.entitlementService.entitlements$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
+        if (!this.hasFeatureAccess('ai_chat') && this.svc.showAiChat()) {
+          this.svc.closeAiChat();
+        }
         this.cdr.markForCheck();
       });
     this.entitlementService.orgEntitlements$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
+        if (!this.hasFeatureAccess('ai_chat') && this.svc.showAiChat()) {
+          this.svc.closeAiChat();
+        }
         this.cdr.markForCheck();
       });
     this.svc.redraw$
@@ -117,7 +123,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
   }
 
-  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs'): boolean {
+  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     switch (item) {
       case 'import':
@@ -140,6 +146,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         return !this.hasFeatureAccess('document_view');
       case 'compare':
         return !this.hasFeatureAccess('code_compare');
+      case 'ai':
+        return !this.hasFeatureAccess('ai_chat');
       default:
         return false;
     }
@@ -310,6 +318,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.svc.closeVersionHistory$.next();
       this.svc.showVersionHistory.set(false);
     }
+    if (this.svc.showAiChat()) {
+      this.svc.closeAiChat();
+    }
     if (!this.entitlementService.canUseFeature('share_diagram')) {
       if (!this.entitlementService.orgHasFeature('share_diagram')) {
         this.svc.showUpgradeModal('share_diagram');
@@ -333,6 +344,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.svc.showDocs = false;
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
+    }
+    if (this.svc.showAiChat()) {
+      this.svc.closeAiChat();
     }
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -366,6 +380,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.router.navigate([]);
       }
     }
+    if (this.svc.showAiChat()) {
+      this.svc.closeAiChat();
+    }
 
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -392,11 +409,46 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  toggleAiChat(e?: Event): void {
+    if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
+    this.importMenuOpen = false;
+    this.exportMenuOpen = false;
+    if (this.svc.shareModalVisible()) {
+      this.svc.shareModalVisible.set(false);
+    }
+    this.svc.showDocs = false;
+    if (this.svc.showDiffChecker()) {
+      this.svc.closeDiffChecker();
+    }
+    if (this.svc.showVersionHistory()) {
+      this.svc.showVersionHistory.set(false);
+    }
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      return;
+    }
+    if (!this.entitlementService.canUseFeature('ai_chat')) {
+      if (!this.entitlementService.orgHasFeature('ai_chat')) {
+        this.svc.showUpgradeModal('ai_chat');
+      }
+      return;
+    }
+    if (!this.svc.showAiChat() && this.svc.sidebarInspectorTab()) {
+      this.svc.sidebarInspectorTab.set(null);
+    }
+    this.svc.toggleAiChat();
+    this.cdr.markForCheck();
+  }
+
   showDbmlEditor(e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     this.svc.showDocs = false;
+    if (this.svc.showAiChat()) {
+      this.svc.closeAiChat();
+    }
 
     if (this.svc.showDiffChecker()) {
       this.svc.closeDiffChecker();
@@ -424,6 +476,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     this.svc.showDocs = false;
+    if (this.svc.showAiChat()) {
+      this.svc.closeAiChat();
+    }
     if (this.svc.shareModalVisible()) {
       this.svc.shareModalVisible.set(false);
     }
@@ -446,7 +501,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   // ============ VIEW DOCS ============
-  
+
   toggleDocs(e?: Event): void {
     if (e) e.stopPropagation();
     this.importMenuOpen = false;
@@ -457,6 +512,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     if (this.isSampleDiagram()) {
       return;
+    }
+    if (this.svc.showAiChat()) {
+      this.svc.closeAiChat();
     }
     const isCurrentlyActive = this.svc.showDocs || this.svc.showDocsPlaceholder;
 
@@ -507,7 +565,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     this.cdr.markForCheck();
   }
-  
+
 
   // ============ AUTH / SIGNOUT ============
 

@@ -91,6 +91,18 @@
     "subscriptions": "http://192.168.1.201:3000/api/admin/subscriptions",
     "subscriptionById": "http://192.168.1.201:3000/api/admin/subscriptions/{id}",
     "auditLogs": "http://192.168.1.201:3000/api/admin/audit-logs",
-    "enquiries": "http://192.168.1.201:3000/api/admin/enquiries"
+    "enquiries": "http://192.168.1.201:3000/api/admin/enquiries",
+    "aiProviders": "http://localhost:4007/api/ai/admin/providers",
+    "aiProviderManage": "http://localhost:4007/api/ai/providers",
+    "aiProviderById": "http://localhost:4007/api/ai/providers/{id}",
+    "aiModels": "http://localhost:4007/api/ai/admin/models",
+    "aiModelManage": "http://localhost:4007/api/ai/models",
+    "aiModelById": "http://localhost:4007/api/ai/models/{id}",
+    "aiChatModels": "http://localhost:4007/api/ai/models/",
+    "aiChat": "http://localhost:4007/api/ai/chat",
+    "aiChatHistoryById": "http://localhost:4007/api/ai/chat/history/{id}",
+    "aiSessions": "http://localhost:4007/api/ai/sessions",
+    "aiSessionHistory": "http://localhost:4007/api/ai/sessions/{sessionId}/history",
+    "aiModelConfig": "http://localhost:4007/api/ai/models/:modelId/config"
   }
 }
