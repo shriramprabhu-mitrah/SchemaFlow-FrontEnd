@@ -1,19 +1,22 @@
 # Changelog
  
 ---
- 
+
 ## [1.3.0] - 2026-09-29
  
 ### Added
-- Added file attachment support and extended fields (`country`, `enquiry_type`) to the Contact Sales form, including robust backend multi-part form data parsing
+- Added "Sticky Notes" feature card to the homepage
+- Added file attachments and extended fields to the Contact Sales form
  
 ### Changed
-- Unified Razorpay plan configurations to pull dynamically from the database instead of relying on environment variables
-- Standardized billing cycle terminology across the application (replaced "Yearly" with "Annual")
-- Improved UI styling for invitation management flows
+- Promoted AI features on the homepage (hero title update, card reordering, gradient highlight)
+- Migrated Razorpay plan configs to the database
+- Standardized billing terminology to "Annual"
+- Refined UI styling for invitations
  
 ### Fixed
-- Resolved a critical bug where upgrading a subscription would create duplicate subscription rows per user in the database
+- Fixed styling and dark mode rendering for the Sticky Notes card
+- Prevented duplicate subscription rows during upgrades
  
 ## [1.2.0] - 2026-09-25
  
