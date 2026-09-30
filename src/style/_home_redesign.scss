@@ -779,7 +779,7 @@
 .footer-social-row {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 10px;
   margin-top: 28px;
 }
 
@@ -1084,6 +1084,11 @@
 .detail-card.orange .detail-card-icon {
   background: #fff7ed;
   color: #f97316;
+}
+
+.detail-card.yellow .detail-card-icon {
+  background: #fefce8;
+  color: #eab308;
 }
 
 .detail-card h4 {
