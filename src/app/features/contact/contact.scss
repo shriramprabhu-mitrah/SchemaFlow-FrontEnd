@@ -244,6 +244,50 @@ body[data-theme="dark"] .success-description {
   max-width: 500px;
 }
 
+.btn-group-toggle {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-toggle {
+  flex: 1;
+  padding: 10px 16px;
+  background-color: #fafbfc;
+  border: 1px solid #dfe1e6;
+  border-radius: 3px;
+  color: #5e6c84;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-toggle:hover {
+  background-color: #ebecf0;
+}
+
+.btn-toggle.active {
+  background-color: #0052cc;
+  border-color: #0052cc;
+  color: #ffffff;
+}
+
+body[data-theme="dark"] .btn-toggle {
+  background-color: #2b2b2b;
+  border-color: #444444;
+  color: #a0aabf;
+}
+
+body[data-theme="dark"] .btn-toggle:hover {
+  background-color: #333333;
+}
+
+body[data-theme="dark"] .btn-toggle.active {
+  background-color: #4c9aff;
+  border-color: #4c9aff;
+  color: #ffffff;
+}
+
 .custom-file-upload { width: 100%; position: relative; }
 .hidden-file-input { position: absolute; width: 0; height: 0; opacity: 0; overflow: hidden; z-index: -1; }
 .file-upload-label { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px 24px; border: 2px dashed #dfe1e6; border-radius: 4px; background: #fafbfc; color: #5e6c84; cursor: pointer; transition: all 0.3s ease; text-align: center; }

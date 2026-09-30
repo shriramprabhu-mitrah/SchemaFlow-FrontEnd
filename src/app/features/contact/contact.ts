@@ -21,6 +21,7 @@ export class ContactComponent implements OnInit {
   isDragging = signal(false);
   selectedFileName = signal('');
   selectedFile: File | null = null;
+  enquiryType: string = 'Support';
 
   constructor(private fb: FormBuilder, private enquiryService: EnquiryService) {}
 
@@ -45,10 +46,16 @@ export class ContactComponent implements OnInit {
     this.submitError.set('');
     this.selectedFileName.set('');
     this.selectedFile = null;
+    this.enquiryType = 'Support';
     this.contactForm.reset();
     this.contactForm.patchValue({ enquiry_type: 'Support' });
     this.contactForm.markAsUntouched();
     this.contactForm.markAsPristine();
+  }
+
+  setEnquiryType(type: string) {
+    this.enquiryType = type;
+    this.contactForm.patchValue({ enquiry_type: type });
   }
 
   @HostListener('dragover', ['$event'])

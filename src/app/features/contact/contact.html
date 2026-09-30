@@ -39,13 +39,13 @@
         </div>
 
         <div class="form-group">
-          <label>Company Name</label>
+          <label>Company Name <span class="sub-label">(Optional)</span></label>
           <input type="text" class="form-input" formControlName="company_name" />
         </div>
 
         <div class="form-row">
           <div class="form-group half">
-            <label>Subject</label>
+            <label>Subject <span class="sub-label">(Optional)</span></label>
             <input type="text" class="form-input" formControlName="subject" />
           </div>
           <div class="form-group half">
@@ -56,13 +56,25 @@
         </div>
 
         <div class="form-group">
+          <label>Enquiry Type <span class="text-danger">*</span></label>
+          <div class="btn-group-toggle">
+            <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Sales'" (click)="setEnquiryType('Sales')">
+              $ Sales
+            </button>
+            <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Support'" (click)="setEnquiryType('Support')">
+              @ Support
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label>What is the current issue that you are facing? <span class="text-danger">*</span></label>
           <textarea class="form-input textarea-tall" formControlName="project_details"></textarea>
           <div *ngIf="contactForm.get('project_details')?.invalid && contactForm.get('project_details')?.touched" class="error-message">This field is required.</div>
         </div>
 
         <div class="form-group">
-          <label>Upload Image <span class="sub-label" style="display:inline; margin-left: 4px;">(Optional for issues)</span></label>
+          <label>Upload Image <span class="sub-label">(Optional for issues)</span></label>
           <div class="custom-file-upload">
             <label for="file-upload" class="file-upload-label"
               [class.dragover]="isDragging()"
@@ -76,7 +88,7 @@
               </svg>
               <span>{{ selectedFileName() ? selectedFileName() : 'Click or drag and drop to select an image' }}</span>
             </label>
-            <input id="file-upload" type="file" class="hidden-file-input" accept="image/*" (change)="onFileChange($event)" />
+            <input id="file-upload" type="file" class="hidden-file-input" style="display: none;" accept="image/*" (change)="onFileChange($event)" />
           </div>
         </div>
 
