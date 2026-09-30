@@ -22,6 +22,11 @@ export class ContactComponent implements OnInit {
   selectedFileName = signal('');
   selectedFile: File | null = null;
   enquiryType: string = 'Support';
+  showCountryDropdown = false;
+  countries = [
+    'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
+    'France', 'India', 'Japan', 'Brazil', 'Other'
+  ];
 
   constructor(private fb: FormBuilder, private enquiryService: EnquiryService) {}
 
@@ -35,7 +40,7 @@ export class ContactComponent implements OnInit {
       project_details: ['', Validators.required],
       // Required by backend but we can hardcode or leave blank if we remove them from UI
       enquiry_type: ['Support'], 
-      phone_number: ['', [Validators.required, Validators.pattern(/^[0-9\+\-\s\(\)]{10,20}$/)]],
+      phone_number: ['', [Validators.required, Validators.pattern(/^(?=(?:\D*\d){10,15}\D*$)\+?[\d\s()-]+$/)]],
       country: [''],
       image_url: ['']
     });
@@ -56,6 +61,11 @@ export class ContactComponent implements OnInit {
   setEnquiryType(type: string) {
     this.enquiryType = type;
     this.contactForm.patchValue({ enquiry_type: type });
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.showCountryDropdown = false;
   }
 
   @HostListener('dragover', ['$event'])
@@ -102,13 +112,28 @@ export class ContactComponent implements OnInit {
     if (file.type.startsWith('image/')) {
       this.selectedFileName.set(file.name);
       this.selectedFile = file;
-      this.contactForm.patchValue({ image_url: file.name });
+      this.submitError.set('');
     } else {
       this.submitError.set('Please select an image file.');
     }
   }
 
-  onSubmit() {
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          reject(new Error('The selected image could not be read.'));
+        }
+      };
+      reader.onerror = () => reject(reader.error ?? new Error('The selected image could not be read.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async onSubmit() {
     if (this.contactForm.invalid) {
       this.contactForm.markAllAsTouched();
       return;
@@ -118,6 +143,15 @@ export class ContactComponent implements OnInit {
     this.submitError.set('');
 
     const formValue = { ...this.contactForm.value };
+    try {
+      if (this.selectedFile) {
+        formValue.image_url = await this.readFileAsDataUrl(this.selectedFile);
+      }
+    } catch {
+      this.isSubmitting.set(false);
+      this.submitError.set('Could not read the selected image. Please choose it again.');
+      return;
+    }
 
     this.enquiryService.submitEnquiry(formValue).subscribe({
       next: () => {

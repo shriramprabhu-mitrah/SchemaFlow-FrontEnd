@@ -1,16 +1,16 @@
 <div class="contact-page-wrapper">
   
-  <div class="contact-logo-header">
-    <app-icons name="db-diagram-logo" size="36" color="#0052cc"></app-icons>
-    <span class="logo-text">dbNexus</span>
+  <div class="header-brand" routerLink="/" style="cursor: pointer;">
+    <app-icons name="db-diagram-logo" size="56"></app-icons>
+    <span class="brand-text">dbNexus</span>
   </div>
 
   <div class="contact-form-card" [class.success-state]="submitSuccess() === true">
     
     <ng-container *ngIf="submitSuccess() === false">
       <div class="contact-card-header">
-        <h2>Get in Touch With dbNexus</h2>
-        <p>We'd love to help you with any questions or issues you have with dbNexus!</p>
+        <h2>Contact the dbNexus Team</h2>
+        <p>Need help with your database schemas, diagrams, or documentation? We're here to help.</p>
       </div>
       
       <hr class="contact-divider" />
@@ -38,20 +38,46 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Company Name <span class="sub-label">(Optional)</span></label>
-          <input type="text" class="form-input" formControlName="company_name" />
+        <div class="form-row">
+          <div class="form-group half">
+            <label>Mobile Number <span class="text-danger">*</span></label>
+            <input type="tel" class="form-input" formControlName="phone_number" />
+            <div *ngIf="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched" class="error-message">
+              <span *ngIf="contactForm.get('phone_number')?.errors?.['required']">Mobile number is required.</span>
+              <span *ngIf="contactForm.get('phone_number')?.errors?.['pattern']">Enter a valid phone number with 10 to 15 digits.</span>
+            </div>
+          </div>
+          <div class="form-group half">
+            <label>Country <span class="sub-label">(Optional)</span></label>
+            <div class="custom-dropdown-container" (click)="$event.stopPropagation()">
+              <button type="button" class="form-input custom-dropdown-trigger" (click)="showCountryDropdown = !showCountryDropdown">
+                <span [class.placeholder]="!contactForm.get('country')?.value">
+                  {{ contactForm.get('country')?.value || 'Select Country' }}
+                </span>
+                <svg class="dropdown-chevron" [class.open]="showCountryDropdown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-dropdown-menu" *ngIf="showCountryDropdown">
+                <button type="button" class="custom-dropdown-option"
+                  *ngFor="let country of countries"
+                  [class.selected]="contactForm.get('country')?.value === country"
+                  (click)="contactForm.patchValue({ country: country }); showCountryDropdown = false">
+                  {{ country }}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="form-row">
           <div class="form-group half">
-            <label>Subject <span class="sub-label">(Optional)</span></label>
-            <input type="text" class="form-input" formControlName="subject" />
+            <label>Company Name <span class="sub-label">(Optional)</span></label>
+            <input type="text" class="form-input" formControlName="company_name" />
           </div>
           <div class="form-group half">
-            <label>Mobile Number <span class="text-danger">*</span></label>
-            <input type="tel" class="form-input" formControlName="phone_number" />
-            <div *ngIf="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched" class="error-message">Valid phone number is required.</div>
+            <label>Subject <span class="sub-label">(Optional)</span></label>
+            <input type="text" class="form-input" formControlName="subject" />
           </div>
         </div>
 
@@ -59,10 +85,12 @@
           <label>Enquiry Type <span class="text-danger">*</span></label>
           <div class="btn-group-toggle">
             <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Sales'" (click)="setEnquiryType('Sales')">
-              $ Sales <span class="toggle-sub-text">(sales&#64;dbnexus.io)</span>
+              <span class="toggle-label">$ Sales</span>
+              <span class="toggle-sub-text">sales@dbnexus.io</span>
             </button>
             <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Support'" (click)="setEnquiryType('Support')">
-              @ Support <span class="toggle-sub-text">(shoutout&#64;dbnexus.io)</span>
+              <span class="toggle-label">@ Support</span>
+              <span class="toggle-sub-text">shoutout@dbnexus.io</span>
             </button>
           </div>
         </div>
