@@ -59,10 +59,10 @@
           <label>Enquiry Type <span class="text-danger">*</span></label>
           <div class="btn-group-toggle">
             <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Sales'" (click)="setEnquiryType('Sales')">
-              $ Sales
+              $ Sales <span class="toggle-sub-text">(sales&#64;dbnexus.io)</span>
             </button>
             <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Support'" (click)="setEnquiryType('Support')">
-              @ Support
+              @ Support <span class="toggle-sub-text">(shoutout&#64;dbnexus.io)</span>
             </button>
           </div>
         </div>
