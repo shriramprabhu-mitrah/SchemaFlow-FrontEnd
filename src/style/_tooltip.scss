@@ -44,12 +44,20 @@
     animation: tt-fade 0.15s ease-out;
   }
 
-  &:not([data-tt]):hover::after,
+ &:not([data-tt]):hover::after,
   &:not([data-tt]):hover::before,
   &[data-tt=""]:hover::after,
-  &[data-tt=""]:hover::before {
+  &[data-tt=""]:hover::before,
+  &:active::after,
+  &:active::before,
+  &.active::after,
+  &.active::before,
+  &.active:hover::after,
+  &.active:hover::before {
     content: none !important;
     display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 }
 

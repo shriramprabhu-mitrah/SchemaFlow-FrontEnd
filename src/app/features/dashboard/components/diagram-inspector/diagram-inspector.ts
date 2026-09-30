@@ -348,16 +348,10 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
   focusTable(tableName: string, e?: Event): void {
     if (e) e.stopPropagation();
     this.activeMenuTable = null;
-    const pos = this.svc.tablePositions[tableName];
-    if (pos) {
-      this.svc.view = {
-        x: -pos.x + 240,
-        y: -pos.y + 180,
-        scale: 1
-      };
-      this.svc.hoveredTableName = tableName;
-      this.svc.forceRedraw$.next();
+    if (this.svc.paneMode() === 'editor') {
+      this.svc.setPaneMode('split');
     }
+    this.svc.focusTableOnCanvas(tableName);
   }
 
   toggleTableMenu(tableName: string, e: Event): void {

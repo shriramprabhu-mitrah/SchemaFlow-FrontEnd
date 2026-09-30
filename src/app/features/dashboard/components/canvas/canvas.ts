@@ -894,6 +894,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.hasFitted = false;
       this.fitCanvasAfterLayout();
     }));
+    this.subscriptions.add(this.svc.focusTableOnCanvas$.subscribe((tableName) => {
+      this.focusTableOnCanvas(tableName);
+    }));
 
     this.svc.onDiagramViewsToggled = (isOpen: boolean) => {
       if (isOpen) {
@@ -3846,6 +3849,66 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.svc.view.y = h / 2 - ((minY + maxY) / 2) * scale;
     this.hasFitted = true;
     this.scheduleDraw();
+  }
+
+  private focusPanAnimId: number | null = null;
+
+  focusTableOnCanvas(tableName: string): void {
+    const table = this.svc.tables.find(t => t.name === tableName);
+    if (!table) return;
+
+    let pos = this.svc.tablePositions[tableName];
+    if (!pos) {
+      pos = { x: (table as any).x || 100, y: (table as any).y || 100 };
+    }
+    if (!pos) return;
+
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
+
+    const viewportW = canvas.clientWidth || window.innerWidth;
+    const viewportH = canvas.clientHeight || window.innerHeight;
+
+    const scale = this.svc.view.scale || 1.0;
+    const cardW = (pos as any).width || (table as any).width || this.svc.getTableWidth(table.name, table.columns);
+    const cardH = (pos as any).height || (table as any).height || this.svc.getTableHeight(table.columns);
+
+    const centerX = pos.x + (cardW / 2);
+    const centerY = pos.y + (cardH / 2);
+
+    const startX = this.svc.view.x;
+    const startY = this.svc.view.y;
+    const targetX = (viewportW / 2) - (centerX * scale);
+    const targetY = (viewportH / 2) - (centerY * scale);
+
+    if (this.focusPanAnimId !== null) {
+      cancelAnimationFrame(this.focusPanAnimId);
+      this.focusPanAnimId = null;
+    }
+
+    const startTime = performance.now();
+    const duration = 320;
+
+    const animatePan = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+      this.svc.view.x = startX + (targetX - startX) * easeProgress;
+      this.svc.view.y = startY + (targetY - startY) * easeProgress;
+      this.scheduleDraw();
+
+      if (progress < 1) {
+        this.focusPanAnimId = requestAnimationFrame(animatePan);
+      } else {
+        this.focusPanAnimId = null;
+        this.svc.view.x = targetX;
+        this.svc.view.y = targetY;
+        this.scheduleDraw();
+      }
+    };
+
+    this.focusPanAnimId = requestAnimationFrame(animatePan);
   }
 
   private zoomBy(factor: number): void {

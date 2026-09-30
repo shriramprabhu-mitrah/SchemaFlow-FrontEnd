@@ -302,14 +302,10 @@ body.light-theme .editor-shell {
   }
 }
 
-app-sidebar.collapsed ~ #editor-pane #editor-toolbar {
-  padding-left: 36px !important;
+app-sidebar.collapsed ~ app-docs #docs-pane .docs-header,
+app-sidebar.collapsed ~ app-docs .docs-header {
+  padding-left: 42px !important;
 }
-
-app-sidebar.collapsed ~ app-diagram-inspector .inspector-header {
-  padding-left: 36px !important;
-}
-
 #highlight {
   background-color: transparent !important;
   background: transparent !important;

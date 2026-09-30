@@ -666,6 +666,15 @@ export class DashboardService {
   revertRequested$ = new Subject<void>();
   closeVersionHistory$ = new Subject<void>();
 
+  focusTableOnCanvas$ = new Subject<string>();
+
+  focusTableOnCanvas(tableName: string): void {
+    if (!tableName) return;
+    this.hoveredTableName = tableName;
+    this.focusTableOnCanvas$.next(tableName);
+    this.forceRedraw$.next();
+  }
+
   showUpgradeModal$ = new Subject<string>();
 
   showUpgradeModal(featureKey: string = ''): void {
