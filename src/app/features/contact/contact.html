@@ -43,15 +43,41 @@
           <input type="text" class="form-input" formControlName="company_name" />
         </div>
 
-        <div class="form-group">
-          <label>Subject</label>
-          <input type="text" class="form-input" formControlName="subject" />
+        <div class="form-row">
+          <div class="form-group half">
+            <label>Subject</label>
+            <input type="text" class="form-input" formControlName="subject" />
+          </div>
+          <div class="form-group half">
+            <label>Mobile Number <span class="text-danger">*</span></label>
+            <input type="tel" class="form-input" formControlName="phone_number" />
+            <div *ngIf="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched" class="error-message">Valid phone number is required.</div>
+          </div>
         </div>
 
         <div class="form-group">
           <label>What is the current issue that you are facing? <span class="text-danger">*</span></label>
           <textarea class="form-input textarea-tall" formControlName="project_details"></textarea>
           <div *ngIf="contactForm.get('project_details')?.invalid && contactForm.get('project_details')?.touched" class="error-message">This field is required.</div>
+        </div>
+
+        <div class="form-group">
+          <label>Upload Image <span class="sub-label" style="display:inline; margin-left: 4px;">(Optional for issues)</span></label>
+          <div class="custom-file-upload">
+            <label for="file-upload" class="file-upload-label"
+              [class.dragover]="isDragging()"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>{{ selectedFileName() ? selectedFileName() : 'Click or drag and drop to select an image' }}</span>
+            </label>
+            <input id="file-upload" type="file" class="hidden-file-input" accept="image/*" (change)="onFileChange($event)" />
+          </div>
         </div>
 
         <div *ngIf="submitError() !== ''" class="submit-error-message">
