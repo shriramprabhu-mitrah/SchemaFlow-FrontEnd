@@ -1554,6 +1554,8 @@ html[data-theme="dark"] {
   .version-history-img,
   .share-panel-img,
   .team-workspace-img,
+  .sql-compare-img,
+  .dbnexus-ai-img,
   .hero-animation-img {
     filter: none !important;
     background: transparent;
@@ -2005,4 +2007,41 @@ html[data-theme="dark"] .hero-animation-wrapper {
   .hero-animation-wrapper {
     margin: 0 auto;
   }
+}
+
+/* AI Animation Container */
+.ai-animation-container {
+  width: 1200px;
+  max-width: 100%;
+  margin: 0 auto;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  background: transparent;
+  aspect-ratio: 1912 / 892;
+}
+
+html[data-theme="dark"] .ai-animation-container {
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+
+/* Dark Theme Border for images */
+.dark-theme-border {
+  border-radius: 12px;
+  box-shadow: 0 20px 45px -10px rgba(59, 130, 246, 0.22), 0 6px 18px -3px rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme="dark"] .dark-theme-border {
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+
+/* Hide white halo for specific images */
+html[data-theme="dark"] .zigzag-image.no-glow::before,
+html[data-theme="dark"] .zigzag-image.no-glow::after {
+  display: none !important;
 }

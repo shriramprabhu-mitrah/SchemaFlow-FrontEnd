@@ -112,3 +112,41 @@ export class HomeComponent implements OnInit {
     this.svc.showToast('Logged out successfully.', 2500, 'success');
   }
 }
+
+// Trigger recompile
+
+// Trigger reload again
+
+// Trigger reload again 2
+
+// Trigger reload again 3
+
+// Trigger reload again 4
+
+// Trigger reload again 5
+
+// Trigger reload again 6
+
+// Trigger reload again 7
+
+// Trigger reload again 8
+
+// Trigger reload again 9
+
+// Trigger reload again 10
+
+// Trigger reload again 11
+
+// Trigger reload again 12
+
+// Trigger reload again 13
+
+// Trigger reload again 14
+
+// Trigger reload again 15
+
+// Trigger reload again 16
+
+// Trigger reload again 17
+
+// Trigger reload again 15
