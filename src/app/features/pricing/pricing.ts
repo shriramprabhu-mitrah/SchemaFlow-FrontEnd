@@ -10,14 +10,13 @@ import { DashboardService } from '../../core/services/dashboard.service';
 import { OrganizationService } from '../organization/services/organization.service';
 import { EntitlementService } from '../../core/services/entitlement.service';
 import { SeoService } from '../../core/services/seo.service';
-import { ContactSalesModalComponent } from '../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 import { Footer } from '../../shared/components/footer/footer';
 import { environment } from '../../../environment/environment';
 
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent, Footer],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer],
   templateUrl: './pricing.html',
 })
 export class PricingComponent implements OnInit {
@@ -618,9 +617,7 @@ export class PricingComponent implements OnInit {
   contactModalMessage = 'Your free trial has expired. To continue using premium features, please contact our sales team.';
 
   openContactModal(): void {
-    const trialDuration = this.formatTrialDuration();
-    this.contactModalMessage = `Your ${trialDuration} free trial has expired. To continue using premium features, please contact our sales team.`;
-    this.showContactModal = true;
+    window.open('/contact', '_blank');
   }
 
   closeContactModal(): void {
@@ -687,8 +684,7 @@ export class PricingComponent implements OnInit {
 
   contactSalesFromAlert(): void {
     this.closePlanSwitchAlert();
-    this.contactModalMessage = 'If you want to switch to another plan, please cancel your ongoing plan first.';
-    this.showContactModal = true;
+    window.open('/contact', '_blank');
   }
 
   selectPlan(plan: any): void {
@@ -712,14 +708,12 @@ export class PricingComponent implements OnInit {
     }
 
     if (this.auth.isOrganizationMember() && plan.slug !== 'free' && plan.slug !== this.currentPlanSlug) {
-      this.contactModalMessage = 'You are a team member and cannot modify the organization plan. Please contact your administrator or sales.';
-      this.showContactModal = true;
+      window.open('/contact', '_blank');
       return;
     }
 
     if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
-      this.contactModalMessage = 'To switch to a different plan, you need to cancel your ongoing plan first. Please contact sales.';
-      this.showContactModal = true;
+      window.open('/contact', '_blank');
       return;
     }
 

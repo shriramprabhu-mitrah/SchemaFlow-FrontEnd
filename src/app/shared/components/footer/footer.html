@@ -38,7 +38,7 @@
         <a class="footer-link" routerLink="/docs/privacy-policy">Privacy Policy</a>
         <a class="footer-link" routerLink="/docs/refund-policy">Refund Policy</a>
         <a class="footer-link" routerLink="/docs/terms-of-service">Terms of Service</a>
-        <a class="footer-link" href="#" (click)="openContactModal($event)">Contact Us</a>
+        <a class="footer-link" routerLink="/contact" target="_blank">Contact Us</a>
       </div>
     </div>
   </div>
@@ -47,5 +47,4 @@
     <p class="copyright">&copy; 2026 dbNexus. All rights reserved.</p>
   </div>
 </footer>
-
-<app-contact-sales-modal [visible]="isContactModalOpen" (close)="closeContactModal()"></app-contact-sales-modal>
+

@@ -3,12 +3,11 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { Icons } from '../../../core/component/icons/icons';
 import { CommonModule } from '@angular/common';
-import { ContactSalesModalComponent } from '../modals/contact-sales-modal/contact-sales-modal';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ContactSalesModalComponent],
+  imports: [CommonModule, RouterModule, Icons],
   templateUrl: './footer.html',
   styleUrl: './footer.scss',
   host: {
@@ -17,7 +16,6 @@ import { ContactSalesModalComponent } from '../modals/contact-sales-modal/contac
 })
 export class Footer implements OnInit {
   isLoggedIn = false;
-  isContactModalOpen = false;
 
   constructor(
     private auth: AuthService,
@@ -38,12 +36,5 @@ export class Footer implements OnInit {
     }
   }
 
-  openContactModal(event: Event): void {
-    event.preventDefault();
-    this.isContactModalOpen = true;
-  }
 
-  closeContactModal(): void {
-    this.isContactModalOpen = false;
-  }
 }

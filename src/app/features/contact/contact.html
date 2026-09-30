@@ -1,13 +1,34 @@
-<div class="modal-overlay" *ngIf="visible">
-  <div class="modal-content modal-lg-700" [class.success-state]="submitSuccess() === true" (click)="$event.stopPropagation()">
-    <div class="modal-header" *ngIf="submitSuccess() === false">
-      <h3 class="contact-modal-heading">Contact Us</h3>
-      <button class="modal-close ml-auto" (click)="closeModal()">✕</button>
+<div class="contact-page-container">
+  <div class="contact-card" [class.success-state]="submitSuccess() === true">
+    <div class="contact-header" *ngIf="submitSuccess() === false">
+      <h3 class="contact-heading">Contact Us</h3>
+      <p class="contact-subtitle">We'd love to hear from you. Please fill out the form below.</p>
     </div>
 
-    <div class="modal-body">
+    <div class="contact-body">
       <ng-container *ngIf="submitSuccess() === false">
         <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+
+          <div class="contact-info-cards mb-24">
+            <div class="info-card">
+              <div class="info-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
+              <div class="info-content">
+                <h4>Sales</h4>
+                <a href="mailto:sales@dbnexus.io">sales&#64;dbnexus.io</a>
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-mail"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
+              <div class="info-content">
+                <h4>Support</h4>
+                <a href="mailto:shoutout@dbnexus.io">shoutout&#64;dbnexus.io</a>
+              </div>
+            </div>
+          </div>
 
           <div class="form-row">
             <div class="form-group form-col">
@@ -27,6 +48,17 @@
                 class="error-message">
                 Valid email is required.
               </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group form-col">
+              <label class="form-label">Company Name <span class="text-muted">(Optional)</span></label>
+              <input type="text" class="form-input" formControlName="company_name" />
+            </div>
+            <div class="form-group form-col">
+              <label class="form-label">Subject <span class="text-muted">(Optional)</span></label>
+              <input type="text" class="form-input" formControlName="subject" />
             </div>
           </div>
 
@@ -108,6 +140,12 @@
             {{ submitError() }}
           </div>
 
+          <div class="contact-footer">
+            <button class="btn-primary w-full" type="submit" [disabled]="isSubmitting() === true" style="width: 100%;">
+              {{ isSubmitting() === true ? 'Submitting...' : 'Submit Request' }}
+            </button>
+          </div>
+
         </form>
       </ng-container>
 
@@ -121,16 +159,10 @@
         </div>
         <h3 class="success-title">Request Submitted!</h3>
         <div class="success-description">
-          Your request has been submitted to the sales team.<br>We will come back to you shortly.
+          Your request has been submitted to the team.<br>We will come back to you shortly.
         </div>
-        <button class="btn-primary" (click)="closeModal()">Close</button>
+        <button class="btn-primary" (click)="resetForm()">Send Another</button>
       </div>
-    </div>
-
-    <div class="modal-footer" *ngIf="submitSuccess() === false">
-      <button class="btn-primary" (click)="onSubmit()" [disabled]="isSubmitting() === true">
-        {{ isSubmitting() === true ? 'Submitting...' : 'Submit' }}
-      </button>
     </div>
   </div>
 </div>

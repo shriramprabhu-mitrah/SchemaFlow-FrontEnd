@@ -1,20 +1,18 @@
-import { Component, EventEmitter, Input, Output, OnInit, ChangeDetectorRef, NgZone, ViewEncapsulation, HostListener, signal } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone, ViewEncapsulation, HostListener, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { EnquiryService } from '../../../../core/services/enquiry.service';
-import { Icons } from '../../../../core/component/icons/icons';
+import { EnquiryService } from '../../core/services/enquiry.service';
+import { Icons } from '../../core/component/icons/icons';
 
 @Component({
-  selector: 'app-contact-sales-modal',
+  selector: 'app-contact',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, Icons],
-  templateUrl: './contact-sales-modal.html',
-  styleUrls: ['./contact-sales-modal.scss'],
+  templateUrl: './contact.html',
+  styleUrls: ['./contact.scss'],
   encapsulation: ViewEncapsulation.None
 })
-export class ContactSalesModalComponent implements OnInit {
-  @Input() visible = false;
-  @Output() close = new EventEmitter<void>();
+export class ContactComponent implements OnInit {
   
   contactForm!: FormGroup;
   isSubmitting = signal(false);
@@ -35,6 +33,8 @@ export class ContactSalesModalComponent implements OnInit {
     this.contactForm = this.fb.group({
       name: ['', Validators.required],
       company_email: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)]],
+      company_name: [''],
+      subject: [''],
       enquiry_type: ['Sales', Validators.required],
       project_details: ['', Validators.required],
       phone_number: ['', [Validators.required, Validators.pattern(/^[0-9\+\-\s\(\)]{10,20}$/)]],
@@ -95,8 +95,7 @@ export class ContactSalesModalComponent implements OnInit {
     this.showCountryDropdown = false;
   }
 
-  closeModal() {
-    this.visible = false;
+  resetForm() {
     this.submitSuccess.set(false);
     this.submitError.set('');
     this.showCountryDropdown = false;
@@ -105,7 +104,6 @@ export class ContactSalesModalComponent implements OnInit {
     this.contactForm.patchValue({ enquiry_type: 'Sales' });
     this.contactForm.markAsUntouched();
     this.contactForm.markAsPristine();
-    this.close.emit();
   }
 
   onSubmit() {
@@ -128,7 +126,7 @@ export class ContactSalesModalComponent implements OnInit {
         this.isSubmitting.set(false);
         this.submitSuccess.set(true);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isSubmitting.set(false);
         this.submitError.set(err.error?.message || 'Something went wrong. Please try again.');
       }
