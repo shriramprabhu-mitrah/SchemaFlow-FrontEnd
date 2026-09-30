@@ -43,6 +43,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile').then(m => m.ProfileComponent),
   },
   {
+    path: 'contact',
+    title: 'Contact Us - DBNexus',
+    loadComponent: () => import('./features/contact/contact').then(m => m.ContactComponent),
+  },
+  {
     // Individual user subscription management
     path: 'profile/subscription',
     title: 'Subscription - DBNexus',

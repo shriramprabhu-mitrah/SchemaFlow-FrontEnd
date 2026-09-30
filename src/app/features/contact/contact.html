@@ -1,0 +1,151 @@
+<div class="contact-page-wrapper">
+  
+  <div class="header-brand" routerLink="/" style="cursor: pointer;">
+    <app-icons name="db-diagram-logo" size="56"></app-icons>
+    <span class="brand-text">dbNexus</span>
+  </div>
+
+  <div class="contact-form-card" [class.success-state]="submitSuccess() === true">
+    
+    <ng-container *ngIf="submitSuccess() === false">
+      <div class="contact-card-header">
+        <h2>Contact the dbNexus Team</h2>
+        <p>Need help with your database schemas, diagrams, or documentation? We're here to help.</p>
+      </div>
+      
+      <hr class="contact-divider" />
+
+      <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+        
+        <div class="form-group">
+          <label>Email <span class="text-danger">*</span></label>
+          <input type="email" class="form-input" formControlName="company_email" />
+          <span class="sub-label">example&#64;example.com</span>
+          <div *ngIf="contactForm.get('company_email')?.invalid && contactForm.get('company_email')?.touched" class="error-message">Valid email is required.</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label>Your Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-input" formControlName="first_name" />
+            <span class="sub-label">First Name</span>
+            <div *ngIf="contactForm.get('first_name')?.invalid && contactForm.get('first_name')?.touched" class="error-message">First name is required.</div>
+          </div>
+          <div class="form-group half no-label">
+            <input type="text" class="form-input" formControlName="last_name" />
+            <span class="sub-label">Last Name</span>
+            <div *ngIf="contactForm.get('last_name')?.invalid && contactForm.get('last_name')?.touched" class="error-message">Last name is required.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label>Mobile Number <span class="text-danger">*</span></label>
+            <input type="tel" class="form-input" formControlName="phone_number" />
+            <div *ngIf="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched" class="error-message">
+              <span *ngIf="contactForm.get('phone_number')?.errors?.['required']">Mobile number is required.</span>
+              <span *ngIf="contactForm.get('phone_number')?.errors?.['pattern']">Enter a valid phone number with 10 to 15 digits.</span>
+            </div>
+          </div>
+          <div class="form-group half">
+            <label>Country <span class="sub-label">(Optional)</span></label>
+            <div class="custom-dropdown-container" (click)="$event.stopPropagation()">
+              <button type="button" class="form-input custom-dropdown-trigger" (click)="showCountryDropdown = !showCountryDropdown">
+                <span [class.placeholder]="!contactForm.get('country')?.value">
+                  {{ contactForm.get('country')?.value || 'Select Country' }}
+                </span>
+                <svg class="dropdown-chevron" [class.open]="showCountryDropdown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-dropdown-menu" *ngIf="showCountryDropdown">
+                <button type="button" class="custom-dropdown-option"
+                  *ngFor="let country of countries"
+                  [class.selected]="contactForm.get('country')?.value === country"
+                  (click)="contactForm.patchValue({ country: country }); showCountryDropdown = false">
+                  {{ country }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label>Company Name <span class="sub-label">(Optional)</span></label>
+            <input type="text" class="form-input" formControlName="company_name" />
+          </div>
+          <div class="form-group half">
+            <label>Subject <span class="sub-label">(Optional)</span></label>
+            <input type="text" class="form-input" formControlName="subject" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Enquiry Type <span class="text-danger">*</span></label>
+          <div class="btn-group-toggle">
+            <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Sales'" (click)="setEnquiryType('Sales')">
+              <span class="toggle-label">$ Sales</span>
+              <span class="toggle-sub-text">sales@dbnexus.io</span>
+            </button>
+            <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Support'" (click)="setEnquiryType('Support')">
+              <span class="toggle-label">@ Support</span>
+              <span class="toggle-sub-text">shoutout@dbnexus.io</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>What is the current issue that you are facing? <span class="text-danger">*</span></label>
+          <textarea class="form-input textarea-tall" formControlName="project_details"></textarea>
+          <div *ngIf="contactForm.get('project_details')?.invalid && contactForm.get('project_details')?.touched" class="error-message">This field is required.</div>
+        </div>
+
+        <div class="form-group">
+          <label>Upload Image <span class="sub-label">(Optional for issues)</span></label>
+          <div class="custom-file-upload">
+            <label for="file-upload" class="file-upload-label"
+              [class.dragover]="isDragging()"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>{{ selectedFileName() ? selectedFileName() : 'Click or drag and drop to select an image' }}</span>
+            </label>
+            <input id="file-upload" type="file" class="hidden-file-input" style="display: none;" accept="image/*" (change)="onFileChange($event)" />
+          </div>
+        </div>
+
+        <div *ngIf="submitError() !== ''" class="submit-error-message">
+          {{ submitError() }}
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit-green" [disabled]="isSubmitting() === true">
+            {{ isSubmitting() === true ? 'Submitting...' : 'Submit' }}
+          </button>
+        </div>
+
+      </form>
+    </ng-container>
+
+    <div *ngIf="submitSuccess() === true" class="success-container">
+      <div class="success-icon-wrapper">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h3 class="success-title">Request Submitted!</h3>
+      <div class="success-description">
+        Your request has been submitted to the team.<br>We will come back to you shortly.
+      </div>
+      <button class="btn-submit-green" (click)="resetForm()">Send Another</button>
+    </div>
+
+  </div>
+</div>

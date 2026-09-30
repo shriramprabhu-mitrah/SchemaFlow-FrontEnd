@@ -9,14 +9,13 @@ import { ButtonComponent } from '../../../../shared/button/button';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { OrganizationService } from '../../../organization/services/organization.service';
 import { timeout } from 'rxjs';
-import { ContactSalesModalComponent } from '../../../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
 import { environment } from '../../../../../environment/environment';
 
 @Component({
   selector: 'app-upgrade-modal',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent],
   templateUrl: './upgrade-modal.html'
 })
 export class UpgradeModalComponent implements OnInit {
@@ -592,8 +591,7 @@ export class UpgradeModalComponent implements OnInit {
 
   contactSalesFromAlert(): void {
     this.closePlanSwitchAlert();
-    this.contactModalMessage = 'If you want to switch to another plan, please cancel your ongoing plan first.';
-    this.showContactModal = true;
+    window.open('/contact', '_blank');
   }
 
   selectPlan(plan: any): void {
@@ -620,8 +618,8 @@ export class UpgradeModalComponent implements OnInit {
     }
 
     if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
-      this.contactModalMessage = 'To switch to a different plan, you need to cancel your ongoing plan first. Please contact sales.';
-      this.showContactModal = true;
+      this.closeModal();
+      window.open('/contact', '_blank');
       return;
     }
 

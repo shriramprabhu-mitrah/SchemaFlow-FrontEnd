@@ -798,7 +798,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     private getModelConfigUrl(modelId: number | string): string {
         const template: string = this.appConfig.environment?.adminApiUrls?.aiModelConfig ||
             this.appConfig.environment?.aiModelConfig ||
-            'http://192.168.1.92:4007/api/ai/models/:modelId/config';
+            'http://localhost:4000/api/ai/models/:modelId/config';
 
         return template
             .replace(':modelId', String(modelId))
@@ -1846,7 +1846,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         }
         const chatBase: string = this.appConfig.environment?.adminApiUrls?.aiChat ||
             this.appConfig.environment?.aiChat ||
-            'http://192.168.1.92:4007/api/ai/chat';
+            'http://localhost:4000/api/ai/chat';
         return `${chatBase.replace(/\/+$/, '')}/history/${historyId}`;
     }
 
