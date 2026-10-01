@@ -108,10 +108,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-left: auto;
 
   @media (max-width: 768px) {
-
+margin-left: auto;
     app-button,
     a:not(.mobile-menu-btn) {
       display: none !important;
