@@ -38,7 +38,15 @@
               <span>S.No</span>
             </span>
           </th>
-          <th style="width:20%">
+          <th style="width:8%">
+            <span class="sort-header-clickable" (click)="sortBy('display_order')">
+              <span>ORDER</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'display_order'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:19%">
             <span class="sort-header-clickable" (click)="sortBy('feature_key')">
               <span>KEY</span>
               <span class="sort-icon" [class.active]="sortColumn === 'feature_key'">
@@ -46,7 +54,7 @@
               </span>
             </span>
           </th>
-          <th style="width:26%">
+          <th style="width:23%">
             <span class="sort-header-clickable" (click)="sortBy('name')">
               <span>NAME</span>
               <span class="sort-icon" [class.active]="sortColumn === 'name'">
@@ -54,7 +62,7 @@
               </span>
             </span>
           </th>
-          <th style="width:11%">
+          <th style="width:10%">
             <span class="sort-header-clickable" (click)="sortBy('value_type')">
               <span>TYPE</span>
               <span class="sort-icon" [class.active]="sortColumn === 'value_type'">
@@ -70,7 +78,7 @@
               </span>
             </span>
           </th>
-          <th style="width:10%">
+          <th style="width:9%">
             <span class="sort-header-clickable" (click)="sortBy('status')">
               <span>STATUS</span>
               <span class="sort-icon" [class.active]="sortColumn === 'status'">
@@ -78,12 +86,15 @@
               </span>
             </span>
           </th>
-          <th style="width:16%">ACTIONS</th>
+          <th style="width:14%">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let f of displayFeatures; let i = index">
           <td>{{ paginationStartIndex + i }}</td>
+          <td>
+            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #818cf8; font-weight: 700;">{{ f.display_order ?? 0 }}</span>
+          </td>
           <td><code>{{ f.feature_key }}</code></td>
           <td><strong class="user-name-text">{{ f.name }}</strong></td>
           <td><span class="badge badge-free">{{ f.value_type }}</span></td>
@@ -98,7 +109,7 @@
           </td>
         </tr>
         <tr *ngIf="displayFeatures.length === 0">
-          <td colspan="7" class="empty-table-cell">No features found</td>
+          <td colspan="8" class="empty-table-cell">No features found</td>
         </tr>
       </tbody>
     </table>
@@ -172,7 +183,9 @@
           </div>
         </div>
         <div class="form-group"><label class="form-label">Category</label><input class="form-input"
-            [(ngModel)]="form.category"></div>
+            [(ngModel)]="form.category" placeholder="e.g. Diagrams & Editor"></div>
+        <div class="form-group"><label class="form-label">Display Order</label><input class="form-input"
+            type="number" min="0" [(ngModel)]="form.display_order" placeholder="0"></div>
       </div>
       <div class="modal-footer"><button class="btn-secondary" (click)="closeModal()">Cancel</button><button
           class="btn-primary" (click)="save()">{{ editMode ? 'Update' : 'Create' }}</button></div>

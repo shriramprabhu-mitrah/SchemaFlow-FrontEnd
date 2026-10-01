@@ -31,7 +31,7 @@ export class FeatureManagementComponent implements OnInit {
     this.showLimitDropdown = false;
     this.showValueTypeDropdown = false;
   }
-  sortColumn = 'name';
+  sortColumn = 'display_order';
   sortAsc = true;
   loading = true;
   showModal = false;
@@ -162,7 +162,7 @@ export class FeatureManagementComponent implements OnInit {
 
   openEdit(f: any): void {
     this.editMode = true;
-    this.form = { ...f };
+    this.form = { ...f, display_order: f.display_order ?? 0 };
     this.formErrors = { name: '', feature_key: '' };
     this.showModal = true;
   }
@@ -172,6 +172,8 @@ export class FeatureManagementComponent implements OnInit {
   save(): void {
     this.formErrors = { name: '', feature_key: '' };
     let hasError = false;
+
+    this.form.display_order = Number(this.form.display_order) || 0;
 
     if (!this.form.name || !this.form.name.trim()) {
       this.formErrors.name = 'Feature name is required.';

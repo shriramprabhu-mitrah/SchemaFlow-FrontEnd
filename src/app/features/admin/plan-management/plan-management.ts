@@ -35,7 +35,7 @@ export class PlanManagementComponent implements OnInit {
   rawPlanEntitlements: any[] = []; // Stores all entitlements for the selected plan
   search = '';
   featureSearch = '';
-  featureSortColumn = 'name';
+  featureSortColumn = 'display_order';
   featureSortAsc = true;
 
   private _featurePage = signal(1);
@@ -65,7 +65,7 @@ export class PlanManagementComponent implements OnInit {
     this.activeShowDropdownId = null;
   }
 
-  sortColumn = 'name';
+  sortColumn = 'display_order';
   sortAsc = true;
 
   private _loading = signal(true);
@@ -697,6 +697,7 @@ export class PlanManagementComponent implements OnInit {
           feature_key: f.feature_key,
           name: f.name,
           value_type: f.value_type,
+          display_order: f.display_order ?? 0,
           value: edited.value,
           limit_value: edited.limit_value,
           display_text: edited.display_text,
@@ -711,6 +712,7 @@ export class PlanManagementComponent implements OnInit {
         feature_key: f.feature_key,
         name: f.name,
         value_type: f.value_type,
+        display_order: f.display_order ?? 0,
         value: existing?.value || 'false',
         limit_value: isNaN(exLimit as number) ? null : exLimit,
         display_text: cleanText,
@@ -775,7 +777,8 @@ export class PlanManagementComponent implements OnInit {
       is_active: true,
       is_custom: false,
       custom_email: '',
-      is_public: true
+      is_public: true,
+      display_order: 0
     };
     this.calculateAnnualPrice();
     this.formErrors = { name: '', slug: '' };
@@ -784,7 +787,7 @@ export class PlanManagementComponent implements OnInit {
 
   openEdit(plan: any): void {
     this.editMode = true;
-    this.form = { ...plan };
+    this.form = { ...plan, display_order: plan.display_order ?? 0 };
     this.calculateAnnualPrice();
     this.formErrors = { name: '', slug: '' };
     this.showModal = true;
@@ -829,6 +832,7 @@ export class PlanManagementComponent implements OnInit {
     this.form.overall_percentage = this.commonSettings.overall_percentage;
     this.form.discount_percentage = this.commonSettings.overall_percentage;
     this.form.trial_days = this.commonSettings.trial_days;
+    this.form.display_order = Number(this.form.display_order) || 0;
 
     const obs = this.editMode
       ? this.admin.updatePlan(this.form.plan_id, this.form)
@@ -890,7 +894,7 @@ export class PlanManagementComponent implements OnInit {
     this.showEntitlementsView = true;
     this.loadingEntitlements = true;
     this.featureSearch = '';
-    this.featureSortColumn = 'name';
+    this.featureSortColumn = 'display_order';
     this.featureSortAsc = true;
     this.featurePage = 1;
     this.editedEntitlementsMap.clear();
