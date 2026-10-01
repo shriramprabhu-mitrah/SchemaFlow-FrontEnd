@@ -1840,14 +1840,38 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     copySnippet(snippet: string, msgId: string): void {
         if (!snippet) return;
-        navigator.clipboard.writeText(snippet).then(() => {
+        const onCopied = () => {
             this.copiedSnippetId.set(msgId);
             setTimeout(() => {
                 if (this.copiedSnippetId() === msgId) {
                     this.copiedSnippetId.set(null);
                 }
             }, 2000);
-        });
+        };
+
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(snippet).then(onCopied).catch(() => {
+                this.fallbackCopySnippet(snippet, onCopied);
+            });
+            return;
+        }
+
+        this.fallbackCopySnippet(snippet, onCopied);
+    }
+
+    private fallbackCopySnippet(snippet: string, onCopied: () => void): void {
+        const textArea = document.createElement('textarea');
+        textArea.value = snippet;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            if (document.execCommand('copy')) onCopied();
+        } finally {
+            document.body.removeChild(textArea);
+        }
     }
 
     private extractTableNames(code: string): string[] {
