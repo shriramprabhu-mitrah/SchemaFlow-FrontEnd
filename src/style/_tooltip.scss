@@ -51,6 +51,12 @@
     content: none !important;
     display: none !important;
   }
+
+  &:active::after,
+  &:active::before {
+    display: none !important;
+    content: none !important;
+  }
 }
 
 /* Tooltip Positions */
@@ -255,5 +261,14 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Disable tooltips entirely on touch devices to prevent sticky tooltips on tap */
+@media (hover: none) {
+  .tt::after,
+  .tt::before {
+    display: none !important;
+    content: none !important;
   }
 }

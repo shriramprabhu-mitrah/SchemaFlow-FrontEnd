@@ -21,6 +21,10 @@
   top: 0;
   z-index: 100;
   padding: 16px 40px;
+
+  @media (max-width: 768px) {
+    padding: 16px 20px !important;
+  }
 }
 
 .dark-text {
@@ -64,13 +68,14 @@
   background: linear-gradient(135deg, #32b0ac, #2563eb) !important;
 }
 
+.clean-header .mobile-menu-btn {
+  color: #0f172a !important;
+}
+
 /* HERO SECTION OVERRIDES */
 .text-center-override {
   text-align: center !important;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
 }
 
 .hero-content-centered {
@@ -260,6 +265,8 @@
   border-bottom: 1px solid #e2e8f0;
   padding: 80px 24px;
   margin-bottom: 80px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .problem-container {
@@ -278,18 +285,19 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
   margin-bottom: 16px;
-  display: block;
+  display: inline-block;
 }
 
 .problem-header h2 {
-  font-size: 36px;
+  font-size: clamp(28px, 5vw, 36px);
   font-weight: 800;
   color: #0f172a;
   margin-bottom: 16px;
+  overflow-wrap: break-word;
 }
 
 .problem-header p {
-  font-size: 18px;
+  font-size: clamp(16px, 3vw, 18px);
   color: #475569;
   max-width: 600px;
   margin: 0 auto;
@@ -347,6 +355,8 @@
   max-width: 1200px;
   margin: 0 auto 100px;
   padding: 0 24px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-header {
@@ -360,13 +370,14 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
   margin-bottom: 16px;
-  display: block;
+  display: inline-block;
 }
 
 .section-header h2 {
-  font-size: 36px;
+  font-size: clamp(24px, 5vw, 36px);
   font-weight: 800;
   color: #0f172a;
+  overflow-wrap: break-word;
 }
 
 .zigzag-row {
@@ -418,15 +429,16 @@
 }
 
 .zigzag-content h2 {
-  font-size: 40px;
+  font-size: clamp(28px, 5vw, 40px);
   font-weight: 800;
   color: #0f172a;
   margin-bottom: 24px;
   line-height: 1.1;
+  overflow-wrap: break-word;
 }
 
 .zigzag-content p {
-  font-size: 18px;
+  font-size: clamp(16px, 3vw, 18px);
   color: #475569;
   line-height: 1.6;
 }
@@ -695,10 +707,14 @@
 
   .zigzag-content {
     order: 1;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .zigzag-image {
     order: 2;
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -1042,6 +1058,12 @@
   margin-top: 24px;
 }
 
+@media (max-width: 768px) {
+  .feature-detail-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 .detail-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -1283,6 +1305,10 @@
 @media (max-width: 900px) {
   .feature-card-wrapper {
     padding: 32px 20px;
+    margin-bottom: 32px;
+  }
+  .feature-card-wrapper:last-child {
+    margin-bottom: 0;
   }
 }
 
@@ -1749,9 +1775,7 @@ html[data-theme="dark"] {
   position: relative;
   min-height: auto;
   padding: 40px 0;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
