@@ -103,6 +103,7 @@
     "aiChatHistoryById": "http://localhost:4007/api/ai/chat/history/{id}",
     "aiSessions": "http://localhost:4007/api/ai/sessions",
     "aiSessionHistory": "http://localhost:4007/api/ai/sessions/{sessionId}/history",
+    "deleteSessionHistory": "http://localhost:4007/api/ai/sessions/:sessionId/history",
     "aiModelConfig": "http://localhost:4007/api/ai/models/:modelId/config"
   }
 }

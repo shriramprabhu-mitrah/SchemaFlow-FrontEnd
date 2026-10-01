@@ -86,6 +86,21 @@
           background: rgba(255, 255, 255, 0.08);
         }
 
+        &.reset-action {
+          svg {
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          &:hover {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+
+            svg {
+              transform: rotate(-35deg);
+            }
+          }
+        }
+
         &.close-action:hover {
           color: #ef4444;
           background: rgba(239, 68, 68, 0.12);
@@ -346,6 +361,18 @@
       &.user-message {
         justify-content: flex-end;
 
+        &::selection,
+        *::selection {
+          background: #ffffff !important;
+          color: #1e40af !important;
+        }
+
+        &::-moz-selection,
+        *::-moz-selection {
+          background: #ffffff !important;
+          color: #1e40af !important;
+        }
+
         .msg-bubble {
           background: #2563eb;
           color: #ffffff;
@@ -357,6 +384,18 @@
           -webkit-user-select: text;
           cursor: text;
 
+          &::selection,
+          *::selection {
+            background: #ffffff !important;
+            color: #1e40af !important;
+          }
+
+          &::-moz-selection,
+          *::-moz-selection {
+            background: #ffffff !important;
+            color: #1e40af !important;
+          }
+
           .msg-text {
             font-size: 13px;
             line-height: 1.45;
@@ -366,6 +405,18 @@
             user-select: text;
             -webkit-user-select: text;
             cursor: text;
+
+            &::selection,
+            *::selection {
+              background: #ffffff !important;
+              color: #1e40af !important;
+            }
+
+            &::-moz-selection,
+            *::-moz-selection {
+              background: #ffffff !important;
+              color: #1e40af !important;
+            }
           }
         }
 
@@ -1229,6 +1280,10 @@
         .usage-trigger-text {
           user-select: none;
           letter-spacing: -0.01em;
+
+          &.text-danger {
+            color: #ef4444;
+          }
         }
       }
 
@@ -1285,6 +1340,14 @@
             background: #3b82f6;
             border-radius: 9999px;
             transition: width 0.3s ease;
+
+            &.near-limit {
+              background: #f59e0b;
+            }
+
+            &.limit-reached {
+              background: #ef4444;
+            }
           }
         }
 
@@ -1577,6 +1640,11 @@
           background: #e0f2fe !important;
         }
 
+        &.reset-action:hover {
+          color: #0284c7 !important;
+          background: #e0f2fe !important;
+        }
+
         &.close-action:hover {
           color: #ef4444 !important;
           background: #fee2e2 !important;
@@ -1685,13 +1753,49 @@
       }
 
       .chat-message-item.user-message {
+        &::selection,
+        *::selection {
+          background: #ffffff !important;
+          color: #1e40af !important;
+        }
+
+        &::-moz-selection,
+        *::-moz-selection {
+          background: #ffffff !important;
+          color: #1e40af !important;
+        }
+
         .msg-bubble {
           background: #2563eb !important;
           border: none !important;
           box-shadow: 0 2px 8px rgba(37, 99, 235, 0.22) !important;
 
+          &::selection,
+          *::selection {
+            background: #ffffff !important;
+            color: #1e40af !important;
+          }
+
+          &::-moz-selection,
+          *::-moz-selection {
+            background: #ffffff !important;
+            color: #1e40af !important;
+          }
+
           .msg-text {
             color: #ffffff !important;
+
+            &::selection,
+            *::selection {
+              background: #ffffff !important;
+              color: #1e40af !important;
+            }
+
+            &::-moz-selection,
+            *::-moz-selection {
+              background: #ffffff !important;
+              color: #1e40af !important;
+            }
           }
 
           .msg-time {
@@ -2126,6 +2230,14 @@
 
             .usage-progress-bar {
               background: #2563eb !important;
+
+              &.near-limit {
+                background: #f59e0b !important;
+              }
+
+              &.limit-reached {
+                background: #ef4444 !important;
+              }
             }
           }
 

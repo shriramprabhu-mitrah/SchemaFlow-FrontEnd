@@ -139,6 +139,8 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     // Usage Limit Pop-up Card State (dbnexus AI default model)
     isUsagePopupOpen = signal<boolean>(false);
     usedTokens = signal<number>(this.loadStoredUsedTokens());
+    tokenLimit = signal<number>(this.loadStoredTokenLimit());
+    hasRemainingQuota = signal<boolean>(this.loadStoredQuota());
 
     sessionTitle = signal<string>(this.formatSessionTitle());
     promptText = signal<string>('');
@@ -251,7 +253,28 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.appConfig.environment?.aiSessionHistory ||
             '';
         if (template) {
-            return template.replace('{sessionId}', String(sessionId)).replace('{id}', String(sessionId));
+            return template
+                .replace(':sessionId', String(sessionId))
+                .replace('{sessionId}', String(sessionId))
+                .replace('{id}', String(sessionId));
+        }
+        const sessionsBase: string = this.appConfig.environment?.adminApiUrls?.aiSessions ||
+            this.appConfig.environment?.aiSessions ||
+            '';
+        return sessionsBase ? `${sessionsBase.replace(/\/+$/, '')}/${sessionId}/history` : '';
+    }
+
+    private getDeleteSessionHistoryUrl(sessionId: number | string): string {
+        const template: string = this.appConfig.environment?.adminApiUrls?.deleteSessionHistory ||
+            this.appConfig.environment?.deleteSessionHistory ||
+            this.appConfig.environment?.adminApiUrls?.aiSessionHistory ||
+            this.appConfig.environment?.aiSessionHistory ||
+            '';
+        if (template) {
+            return template
+                .replace(':sessionId', String(sessionId))
+                .replace('{sessionId}', String(sessionId))
+                .replace('{id}', String(sessionId));
         }
         const sessionsBase: string = this.appConfig.environment?.adminApiUrls?.aiSessions ||
             this.appConfig.environment?.aiSessions ||
@@ -763,6 +786,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 // Restore any locally stored API keys if not returned by server
                 data.forEach(m => {
                     if (this.isNoApiKeyRequired(m)) {
+                        if (m.max_tokens && typeof m.max_tokens === 'number' && m.max_tokens > 0) {
+                            if (!localStorage.getItem('dbnexus_ai_limit')) {
+                                this.tokenLimit.set(m.max_tokens);
+                            }
+                        }
                         return;
                     }
                     const savedKey = this.getSavedApiKey(m);
@@ -798,7 +826,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     private getModelConfigUrl(modelId: number | string): string {
         const template: string = this.appConfig.environment?.adminApiUrls?.aiModelConfig ||
             this.appConfig.environment?.aiModelConfig ||
-            'http://localhost:4000/api/ai/models/:modelId/config';
+            '';
+
+        if (!template) return '';
 
         return template
             .replace(':modelId', String(modelId))
@@ -850,25 +880,27 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         // Check if existing config is present on server if not present locally
         if (!this.apiKeyInput) {
             const url = this.getModelConfigUrl(model.id);
-            this.http.get<any>(url, { withCredentials: true }).subscribe({
-                next: (res) => {
-                    const cfg = res?.data || res;
-                    if (cfg) {
-                        if (cfg.api_key && !this.apiKeyInput) {
-                            this.apiKeyInput = cfg.api_key;
-                            model.api_key = cfg.api_key;
-                            model.has_api_key = true;
+            if (url) {
+                this.http.get<any>(url, { withCredentials: true }).subscribe({
+                    next: (res) => {
+                        const cfg = res?.data || res;
+                        if (cfg) {
+                            if (cfg.api_key && !this.apiKeyInput) {
+                                this.apiKeyInput = cfg.api_key;
+                                model.api_key = cfg.api_key;
+                                model.has_api_key = true;
+                            }
+                            if (cfg.max_tokens) {
+                                this.maxTokensInput = cfg.max_tokens;
+                                model.max_tokens = cfg.max_tokens;
+                            }
                         }
-                        if (cfg.max_tokens) {
-                            this.maxTokensInput = cfg.max_tokens;
-                            model.max_tokens = cfg.max_tokens;
-                        }
+                    },
+                    error: () => {
+                        // Silently ignore if not configured yet
                     }
-                },
-                error: () => {
-                    // Silently ignore if not configured yet
-                }
-            });
+                });
+            }
         }
     }
 
@@ -906,6 +938,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         };
 
         const url = this.getModelConfigUrl(modelId);
+        if (!url) {
+            this.isSavingApiKey.set(false);
+            this.svc.showToast('AI Model Config endpoint not configured', 3000, 'error');
+            return;
+        }
 
         const applySuccess = (res?: any) => {
             this.isSavingApiKey.set(false);
@@ -1050,6 +1087,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             if (this.isNoApiKeyRequired(bestModel)) {
                 this.svc.showToast('Using dbnexus AI (no API key required)', 2500, 'info');
             }
+        }
+
+        if (this.isNoApiKeyRequired(currentModel) && (!this.hasRemainingQuota() || (this.getMaxTokens() > 0 && this.usedTokens() >= this.getMaxTokens()))) {
+            this.svc.showToast('Monthly token usage limit reached for dbnexus AI. Please switch to another model or configure an API key.', 4000, 'error');
+            return;
         }
 
         const userMsg: ChatMessage = {
@@ -1358,24 +1400,39 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             });
         }
 
-        // Update token usage for dbnexus AI
+        // Update token usage and limit for dbnexus AI default model
         if (this.isNoApiKeyRequired(currentModel)) {
-            const rawTokens = res?.data?.used_tokens ?? res?.data?.tokens_used ?? res?.data?.usedTokens ??
-                res?.data?.usage?.total_tokens ?? res?.data?.total_tokens ?? res?.data?.tokens ??
-                res?.used_tokens ?? res?.tokens_used ?? res?.total_tokens;
+            const data = res?.data;
 
-            if (rawTokens !== undefined && rawTokens !== null && !isNaN(Number(rawTokens))) {
-                const countNum = Number(rawTokens);
-                if (res?.data?.is_cumulative || res?.data?.used_tokens !== undefined || res?.data?.tokens_used !== undefined) {
-                    this.updateUsedTokens(countNum);
-                } else {
-                    this.updateUsedTokens(this.usedTokens() + countNum);
+            // 1. Update Limit from response if provided (e.g. data.limit = 50000)
+            const responseLimit = data?.limit ?? res?.limit;
+            if (responseLimit !== undefined && responseLimit !== null && !isNaN(Number(responseLimit))) {
+                const limitNum = Number(responseLimit);
+                this.tokenLimit.set(limitNum);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('dbnexus_ai_limit', String(limitNum));
                 }
+            }
+
+            // 2. Update Usage from response (e.g. data.usage = 20255)
+            const responseUsage = data?.usage ?? data?.used_tokens ?? data?.tokens_used ?? data?.usedTokens;
+            if (responseUsage !== undefined && responseUsage !== null && !isNaN(Number(responseUsage))) {
+                this.updateUsedTokens(Number(responseUsage));
             } else {
-                const queryText = userMsg?.text || '';
-                const respText = (res?.data?.explanation || res?.data?.answer || res?.message || '') + (res?.data?.dbml_query || '');
-                const estimatedTokens = Math.max(15, Math.ceil((queryText.length + respText.length) / 4));
-                this.updateUsedTokens(this.usedTokens() + estimatedTokens);
+                const rawTokens = data?.total_tokens ?? data?.tokens ?? res?.total_tokens;
+                if (rawTokens !== undefined && rawTokens !== null && !isNaN(Number(rawTokens))) {
+                    this.updateUsedTokens(this.usedTokens() + Number(rawTokens));
+                }
+            }
+
+            // 3. Update Remaining Quota boolean flag if provided (e.g. data.hasRemainingQuota = true)
+            const remainingQuota = data?.hasRemainingQuota ?? res?.hasRemainingQuota;
+            if (remainingQuota !== undefined && remainingQuota !== null) {
+                const hasQuota = Boolean(remainingQuota);
+                this.hasRemainingQuota.set(hasQuota);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('dbnexus_ai_has_quota', String(hasQuota));
+                }
             }
         }
 
@@ -1400,15 +1457,41 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     loadStoredUsedTokens(): number {
-        if (typeof window === 'undefined') return 13635;
+        if (typeof window === 'undefined') return 0;
         const stored = localStorage.getItem('dbnexus_ai_used_tokens');
-        if (stored && !isNaN(Number(stored))) {
+        // Clear any old static dummy data if present
+        if (stored === '13635') {
+            localStorage.removeItem('dbnexus_ai_used_tokens');
+            return 0;
+        }
+        if (stored !== null && stored !== undefined && !isNaN(Number(stored))) {
             return Number(stored);
         }
-        return 13635;
+        return 0;
+    }
+
+    loadStoredTokenLimit(): number {
+        if (typeof window === 'undefined') return 50000;
+        const stored = localStorage.getItem('dbnexus_ai_limit');
+        if (stored !== null && stored !== undefined && !isNaN(Number(stored)) && Number(stored) > 0) {
+            return Number(stored);
+        }
+        return 50000;
+    }
+
+    loadStoredQuota(): boolean {
+        if (typeof window === 'undefined') return true;
+        const stored = localStorage.getItem('dbnexus_ai_has_quota');
+        if (stored === 'false') {
+            return false;
+        }
+        return true;
     }
 
     getMaxTokens(): number {
+        if (this.tokenLimit() > 0) {
+            return this.tokenLimit();
+        }
         const model = this.selectedModel();
         if (model && model.max_tokens && typeof model.max_tokens === 'number' && model.max_tokens > 0) {
             return model.max_tokens;
@@ -1605,11 +1688,73 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         }, 80);
     }
 
-    startNewChat(): void {
+    resetChat(): void {
+        if (this.isDeletingChat() || this.isCreatingSession()) return;
+
+        const sessionId = this.currentSessionId();
+        if (!sessionId) {
+            this.startNewChat('Chat reset successfully');
+            return;
+        }
+
+        const deleteUrl = this.getDeleteSessionHistoryUrl(sessionId);
+        if (!deleteUrl) {
+            console.warn('deleteSessionHistory URL not configured, falling back to startNewChat');
+            this.startNewChat('Chat reset successfully');
+            return;
+        }
+
         if (this.streamingTimer) {
             clearInterval(this.streamingTimer);
             this.streamingTimer = null;
         }
+        this.stopThinkingStatusCycle();
+        this.isThinking.set(false);
+        this.isDeletingChat.set(true);
+
+        this.http.delete<any>(deleteUrl, { withCredentials: true }).subscribe({
+            next: (res) => {
+                this.isDeletingChat.set(false);
+                this.messages.set([]);
+                this.promptText.set('');
+                this.resetTextareaHeight();
+                this.hasMoreHistory.set(false);
+                this.oldestHistoryId = null;
+                this.isLoadingMoreHistory.set(false);
+                this.shouldScrollToBottom = false;
+
+                const currentLatest = this.latestSession();
+                if (currentLatest) {
+                    this.latestSession.set({
+                        ...currentLatest,
+                        message_count: 0
+                    });
+                }
+
+                const msg = res?.message || 'Chat history reset successfully';
+                this.svc.showToast(msg, 2500, 'success');
+            },
+            error: (err) => {
+                this.isDeletingChat.set(false);
+                console.error('Failed to reset chat history:', err);
+                const errMsg = err?.error?.message || err?.message || 'Failed to reset chat history';
+                this.svc.showToast(errMsg, 3000, 'error');
+
+                // If session was not found (404), create a fresh session
+                if (err?.status === 404) {
+                    this.startNewChat('New chat session created');
+                }
+            }
+        });
+    }
+
+    startNewChat(toastMessage: string = 'New chat session created'): void {
+        if (this.streamingTimer) {
+            clearInterval(this.streamingTimer);
+            this.streamingTimer = null;
+        }
+        this.stopThinkingStatusCycle();
+        this.isThinking.set(false);
 
         if (this.isCreatingSession()) return;
 
@@ -1634,6 +1779,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.hasMoreHistory.set(false);
             this.oldestHistoryId = null;
             this.isLoadingMoreHistory.set(false);
+            this.svc.showToast(toastMessage || 'Chat reset', 2500, 'info');
             return;
         }
 
@@ -1661,7 +1807,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 this.oldestHistoryId = null;
                 this.isLoadingMoreHistory.set(false);
 
-                this.svc.showToast('New chat session created', 2500, 'success');
+                this.svc.showToast(toastMessage, 2500, 'success');
             },
             error: (err) => {
                 this.isCreatingSession.set(false);
@@ -1846,8 +1992,8 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         }
         const chatBase: string = this.appConfig.environment?.adminApiUrls?.aiChat ||
             this.appConfig.environment?.aiChat ||
-            'http://localhost:4000/api/ai/chat';
-        return `${chatBase.replace(/\/+$/, '')}/history/${historyId}`;
+            '';
+        return chatBase ? `${chatBase.replace(/\/+$/, '')}/history/${historyId}` : '';
     }
 
     deleteLatestChat(targetMsg?: ChatMessage): void {
@@ -1891,8 +2037,13 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             return;
         }
 
-        this.isDeletingChat.set(true);
         const url = this.getDeleteChatHistoryUrl(historyId);
+        if (!url) {
+            this.svc.showToast('Delete chat endpoint not configured', 3000, 'error');
+            return;
+        }
+
+        this.isDeletingChat.set(true);
 
         this.http.delete<any>(url, { withCredentials: true }).subscribe({
             next: (res) => {
