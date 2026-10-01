@@ -144,7 +144,15 @@
               <span>S.NO</span>
             </span>
           </th>
-          <th style="width:20%">
+          <th style="width:8%">
+            <span class="sort-header-clickable" (click)="sortBy('display_order')">
+              <span>ORDER</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'display_order'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:17%">
             <span class="sort-header-clickable" (click)="sortBy('name')">
               <span>PLAN</span>
               <span class="sort-icon" [class.active]="sortColumn === 'name'">
@@ -152,7 +160,7 @@
               </span>
             </span>
           </th>
-          <th style="width:12%">
+          <th style="width:11%">
             <span class="sort-header-clickable" (click)="sortBy('plan_type')">
               <span>TYPE</span>
               <span class="sort-icon" [class.active]="sortColumn === 'plan_type'">
@@ -160,7 +168,7 @@
               </span>
             </span>
           </th>
-          <th style="width:15%">
+          <th style="width:14%">
             <span class="sort-header-clickable" (click)="sortBy('slug')">
               <span>SLUG</span>
               <span class="sort-icon" [class.active]="sortColumn === 'slug'">
@@ -168,7 +176,7 @@
               </span>
             </span>
           </th>
-          <th style="width:10%">
+          <th style="width:9%">
             <span class="sort-header-clickable" (click)="sortBy('price_monthly')">
               <span>MONTHLY</span>
               <span class="sort-icon" [class.active]="sortColumn === 'price_monthly'">
@@ -176,7 +184,7 @@
               </span>
             </span>
           </th>
-          <th style="width:10%">
+          <th style="width:9%">
             <span class="sort-header-clickable" (click)="sortBy('price_annual')">
               <span>ANNUAL</span>
               <span class="sort-icon" [class.active]="sortColumn === 'price_annual'">
@@ -192,12 +200,15 @@
               </span>
             </span>
           </th>
-          <th style="width:20%">ACTIONS</th>
+          <th style="width:19%">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let plan of displayPlans; let i = index">
           <td>{{ paginationStartIndex + i }}</td>
+          <td>
+            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #818cf8; font-weight: 700;">{{ plan.display_order ?? 0 }}</span>
+          </td>
           <td>
             <strong class="user-name-text">{{ plan.name }}</strong>
             <span *ngIf="plan.is_custom" class="badge"
@@ -237,7 +248,7 @@
           </td>
         </tr>
         <tr *ngIf="displayPlans.length === 0">
-          <td colspan="8" class="empty-table-cell">No plans found</td>
+          <td colspan="9" class="empty-table-cell">No plans found</td>
         </tr>
       </tbody>
     </table>
@@ -290,7 +301,15 @@
     <table class="data-table" *ngIf="!loadingEntitlements">
       <thead>
         <tr>
-          <th style="width:18%">
+          <th style="width:7%">
+            <span class="sort-header-clickable" (click)="sortByFeature('display_order')">
+              <span>ORDER</span>
+              <span class="sort-icon" [class.active]="featureSortColumn === 'display_order'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:17%">
             <span class="sort-header-clickable" (click)="sortByFeature('name')">
               <span>FEATURE NAME</span>
               <span class="sort-icon" [class.active]="featureSortColumn === 'name'">
@@ -298,7 +317,7 @@
               </span>
             </span>
           </th>
-          <th style="width:14%">
+          <th style="width:13%">
             <span class="sort-header-clickable" (click)="sortByFeature('feature_key')">
               <span>KEY</span>
               <span class="sort-icon" [class.active]="featureSortColumn === 'feature_key'">
@@ -314,7 +333,7 @@
               </span>
             </span>
           </th>
-          <th style="width:16%">
+          <th style="width:15%">
             <span class="sort-header-clickable" (click)="sortByFeature('value')">
               <span>ENABLED / VALUE</span>
               <span class="sort-icon" [class.active]="featureSortColumn === 'value'">
@@ -322,7 +341,7 @@
               </span>
             </span>
           </th>
-          <th style="width:10%">
+          <th style="width:9%">
             <span class="sort-header-clickable" (click)="sortByFeature('limit_value')">
               <span>LIMIT</span>
               <span class="sort-icon" [class.active]="featureSortColumn === 'limit_value'">
@@ -330,7 +349,7 @@
               </span>
             </span>
           </th>
-          <th style="width:15%">
+          <th style="width:14%">
             <span class="sort-header-clickable" (click)="sortByFeature('show_in_pricing')">
               <span>SHOW IN PLAN</span>
               <span class="sort-icon" [class.active]="featureSortColumn === 'show_in_pricing'">
@@ -338,7 +357,7 @@
               </span>
             </span>
           </th>
-          <th style="width:19%">
+          <th style="width:17%">
             <span class="sort-header-clickable" (click)="sortByFeature('display_text')">
               <span>DISPLAY TEXT</span>
               <span class="sort-icon" [class.active]="featureSortColumn === 'display_text'">
@@ -351,6 +370,9 @@
       <tbody>
         <tr *ngFor="let ent of paginatedPlanEntitlements" [style.position]="'relative'"
           [style.z-index]="(activeEntDropdownId === ent.feature_id || activeShowDropdownId === ent.feature_id) ? 999 : 1">
+          <td>
+            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #818cf8; font-weight: 700;">{{ ent.display_order ?? 0 }}</span>
+          </td>
           <td><strong class="user-name-text">{{ ent.name }}</strong></td>
           <td><code>{{ ent.feature_key }}</code></td>
           <td><span class="badge badge-free">{{ ent.value_type }}</span></td>
@@ -415,7 +437,7 @@
           </td>
         </tr>
         <tr *ngIf="paginatedPlanEntitlements.length === 0">
-          <td colspan="7" class="empty-table-cell">No features found</td>
+          <td colspan="8" class="empty-table-cell">No features found</td>
         </tr>
       </tbody>
     </table>
@@ -628,6 +650,12 @@
         <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700">HIGHLIGHT COLOR</label>
           <input class="form-input" style="height:38px" [(ngModel)]="form.highlight_color" placeholder="#3b82f6">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="font-size:12px;font-weight:700">DISPLAY ORDER</label>
+          <input class="form-input" style="height:38px" type="number" min="0" [(ngModel)]="form.display_order"
+            (keydown)="preventNonNumeric($event, false)" (input)="sanitizeNonNegativeInput($event, form, 'display_order')"
+            placeholder="0">
         </div>
       </div>
 

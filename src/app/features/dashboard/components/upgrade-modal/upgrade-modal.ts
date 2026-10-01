@@ -192,10 +192,35 @@ export class UpgradeModalComponent implements OnInit {
     }
   }
 
+  getPlanOrder(plan: any): number {
+    if (!plan) return 999999;
+    const val = plan.display_order ?? plan.order;
+    if (val !== null && val !== undefined && val !== '') {
+      const num = Number(val);
+      if (!isNaN(num)) return num;
+    }
+    return 999999;
+  }
+
+  getFeatureOrder(item: any): number {
+    if (!item) return 999999;
+    const val = item.display_order ?? item.feature_order ?? item.order;
+    if (val !== null && val !== undefined && val !== '') {
+      const num = Number(val);
+      if (!isNaN(num)) return num;
+    }
+    return 999999;
+  }
+
   /** Filter allPlans to only show plans that have the restricted featureKey enabled */
   private applyFeatureFilter(): void {
     // Keep all plans loaded in this.plans, displayedPlans will filter what is displayed.
-    this.plans = this.allPlans;
+    this.plans = [...this.allPlans].sort((a, b) => {
+      const orderA = this.getPlanOrder(a);
+      const orderB = this.getPlanOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.plan_id || a.id || 0) - Number(b.plan_id || b.id || 0));
+    });
   }
 
   get isOrganization(): boolean {
@@ -203,11 +228,19 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   get displayedPlans(): any[] {
+    let filtered = [];
     if (this.isOrganization) {
-      return this.plans.filter(p => p.slug === 'team');
+      filtered = this.plans.filter(p => p.slug === 'team');
+    } else {
+      // Individual account: show only Free & Premium
+      filtered = this.plans.filter(p => p.slug === 'free' || p.slug === 'premium');
     }
-    // Individual account: show only Free & Premium
-    return this.plans.filter(p => p.slug === 'free' || p.slug === 'premium');
+    return filtered.sort((a, b) => {
+      const orderA = this.getPlanOrder(a);
+      const orderB = this.getPlanOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.plan_id || a.id || 0) - Number(b.plan_id || b.id || 0));
+    });
   }
 
   closeModal(): void {
@@ -363,6 +396,11 @@ export class UpgradeModalComponent implements OnInit {
       if (ent.feature_key === 'document_view' && ent.limit_value && Number(ent.limit_value) > 0) return false;
 
       return true;
+    }).sort((a: any, b: any) => {
+      const orderA = this.getFeatureOrder(a);
+      const orderB = this.getFeatureOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
     });
   }
 
@@ -437,6 +475,11 @@ export class UpgradeModalComponent implements OnInit {
       const rep = getEntRepresentation(ent);
       const prevRep = prevFeatureMap.get(ent.feature_key);
       return prevRep !== rep;
+    }).sort((a: any, b: any) => {
+      const orderA = this.getFeatureOrder(a);
+      const orderB = this.getFeatureOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
     });
 
     const headerItem = {
@@ -591,7 +634,8 @@ export class UpgradeModalComponent implements OnInit {
 
   contactSalesFromAlert(): void {
     this.closePlanSwitchAlert();
-    window.open('/contact', '_blank');
+    this.closeModal();
+    this.router.navigate(['/contact']);
   }
 
   selectPlan(plan: any): void {
@@ -619,7 +663,7 @@ export class UpgradeModalComponent implements OnInit {
 
     if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
       this.closeModal();
-      window.open('/contact', '_blank');
+      this.router.navigate(['/contact']);
       return;
     }
 

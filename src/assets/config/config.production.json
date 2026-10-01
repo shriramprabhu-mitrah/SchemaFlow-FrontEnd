@@ -104,6 +104,7 @@
     "aiChatHistoryById": "API_URL/api/ai/chat/history/{id}",
     "aiSessions": "API_URL/api/ai/sessions",
     "aiSessionHistory": "API_URL/api/ai/sessions/{sessionId}/history",
+    "deleteSessionHistory": "API_URL/api/ai/sessions/:sessionId/history",
     "aiModelConfig": "API_URL/api/ai/models/:modelId/config"
   }
 }

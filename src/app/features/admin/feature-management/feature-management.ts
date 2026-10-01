@@ -31,7 +31,7 @@ export class FeatureManagementComponent implements OnInit {
     this.showLimitDropdown = false;
     this.showValueTypeDropdown = false;
   }
-  sortColumn = 'name';
+  sortColumn = 'display_order';
   sortAsc = true;
   loading = true;
   showModal = false;
@@ -155,14 +155,14 @@ export class FeatureManagementComponent implements OnInit {
 
   openCreate(): void {
     this.editMode = false;
-    this.form = { feature_key: '', name: '', description: '', value_type: 'boolean', category: '', display_order: 0 };
+    this.form = { feature_key: '', name: '', description: '', long_description: '', value_type: 'boolean', category: '', display_order: 0 };
     this.formErrors = { name: '', feature_key: '' };
     this.showModal = true;
   }
 
   openEdit(f: any): void {
     this.editMode = true;
-    this.form = { ...f };
+    this.form = { ...f, display_order: f.display_order ?? 0 };
     this.formErrors = { name: '', feature_key: '' };
     this.showModal = true;
   }
@@ -172,6 +172,8 @@ export class FeatureManagementComponent implements OnInit {
   save(): void {
     this.formErrors = { name: '', feature_key: '' };
     let hasError = false;
+
+    this.form.display_order = Number(this.form.display_order) || 0;
 
     if (!this.form.name || !this.form.name.trim()) {
       this.formErrors.name = 'Feature name is required.';
@@ -187,6 +189,8 @@ export class FeatureManagementComponent implements OnInit {
       return;
     }
 
+    this.closeModal();
+
     const obs = this.editMode
       ? this.admin.updateFeature(this.form.feature_id, this.form)
       : this.admin.createFeature(this.form);
@@ -194,7 +198,6 @@ export class FeatureManagementComponent implements OnInit {
       next: () => {
         this.ngZone.run(() => {
           this.dashService.showToast(this.editMode ? 'Feature updated successfully!' : 'Feature created successfully!', 3500, 'success');
-          this.closeModal();
           this.load();
         });
       },
