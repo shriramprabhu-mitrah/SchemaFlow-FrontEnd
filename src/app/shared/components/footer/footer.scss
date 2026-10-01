@@ -3,6 +3,40 @@
   width: 100%;
 }
 
+/* Default / Dark theme: Primary accent is #3ec5c1 */
+.footer-link {
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #3ec5c1 !important;
+    transform: translateX(2px);
+  }
+
+  &.active {
+    color: #3ec5c1 !important;
+    font-weight: 600 !important;
+    transform: translateX(3px);
+  }
+}
+
+/* Light theme overrides: Primary accent is #337ab7 */
+:host-context(body.light-theme),
+:host-context(html.light-theme),
+:host-context(.light-theme) {
+  .footer-link {
+    &:hover {
+      color: #337ab7 !important;
+      transform: translateX(2px);
+    }
+
+    &.active {
+      color: #337ab7 !important;
+      font-weight: 600 !important;
+      transform: translateX(3px);
+    }
+  }
+}
+
 .social-icon {
   color: #94a3b8;
   transition: color 0.2s ease, transform 0.2s ease;

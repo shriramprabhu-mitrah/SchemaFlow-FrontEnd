@@ -107,6 +107,8 @@ app-org-layout {
   border-bottom: none;
   min-height: 58px;
   box-sizing: border-box;
+  position: relative !important;
+  width: 100% !important;
 }
 
 .org-sidebar .brand-mark {
@@ -145,7 +147,11 @@ app-org-layout {
 
 .org-sidebar .mobile-close-btn {
   display: none;
-  /* Hidden on desktop by default */
+  position: absolute !important;
+  right: 16px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
 }
 
 .org-sidebar .sidebar-nav {

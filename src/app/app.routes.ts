@@ -43,6 +43,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile').then(m => m.ProfileComponent),
   },
   {
+    path: 'contact',
+    title: 'Contact Us - DBNexus',
+    loadComponent: () => import('./features/contact/contact').then(m => m.ContactComponent),
+  },
+  {
     // Individual user subscription management
     path: 'profile/subscription',
     title: 'Subscription - DBNexus',
@@ -65,6 +70,7 @@ export const routes: Routes = [
       { path: 'dashboard', title: 'Admin Dashboard - DBNexus', loadComponent: () => import('./features/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboardComponent) },
       { path: 'plans', title: 'Plan Management - DBNexus', loadComponent: () => import('./features/admin/plan-management/plan-management').then(m => m.PlanManagementComponent) },
       { path: 'features', title: 'Feature Management - DBNexus', loadComponent: () => import('./features/admin/feature-management/feature-management').then(m => m.FeatureManagementComponent) },
+      { path: 'ai-configs', title: 'AI Configurations - DBNexus', loadComponent: () => import('./features/admin/ai-configs/ai-configs').then(m => m.AiConfigsComponent) },
       { path: 'organizations', title: 'Organization Management - DBNexus', loadComponent: () => import('./features/admin/organization-management/organization-management').then(m => m.OrganizationManagementComponent) },
       { path: 'users', title: 'User Management - DBNexus', loadComponent: () => import('./features/admin/user-management/user-management').then(m => m.UserManagementComponent) },
       { path: 'subscriptions', title: 'Subscription Management - DBNexus', loadComponent: () => import('./features/admin/subscription-management/subscription-management').then(m => m.SubscriptionManagementComponent) },

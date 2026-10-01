@@ -9,9 +9,13 @@
         modern web.</p>
 
       <div class="footer-social-row">
-        <a href="https://www.linkedin.com/company/dbnexusio" target="_blank" rel="noopener noreferrer" class="social-item" aria-label="LinkedIn" title="Follow dbNexus on LinkedIn">
+        <a href="https://www.linkedin.com/company/dbnexusio" target="_blank" rel="noopener noreferrer"
+          class="social-item" aria-label="LinkedIn" title="Follow dbNexus on LinkedIn">
           <app-icons name="linkedin" size="28" color="currentColor"></app-icons>
-          
+        </a>
+        <a href="https://discord.com/invite/63dj5WBF5" target="_blank" rel="noopener noreferrer"
+          class="social-item" aria-label="Discord" title="Join dbNexus on Discord">
+          <app-icons name="discord" size="28" color="currentColor"></app-icons>
         </a>
       </div>
     </div>
@@ -21,8 +25,8 @@
         <h4>Product</h4>
         <a class="footer-link" (click)="onCreateDiagram()">Schema Designer</a>
         <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
-        <a class="footer-link" routerLink="/pricing">Pricing Options</a>
-        <a class="footer-link" routerLink="/diff">SQL Compare</a>
+        <a class="footer-link" routerLink="/pricing" routerLinkActive="active">Pricing</a>
+        <a class="footer-link" routerLink="/diff" routerLinkActive="active">SQL Compare</a>
       </div>
 
       <div class="footer-col">
@@ -37,7 +41,7 @@
         <a class="footer-link" routerLink="/docs/privacy-policy">Privacy Policy</a>
         <a class="footer-link" routerLink="/docs/refund-policy">Refund Policy</a>
         <a class="footer-link" routerLink="/docs/terms-of-service">Terms of Service</a>
-        <a class="footer-link" href="mailto:support@dbnexus.com">Contact Us</a>
+        <a class="footer-link" routerLink="/contact" routerLinkActive="active" (click)="onContactClick()">Contact Us</a>
       </div>
     </div>
   </div>
@@ -46,3 +50,4 @@
     <p class="copyright">&copy; 2026 dbNexus. All rights reserved.</p>
   </div>
 </footer>
+

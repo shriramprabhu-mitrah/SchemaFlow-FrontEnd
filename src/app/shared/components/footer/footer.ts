@@ -35,4 +35,10 @@ export class Footer implements OnInit {
       this.router.navigate(['/dashboard'], { queryParams: { sample: 'true' } });
     }
   }
+
+  onContactClick(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 }

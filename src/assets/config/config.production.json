@@ -92,6 +92,19 @@
     "subscriptions": "API_URL/api/admin/subscriptions",
     "subscriptionById": "API_URL/api/admin/subscriptions/{id}",
     "auditLogs": "API_URL/api/admin/audit-logs",
-    "enquiries": "API_URL/api/admin/enquiries"
+    "enquiries": "API_URL/api/admin/enquiries",
+    "aiProviders": "API_URL/api/ai/admin/providers",
+    "aiProviderManage": "API_URL/api/ai/providers",
+    "aiProviderById": "API_URL/api/ai/providers/{id}",
+    "aiModels": "API_URL/api/ai/admin/models",
+    "aiModelManage": "API_URL/api/ai/models",
+    "aiModelById": "API_URL/api/ai/models/{id}",
+    "aiChatModels": "API_URL/api/ai/models/",
+    "aiChat": "API_URL/api/ai/chat",
+    "aiChatHistoryById": "API_URL/api/ai/chat/history/{id}",
+    "aiSessions": "API_URL/api/ai/sessions",
+    "aiSessionHistory": "API_URL/api/ai/sessions/{sessionId}/history",
+    "deleteSessionHistory": "API_URL/api/ai/sessions/:sessionId/history",
+    "aiModelConfig": "API_URL/api/ai/models/:modelId/config"
   }
 }

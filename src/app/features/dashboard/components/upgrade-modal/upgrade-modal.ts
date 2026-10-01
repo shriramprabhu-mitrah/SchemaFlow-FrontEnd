@@ -9,18 +9,34 @@ import { ButtonComponent } from '../../../../shared/button/button';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { OrganizationService } from '../../../organization/services/organization.service';
 import { timeout } from 'rxjs';
-import { ContactSalesModalComponent } from '../../../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
 import { environment } from '../../../../../environment/environment';
 
 @Component({
   selector: 'app-upgrade-modal',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent],
   templateUrl: './upgrade-modal.html'
 })
 export class UpgradeModalComponent implements OnInit {
   private _visible = false;
+  private checkLimitWarning(): void {
+    if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
+      const planSlug = this.auth.getCurrentPlanSlug();
+      const planStatus = this.auth.getCurrentPlanStatus();
+      const isFree = planSlug === 'free' || !planSlug;
+      const isExpired = planStatus === 'expired';
+      
+      if (isFree || isExpired) {
+        this.showLimitWarning = false;
+      } else {
+        this.showLimitWarning = true;
+      }
+    } else {
+      this.showLimitWarning = false;
+    }
+  }
+
   @Input()
   set visible(val: boolean) {
     this._visible = val;
@@ -34,16 +50,13 @@ export class UpgradeModalComponent implements OnInit {
             this.currentPlanSlug = res?.data?.purchasedPlan?.slug || '';
             this.currentPlanStatus = res?.data?.purchasedPlan?.status || '';
             this.hasUsedTrial = res?.data?.hasUsedTrial || false;
+            this.checkLimitWarning();
             this.cdr.detectChanges();
           }
         });
       }
 
-      if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
-        this.showLimitWarning = true;
-      } else {
-        this.showLimitWarning = false;
-      }
+      this.checkLimitWarning();
       // Only show loader if we don't have plans loaded yet
       if (this.plans.length === 0) {
         this.loading = true;
@@ -60,11 +73,7 @@ export class UpgradeModalComponent implements OnInit {
   @Input()
   set featureKey(val: string) {
     this._featureKey = val || '';
-    if (this._featureKey === 'create_diagrams' || this._featureKey === 'max_diagrams' || this._featureKey === 'document_view') {
-      this.showLimitWarning = true;
-    } else {
-      this.showLimitWarning = false;
-    }
+    this.checkLimitWarning();
     if (this.allPlans.length > 0) {
       this.applyFeatureFilter();
       this.cdr.detectChanges();
@@ -183,10 +192,35 @@ export class UpgradeModalComponent implements OnInit {
     }
   }
 
+  getPlanOrder(plan: any): number {
+    if (!plan) return 999999;
+    const val = plan.display_order ?? plan.order;
+    if (val !== null && val !== undefined && val !== '') {
+      const num = Number(val);
+      if (!isNaN(num)) return num;
+    }
+    return 999999;
+  }
+
+  getFeatureOrder(item: any): number {
+    if (!item) return 999999;
+    const val = item.display_order ?? item.feature_order ?? item.order;
+    if (val !== null && val !== undefined && val !== '') {
+      const num = Number(val);
+      if (!isNaN(num)) return num;
+    }
+    return 999999;
+  }
+
   /** Filter allPlans to only show plans that have the restricted featureKey enabled */
   private applyFeatureFilter(): void {
     // Keep all plans loaded in this.plans, displayedPlans will filter what is displayed.
-    this.plans = this.allPlans;
+    this.plans = [...this.allPlans].sort((a, b) => {
+      const orderA = this.getPlanOrder(a);
+      const orderB = this.getPlanOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.plan_id || a.id || 0) - Number(b.plan_id || b.id || 0));
+    });
   }
 
   get isOrganization(): boolean {
@@ -194,11 +228,19 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   get displayedPlans(): any[] {
+    let filtered = [];
     if (this.isOrganization) {
-      return this.plans.filter(p => p.slug === 'team');
+      filtered = this.plans.filter(p => p.slug === 'team');
+    } else {
+      // Individual account: show only Free & Premium
+      filtered = this.plans.filter(p => p.slug === 'free' || p.slug === 'premium');
     }
-    // Individual account: show only Free & Premium
-    return this.plans.filter(p => p.slug === 'free' || p.slug === 'premium');
+    return filtered.sort((a, b) => {
+      const orderA = this.getPlanOrder(a);
+      const orderB = this.getPlanOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.plan_id || a.id || 0) - Number(b.plan_id || b.id || 0));
+    });
   }
 
   closeModal(): void {
@@ -354,6 +396,11 @@ export class UpgradeModalComponent implements OnInit {
       if (ent.feature_key === 'document_view' && ent.limit_value && Number(ent.limit_value) > 0) return false;
 
       return true;
+    }).sort((a: any, b: any) => {
+      const orderA = this.getFeatureOrder(a);
+      const orderB = this.getFeatureOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
     });
   }
 
@@ -428,6 +475,11 @@ export class UpgradeModalComponent implements OnInit {
       const rep = getEntRepresentation(ent);
       const prevRep = prevFeatureMap.get(ent.feature_key);
       return prevRep !== rep;
+    }).sort((a: any, b: any) => {
+      const orderA = this.getFeatureOrder(a);
+      const orderB = this.getFeatureOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
     });
 
     const headerItem = {
@@ -524,6 +576,15 @@ export class UpgradeModalComponent implements OnInit {
   isCtaDisabled(plan: any): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
+
+    // Check if actively in an org workspace but not an admin
+    const isActiveOrg = this.auth.getOrganizationId() !== null;
+    if (isActiveOrg && !this.auth.isOrganizationAdmin()) return true;
+
+    // Check if user is a member of any organization from their workspace list
+    const isMemberOfAnyOrg = this.svc.workspaces().some(w => w.type === 'organization' && w.permission === 'member');
+    if (isMemberOfAnyOrg && (plan.slug === 'team' || plan.plan_type === 'organization')) return true;
+
     if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) return true;
     if (!this.isOrganization && (plan.slug === 'team' || plan.plan_type === 'organization')) return true;
     if (this.currentPlanStatus === 'expired') return false;
@@ -573,8 +634,8 @@ export class UpgradeModalComponent implements OnInit {
 
   contactSalesFromAlert(): void {
     this.closePlanSwitchAlert();
-    this.contactModalMessage = 'If you want to switch to another plan, please cancel your ongoing plan first.';
-    this.showContactModal = true;
+    this.closeModal();
+    this.router.navigate(['/contact']);
   }
 
   selectPlan(plan: any): void {
@@ -601,8 +662,8 @@ export class UpgradeModalComponent implements OnInit {
     }
 
     if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
-      this.contactModalMessage = 'To switch to a different plan, you need to cancel your ongoing plan first. Please contact sales.';
-      this.showContactModal = true;
+      this.closeModal();
+      this.router.navigate(['/contact']);
       return;
     }
 
@@ -629,7 +690,7 @@ export class UpgradeModalComponent implements OnInit {
       this.loading = true;
       this.orgService.upgrade(orgId, plan.slug).subscribe({
         next: (res) => {
-          const localSubId = res.data?.subscription_id || res.subscription_id; 
+          const localSubId = res.data?.subscription_id || res.subscription_id;
 
           // Check if the plan requires payment (status will be 'expired' or pending)
           if (res.data?.status === 'expired' && localSubId) {
@@ -718,7 +779,7 @@ export class UpgradeModalComponent implements OnInit {
     const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000';
     const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
     const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
-    const planType = `${plan.slug}_${this.isAnnual ? 'yearly' : 'monthly'}`;
+    const planType = `${plan.slug}_${this.isAnnual ? 'annual' : 'monthly'}`;
 
     this.http.post<any>(createSubUrl, {
       planType: planType,

@@ -150,20 +150,21 @@ app-upgrade-modal {
     overflow-y: auto;
     overflow-x: hidden;
     padding: 12px 24px 20px;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
 
-    /* Custom scrollbar style for premium dark theme */
     &::-webkit-scrollbar {
-      width: 6px;
+      display: none !important; /* Chrome, Safari and Opera */
+      width: 0 !important;
+      background: transparent !important;
     }
+
     &::-webkit-scrollbar-track {
-      background: transparent;
+      background: transparent !important;
     }
+
     &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
-      &:hover {
-        background: rgba(255, 255, 255, 0.25);
-      }
+      background: transparent !important;
     }
   }
 
@@ -326,6 +327,7 @@ app-upgrade-modal {
         flex-direction: column !important;
         gap: 8px !important;
         margin: 10px 0 10px !important;
+        min-height: 78px !important;
 
         .key-spec-item {
           display: flex !important;
@@ -372,6 +374,9 @@ app-upgrade-modal {
         width: 100% !important;
         margin-top: auto !important;
         padding-top: 8px !important;
+        min-height: 95px !important;
+        display: flex !important;
+        flex-direction: column !important;
 
         .card-addons-divider {
           width: 100% !important;
@@ -391,6 +396,7 @@ app-upgrade-modal {
           display: flex !important;
           flex-direction: column !important;
           gap: 4px !important;
+          min-height: 44px !important;
         }
 
         .addon-item {
@@ -432,12 +438,13 @@ app-upgrade-modal {
 
       .card-action {
         margin-top: 14px !important;
+        min-height: 68px !important;
 
         .no-card-required {
           font-size: 12px !important;
           color: #10b981 !important;
           text-align: center !important;
-          margin-top: 0 !important;
+          margin-top: 4px !important;
           margin-bottom: 8px !important;
           font-weight: 600 !important;
           letter-spacing: 0.01em !important;
@@ -617,6 +624,28 @@ body.light-theme {
         }
       }
 
+      .card-addons-section {
+        .card-addons-divider {
+          background: #e2e8f0 !important;
+        }
+
+        .addons-header {
+          color: #64748b !important;
+        }
+
+        .addon-item {
+          color: #475569 !important;
+
+          .addon-left {
+            svg { stroke: #64748b !important; }
+          }
+
+          .addon-price {
+            color: #334155 !important;
+          }
+        }
+      }
+
       /* Free button cleanly styled for light mode */
       .btn-card-cta.btn-free-gradient {
         background: #f1f5f9 !important;
@@ -634,12 +663,7 @@ body.light-theme {
       }
     }
 
-    .modal-body-scroll::-webkit-scrollbar-thumb {
-      background: rgba(15, 23, 42, 0.15) !important;
-      &:hover {
-        background: rgba(15, 23, 42, 0.25) !important;
-      }
-    }
+
   }
 }
 

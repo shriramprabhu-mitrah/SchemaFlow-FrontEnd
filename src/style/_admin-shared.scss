@@ -31,7 +31,9 @@ app-org-layout {
 
   /* Shared Admin Page Styles */
   .admin-page {
+    width: 100%;
     max-width: 100%;
+    min-width: 0;
   }
 
   .page-header {
@@ -577,6 +579,7 @@ app-org-layout {
 
   /* Data Table */
   .data-table-wrap {
+    width: 100%;
     background: #0b1426;
     border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 12px;
@@ -626,6 +629,13 @@ app-org-layout {
     font-size: 13px;
     color: #e2e8f0;
     font-weight: 500;
+  }
+
+  .base-url-text {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #e2e8f0;
+    word-break: break-all;
   }
 
   .data-table td.actions-cell,
@@ -1826,9 +1836,9 @@ app-org-layout {
   /* Toast Card Notification */
   .toast-card {
     position: fixed;
-    top: 24px;
-    right: 24px;
-    z-index: 9999;
+    top: 68px;
+    right: 18px;
+    z-index: 9999999;
     background: #0f172a;
     border: 1px solid #10b981;
     color: #34d399;
@@ -2066,6 +2076,13 @@ body.light-theme {
     font-size: 13px !important;
     color: #334155 !important;
     font-weight: 500 !important;
+  }
+
+  .base-url-text {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #334155 !important;
+    word-break: break-all;
   }
 
   .user-email-text {
@@ -2484,7 +2501,7 @@ body.light-theme {
   .form-input,
   .form-textarea,
   input:not([type="checkbox"]):not([type="radio"]):not(.sticky-note-name-input):not(.hex-text):not(.hex-color),
-  textarea:not(#codearea):not(.sticky-note-body):not(.code-textarea):not(.border-area) {
+  textarea:not(#codearea):not(.sticky-note-body):not(.code-textarea):not(.border-area):not(.ai-input-textarea) {
     color-scheme: light !important;
     background-color: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
@@ -3170,7 +3187,7 @@ body.light-theme {
 
 
 /* Layout & Sidebar */
-.sidebar-header-flex { display: flex; align-items: center; padding: 16px 20px; }
+.sidebar-header-flex { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; position: relative !important; width: 100% !important; }
 .brand-link-flex { text-decoration: none; cursor: pointer; display: flex; align-items: center; gap: 12px; width: 100%; }
 .brand-icon-wrap { display: inline-flex; align-items: center; justify-content: center; }
 .brand-text-flex { line-height: 1; display: inline-flex; align-items: center; }
@@ -3182,6 +3199,10 @@ body.light-theme {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 24px;
+
+  & > * {
+    min-width: 0;
+  }
 
   @media (max-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
@@ -3482,6 +3503,7 @@ body.light-theme .btn-refresh-custom:active {
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   transition: all 0.2s ease;
+  flex-wrap: wrap;
 
   .badge-item {
     display: flex;

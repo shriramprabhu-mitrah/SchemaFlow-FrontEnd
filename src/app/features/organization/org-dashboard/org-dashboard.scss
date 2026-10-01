@@ -42,6 +42,10 @@
     gap: 24px;
     margin-bottom: 24px;
 
+    & > * {
+      min-width: 0; /* Prevent CSS Grid blowout */
+    }
+
     @media (max-width: 1024px) {
       grid-template-columns: 1fr;
     }
@@ -102,6 +106,10 @@
     gap: 12px;
     height: 260px;
     padding-top: 10px;
+
+    @media (max-width: 640px) {
+      gap: 6px;
+    }
   }
 
   .y-axis-labels {
@@ -179,6 +187,10 @@
     align-items: flex-end;
     overflow: visible !important;
     border: none !important;
+
+    @media (max-width: 640px) {
+      width: 24px;
+    }
   }
 
   .bar-fill {
@@ -487,6 +499,8 @@
     overflow-x: auto;
     margin: 0 -20px -20px -20px;
     padding: 0 20px 20px 20px;
+    width: calc(100% + 40px);
+    box-sizing: border-box;
   }
 
   .dashboard-table {

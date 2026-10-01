@@ -14,7 +14,6 @@ import { DiffCheckerComponent } from './components/diff-checker/diff-checker';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { Subscription, Observable } from 'rxjs';
-import { Toast } from '../../shared/toaster/toast/toast';
 
 @Component({
   selector: 'app-dashboard',
@@ -27,8 +26,7 @@ import { Toast } from '../../shared/toaster/toast/toast';
     CanvasComponent,
     DiffCheckerComponent,
     ButtonComponent,
-    LoaderComponent,
-    Toast
+    LoaderComponent
   ],
   templateUrl: './dashboard.html',
 })
@@ -80,28 +78,28 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.trialExpiredSubscription = this.svc.socketService.onTrialExpired().subscribe(() => {
-        this.svc.isSubscriptionExpired.set(true);
-        // Clear collaboration indicators immediately
-        this.svc.activeRoomUsers.set([]);
-        this.svc.remoteCursors.set({});
-        this.entitlementService.loadEntitlements(true).subscribe(() => {
-            this.cdr.detectChanges();
-        });
-        this.svc.socketService.disconnect();
+      this.svc.isSubscriptionExpired.set(true);
+      // Clear collaboration indicators immediately
+      this.svc.activeRoomUsers.set([]);
+      this.svc.remoteCursors.set({});
+      this.entitlementService.loadEntitlements(true).subscribe(() => {
+        this.cdr.detectChanges();
+      });
+      this.svc.socketService.disconnect();
     });
     this.socketConnectSubscription = this.svc.socketService.onConnect().subscribe(() => {
-        const currentId = this.svc.diagramId();
-        if (currentId) {
-            this.svc.socketService.joinDiagram(currentId);
-        }
+      const currentId = this.svc.diagramId();
+      if (currentId) {
+        this.svc.socketService.joinDiagram(currentId);
+      }
     });
     this.socketErrorSubscription = this.svc.socketService.onError().subscribe((err) => {
-        if (err?.message && (err.message.includes('session expired') || err.message.includes('not joined'))) {
-            const currentId = this.svc.diagramId();
-            if (currentId) {
-                this.svc.socketService.joinDiagram(currentId);
-            }
+      if (err?.message && (err.message.includes('session expired') || err.message.includes('not joined'))) {
+        const currentId = this.svc.diagramId();
+        if (currentId) {
+          this.svc.socketService.joinDiagram(currentId);
         }
+      }
     });
     if (typeof window !== 'undefined') {
       this.svc.syncThemeFromStorage();
@@ -139,7 +137,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
         } else {
           if (this.isInitialLoad) {
             this.isInitialLoad = false;
-            
+
             if (this.auth.isLoggedIn()) {
               const lastOpenedId = typeof localStorage !== 'undefined' ? localStorage.getItem('active_diagram_id') : null;
               if (lastOpenedId && !isNaN(Number(lastOpenedId)) && Number(lastOpenedId) !== 0) {
@@ -148,42 +146,42 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
               } else {
                 // Logged in user: fetch recent diagrams
                 this.svc.fetchDiagrams({ limit: 1, sortBy: 'updated_at', sortOrder: 'desc' }).subscribe({
-                next: (res: any) => {
-                  const diagrams = res.items || res.data || [];
-                  if (diagrams && diagrams.length > 0) {
-                    // Navigate to most recent diagram
-                    this.router.navigate([], { queryParams: { id: diagrams[0].id, sample: null }, queryParamsHandling: 'merge' });
-                  } else {
-                    const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
-                    const activeWsId = isTeam ? this.svc.activeWorkspaceId() : null;
-                    const createReq$ = (isTeam && activeWsId)
-                      ? this.svc.createWorkspaceDiagram(activeWsId, '')
-                      : this.svc.createDiagram('');
-                    createReq$.subscribe({
-                      next: (newDiag: any) => {
-                        this.svc.clearDiagram(true);
-                        if (isTeam && activeWsId) {
-                          this.svc.setActiveWorkspace(activeWsId, this.svc.activeWorkspaceName);
-                          this.svc.diagramWorkspaceType.set('Team');
-                        } else {
-                          this.svc.setActiveWorkspace(null);
-                          this.svc.diagramWorkspaceType.set('Personal');
+                  next: (res: any) => {
+                    const diagrams = res.items || res.data || [];
+                    if (diagrams && diagrams.length > 0) {
+                      // Navigate to most recent diagram
+                      this.router.navigate([], { queryParams: { id: diagrams[0].id, sample: null }, queryParamsHandling: 'merge' });
+                    } else {
+                      const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
+                      const activeWsId = isTeam ? this.svc.activeWorkspaceId() : null;
+                      const createReq$ = (isTeam && activeWsId)
+                        ? this.svc.createWorkspaceDiagram(activeWsId, '')
+                        : this.svc.createDiagram('');
+                      createReq$.subscribe({
+                        next: (newDiag: any) => {
+                          this.svc.clearDiagram(true);
+                          if (isTeam && activeWsId) {
+                            this.svc.setActiveWorkspace(activeWsId, this.svc.activeWorkspaceName);
+                            this.svc.diagramWorkspaceType.set('Team');
+                          } else {
+                            this.svc.setActiveWorkspace(null);
+                            this.svc.diagramWorkspaceType.set('Personal');
+                          }
+                          this.svc.code = '';
+                          this.svc.diagramName = 'Untitled Diagram';
+                          this.svc.diagramId.set(newDiag.id || newDiag.diagram_id || newDiag.diagramid);
+                          this.svc.updateOriginalState();
+                          this.router.navigate([], { queryParams: { id: this.svc.diagramId(), sample: null }, queryParamsHandling: 'merge' });
+                        },
+                        error: (err: any) => {
+                          console.error('Failed to create initial diagram:', err);
+                          if (err?.status === 403) {
+                            this.svc.showUpgradeModal('create_diagrams');
+                          }
                         }
-                        this.svc.code = '';
-                        this.svc.diagramName = 'Untitled Diagram';
-                        this.svc.diagramId.set(newDiag.id || newDiag.diagram_id || newDiag.diagramid);
-                        this.svc.updateOriginalState();
-                        this.router.navigate([], { queryParams: { id: this.svc.diagramId(), sample: null }, queryParamsHandling: 'merge' });
-                      },
-                      error: (err: any) => {
-                        console.error('Failed to create initial diagram:', err);
-                        if (err?.status === 403) {
-                          this.svc.showUpgradeModal('create_diagrams');
-                        }
-                      }
-                    });
-                  }
-                },
+                      });
+                    }
+                  },
                   error: (err: any) => console.error('Failed to fetch recent diagrams:', err)
                 });
               }
@@ -328,17 +326,17 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   get isDocLimitReached(): boolean {
     if (this.auth.isSuperAdmin()) return false;
-    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' || 
+    const isPlanExpired = this.auth.getCurrentPlanStatus() === 'expired' ||
       (this.entitlementService.hasUsedTrial && (!this.auth.getCurrentPlanSlug() || this.auth.getCurrentPlanSlug() === 'free'));
     if (isPlanExpired) return true;
     if (!this.entitlementService.canUseFeature('document_view')) return true;
     const ent = this.documentViewEntitlement;
     if (!ent) return true;
     const limit = ent.effective_limit ?? ent.limit_value;
-    if (limit === -1) return false;
-    if (limit === undefined || limit === null || limit === 0) return true;
-    if (ent.used !== undefined && ent.used >= limit) return true;
-    if (ent.remaining !== undefined && ent.remaining <= 0) return true;
+    if (Number(limit) === -1) return false;
+    if (limit === undefined || limit === null || Number(limit) === 0) return true;
+    if (ent.used !== undefined && Number(ent.used) >= Number(limit)) return true;
+    if (ent.remaining !== undefined && Number(ent.remaining) <= 0) return true;
     return false;
   }
 
@@ -350,7 +348,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       this.svc.showUpgradeModal('document_view');
       return;
     }
-    
+
     this.svc.unlockDocs(id).subscribe({
       next: () => {
         this.svc.showToast('Document view unlocked successfully!', 3000, 'success');

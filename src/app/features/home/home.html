@@ -20,6 +20,18 @@
         </a>
         <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign
           Out</app-button>
+        
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
@@ -56,7 +68,7 @@
     <div class="hero-container">
       <div class="hero-text-content">
         <h1 class="hero-title-mega">
-          Architect Databases <br />
+          Architect Databases with AI <br />
           <span class="text-gradient-primary">Seamlessly.</span>
         </h1>
 
@@ -181,10 +193,32 @@
     </div>
 
     <!-- NEW INTERACTIVE PREVIEW COMPONENT -->
-    <div style="margin-top: 60px;">
+    <div class="interactive-preview-container" style="margin-top: 80px; padding: 0 20px;">
+      <div class="section-header text-center-override" style="margin-bottom: 40px;">
+        <span class="blue-title-solid">SEAMLESS WORKFLOW</span>
+        <h2>Visual Diagrams, SQL, DBML, and Diff Checker</h2>
+        <p style="max-width: 650px; margin: 16px auto 0; color: #64748b; font-size: clamp(15px, 4vw, 18px); line-height: 1.6;">
+          Effortlessly toggle between formats. Edit your visual schema and instantly see the generated SQL, or write DBML and watch your diagram build itself in real-time. Use the built-in diff checker to instantly compare versions.
+        </p>
+      </div>
       <app-interactive-preview></app-interactive-preview>
     </div>
 
+  </section>
+
+  <!-- AI CHAT ANIMATION FEATURE UI -->
+  <section class="ai-animation-section" style="padding: 60px 0; width: 100%; display: block;">
+    <div class="section-header text-center-override" style="margin-bottom: 40px;">
+      <span class="blue-title-solid" style="color: #8b5cf6; background: rgba(139, 92, 246, 0.1);">AI-POWERED SCHEMA GENERATION</span>
+      <h2>Design Databases at the Speed of Thought</h2>
+      <p style="max-width: 650px; margin: 16px auto 0; color: #64748b; font-size: clamp(15px, 4vw, 18px); line-height: 1.6;">
+        Describe your application in plain English, and watch as <span class="text-gradient-primary" style="font-weight: 700;">dbNexus AI</span> instantly writes the DBML, generates the tables, and draws the relationships for you. Prompt, iterate, and build faster than ever.
+      </p>
+    </div>
+    <div class="ai-animation-container">
+      <img src="assets/dbnexus_ai_chat_animation.svg" alt="AI Chat Assistant" style="width: 100%;" class="dbnexus-ai-img feature-img-light">
+      <img src="assets/dbnexus_ai_chat_dark_v2.svg" alt="AI Chat Assistant" style="width: 100%;" class="dbnexus-ai-img feature-img-dark">
+    </div>
   </section>
 
   <!-- CLASSIC ZIG-ZAG FEATURE LAYOUT WITH CONNECTED CARDS -->
@@ -194,48 +228,44 @@
       <h2>The Tools You Need to Build Faster</h2>
     </div>
 
-    <!-- CARD 1: Visual Table Groups -->
-    <div class="feature-card-wrapper card-blue">
+    <!-- CARD 1: AI Schema Generation -->
+    <div class="feature-card-wrapper card-orange">
       <div class="zigzag-row">
-        <div class="zigzag-content left-text">
+        <div class="zigzag-content left-text" style="flex: 0.8;">
           <div class="feature-meta">
-            <span class="meta-dot blue"></span>
-            <span class="meta-text">VISUAL ARCHITECTURE</span>
+            <span class="meta-dot orange"></span>
+            <span class="meta-text">AI ASSISTANT</span>
           </div>
-          <h2>Partition with Visual Table Groups</h2>
-          <p>Organize massive diagrams by partitioning related tables into custom Table Groups. Keep complex schemas
-            perfectly structured and color-coded.</p>
+          <h2>AI Schema Generation</h2>
+          <p>Describe your app's requirements in plain English, and watch as dbNexus AI instantly generates the complete database architecture for you.</p>
 
           <div class="feature-detail-cards">
-            <div class="detail-card blue">
+            <div class="detail-card orange">
               <div class="detail-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                  <path d="M3 9h18"></path>
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                 </svg>
               </div>
-              <h4>Domain Driven Design</h4>
-              <p>Group tables by microservice boundaries for massive clarity.</p>
+              <h4>Natural Language</h4>
+              <p>Type what you need, like "A music streaming app with users, playlists, and songs."</p>
             </div>
-            <div class="detail-card blue">
+            <div class="detail-card orange">
               <div class="detail-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M2 12h20M12 2v20"></path>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polygon points="10 8 16 12 10 16 10 8"></polygon>
                 </svg>
               </div>
-              <h4>Collapse & Expand</h4>
-              <p>Hide complex details and view only the high-level architecture.</p>
+              <h4>Instant Prototyping</h4>
+              <p>Skip the boilerplate. Get a fully working, optimal schema foundation in seconds.</p>
             </div>
           </div>
         </div>
-        <div class="zigzag-image right-image">
-          <div class="browser-mockup-solid">
-            <div class="browser-header">
-              <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-            </div>
-            <img src="assets/dbdiagram-lighttheme.svg" alt="Visual Table Groups" class="feature-img feature-img-light">
-            <img src="assets/dbdiagram-darktheme.svg" alt="Visual Table Groups" class="feature-img feature-img-dark">
-          </div>
+        <div class="zigzag-image right-image no-glow" style="flex: 1.4;">
+          <img src="assets/dbnexus-ai-schema.svg" alt="AI Schema Generation"
+            class="feature-img-light dbnexus-ai-img dark-theme-border" style="width: 100%;">
+          <img src="assets/diagram-editor_dark.svg" alt="AI Schema Generation"
+            class="feature-img-dark dbnexus-ai-img dark-theme-border" style="width: 100%;">
         </div>
       </div>
     </div>
@@ -306,48 +336,44 @@
       <span class="bracket-node bottom-right"></span>
     </div>
 
-    <!-- CARD 3: Version History -->
+    <!-- CARD 3: Multi-Format Sync -->
     <div class="feature-card-wrapper card-purple">
       <div class="zigzag-row">
         <div class="zigzag-content left-text">
           <div class="feature-meta">
             <span class="meta-dot purple"></span>
-            <span class="meta-text">VERSION CONTROL</span>
+            <span class="meta-text">SEAMLESS CONVERSION</span>
           </div>
-          <h2>Track Schema History</h2>
-          <p>Every change is tracked in your workspace's version history. Revert to previous states effortlessly. Never
-            lose your architecture history again.</p>
+          <h2>Multi-Format Sync</h2>
+          <p>Effortlessly toggle between Visual Diagrams, SQL scripts, and DBML code. Every modification you make is instantly synchronized across all views, giving your team complete flexibility.</p>
 
           <div class="feature-detail-cards">
             <div class="detail-card purple">
               <div class="detail-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
+                  <path d="M4 17l6-6-6-6"></path>
+                  <path d="M12 19h8"></path>
                 </svg>
               </div>
-              <h4>Time-Travel Revert</h4>
-              <p>Mistakes happen. Instantly rollback your schema to any previous timestamp.</p>
+              <h4>Instant Code Generation</h4>
+              <p>Export your visual schemas directly into ready-to-run SQL DDL for multiple database dialects.</p>
             </div>
             <div class="detail-card purple">
               <div class="detail-card-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
                 </svg>
               </div>
-              <h4>Change Auditing</h4>
-              <p>A detailed audit log of exactly who modified which table and when.</p>
+              <h4>Bi-Directional Editing</h4>
+              <p>Prefer writing code? Write DBML and watch your diagram build itself in real-time.</p>
             </div>
           </div>
         </div>
         <div class="zigzag-image right-image">
-          <img src="assets/diagram_cleaned_lighttheme.svg" alt="Version History"
+          <img src="assets/diagram_cleaned_lighttheme.svg" alt="Multi-Format Sync"
             class="feature-img-clean feature-img-light version-history-img">
-          <img src="assets/diagram_cleaned_darktheme.svg" alt="Version History"
+          <img src="assets/diagram_cleaned_darktheme.svg" alt="Multi-Format Sync"
             class="feature-img-clean feature-img-dark version-history-img">
         </div>
       </div>
@@ -462,6 +488,179 @@
             class="feature-img-clean feature-img-light team-workspace-img">
           <img src="assets/create-team-workspace-dark.svg" alt="Team Workspaces"
             class="feature-img-clean feature-img-dark team-workspace-img">
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR 5→6 (bracket right-to-left) -->
+    <div class="connector-bracket rtl orange-bracket">
+      <svg class="bracket-svg" viewBox="0 0 1200 420" preserveAspectRatio="none" fill="none">
+        <path class="bracket-line-glow"
+          d="M 1170 0 L 1198 0 L 1198 194 A 16 16 0 0 1 1182 210 L 18 210 A 16 16 0 0 0 2 226 L 2 420 L 30 420" />
+        <path class="bracket-line"
+          d="M 1170 0 L 1198 0 L 1198 194 A 16 16 0 0 1 1182 210 L 18 210 A 16 16 0 0 0 2 226 L 2 420 L 30 420" />
+      </svg>
+      <span class="bracket-node top-right"></span>
+      <span class="bracket-node bottom-left"></span>
+    </div>
+
+    <!-- CARD 6: SQL Compare -->
+    <div class="feature-card-wrapper card-blue">
+      <div class="zigzag-row">
+        <div class="zigzag-image left-image" style="flex: 1.4;">
+          <img src="assets/sql_compare_light.svg?v=2" alt="SQL Compare"
+            class="feature-img-clean feature-img-light sql-compare-img" style="width: 100%;">
+          <img src="assets/sql_compare_dark.svg?v=2" alt="SQL Compare"
+            class="feature-img-clean feature-img-dark sql-compare-img" style="width: 100%;">
+        </div>
+        <div class="zigzag-content right-text" style="flex: 0.8;">
+          <div class="feature-meta">
+            <span class="meta-dot blue"></span>
+            <span class="meta-text">SCHEMA DIFFING</span>
+          </div>
+          <h2>SQL Schema Compare</h2>
+          <p>Instantly compare two schemas, SQL files, live databases, or your project's version history to detect structural differences and generate precise migration scripts.</p>
+
+          <div class="feature-detail-cards">
+            <div class="detail-card blue">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="7" height="16" rx="1.5" />
+                  <rect x="14" y="4" width="7" height="16" rx="1.5" />
+                  <line x1="6.5" y1="9" x2="7.5" y2="9" />
+                  <line x1="6.5" y1="13" x2="7.5" y2="13" />
+                  <line x1="16.5" y1="9" x2="18.5" y2="9" />
+                  <line x1="16.5" y1="13" x2="18.5" y2="13" />
+                </svg>
+              </div>
+              <h4>Visual Diffing</h4>
+              <p>See table, column, and relationship differences side-by-side in real-time.</p>
+            </div>
+            <div class="detail-card blue">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <path d="M12 18v-6"></path>
+                  <path d="M9 15l3 3 3-3"></path>
+                </svg>
+              </div>
+              <h4>Migration Scripts</h4>
+              <p>Automatically generate ALTER statements to safely sync your databases.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR 6→7 (bracket left-to-right) -->
+    <div class="connector-bracket ltr blue-bracket">
+      <svg class="bracket-svg" viewBox="0 0 1200 420" preserveAspectRatio="none" fill="none">
+        <path class="bracket-line-glow"
+          d="M 30 0 L 2 0 L 2 194 A 16 16 0 0 0 18 210 L 1182 210 A 16 16 0 0 1 1198 226 L 1198 420 L 1170 420" />
+        <path class="bracket-line"
+          d="M 30 0 L 2 0 L 2 194 A 16 16 0 0 0 18 210 L 1182 210 A 16 16 0 0 1 1198 226 L 1198 420 L 1170 420" />
+      </svg>
+      <span class="bracket-node top-left"></span>
+      <span class="bracket-node bottom-right"></span>
+    </div>
+
+    <!-- CARD 7: Visual Table Groups -->
+    <div class="feature-card-wrapper card-blue">
+      <div class="zigzag-row">
+        <div class="zigzag-content left-text">
+          <div class="feature-meta">
+            <span class="meta-dot blue"></span>
+            <span class="meta-text">VISUAL ARCHITECTURE</span>
+          </div>
+          <h2>Partition with Visual Table Groups</h2>
+          <p>Organize massive diagrams by partitioning related tables into custom Table Groups. Keep complex schemas
+            perfectly structured and color-coded.</p>
+
+          <div class="feature-detail-cards">
+            <div class="detail-card blue">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <path d="M3 9h18"></path>
+                </svg>
+              </div>
+              <h4>Domain Driven Design</h4>
+              <p>Group tables by microservice boundaries for massive clarity.</p>
+            </div>
+            <div class="detail-card blue">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 12h20M12 2v20"></path>
+                </svg>
+              </div>
+              <h4>Collapse & Expand</h4>
+              <p>Hide complex details and view only the high-level architecture.</p>
+            </div>
+          </div>
+        </div>
+        <div class="zigzag-image right-image">
+          <div class="browser-mockup-solid">
+            <div class="browser-header">
+              <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+            </div>
+            <img src="assets/dbdiagram-lighttheme.svg" alt="Visual Table Groups" class="feature-img feature-img-light">
+            <img src="assets/dbdiagram-darktheme.svg" alt="Visual Table Groups" class="feature-img feature-img-dark">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR 7→8 (bracket right-to-left) -->
+    <div class="connector-bracket rtl orange-bracket">
+      <svg class="bracket-svg" viewBox="0 0 1200 420" preserveAspectRatio="none" fill="none">
+        <path class="bracket-line-glow"
+          d="M 1170 0 L 1198 0 L 1198 194 A 16 16 0 0 1 1182 210 L 18 210 A 16 16 0 0 0 2 226 L 2 420 L 30 420" />
+        <path class="bracket-line"
+          d="M 1170 0 L 1198 0 L 1198 194 A 16 16 0 0 1 1182 210 L 18 210 A 16 16 0 0 0 2 226 L 2 420 L 30 420" />
+      </svg>
+      <span class="bracket-node top-right"></span>
+      <span class="bracket-node bottom-left"></span>
+    </div>
+
+    <!-- CARD 8: Sticky Notes -->
+    <div class="feature-card-wrapper card-yellow">
+      <div class="zigzag-row">
+        <div class="zigzag-image left-image no-glow" style="flex: 1.4;">
+          <img src="assets/er_diagram.svg" alt="Sticky Notes in Diagram"
+            class="feature-img-light dbnexus-sticky-img dark-theme-border" style="width: 100%;">
+          <img src="assets/er_diagram_dark.svg" alt="Sticky Notes in Diagram"
+            class="feature-img-dark dbnexus-sticky-img dark-theme-border" style="width: 100%;">
+        </div>
+        <div class="zigzag-content right-text" style="flex: 0.8;">
+          <div class="feature-meta">
+            <span class="meta-dot yellow"></span>
+            <span class="meta-text">DOCUMENTATION</span>
+          </div>
+          <h2>Sticky Notes</h2>
+          <p>Add sticky notes directly to your database diagrams. Keep track of important ideas, context, and documentation right next to your tables.</p>
+
+          <div class="feature-detail-cards">
+            <div class="detail-card yellow">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </div>
+              <h4>Rich Context</h4>
+              <p>Document complex logic, design decisions, and future plans easily.</p>
+            </div>
+            <div class="detail-card yellow">
+              <div class="detail-card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <h4>Stay Organized</h4>
+              <p>Keep your schemas tidy and well-documented for the entire team.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

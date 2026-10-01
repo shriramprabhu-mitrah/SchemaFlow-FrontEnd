@@ -73,8 +73,9 @@ export class DiffEngine {
 
   private static splitLines(text: string): string[] {
     if (!text) return [];
-    // Normalize line endings
-    const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Normalize line endings and ignore trailing newlines at end of text so EOF newlines are not considered changes
+    const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
+    if (!normalized) return [];
     return normalized.split('\n');
   }
 
