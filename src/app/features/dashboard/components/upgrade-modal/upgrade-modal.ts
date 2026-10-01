@@ -634,7 +634,8 @@ export class UpgradeModalComponent implements OnInit {
 
   contactSalesFromAlert(): void {
     this.closePlanSwitchAlert();
-    window.open('/contact', '_blank');
+    this.closeModal();
+    this.router.navigate(['/contact']);
   }
 
   selectPlan(plan: any): void {
@@ -662,7 +663,7 @@ export class UpgradeModalComponent implements OnInit {
 
     if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
       this.closeModal();
-      window.open('/contact', '_blank');
+      this.router.navigate(['/contact']);
       return;
     }
 

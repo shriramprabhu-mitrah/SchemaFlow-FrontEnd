@@ -694,6 +694,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     hasUserApiKey(model: AiChatModel | null | undefined): boolean {
         if (!model) return false;
         if (this.isNoApiKeyRequired(model)) return false;
+        if (model.api_key === null) return false;
         return !!(
             model.has_api_key === true ||
             (typeof model.has_api_key === 'string' && model.has_api_key === 'true') ||
@@ -793,6 +794,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                         }
                         return;
                     }
+                    if (m.api_key === null) {
+                        m.has_api_key = false;
+                        return;
+                    }
                     const savedKey = this.getSavedApiKey(m);
                     const isConfiguredOnServer = !!(m.has_api_key || (m.api_key && m.api_key.trim().length > 0) || (m as any).is_configured || (m as any).has_config);
                     if (!m.api_key && savedKey) {
@@ -837,14 +842,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     private getSavedApiKey(model: AiChatModel): string | null {
-        return localStorage.getItem(`ai_key_${model.id}`) ||
-            localStorage.getItem(`ai_key_${model.provider_name.toLowerCase()}`) ||
-            null;
+        return localStorage.getItem(`ai_key_${model.id}`);
     }
 
     private storeApiKey(model: AiChatModel, key: string): void {
         localStorage.setItem(`ai_key_${model.id}`, key);
-        localStorage.setItem(`ai_key_${model.provider_name.toLowerCase()}`, key);
     }
 
     onModelSelect(model: AiChatModel, event?: Event): void {
@@ -871,14 +873,15 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.svc.showToast('dbnexus AI does not require an API key', 2500, 'info');
             return;
         }
+        const isEditingApiKey = this.hasUserApiKey(model);
         this.pendingModelForApiKey = model;
-        this.apiKeyInput = model.api_key || this.getSavedApiKey(model) || '';
+        this.apiKeyInput = isEditingApiKey ? '' : (model.api_key || this.getSavedApiKey(model) || '');
         this.maxTokensInput = model.max_tokens || 4096;
         this.showApiKeyText.set(false);
         this.showApiKeyModal.set(true);
 
         // Check if existing config is present on server if not present locally
-        if (!this.apiKeyInput) {
+        if (!isEditingApiKey && !this.apiKeyInput) {
             const url = this.getModelConfigUrl(model.id);
             if (url) {
                 this.http.get<any>(url, { withCredentials: true }).subscribe({
@@ -950,10 +953,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             model.has_api_key = true;
             model.max_tokens = payload.max_tokens;
 
-            // Update all models that share the same provider or this model id
+            // Only this model's API response should reflect the configured key.
             this.availableModels.update(models =>
                 models.map(m => {
-                    if (m.id === model.id || (m.provider_name && m.provider_name.toLowerCase() === model.provider_name.toLowerCase())) {
+                    if (String(m.id) === String(model.id)) {
                         return { ...m, api_key: key, has_api_key: true, max_tokens: payload.max_tokens };
                     }
                     return m;

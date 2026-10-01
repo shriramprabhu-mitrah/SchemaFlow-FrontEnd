@@ -36,5 +36,9 @@ export class Footer implements OnInit {
     }
   }
 
-
+  onContactClick(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 }
