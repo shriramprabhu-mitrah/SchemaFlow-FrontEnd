@@ -242,7 +242,6 @@ export class PricingComponent implements OnInit {
 
   getFeatureName(ent: any): string {
     if (ent.isHeader) return ent.text;
-    if (ent.display_text) return ent.display_text;
     if (ent.feature_name) return ent.feature_name;
 
     if (ent.feature_key) {
