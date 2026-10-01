@@ -25,8 +25,8 @@
         <h4>Product</h4>
         <a class="footer-link" (click)="onCreateDiagram()">Schema Designer</a>
         <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
-        <a class="footer-link" routerLink="/pricing">Pricing</a>
-        <a class="footer-link" routerLink="/diff">SQL Compare</a>
+        <a class="footer-link" routerLink="/pricing" routerLinkActive="active">Pricing</a>
+        <a class="footer-link" routerLink="/diff" routerLinkActive="active">SQL Compare</a>
       </div>
 
       <div class="footer-col">
@@ -41,7 +41,7 @@
         <a class="footer-link" routerLink="/docs/privacy-policy">Privacy Policy</a>
         <a class="footer-link" routerLink="/docs/refund-policy">Refund Policy</a>
         <a class="footer-link" routerLink="/docs/terms-of-service">Terms of Service</a>
-        <a class="footer-link" routerLink="/contact" target="_blank">Contact Us</a>
+        <a class="footer-link" routerLink="/contact" routerLinkActive="active" (click)="onContactClick()">Contact Us</a>
       </div>
     </div>
   </div>

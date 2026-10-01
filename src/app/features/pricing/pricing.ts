@@ -683,6 +683,7 @@ export class PricingComponent implements OnInit {
 
   openContactModal(): void {
     window.open('/contact', '_blank');
+    this.router.navigate(['/contact']);
   }
 
   closeContactModal(): void {
@@ -750,6 +751,7 @@ export class PricingComponent implements OnInit {
   contactSalesFromAlert(): void {
     this.closePlanSwitchAlert();
     window.open('/contact', '_blank');
+    this.router.navigate(['/contact']);
   }
 
   selectPlan(plan: any): void {
@@ -774,11 +776,13 @@ export class PricingComponent implements OnInit {
 
     if (this.auth.isOrganizationMember() && plan.slug !== 'free' && plan.slug !== this.currentPlanSlug) {
       window.open('/contact', '_blank');
+      this.router.navigate(['/contact']);
       return;
     }
 
     if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
       window.open('/contact', '_blank');
+      this.router.navigate(['/contact']);
       return;
     }
 

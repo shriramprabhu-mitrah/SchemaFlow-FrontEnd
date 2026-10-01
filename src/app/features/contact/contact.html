@@ -1,151 +1,267 @@
-<div class="contact-page-wrapper">
-  
-  <div class="header-brand" routerLink="/" style="cursor: pointer;">
-    <app-icons name="db-diagram-logo" size="56"></app-icons>
-    <span class="brand-text">dbNexus</span>
+<div class="pricing-container contact-page-root">
+  <!-- Neon Glow Overlays -->
+  <div class="glow-node glow-primary"></div>
+  <div class="glow-node glow-secondary"></div>
+  <div class="glow-node glow-accent"></div>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="landing-header clean-header">
+    <div class="header-inner">
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text">dbNexus</span>
+      </div>
+      <nav class="header-nav">
+        <a routerLink="/" class="nav-link">Features</a>
+        <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
+        <a routerLink="/docs" target="_blank" class="nav-link">Docs</a>
+        <a routerLink="/diff" routerLinkActive="active" class="nav-link">SQL Compare</a>
+      </nav>
+      <div class="header-actions">
+        <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-signin-light">Sign In</app-button>
+        </a>
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign
+          Out</app-button>
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE MENU OVERLAY -->
+  <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
+    <nav class="mobile-nav">
+      <a routerLink="/" class="mobile-nav-link" (click)="toggleMobileMenu()">Features</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link"
+        (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/docs" target="_blank" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
+      <a routerLink="/diff" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">SQL Compare</a>
+
+      <div class="mobile-nav-bottom">
+        <div class="mobile-nav-divider"></div>
+        <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link"
+          (click)="toggleMobileMenu()">Sign In</a>
+        <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
+      </div>
+    </nav>
   </div>
 
-  <div class="contact-form-card" [class.success-state]="submitSuccess() === true">
-    
-    <ng-container *ngIf="submitSuccess() === false">
-      <div class="contact-card-header">
-        <h2>Contact the dbNexus Team</h2>
-        <p>Need help with your database schemas, diagrams, or documentation? We're here to help.</p>
-      </div>
+  <!-- MAIN CONTACT CONTENT -->
+  <main class="contact-main-wrapper">
+    <div class="contact-layout-container">
       
-      <hr class="contact-divider" />
-
-      <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+      <!-- LEFT COLUMN: Talk to Sales Form -->
+      <div class="contact-form-column">
         
-        <div class="form-group">
-          <label>Email <span class="text-danger">*</span></label>
-          <input type="email" class="form-input" formControlName="company_email" />
-          <span class="sub-label">example&#64;example.com</span>
-          <div *ngIf="contactForm.get('company_email')?.invalid && contactForm.get('company_email')?.touched" class="error-message">Valid email is required.</div>
+        <div class="contact-column-header">
+          <h1 class="contact-title">Contact the dbNexus Team</h1>
+          <p class="contact-subtitle">Need help with your database schemas, diagrams, or documentation? We're here to help.</p>
         </div>
 
-        <div class="form-row">
-          <div class="form-group half">
-            <label>Your Name <span class="text-danger">*</span></label>
-            <input type="text" class="form-input" formControlName="first_name" />
-            <span class="sub-label">First Name</span>
-            <div *ngIf="contactForm.get('first_name')?.invalid && contactForm.get('first_name')?.touched" class="error-message">First name is required.</div>
-          </div>
-          <div class="form-group half no-label">
-            <input type="text" class="form-input" formControlName="last_name" />
-            <span class="sub-label">Last Name</span>
-            <div *ngIf="contactForm.get('last_name')?.invalid && contactForm.get('last_name')?.touched" class="error-message">Last name is required.</div>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group half">
-            <label>Mobile Number <span class="text-danger">*</span></label>
-            <input type="tel" class="form-input" formControlName="phone_number" />
-            <div *ngIf="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched" class="error-message">
-              <span *ngIf="contactForm.get('phone_number')?.errors?.['required']">Mobile number is required.</span>
-              <span *ngIf="contactForm.get('phone_number')?.errors?.['pattern']">Enter a valid phone number with 10 to 15 digits.</span>
+        <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="contact-form-inner">
+          
+          <!-- Full Name (First Name & Last Name) -->
+          <div class="form-row">
+            <div class="form-group half">
+              <label for="first_name">First Name <span class="text-danger">*</span></label>
+              <input id="first_name" type="text" class="form-input" formControlName="first_name" placeholder="Jane" />
+              <div *ngIf="contactForm.get('first_name')?.invalid && contactForm.get('first_name')?.touched" class="error-message">First name is required.</div>
+            </div>
+            <div class="form-group half">
+              <label for="last_name">Last Name <span class="text-danger">*</span></label>
+              <input id="last_name" type="text" class="form-input" formControlName="last_name" placeholder="Doe" />
+              <div *ngIf="contactForm.get('last_name')?.invalid && contactForm.get('last_name')?.touched" class="error-message">Last name is required.</div>
             </div>
           </div>
-          <div class="form-group half">
-            <label>Country <span class="sub-label">(Optional)</span></label>
-            <div class="custom-dropdown-container" (click)="$event.stopPropagation()">
-              <button type="button" class="form-input custom-dropdown-trigger" (click)="showCountryDropdown = !showCountryDropdown">
-                <span [class.placeholder]="!contactForm.get('country')?.value">
-                  {{ contactForm.get('country')?.value || 'Select Country' }}
-                </span>
-                <svg class="dropdown-chevron" [class.open]="showCountryDropdown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              <div class="custom-dropdown-menu" *ngIf="showCountryDropdown">
-                <button type="button" class="custom-dropdown-option"
-                  *ngFor="let country of countries"
-                  [class.selected]="contactForm.get('country')?.value === country"
-                  (click)="contactForm.patchValue({ country: country }); showCountryDropdown = false">
-                  {{ country }}
+
+          <!-- Work Email -->
+          <div class="form-group">
+            <label for="company_email">Work Email <span class="text-danger">*</span></label>
+            <input id="company_email" type="email" class="form-input" formControlName="company_email" placeholder="jane@company.com" />
+            <div *ngIf="contactForm.get('company_email')?.invalid && contactForm.get('company_email')?.touched" class="error-message">Valid work email is required.</div>
+          </div>
+
+          <!-- Mobile & Country -->
+          <div class="form-row">
+            <div class="form-group half">
+              <label for="phone_number">Mobile Number <span class="text-danger">*</span></label>
+              <input id="phone_number" type="tel" class="form-input" formControlName="phone_number" placeholder="+1 (555) 000-0000" />
+              <div *ngIf="contactForm.get('phone_number')?.invalid && contactForm.get('phone_number')?.touched" class="error-message">
+                <span *ngIf="contactForm.get('phone_number')?.errors?.['required']">Mobile number is required.</span>
+                <span *ngIf="contactForm.get('phone_number')?.errors?.['pattern']">Enter a valid phone number with 10 to 15 digits.</span>
+              </div>
+            </div>
+            <div class="form-group half">
+              <label>Country <span class="sub-label">(Optional)</span></label>
+              <div class="custom-dropdown-container" (click)="$event.stopPropagation()">
+                <button type="button" class="form-input custom-dropdown-trigger" (click)="showCountryDropdown = !showCountryDropdown">
+                  <span [class.placeholder]="!contactForm.get('country')?.value">
+                    {{ contactForm.get('country')?.value || 'Select Country' }}
+                  </span>
+                  <svg class="dropdown-chevron" [class.open]="showCountryDropdown" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </button>
+                <div class="custom-dropdown-menu" *ngIf="showCountryDropdown">
+                  <button type="button" class="custom-dropdown-option"
+                    *ngFor="let country of countries"
+                    [class.selected]="contactForm.get('country')?.value === country"
+                    (click)="contactForm.patchValue({ country: country }); showCountryDropdown = false">
+                    {{ country }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group half">
-            <label>Company Name <span class="sub-label">(Optional)</span></label>
-            <input type="text" class="form-input" formControlName="company_name" />
+          <!-- Company Name & Subject -->
+          <div class="form-row">
+            <div class="form-group half">
+              <label for="company_name">Company Name <span class="sub-label">(Optional)</span></label>
+              <input id="company_name" type="text" class="form-input" formControlName="company_name" placeholder="Acme Inc." />
+            </div>
+            <div class="form-group half">
+              <label for="subject">Subject <span class="sub-label">(Optional)</span></label>
+              <input id="subject" type="text" class="form-input" formControlName="subject" placeholder="Inquiry about..." />
+            </div>
           </div>
-          <div class="form-group half">
-            <label>Subject <span class="sub-label">(Optional)</span></label>
-            <input type="text" class="form-input" formControlName="subject" />
+
+          <!-- Enquiry Type Toggle -->
+          <div class="form-group">
+            <label>Enquiry Type <span class="text-danger">*</span></label>
+            <div class="btn-group-toggle">
+              <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Sales'" (click)="setEnquiryType('Sales')">
+                <span class="toggle-label">$ Sales</span>
+                <span class="toggle-sub-text">sales@dbnexus.io</span>
+              </button>
+              <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Support'" (click)="setEnquiryType('Support')">
+                <span class="toggle-label">@ Support</span>
+                <span class="toggle-sub-text">support@dbnexus.io</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label>Enquiry Type <span class="text-danger">*</span></label>
-          <div class="btn-group-toggle">
-            <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Sales'" (click)="setEnquiryType('Sales')">
-              <span class="toggle-label">$ Sales</span>
-              <span class="toggle-sub-text">sales@dbnexus.io</span>
-            </button>
-            <button type="button" class="btn-toggle" [class.active]="enquiryType === 'Support'" (click)="setEnquiryType('Support')">
-              <span class="toggle-label">@ Support</span>
-              <span class="toggle-sub-text">shoutout@dbnexus.io</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>What is the current issue that you are facing? <span class="text-danger">*</span></label>
-          <textarea class="form-input textarea-tall" formControlName="project_details"></textarea>
-          <div *ngIf="contactForm.get('project_details')?.invalid && contactForm.get('project_details')?.touched" class="error-message">This field is required.</div>
-        </div>
-
-        <div class="form-group">
-          <label>Upload Image <span class="sub-label">(Optional for issues)</span></label>
-          <div class="custom-file-upload">
-            <label for="file-upload" class="file-upload-label"
-              [class.dragover]="isDragging()"
-              (dragover)="onDragOver($event)"
-              (dragleave)="onDragLeave($event)"
-              (drop)="onDrop($event)">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-              <span>{{ selectedFileName() ? selectedFileName() : 'Click or drag and drop to select an image' }}</span>
+          <!-- Message / How can our team help -->
+          <div class="form-group">
+            <label for="project_details">
+              {{ enquiryType === 'Sales' ? 'How can our sales team help you?' : 'What is the current issue that you are facing?' }}
+              <span class="text-danger">*</span>
             </label>
-            <input id="file-upload" type="file" class="hidden-file-input" style="display: none;" accept="image/*" (change)="onFileChange($event)" />
+            <textarea id="project_details" class="form-input textarea-tall" formControlName="project_details"
+              [placeholder]="enquiryType === 'Sales' ? 'Tell us about your project or required seats...' : 'Describe the issue or error in detail...'"></textarea>
+            <div *ngIf="contactForm.get('project_details')?.invalid && contactForm.get('project_details')?.touched" class="error-message">This field is required.</div>
           </div>
-        </div>
 
-        <div *ngIf="submitError() !== ''" class="submit-error-message">
-          {{ submitError() }}
-        </div>
+          <!-- File Upload -->
+          <div class="form-group">
+            <label>Upload Image <span class="sub-label">(Optional for issues)</span></label>
+            <div class="custom-file-upload">
+              <label for="file-upload" class="file-upload-label"
+                [class.dragover]="isDragging()"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDrop($event)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span>{{ selectedFileName() ? selectedFileName() : 'Click or drag and drop to select an image' }}</span>
+              </label>
+              <input #fileUploadInput id="file-upload" type="file" class="hidden-file-input" style="display: none;" accept="image/*" (change)="onFileChange($event)" />
+            </div>
+          </div>
 
-        <div class="form-actions">
-          <button type="submit" class="btn-submit-green" [disabled]="isSubmitting() === true">
-            {{ isSubmitting() === true ? 'Submitting...' : 'Submit' }}
-          </button>
-        </div>
+          <div *ngIf="submitError() !== ''" class="submit-error-message">
+            {{ submitError() }}
+          </div>
 
-      </form>
-    </ng-container>
+          <!-- Submit Button (Vibrant blue, full width / prominent like the image) -->
+          <div class="form-actions">
+            <button type="submit" class="btn-submit-sales" [disabled]="isSubmitting() === true">
+              {{ isSubmitting() === true ? 'Submitting...' : 'Submit Inquiry' }}
+            </button>
+          </div>
 
-    <div *ngIf="submitSuccess() === true" class="success-container">
-      <div class="success-icon-wrapper">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
+          <!-- Direct Email Subtext -->
+          <div class="direct-email-note">
+            Prefer direct email? Contact <a href="mailto:sales@dbnexus.io">sales@dbnexus.io</a>
+          </div>
+
+        </form>
+
       </div>
-      <h3 class="success-title">Request Submitted!</h3>
-      <div class="success-description">
-        Your request has been submitted to the team.<br>We will come back to you shortly.
-      </div>
-      <button class="btn-submit-green" (click)="resetForm()">Send Another</button>
+
+      <!-- RIGHT COLUMN: Looking for Support Card -->
+      <aside class="contact-support-column">
+        <div class="support-sidebar-card">
+          <h2 class="support-title">Looking for Support?</h2>
+          <p class="support-description">
+            If you need technical assistance, billing help, or sales information, please use the channels below for the fastest response.
+          </p>
+
+          <!-- Sales Inquiries Card -->
+          <div class="support-channel-card">
+            <div class="channel-header">
+              <svg class="channel-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span class="channel-title">Sales Inquiries</span>
+            </div>
+            <p class="channel-meta">Custom quotes, enterprise solutions &amp; licensing</p>
+            <a href="mailto:sales@dbnexus.io" class="channel-link">sales@dbnexus.io</a>
+          </div>
+
+          <!-- Email Support Card -->
+          <div class="support-channel-card">
+            <div class="channel-header">
+              <svg class="channel-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              </svg>
+              <span class="channel-title">Email Support</span>
+            </div>
+            <p class="channel-meta">Average response time: Under 2 hours</p>
+            <a href="mailto:support@dbnexus.io" class="channel-link">support@dbnexus.io</a>
+          </div>
+
+          <!-- Help Center Card -->
+          <div class="support-channel-card">
+            <div class="channel-header">
+              <svg class="channel-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+                <path d="M6 6h10"></path>
+                <path d="M6 10h10"></path>
+              </svg>
+              <span class="channel-title">Help Center</span>
+            </div>
+            <p class="channel-meta">Instantly solve issues with our documentation, setup guides, and system status tool.</p>
+            <a routerLink="/docs" target="_blank" class="btn-knowledge-base">Visit Knowledge Base</a>
+          </div>
+
+        </div>
+      </aside>
+
     </div>
+  </main>
 
-  </div>
+  <!-- FOOTER -->
+  <app-footer></app-footer>
 </div>

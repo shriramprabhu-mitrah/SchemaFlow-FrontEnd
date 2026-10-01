@@ -1,19 +1,29 @@
-import { Component, OnInit, ChangeDetectorRef, NgZone, ViewEncapsulation, HostListener, signal } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, HostListener, signal, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { EnquiryService } from '../../core/services/enquiry.service';
+import { AuthService } from '../../core/services/auth.service';
+import { DashboardService } from '../../core/services/dashboard.service';
+import { SeoService } from '../../core/services/seo.service';
 import { Icons } from '../../core/component/icons/icons';
+import { ButtonComponent } from '../../shared/button/button';
+import { Footer } from '../../shared/components/footer/footer';
 
 @Component({
   selector: 'app-contact',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, Icons],
+  imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, Icons, ButtonComponent, Footer],
   templateUrl: './contact.html',
   styleUrls: ['./contact.scss'],
   encapsulation: ViewEncapsulation.None
 })
 export class ContactComponent implements OnInit {
-  
+  @ViewChild('fileUploadInput') fileUploadInput?: ElementRef<HTMLInputElement>;
+
+  isLoggedIn = false;
+  isMobileMenuOpen = false;
+
   contactForm!: FormGroup;
   isSubmitting = signal(false);
   submitSuccess = signal(false);
@@ -21,16 +31,40 @@ export class ContactComponent implements OnInit {
   isDragging = signal(false);
   selectedFileName = signal('');
   selectedFile: File | null = null;
-  enquiryType: string = 'Support';
+  enquiryType: string = 'Sales';
   showCountryDropdown = false;
   countries = [
     'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
     'France', 'India', 'Japan', 'Brazil', 'Other'
   ];
 
-  constructor(private fb: FormBuilder, private enquiryService: EnquiryService) {}
+  private fb = inject(FormBuilder);
+  private enquiryService = inject(EnquiryService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private svc = inject(DashboardService);
+  private seoService = inject(SeoService);
 
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'Contact the dbNexus Team - dbNexus',
+      description: 'Contact the dbNexus team for sales inquiries, enterprise solutions, technical help, or documentation.',
+      url: 'https://dbnexus.up.railway.app/contact'
+    });
+
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      this.isLoggedIn = this.auth.isLoggedIn();
+    }
+
+    const typeParam = this.route.snapshot.queryParamMap.get('type');
+    if (typeParam && (typeParam.toLowerCase() === 'sales' || typeParam.toLowerCase() === 'support')) {
+      this.enquiryType = typeParam.charAt(0).toUpperCase() + typeParam.slice(1).toLowerCase();
+    } else {
+      this.enquiryType = 'Sales';
+    }
+
     this.contactForm = this.fb.group({
       company_email: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)]],
       first_name: ['', Validators.required],
@@ -38,12 +72,29 @@ export class ContactComponent implements OnInit {
       company_name: [''],
       subject: [''],
       project_details: ['', Validators.required],
-      // Required by backend but we can hardcode or leave blank if we remove them from UI
-      enquiry_type: ['Support'], 
+      enquiry_type: [this.enquiryType], 
       phone_number: ['', [Validators.required, Validators.pattern(/^(?=(?:\D*\d){10,15}\D*$)\+?[\d\s()-]+$/)]],
       country: [''],
       image_url: ['']
     });
+  }
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  onCreateDiagram(): void {
+    if (this.isLoggedIn) {
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.router.navigate(['/dashboard'], { queryParams: { sample: 'true' } });
+    }
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.isLoggedIn = false;
+    this.svc.showToast('Logged out successfully.', 2500, 'success');
   }
 
   resetForm() {
@@ -51,9 +102,23 @@ export class ContactComponent implements OnInit {
     this.submitError.set('');
     this.selectedFileName.set('');
     this.selectedFile = null;
-    this.enquiryType = 'Support';
+    if (this.fileUploadInput?.nativeElement) {
+      this.fileUploadInput.nativeElement.value = '';
+    }
+    this.enquiryType = 'Sales';
     this.contactForm.reset();
-    this.contactForm.patchValue({ enquiry_type: 'Support' });
+    this.contactForm.patchValue({
+      enquiry_type: 'Sales',
+      first_name: '',
+      last_name: '',
+      company_email: '',
+      phone_number: '',
+      company_name: '',
+      subject: '',
+      project_details: '',
+      country: '',
+      image_url: ''
+    });
     this.contactForm.markAsUntouched();
     this.contactForm.markAsPristine();
   }
@@ -154,13 +219,16 @@ export class ContactComponent implements OnInit {
     }
 
     this.enquiryService.submitEnquiry(formValue).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.isSubmitting.set(false);
-        this.submitSuccess.set(true);
+        this.resetForm();
+        this.svc.showToast(res?.message || 'Your inquiry has been submitted successfully! We will get back to you shortly.', 4000, 'success');
       },
       error: (err: any) => {
         this.isSubmitting.set(false);
-        this.submitError.set(err.error?.message || 'Something went wrong. Please try again.');
+        const errMsg = err?.error?.message || 'Something went wrong. Please try again.';
+        this.submitError.set(errMsg);
+        this.svc.showToast(errMsg, 4000, 'error');
       }
     });
   }
