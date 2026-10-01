@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, OnChanges, SimpleChanges, OnInit, ChangeDetectorRef, NgZone, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -83,7 +83,14 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   inviteEmail = '';
   invitedEmailsChips: string[] = [];
   invitePermission: PermissionType = 'Viewer';
-  membersList: WorkspaceMemberItem[] = [];
+  
+  private _membersListSignal = signal<WorkspaceMemberItem[]>([]);
+  get membersList(): WorkspaceMemberItem[] {
+    return this._membersListSignal();
+  }
+  set membersList(val: WorkspaceMemberItem[]) {
+    this._membersListSignal.set(val);
+  }
 
   permissionDropdownOpen = false;
   activeMemberDropdownIndex: number | string | null = null;
@@ -692,12 +699,15 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
             // Ensure workspace owner is always present in members list
             const ownerEmail = this.editingWorkspace?.user_email || this.getWorkspaceOwnerEmail(this.editingWorkspace!) || this.userEmail;
             if (ownerEmail && !this.membersList.some(m => m.permission === 'Owner' || m.email.toLowerCase() === ownerEmail.toLowerCase())) {
-              this.membersList.unshift({
-                email: ownerEmail,
-                permission: 'Owner',
-                isAdminSelected: true,
-                featureAccess: this.availableFeatures.map(f => f.feature_key)
-              });
+              this.membersList = [
+                {
+                  email: ownerEmail,
+                  permission: 'Owner',
+                  isAdminSelected: true,
+                  featureAccess: this.availableFeatures.map(f => f.feature_key)
+                },
+                ...this.membersList
+              ];
             }
 
             this.membersTotal = this.filteredMembersList.length;
@@ -766,7 +776,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     if (this.activeTab === 'view-members') {
       this.loadMembersForView(1);
     } else if (this.activeTab === 'edit-workspace') {
-      this.membersList.sort((a, b) => {
+      const newList = [...this.membersList];
+      newList.sort((a, b) => {
         if (a.permission === 'Owner') return -1;
         if (b.permission === 'Owner') return 1;
         const valA = ((a as any)[field] || '').toString().toLowerCase();
@@ -774,6 +785,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         const comp = valA.localeCompare(valB);
         return this.membersSortOrder === 'asc' ? comp : -comp;
       });
+      this.membersList = newList;
       this.membersPage = 1;
       this.cdr.detectChanges();
     } else {
@@ -1040,11 +1052,11 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
               if (!emailStr) continue;
 
               const isValid = item?.valid === true ||
-                              item?.valid === 'true' ||
-                              item?.valid === 1 ||
-                              item?.isValid === true ||
-                              item?.status === 'valid' ||
-                              (item?.valid === undefined && !item?.error && item?.valid !== false && !item?.message?.toLowerCase().includes('not registered'));
+                item?.valid === 'true' ||
+                item?.valid === 1 ||
+                item?.isValid === true ||
+                item?.status === 'valid' ||
+                (item?.valid === undefined && !item?.error && item?.valid !== false && !item?.message?.toLowerCase().includes('not registered'));
 
               if (isValid) {
                 validEmailsToAdd.push(emailStr);
@@ -1079,7 +1091,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
               }
             }
 
-            // Reassign membersList immutably so Angular change detection updates immediately
+            // Reassign membersList immutably before change detection
             this.membersList = [...this.membersList];
 
             // Update member totals for pagination if editing workspace
@@ -1095,12 +1107,18 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
             }
 
             this.permissionDropdownOpen = false;
+            
+            // Force change detection immediately
             this.cdr.markForCheck();
             this.cdr.detectChanges();
+            
+            // Hack to trigger a global zone tick in case this component's CDR is detached
             setTimeout(() => {
+              this.membersList = [...this.membersList];
               this.cdr.markForCheck();
               this.cdr.detectChanges();
-            }, 0);
+              window.dispatchEvent(new Event('resize'));
+            }, 10);
           } catch (e) {
             console.error('Error handling member validation response:', e);
           }
@@ -1131,7 +1149,10 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       idx = this.membersList.findIndex(m => m === target || (m.email && m.email.toLowerCase() === target.email?.toLowerCase()));
     }
     if (idx >= 0 && idx < this.membersList.length) {
-      this.membersList.splice(idx, 1);
+      const newList = [...this.membersList];
+      newList.splice(idx, 1);
+      this.membersList = newList;
+      
       this.membersTotal = this.filteredMembersList.length;
       this.membersTotalPages = Math.max(1, Math.ceil(this.membersTotal / this.membersLimit));
       if (this.membersPage > this.membersTotalPages) {
@@ -1484,22 +1505,26 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
     this.svc.deleteWorkspaceMember(ws.id, member.id).subscribe({
       next: () => {
-        this.deleteMemberConfirm.isDeleting = false;
-        this.deleteMemberConfirm.deleteSuccess = true;
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          this.deleteMemberConfirm.isDeleting = false;
+          this.deleteMemberConfirm.deleteSuccess = true;
+          this.cdr.detectChanges();
 
-        // Reload the members list
-        this.loadMembersForView(this.membersPage);
+          // Reload the members list
+          this.loadMembersForView(this.membersPage);
 
-        setTimeout(() => {
-          this.closeDeleteMemberConfirm();
-        }, 1500);
+          setTimeout(() => {
+            this.closeDeleteMemberConfirm();
+          }, 1500);
+        });
       },
       error: (err) => {
-        console.error('Failed to delete workspace member:', err);
-        this.deleteMemberConfirm.isDeleting = false;
-        this.svc.showToast(err?.error?.message || 'Failed to delete workspace member.', 3000, 'error');
-        this.cdr.detectChanges();
+        this.ngZone.run(() => {
+          console.error('Failed to delete workspace member:', err);
+          this.deleteMemberConfirm.isDeleting = false;
+          this.svc.showToast(err?.error?.message || 'Failed to delete workspace member.', 3000, 'error');
+          this.cdr.detectChanges();
+        });
       }
     });
   }

@@ -10,14 +10,13 @@ import { DashboardService } from '../../core/services/dashboard.service';
 import { OrganizationService } from '../organization/services/organization.service';
 import { EntitlementService } from '../../core/services/entitlement.service';
 import { SeoService } from '../../core/services/seo.service';
-import { ContactSalesModalComponent } from '../../shared/components/modals/contact-sales-modal/contact-sales-modal';
 import { Footer } from '../../shared/components/footer/footer';
 import { environment } from '../../../environment/environment';
 
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, ContactSalesModalComponent, Footer],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer],
   templateUrl: './pricing.html',
 })
 export class PricingComponent implements OnInit {
@@ -144,6 +143,26 @@ export class PricingComponent implements OnInit {
     this.loadPlans();
   }
 
+  getPlanOrder(plan: any): number {
+    if (!plan) return 999999;
+    const val = plan.display_order ?? plan.order;
+    if (val !== null && val !== undefined && val !== '') {
+      const num = Number(val);
+      if (!isNaN(num)) return num;
+    }
+    return 999999;
+  }
+
+  getFeatureOrder(item: any): number {
+    if (!item) return 999999;
+    const val = item.display_order ?? item.feature_order ?? item.order;
+    if (val !== null && val !== undefined && val !== '') {
+      const num = Number(val);
+      if (!isNaN(num)) return num;
+    }
+    return 999999;
+  }
+
   loadPlans(): void {
     const url = this.appConfig.environment?.pricingApiUrls?.plans;
     if (url) {
@@ -157,7 +176,13 @@ export class PricingComponent implements OnInit {
               this.overallPercentage = Number(found.overall_percentage || found.discount_percentage) || 20;
             }
           }
-          this.plans = res?.data && res.data.length > 0 ? res.data : [];
+          const loadedPlans = res?.data && res.data.length > 0 ? res.data : [];
+          this.plans = [...loadedPlans].sort((a, b) => {
+            const orderA = this.getPlanOrder(a);
+            const orderB = this.getPlanOrder(b);
+            if (orderA !== orderB) return orderA - orderB;
+            return (Number(a.plan_id || a.id || 0) - Number(b.plan_id || b.id || 0));
+          });
           setTimeout(() => {
             this.loading = false;
             this.cdr.detectChanges();
@@ -180,10 +205,17 @@ export class PricingComponent implements OnInit {
     }
   }
 
-  /** Plans to display (all except enterprise by default) */
+  /** Plans to display (all except enterprise by default, sorted by display_order) */
   get displayedPlans(): any[] {
-    // Hide enterprise plan
-    return this.plans.filter(p => p.slug !== 'enterprise');
+    // Hide enterprise plan and sort by display_order
+    return this.plans
+      .filter(p => p.slug !== 'enterprise')
+      .sort((a, b) => {
+        const orderA = this.getPlanOrder(a);
+        const orderB = this.getPlanOrder(b);
+        if (orderA !== orderB) return orderA - orderB;
+        return (Number(a.plan_id || a.id || 0) - Number(b.plan_id || b.id || 0));
+      });
   }
 
   onCreateDiagram(): void {
@@ -243,7 +275,6 @@ export class PricingComponent implements OnInit {
 
   getFeatureName(ent: any): string {
     if (ent.isHeader) return ent.text;
-    if (ent.display_text) return ent.display_text;
     if (ent.feature_name) return ent.feature_name;
 
     if (ent.feature_key) {
@@ -326,6 +357,11 @@ export class PricingComponent implements OnInit {
       if (ent.feature_key === 'document_view' && ent.limit_value && Number(ent.limit_value) > 0) return false;
 
       return true;
+    }).sort((a: any, b: any) => {
+      const orderA = this.getFeatureOrder(a);
+      const orderB = this.getFeatureOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
     });
   }
 
@@ -400,6 +436,11 @@ export class PricingComponent implements OnInit {
       const rep = getEntRepresentation(ent);
       const prevRep = prevFeatureMap.get(ent.feature_key);
       return prevRep !== rep;
+    }).sort((a: any, b: any) => {
+      const orderA = this.getFeatureOrder(a);
+      const orderB = this.getFeatureOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
     });
 
     const headerItem = {
@@ -456,14 +497,21 @@ export class PricingComponent implements OnInit {
     for (const plan of this.displayedPlans) {
       if (plan.entitlements) {
         for (const ent of plan.entitlements) {
-          if (!this.isTrue(ent.show_in_pricing) || !this.isTrue(ent.feature_show_in_pricing)) continue;
+          if (ent.feature_show_in_pricing !== undefined && ent.feature_show_in_pricing !== null && !this.isTrue(ent.feature_show_in_pricing)) {
+            continue;
+          }
           if (!featuresMap.has(ent.feature_key)) {
             featuresMap.set(ent.feature_key, ent);
           }
         }
       }
     }
-    return Array.from(featuresMap.values());
+    return Array.from(featuresMap.values()).sort((a, b) => {
+      const orderA = this.getFeatureOrder(a);
+      const orderB = this.getFeatureOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
+    });
   }
 
   get groupedFeatures(): { category: string; features: any[] }[] {
@@ -473,7 +521,9 @@ export class PricingComponent implements OnInit {
     for (const plan of this.displayedPlans) {
       if (plan.entitlements) {
         for (const ent of plan.entitlements) {
-          if (!this.isTrue(ent.show_in_pricing) || !this.isTrue(ent.feature_show_in_pricing)) continue;
+          if (ent.feature_show_in_pricing !== undefined && ent.feature_show_in_pricing !== null && !this.isTrue(ent.feature_show_in_pricing)) {
+            continue;
+          }
           const cat = ent.category || ent.feature_category || 'Features';
           if (!categoryFeatureMap.has(cat)) {
             categoryFeatureMap.set(cat, new Map<string, any>());
@@ -487,9 +537,23 @@ export class PricingComponent implements OnInit {
       }
     }
 
+    // Sort categories based on the lowest display_order of their features
+    categoryOrder.sort((catA, catB) => {
+      const featuresA = Array.from(categoryFeatureMap.get(catA)!.values());
+      const featuresB = Array.from(categoryFeatureMap.get(catB)!.values());
+      const minA = featuresA.length > 0 ? Math.min(...featuresA.map(f => this.getFeatureOrder(f))) : 999999;
+      const minB = featuresB.length > 0 ? Math.min(...featuresB.map(f => this.getFeatureOrder(f))) : 999999;
+      return minA - minB;
+    });
+
     return categoryOrder.map(cat => ({
       category: cat,
-      features: Array.from(categoryFeatureMap.get(cat)!.values())
+      features: Array.from(categoryFeatureMap.get(cat)!.values()).sort((a, b) => {
+        const orderA = this.getFeatureOrder(a);
+        const orderB = this.getFeatureOrder(b);
+        if (orderA !== orderB) return orderA - orderB;
+        return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
+      })
     }));
   }
 
@@ -618,9 +682,8 @@ export class PricingComponent implements OnInit {
   contactModalMessage = 'Your free trial has expired. To continue using premium features, please contact our sales team.';
 
   openContactModal(): void {
-    const trialDuration = this.formatTrialDuration();
-    this.contactModalMessage = `Your ${trialDuration} free trial has expired. To continue using premium features, please contact our sales team.`;
-    this.showContactModal = true;
+    window.open('/contact', '_blank');
+    this.router.navigate(['/contact']);
   }
 
   closeContactModal(): void {
@@ -687,8 +750,8 @@ export class PricingComponent implements OnInit {
 
   contactSalesFromAlert(): void {
     this.closePlanSwitchAlert();
-    this.contactModalMessage = 'If you want to switch to another plan, please cancel your ongoing plan first.';
-    this.showContactModal = true;
+    window.open('/contact', '_blank');
+    this.router.navigate(['/contact']);
   }
 
   selectPlan(plan: any): void {
@@ -712,14 +775,14 @@ export class PricingComponent implements OnInit {
     }
 
     if (this.auth.isOrganizationMember() && plan.slug !== 'free' && plan.slug !== this.currentPlanSlug) {
-      this.contactModalMessage = 'You are a team member and cannot modify the organization plan. Please contact your administrator or sales.';
-      this.showContactModal = true;
+      window.open('/contact', '_blank');
+      this.router.navigate(['/contact']);
       return;
     }
 
     if ((this.currentPlanStatus === 'active' || this.currentPlanStatus === 'trial') && this.currentPlanSlug !== 'free' && plan.slug !== this.currentPlanSlug && plan.slug !== 'free') {
-      this.contactModalMessage = 'To switch to a different plan, you need to cancel your ongoing plan first. Please contact sales.';
-      this.showContactModal = true;
+      window.open('/contact', '_blank');
+      this.router.navigate(['/contact']);
       return;
     }
 
@@ -845,7 +908,7 @@ export class PricingComponent implements OnInit {
     const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
     const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
 
-    const planType = `${plan.slug}_${this.isAnnual ? 'yearly' : 'monthly'}`;
+    const planType = `${plan.slug}_${this.isAnnual ? 'annual' : 'monthly'}`;
 
     this.http.post<any>(createSubUrl, {
       planType: planType,

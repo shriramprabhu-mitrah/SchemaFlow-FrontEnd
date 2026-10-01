@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ViewEncapsulation, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -36,6 +36,66 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
   tocItems: TocItem[] = [];
   activeTocId: string | null = null;
 
+  // Responsive UI States
+  mobileSidebarOpen = false;
+  mobileTocOpen = false;
+  mobileSearchOpen = false;
+
+  get logoSize(): string {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      return '24';
+    }
+    return '56';
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    if (typeof window !== 'undefined' && window.innerWidth > 1024) {
+      this.mobileSidebarOpen = false;
+      this.mobileSearchOpen = false;
+    }
+  }
+
+  toggleMobileSidebar(): void {
+    this.mobileSidebarOpen = !this.mobileSidebarOpen;
+    if (this.mobileSidebarOpen) {
+      this.mobileTocOpen = false;
+      this.mobileSearchOpen = false;
+    }
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen = false;
+  }
+
+  toggleMobileToc(): void {
+    this.mobileTocOpen = !this.mobileTocOpen;
+    if (this.mobileTocOpen) {
+      this.mobileSidebarOpen = false;
+    }
+  }
+
+  closeMobileToc(): void {
+    this.mobileTocOpen = false;
+  }
+
+  toggleMobileSearch(): void {
+    this.mobileSearchOpen = !this.mobileSearchOpen;
+    if (this.mobileSearchOpen) {
+      this.mobileSidebarOpen = false;
+      this.mobileTocOpen = false;
+      setTimeout(() => {
+        const input = document.getElementById('mobile-search-input') as HTMLInputElement;
+        if (input) input.focus();
+      }, 60);
+    }
+  }
+
+  closeMobileSearch(): void {
+    this.mobileSearchOpen = false;
+    this.searchQuery = '';
+  }
+
   // Collapsible Sidebar Section Accordions
   collapsedSections = new Set<string>();
 
@@ -63,6 +123,7 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
 
   selectSearchResult(page: DocPage): void {
     this.searchQuery = '';
+    this.closeMobileSearch();
     this.selectDoc(page);
   }
 
@@ -155,10 +216,14 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
   }
 
   selectDoc(page: DocPage): void {
+    this.closeMobileSidebar();
+    this.closeMobileToc();
+    this.closeMobileSearch();
     this.router.navigate(['/docs', page.slug]);
   }
 
   scrollToToc(tocId: string, event?: Event): void {
+    this.closeMobileToc();
     if (event) {
       event.preventDefault();
       event.stopPropagation();

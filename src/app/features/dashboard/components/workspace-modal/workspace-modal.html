@@ -1,5 +1,7 @@
 <div class="workspace-modal-backdrop" *ngIf="visible">
-  <div class="workspace-modal-container" (click)="onContainerClick($event)">
+  <div class="workspace-modal-container"
+    [class.compact-modal]="activeTab === 'create-workspace' || activeTab === 'edit-workspace'"
+    (click)="onContainerClick($event)">
     <app-loader *ngIf="isCreatingWorkspace || isUpdatingWorkspace"
       [text]="isCreatingWorkspace ? 'Creating workspace...' : 'Updating workspace...'"></app-loader>
 
@@ -1103,8 +1105,8 @@
               <input #emailInput2 type="text" class="inline-input"
                 style="border: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;"
                 [placeholder]="invitedEmailsChips.length > 0 ? '' : 'Enter email address to add member'"
-                [(ngModel)]="inviteEmail" (input)="clearErrors()" (keydown)="onEmailInputKeyDown($event)" (blur)="addEmailChip()"
-                spellcheck="false" />
+                [(ngModel)]="inviteEmail" (input)="clearErrors()" (keydown)="onEmailInputKeyDown($event)"
+                (blur)="addEmailChip()" spellcheck="false" />
             </div>
 
             <button type="button" class="btn-invite-action" (click)="addMember()">
@@ -1156,7 +1158,8 @@
                     </div>
                     <span class="member-email-text">{{ m.email }} <span class="you-tag"
                         *ngIf="m.email.toLowerCase() === userEmail.toLowerCase()">(You)</span>
-                      <span class="pending-status-tag" *ngIf="m.status && m.status.toLowerCase() === 'pending'">Pending</span>
+                      <span class="pending-status-tag"
+                        *ngIf="m.status && m.status.toLowerCase() === 'pending'">Pending</span>
                     </span>
                   </div>
 
@@ -1164,14 +1167,16 @@
                   <div class="owner-badge-text" *ngIf="m.permission === 'Owner'">Owner</div>
 
                   <!-- Display static text badge for pending members (no permission change dropdown) -->
-                  <div class="owner-badge-text" *ngIf="m.permission !== 'Owner' && m.status && m.status.toLowerCase() === 'pending'">
+                  <div class="owner-badge-text"
+                    *ngIf="m.permission !== 'Owner' && m.status && m.status.toLowerCase() === 'pending'">
                     {{ getPermissionLabel(m.permission) }}
                   </div>
 
-                  <div class="member-actions-wrap" *ngIf="m.permission !== 'Owner' && (!m.status || m.status.toLowerCase() !== 'pending')"
+                  <div class="member-actions-wrap" *ngIf="m.permission !== 'Owner'"
                     style="display: flex; align-items: center; gap: 8px;">
                     <!-- Display dropdown for normal members -->
-                    <div class="member-permission-dropdown-wrap" (click)="$event.stopPropagation()">
+                    <div class="member-permission-dropdown-wrap"
+                      *ngIf="!m.status || m.status.toLowerCase() !== 'pending'" (click)="$event.stopPropagation()">
                       <button type="button" class="btn-member-perm-select"
                         (click)="toggleMemberDropdown(m.email, $event)">
                         <span>{{ getPermissionLabel(m.permission) }}</span>
@@ -1364,7 +1369,8 @@
                         <span class="member-email-text">
                           {{ m.email }}
                           <span class="you-tag" *ngIf="m.email.toLowerCase() === userEmail.toLowerCase()">(You)</span>
-                          <span class="pending-status-tag" *ngIf="m.status && m.status.toLowerCase() === 'pending'">Pending</span>
+                          <span class="pending-status-tag"
+                            *ngIf="m.status && m.status.toLowerCase() === 'pending'">Pending</span>
                         </span>
                       </div>
                     </td>
@@ -1380,7 +1386,7 @@
 
                     <td class="col-actions">
                       <button type="button" class="btn-delete-member"
-                        *ngIf="m.permission !== 'Owner' && canDeleteMember() && (!m.status || m.status.toLowerCase() !== 'pending')"
+                        *ngIf="m.permission !== 'Owner' && canDeleteMember()"
                         (click)="showDeleteMemberConfirm(m, $event)" title="Remove Member">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                           stroke-width="2">

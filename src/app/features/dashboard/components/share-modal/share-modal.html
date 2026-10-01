@@ -64,15 +64,12 @@
           <label class="section-desc mb-2">Password</label>
           <div class="password-input-wrapper" style="position: relative; display: flex; align-items: center;">
             <input [type]="showPassword ? 'text' : 'password'" class="db-input w-100" style="padding-right: 40px;"
-              [class.input-error]="passwordError"
-              placeholder="Enter password to protect this diagram" [(ngModel)]="password"
-              (keydown)="onPasswordKeyDown($event)"
-              (paste)="onPasswordPaste($event)"
-              (input)="onPasswordInput($event)"
-              (keydown.enter)="saveSharingSettings()"
+              [class.input-error]="passwordError" placeholder="Enter password to protect this diagram"
+              [(ngModel)]="password" (keydown)="onPasswordKeyDown($event)" (paste)="onPasswordPaste($event)"
+              (input)="onPasswordInput($event)" (keydown.enter)="saveSharingSettings()"
               [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
-            <button type="button" class="password-toggle-btn"
-              (click)="showPassword = !showPassword" [disabled]="hasDbmlErrors() || isDiagramEmpty()"
+            <button type="button" class="password-toggle-btn" (click)="showPassword = !showPassword"
+              [disabled]="hasDbmlErrors() || isDiagramEmpty()"
               [title]="showPassword ? 'Hide password' : 'Show password'">
               <svg *ngIf="!showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -89,7 +86,8 @@
             </button>
           </div>
           <div class="field-error-text" *ngIf="passwordError">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -110,7 +108,8 @@
         <!-- Share Link with Copy -->
         <p class="section-desc mb-2">Share this link with others</p>
         <div class="embed-code-box mb-3">
-          <input type="text" class="db-input code-input" [value]="getShareLink()" readonly [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
+          <input type="text" class="db-input code-input" [value]="getShareLink()" readonly
+            [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
           <button class="btn btn-primary copy-btn" (click)="copyToClipboard(getShareLink(), 'link')"
             [disabled]="hasDbmlErrors() || isDiagramEmpty()" title="Copy Link">
             <svg *ngIf="!linkCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -131,7 +130,8 @@
           <input type="text" class="db-input flex-grow" placeholder="Email, comma or space separated"
             [(ngModel)]="emailsInput" [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
           <button class="btn btn-primary invite-btn" (click)="sendEmails()"
-            [disabled]="sendingEmails || emailsInput.trim().length === 0 || hasDbmlErrors() || isDiagramEmpty()" style="margin-left: 8px;">
+            [disabled]="sendingEmails || emailsInput.trim().length === 0 || hasDbmlErrors() || isDiagramEmpty()"
+            style="margin-left: 8px;">
             Share
           </button>
         </div>

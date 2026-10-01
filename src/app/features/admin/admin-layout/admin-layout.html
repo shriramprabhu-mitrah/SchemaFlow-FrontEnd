@@ -4,16 +4,16 @@
 
   <!-- Sidebar -->
   <aside class="admin-sidebar" [class.mobile-open]="mobileSidebarOpen">
-    <div class="sidebar-header sidebar-header-flex">
+    <div class="sidebar-header sidebar-header-flex" style="width: 100%; min-width: 100%; display: flex; align-items: center; padding: 16px 20px; box-sizing: border-box;">
       <!-- Logo and brand text always centered inside header -->
       <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
-        [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
+        [class.tt-right]="sidebarCollapsed" data-tt="Go to Home" style="width: auto; display: flex; align-items: center;">
         <app-icons name="db-diagram-logo" size="48" class="brand-icon-wrap"></app-icons>
         <span class="brand-text brand-text-flex dbnexus-text"
           *ngIf="!sidebarCollapsed || mobileSidebarOpen">dbNexus</span>
       </a>
       <!-- Mobile Close Button -->
-      <button class="mobile-close-btn" (click)="closeMobileSidebar()">
+      <button class="mobile-close-btn" (click)="closeMobileSidebar()" style="margin-left: auto; align-items: center; justify-content: center; padding: 6px; background: none; border: none; color: #64748b; cursor: pointer;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -45,6 +45,15 @@
           stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <polygon
             points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+        <!-- AI Configs -->
+        <svg *ngIf="item.icon === 'ai-configs'" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+          <path d="M5 3v4"/>
+          <path d="M19 17v4"/>
+          <path d="M3 5h4"/>
+          <path d="M17 19h4"/>
         </svg>
         <!-- Organizations -->
         <svg *ngIf="item.icon === 'organizations'" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -166,7 +175,4 @@
       <router-outlet></router-outlet>
     </div>
   </main>
-
-  <!-- Global Admin Toaster Component -->
-  <app-toast location="global"></app-toast>
 </div>

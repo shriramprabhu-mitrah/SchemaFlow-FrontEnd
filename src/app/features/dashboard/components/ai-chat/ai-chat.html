@@ -1,0 +1,479 @@
+<div class="ai-chat-container" [class.light]="svc.theme() === 'light'">
+  <!-- Top Session Header -->
+  <div class="ai-chat-header">
+    <div class="header-left">
+      <svg class="chat-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span class="session-title">{{ sessionTitle() }}</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Reset Chat Button -->
+      <button type="button" class="header-action-btn reset-action tt tt-bottom" data-tt="Reset Chat"
+        aria-label="Reset Chat" (click)="resetChat()" [disabled]="isDeletingChat() || isCreatingSession()">
+        <svg *ngIf="!isDeletingChat() && !isCreatingSession()" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+        <span *ngIf="isDeletingChat() || isCreatingSession()" class="btn-mini-spinner"></span>
+      </button>
+
+      <!-- Expand / Collapse Chat Button -->
+      <button type="button" class="header-action-btn tt tt-bottom"
+        [attr.data-tt]="svc.isAiChatExpanded() ? 'Collapse Chat' : 'Expand Chat'"
+        [attr.aria-label]="svc.isAiChatExpanded() ? 'Collapse Chat' : 'Expand Chat'" (click)="svc.toggleAiChatExpand()">
+        <svg *ngIf="!svc.isAiChatExpanded()" width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+        <svg *ngIf="svc.isAiChatExpanded()" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 14 10 14 10 20"></polyline>
+          <polyline points="20 10 14 10 14 4"></polyline>
+          <line x1="14" y1="10" x2="21" y2="3"></line>
+          <line x1="10" y1="14" x2="3" y2="21"></line>
+        </svg>
+      </button>
+
+      <!-- Close Button -->
+      <button type="button" class="header-action-btn close-action tt tt-bottom" data-tt="Close AI Chat"
+        aria-label="Close AI Chat" (click)="onClose()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Scrollable Message Body -->
+  <div class="ai-chat-body" #messagesContainer (scroll)="onChatScroll($event)">
+    <!-- Loading Session / History Indicator -->
+    <div class="ai-loading-history" *ngIf="(isLoadingSessions() || isLoadingHistory()) && messages().length === 0">
+      <div class="loading-spinner"></div>
+      <span>Loading chat session...</span>
+    </div>
+
+    <!-- Welcome View (Default when no messages and not loading) -->
+    <div class="ai-welcome-view"
+      *ngIf="!isLoadingSessions() && !isLoadingHistory() && messages().length === 0 && !isThinking()">
+      <!-- Hero Header -->
+      <div class="welcome-hero">
+        <div class="ai-sparkle-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+            <path d="M5 3v4" />
+            <path d="M19 17v4" />
+            <path d="M3 5h4" />
+            <path d="M17 19h4" />
+          </svg>
+        </div>
+        <div class="welcome-title-wrap">
+          <h2 class="welcome-title">Welcome to DBNexus AI</h2>
+          <span class="beta-badge">BETA</span>
+        </div>
+        <p class="welcome-subtitle">Your intelligent assistant for database design</p>
+      </div>
+
+      <!-- Quick Suggested Prompt Cards List -->
+      <div class="prompt-cards-list">
+        <div *ngFor="let card of promptCards" class="prompt-card" (click)="selectCard(card)">
+          <div class="card-icon-box">
+            <!-- Table Groups Icon -->
+            <svg *ngIf="card.icon === 'table_groups'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+
+            <!-- Timestamp Icon -->
+            <svg *ngIf="card.icon === 'timestamp'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+
+            <!-- Relationships Icon -->
+            <svg *ngIf="card.icon === 'relationships'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="6" r="3"></circle>
+              <circle cx="18" cy="18" r="3"></circle>
+              <line x1="8.5" y1="8.5" x2="15.5" y2="15.5"></line>
+            </svg>
+
+            <!-- Indexes Icon -->
+            <svg *ngIf="card.icon === 'indexes'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+
+            <!-- Learn Database Design Icon -->
+            <svg *ngIf="card.icon === 'learn'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+
+            <!-- Remap Data Types Icon -->
+            <svg *ngIf="card.icon === 'remap'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>
+          </div>
+
+          <div class="card-text-wrap">
+            <h4 class="card-title">{{ card.title }}</h4>
+            <p class="card-desc">{{ card.desc }}</p>
+          </div>
+
+          <div class="card-right-action" *ngIf="card.hasChevron">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Messages View -->
+    <div class="ai-messages-list" *ngIf="messages().length > 0 || isThinking()">
+      <!-- Loading More / Older History Indicator -->
+      <div class="ai-loading-older-history" *ngIf="isLoadingMoreHistory()">
+        <div class="loading-spinner small"></div>
+        <span>Loading older messages...</span>
+      </div>
+
+      <div *ngFor="let msg of messages()" class="chat-message-item" [class.user-message]="msg.sender === 'user'"
+        [class.assistant-message]="msg.sender === 'assistant'">
+        <!-- Message Avatar Column with Corner Delete Button -->
+        <div class="msg-avatar-col" *ngIf="msg.sender === 'assistant'">
+          <div class="msg-avatar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+            </svg>
+          </div>
+
+          <!-- Delete latest chat button at the bottom-left corner -->
+          <button type="button" class="btn-delete-chat-corner"
+            *ngIf="isLatestMessage(msg) && !isThinking() && !msg.isStreaming" (click)="deleteLatestChat(msg)"
+            [disabled]="isDeletingChat()" title="Delete latest chat" aria-label="Delete latest chat">
+            <svg *ngIf="!isDeletingChat()" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            <span *ngIf="isDeletingChat()" class="btn-mini-spinner"></span>
+          </button>
+        </div>
+
+        <div class="msg-content-wrap">
+          <div class="msg-bubble">
+            <!-- Code Snippet Box if provided (displayed before description) -->
+            <div class="code-snippet-box"
+              *ngIf="msg.codeSnippet && (msg.displayCodeSnippet !== undefined ? msg.displayCodeSnippet : msg.codeSnippet)">
+              <div class="snippet-header">
+                <span class="snippet-lang">DBML</span>
+                <div class="snippet-actions">
+                  <button type="button" class="btn-snippet-copy"
+                    (click)="copySnippet(msg.codeSnippet || msg.displayCodeSnippet || '', msg.id)">
+                    <svg *ngIf="copiedSnippetId() !== msg.id" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <svg *ngIf="copiedSnippetId() === msg.id" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="#10b981" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>{{ copiedSnippetId() === msg.id ? 'Copied!' : 'Copy' }}</span>
+                  </button>
+                  <button type="button" class="btn-snippet-apply" (click)="applySnippet(msg)"
+                    [disabled]="msg.isStreaming || msg.applied || applyingSnippetMsgId() === msg.id">
+                    <svg *ngIf="applyingSnippetMsgId() !== msg.id" width="12" height="12" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 18 22 12 16 6"></polyline>
+                      <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    <span *ngIf="applyingSnippetMsgId() === msg.id" class="btn-mini-spinner"></span>
+                    <span>{{ msg.applied ? 'Applied' : (applyingSnippetMsgId() === msg.id ? 'Applying...' : 'Apply to
+                      Editor') }}</span>
+                  </button>
+                </div>
+              </div>
+              <pre
+                class="snippet-pre"><code [innerHTML]="colorizeDbml(msg.displayCodeSnippet !== undefined ? msg.displayCodeSnippet : msg.codeSnippet)"></code><span class="chatgpt-cursor code-cursor" *ngIf="msg.isStreaming && msg.streamingStage === 'code'">▊</span></pre>
+            </div>
+
+            <!-- Description Text -->
+            <p class="msg-text" *ngIf="msg.displayText !== undefined ? msg.displayText : msg.text">
+              {{ msg.displayText !== undefined ? msg.displayText : msg.text }}<span class="chatgpt-cursor"
+                *ngIf="msg.isStreaming && msg.streamingStage === 'text'">▊</span>
+            </p>
+
+            <div class="msg-meta-row" *ngIf="!msg.isStreaming">
+              <span class="msg-time">{{ msg.timestamp | date:'shortTime' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thinking Indicator (No Box) -->
+      <div class="chat-message-item assistant-message thinking-item" *ngIf="isThinking()">
+        <div class="msg-avatar pulse-avatar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+          </svg>
+        </div>
+        <div class="thinking-content">
+          <span class="thinking-spark-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" />
+            </svg>
+          </span>
+          <span class="thinking-text">{{ thinkingStatus() }}</span>
+          <span class="thinking-dots">
+            <span class="t-dot"></span>
+            <span class="t-dot"></span>
+            <span class="t-dot"></span>
+            <span class="t-dot"></span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Auto-scroll Anchor -->
+      <div #messagesEnd class="messages-scroll-anchor"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Input Box -->
+  <div class="ai-chat-footer">
+    <div class="input-card-wrap">
+      <textarea #promptTextarea class="ai-input-textarea" [(ngModel)]="promptText" (input)="autoExpandTextarea()"
+        (keydown)="onKeyDown($event)" rows="1" placeholder="Ask me anything about your diagram..."></textarea>
+
+      <div class="input-footer-row">
+        <span class="input-hint-text">Press Enter to send</span>
+        <div class="footer-actions-right">
+          <!-- Model Selector Dropdown -->
+          <div class="model-dropdown-container">
+            <button type="button" class="model-select-btn" [class.open]="isModelDropdownOpen()"
+              (click)="toggleModelDropdown($event)" aria-label="Select AI Model"
+              [attr.title]="'Selected model: ' + (selectedModel()?.model_name || 'Select Model')">
+              <span class="model-current-name">{{ selectedModel()?.model_name || 'Select Model' }}</span>
+              <svg class="model-chevron-icon" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu Popup -->
+            <div class="model-dropdown-menu" *ngIf="isModelDropdownOpen()" (click)="$event.stopPropagation()">
+              <div class="model-menu-header">Select Model</div>
+              <div class="model-menu-list">
+                <div *ngIf="isLoadingModels()" class="model-loading-item">
+                  <span>Loading models...</span>
+                </div>
+                <div *ngIf="!isLoadingModels() && availableModels().length === 0" class="model-empty-item">
+                  <span>No models available</span>
+                </div>
+                <div *ngFor="let model of availableModels()" class="model-menu-entry">
+                  <button type="button" class="model-menu-item"
+                    [class.active]="selectedModel()?.id === model.id" (click)="onModelSelect(model, $event)">
+                    <div class="model-item-info">
+                      <span class="model-item-name">{{ model.model_name }}</span>
+                      <span class="model-item-free-tag" *ngIf="isNoApiKeyRequired(model)"
+                        title="Free model provided by dbnexus AI - No API key required">Free</span>
+                      <span class="model-item-tag">{{ model.provider_name }}</span>
+                    </div>
+                    <div class="model-item-status">
+                      <span class="model-key-badge"
+                        [class.has-key]="isNoApiKeyRequired(model) || hasUserApiKey(model)"
+                        (click)="$event.stopPropagation(); !isNoApiKeyRequired(model) && openApiKeyModal(model, $event)"
+                        [title]="isNoApiKeyRequired(model) ? 'Default model - No API key required' : (hasUserApiKey(model) ? 'Configured' : 'Click to configure API key')">
+                        {{ isNoApiKeyRequired(model) ? 'Ready' : (hasUserApiKey(model) ? 'Ready' : 'Key required') }}
+                      </span>
+                    </div>
+                  </button>
+                  <button *ngIf="hasUserApiKey(model)" type="button" class="model-api-key-action"
+                    (click)="openApiKeyModal(model, $event)" [attr.aria-label]="'Edit ' + model.provider_name + ' API key'"
+                    [title]="'Edit ' + model.provider_name + ' API key'">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                    </svg>
+                  </button>
+                  <button *ngIf="!isNoApiKeyRequired(model) && !hasUserApiKey(model)" type="button"
+                    class="model-api-key-action" (click)="openApiKeyModal(model, $event)"
+                    [attr.aria-label]="'Add ' + model.provider_name + ' API key'"
+                    [title]="'Add ' + model.provider_name + ' API key'">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 5v14"></path>
+                      <path d="M5 12h14"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="send-btn"
+            [disabled]="!promptText().trim() || isThinking() || (isNoApiKeyRequired(selectedModel()) && (!hasRemainingQuota() || (getMaxTokens() > 0 && usedTokens() >= getMaxTokens())))"
+            (click)="sendMessage()" aria-label="Send message">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage Limit Row (Displayed only when dbnexus AI default model is selected) -->
+    <div class="ai-usage-limit-container" *ngIf="isNoApiKeyRequired(selectedModel())">
+      <!-- Pop-up Card when clicked -->
+      <div class="ai-usage-popup-card" *ngIf="isUsagePopupOpen()" (click)="$event.stopPropagation()">
+        <div class="usage-popup-header">
+          <span class="usage-popup-title">Used: {{ formatNumber(usedTokens()) }} / {{ formatNumber(getMaxTokens()) }}
+            tokens</span>
+          <span class="usage-info-icon"
+            [attr.title]="'Monthly token usage limit for ' + (selectedModel()?.model_name || 'dbnexus AI')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </span>
+        </div>
+        <div class="usage-progress-track">
+          <div class="usage-progress-bar"
+            [class.near-limit]="getUsagePercentage() >= 80 && getUsagePercentage() < 100"
+            [class.limit-reached]="getUsagePercentage() >= 100 || !hasRemainingQuota()"
+            [style.width.%]="getUsagePercentage()"></div>
+        </div>
+        <div class="usage-reset-row">
+          <span>Reset on: {{ getResetDate() }}</span>
+        </div>
+      </div>
+
+      <!-- Trigger Button -->
+      <button type="button" class="ai-usage-trigger-btn" (click)="toggleUsagePopup($event)"
+        aria-label="Toggle usage limit details">
+        <svg class="usage-gauge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.34 19a10 10 0 1 1 17.32 0"></path>
+          <path d="m12 14-3.5-3.5"></path>
+          <circle cx="12" cy="14" r="1.5" fill="currentColor"></circle>
+        </svg>
+        <span class="usage-trigger-text" *ngIf="hasRemainingQuota()">
+          You have used {{ getUsagePercentage() }}% of your usage limit
+        </span>
+        <span class="usage-trigger-text text-danger" *ngIf="!hasRemainingQuota()">
+          Usage limit reached ({{ getUsagePercentage() }}%)
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- API Key Pop-up Card Modal -->
+  <div class="ai-key-modal-overlay" *ngIf="showApiKeyModal()" (click)="closeApiKeyModal()">
+    <div class="ai-key-modal-card" (click)="$event.stopPropagation()">
+      <div class="ai-key-card-header">
+        <div class="key-icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5-4 4 1.5 1.5L9 14l-1.5-1.5-4 4 1.5 1.5L2 21l3-1 2 2 3-3-2-2 3-3-2-2 4-4 2 2 3.5-3.5L21 2z">
+            </path>
+            <circle cx="15.5" cy="8.5" r="1.5"></circle>
+          </svg>
+        </div>
+        <div class="key-header-text">
+          <h3 class="key-modal-title">{{ hasUserApiKey(pendingModelForApiKey) ? 'Edit API Key' : 'API Key Required' }}</h3>
+          <p class="key-modal-subtitle">
+            {{ hasUserApiKey(pendingModelForApiKey) ? 'Update the API key for' : 'Enter your API key to use' }}
+            <strong>{{ pendingModelForApiKey?.model_name }}</strong> ({{ pendingModelForApiKey?.provider_name }}).
+          </p>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeApiKeyModal()" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="ai-key-card-body">
+        <div class="key-input-label-row">
+          <label class="key-input-label">{{ pendingModelForApiKey?.provider_name }} API Key</label>
+          <span class="key-provider-tag">{{ pendingModelForApiKey?.provider_name }}</span>
+        </div>
+        <div class="key-input-wrapper">
+          <input [type]="showApiKeyText() ? 'text' : 'password'" class="key-input-field" [(ngModel)]="apiKeyInput"
+            [placeholder]="getApiKeyPlaceholder(pendingModelForApiKey?.provider_name)" (keydown.enter)="saveApiKey()"
+            autocomplete="off" spellcheck="false" />
+          <button type="button" class="btn-toggle-eye" (click)="toggleShowApiKeyText()"
+            [title]="showApiKeyText() ? 'Hide Key' : 'Show Key'">
+            <svg *ngIf="!showApiKeyText()" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg *ngIf="showApiKeyText()" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+              </path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+        <p class="key-security-note">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Saved securely in your browser for this session.</span>
+        </p>
+      </div>
+
+      <div class="ai-key-card-footer">
+        <button type="button" class="btn-key-cancel" (click)="closeApiKeyModal()"
+          [disabled]="isSavingApiKey()">Cancel</button>
+        <button type="button" class="btn-key-save" (click)="saveApiKey()"
+          [disabled]="!apiKeyInput.trim() || isSavingApiKey()">
+          <span *ngIf="isSavingApiKey()" class="key-spinner"></span>
+          {{ isSavingApiKey() ? 'Saving...' : (hasUserApiKey(pendingModelForApiKey) ? 'Save Changes' : 'Save & Continue') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

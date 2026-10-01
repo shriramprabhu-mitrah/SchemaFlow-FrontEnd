@@ -5,6 +5,18 @@
       <p class="text-muted" style="margin:4px 0 0">View and manage contact sales enquiries.</p>
     </div>
     <div class="header-actions">
+      <div class="custom-status-dropdown-container dropdown-container-rel" style="margin-right: 12px;">
+        <button class="custom-status-dropdown-trigger" style="min-width: 120px; padding: 6px 12px; height: 38px; border-radius: 8px;"
+          (click)="showTypeDropdown = !showTypeDropdown; $event.stopPropagation()">
+          <span>{{ filterType || 'All Types' }}</span>
+          <app-icons name="chevron-down" size="14"></app-icons>
+        </button>
+        <div class="custom-status-dropdown-menu" *ngIf="showTypeDropdown" (click)="$event.stopPropagation()">
+          <button class="custom-status-dropdown-option" [class.selected]="filterType === ''" (click)="onTypeFilterChange('')">All Types</button>
+          <button class="custom-status-dropdown-option" [class.selected]="filterType === 'Sales'" (click)="onTypeFilterChange('Sales')">Sales</button>
+          <button class="custom-status-dropdown-option" [class.selected]="filterType === 'Support'" (click)="onTypeFilterChange('Support')">Support</button>
+        </div>
+      </div>
       <div class="search-box-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
@@ -47,10 +59,11 @@
           <th style="width:15%">
             <span>PHONE / COUNTRY</span>
           </th>
-          <th style="width:15%">
-            <span class="sort-header-clickable" (click)="sortBy('contact_type')">
-              <span>PREFERENCE</span>
-              <span class="sort-icon" [class.active]="sortColumn === 'contact_type'">
+
+          <th style="width:10%">
+            <span class="sort-header-clickable" (click)="sortBy('enquiry_type')">
+              <span>TYPE</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'enquiry_type'">
                 <app-icons name="sort" size="14"></app-icons>
               </span>
             </span>
@@ -77,9 +90,18 @@
               <span class="text-muted" style="font-size: 11px;">{{ eq.country || 'N/A' }}</span>
             </div>
           </td>
+
           <td>
-            <span class="badge badge-team" *ngIf="eq.contact_type === 'email_me'">Email Me Back</span>
-            <span class="badge badge-free" *ngIf="eq.contact_type === 'book_call'">Book a Call</span>
+            <span class="badge" 
+                  [ngClass]="{
+                    'badge-team': eq.enquiry_type === 'Sales', 
+                    'badge-free': eq.enquiry_type === 'Support'
+                  }"
+                  [class.badge-primary]="eq.enquiry_type !== 'Sales' && eq.enquiry_type !== 'Support'"
+                  *ngIf="eq.enquiry_type">
+              {{ eq.enquiry_type === 'cancellation_request' ? 'Cancellation' : eq.enquiry_type }}
+            </span>
+            <span *ngIf="!eq.enquiry_type" class="text-muted">N/A</span>
           </td>
           <td><span class="text-muted">{{ eq.created_at | date:'mediumDate' }}</span></td>
           <td>

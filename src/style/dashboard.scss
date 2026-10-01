@@ -52,6 +52,11 @@ app-header {
     min-height: 0;
     height: 100%;
     flex-shrink: 0;
+
+    &.ai-open,
+    &:has(.ai-chat-open) {
+      min-width: 680px;
+    }
   }
 
   &.editor-fullscreen app-editor {

@@ -3,14 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
-import { Toast } from '../../../shared/toaster/toast/toast';
 import { Icons } from '../../../core/component/icons/icons';
 import { OrganizationService } from '../services/organization.service';
 
 @Component({
   selector: 'app-org-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, Toast, Icons],
+  imports: [CommonModule, RouterModule, Icons],
   templateUrl: './org-layout.html'
 })
 export class OrgLayoutComponent {

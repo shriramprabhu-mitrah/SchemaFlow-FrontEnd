@@ -133,6 +133,8 @@ export class EntitlementService {
     if (!ent) {
       if (featureKey === 'create_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'max_diagrams');
       else if (featureKey === 'max_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'create_diagrams');
+      else if (featureKey === 'ai_chat') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
+      else if (featureKey === 'ai') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
     }
     return ent;
   }
@@ -224,6 +226,7 @@ export class EntitlementService {
       if (featureKey === 'create_diagram' && (this.memberFeatureAccess.includes('create_diagrams') || this.memberFeatureAccess.includes('max_diagrams'))) return true;
       if (featureKey === 'create_workspaces' && this.memberFeatureAccess.includes('create_workspace')) return true;
       if (featureKey === 'create_workspace' && this.memberFeatureAccess.includes('create_workspaces')) return true;
+      if ((featureKey === 'ai_chat' || featureKey === 'ai') && (this.memberFeatureAccess.includes('ai_chat') || this.memberFeatureAccess.includes('ai') || this.memberFeatureAccess.includes('ai_assistant'))) return true;
       
       return false;
     }
@@ -249,6 +252,8 @@ export class EntitlementService {
         if (!orgEnt) {
           if (featureKey === 'create_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'max_diagrams');
           else if (featureKey === 'max_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'create_diagrams');
+          else if (featureKey === 'ai_chat') orgEnt = orgEnts.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
+          else if (featureKey === 'ai') orgEnt = orgEnts.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
         }
         if (orgEnt) {
             return orgEnt.enabled === true || (orgEnt as any).value === 'true' || (orgEnt as any).value === true;
@@ -278,14 +283,14 @@ export class EntitlementService {
       if (isEnabled) {
         // Numeric limit check
         const limit = ent.effective_limit ?? (ent as any).limit_value;
-        if (limit !== undefined && limit !== null && limit !== -1) {
-          if (limit === 0) {
+        if (limit !== undefined && limit !== null && Number(limit) !== -1) {
+          if (Number(limit) === 0) {
             return false;
           }
-          if (ent.remaining !== undefined && ent.remaining <= 0) {
+          if (ent.remaining !== undefined && Number(ent.remaining) <= 0) {
             return false;
           }
-          if (ent.used !== undefined && ent.used >= limit) {
+          if (ent.used !== undefined && Number(ent.used) >= Number(limit)) {
             return false;
           }
         }
@@ -300,6 +305,8 @@ export class EntitlementService {
       if (!userEnt) {
         if (featureKey === 'create_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'max_diagrams');
         else if (featureKey === 'max_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'create_diagrams');
+        else if (featureKey === 'ai_chat') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
+        else if (featureKey === 'ai') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
       }
       if (userEnt) {
         const isTrue = userEnt.enabled === true || userEnt.value === 'true' || userEnt.value === true;
@@ -308,14 +315,14 @@ export class EntitlementService {
         if (isTrue) {
           // Check numeric limit in cache if present
           const limit = userEnt.effective_limit ?? userEnt.limit_value;
-          if (limit !== undefined && limit !== null && limit !== -1) {
-            if (limit === 0) {
+          if (limit !== undefined && limit !== null && Number(limit) !== -1) {
+            if (Number(limit) === 0) {
               return false;
             }
-            if (userEnt.remaining !== undefined && userEnt.remaining <= 0) {
+            if (userEnt.remaining !== undefined && Number(userEnt.remaining) <= 0) {
               return false;
             }
-            if (userEnt.used !== undefined && userEnt.used >= limit) {
+            if (userEnt.used !== undefined && Number(userEnt.used) >= Number(limit)) {
               return false;
             }
           }
@@ -332,17 +339,19 @@ export class EntitlementService {
       const fallbackEnt = plan.entitlements.find((e: any) => 
         e.feature_key === featureKey || 
         (featureKey === 'create_diagrams' && e.feature_key === 'max_diagrams') ||
-        (featureKey === 'max_diagrams' && e.feature_key === 'create_diagrams')
+        (featureKey === 'max_diagrams' && e.feature_key === 'create_diagrams') ||
+        (featureKey === 'ai_chat' && (e.feature_key === 'ai' || e.feature_key === 'ai_assistant')) ||
+        (featureKey === 'ai' && (e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant'))
       );
       if (fallbackEnt) {
         const isValTrue = fallbackEnt.value !== 'false' && (fallbackEnt.value as any) !== false;
         if (!isValTrue) return false;
         const limit = (fallbackEnt as any).limit_value;
-        if (limit !== undefined && limit !== null && limit !== -1) {
-          if ((fallbackEnt as any).remaining !== undefined && (fallbackEnt as any).remaining <= 0) {
+        if (limit !== undefined && limit !== null && Number(limit) !== -1) {
+          if ((fallbackEnt as any).remaining !== undefined && Number((fallbackEnt as any).remaining) <= 0) {
             return false;
           }
-          if ((fallbackEnt as any).used !== undefined && (fallbackEnt as any).used >= limit) {
+          if ((fallbackEnt as any).used !== undefined && Number((fallbackEnt as any).used) >= Number(limit)) {
             return false;
           }
         }
@@ -351,7 +360,17 @@ export class EntitlementService {
     }
 
     // Default premium features that must be explicitly enabled
-    if (featureKey === 'code_compare' || (planSlug === 'free' && (featureKey === 'table_group' || featureKey === 'diagram_notes' || featureKey === 'document_view'))) {
+    if (
+      featureKey === 'code_compare' ||
+      ((planSlug === 'free' || this.auth.getCurrentPlanStatus() === 'expired') &&
+        (featureKey === 'table_group' ||
+          featureKey === 'diagram_notes' ||
+          featureKey === 'document_view' ||
+          featureKey === 'version_history' ||
+          featureKey === 'ai_chat' ||
+          featureKey === 'ai' ||
+          featureKey === 'ai_assistant'))
+    ) {
       return false;
     }
 
