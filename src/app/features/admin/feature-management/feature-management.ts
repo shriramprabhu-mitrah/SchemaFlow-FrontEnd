@@ -155,7 +155,7 @@ export class FeatureManagementComponent implements OnInit {
 
   openCreate(): void {
     this.editMode = false;
-    this.form = { feature_key: '', name: '', description: '', value_type: 'boolean', category: '', display_order: 0 };
+    this.form = { feature_key: '', name: '', description: '', long_description: '', value_type: 'boolean', category: '', display_order: 0 };
     this.formErrors = { name: '', feature_key: '' };
     this.showModal = true;
   }
@@ -187,6 +187,8 @@ export class FeatureManagementComponent implements OnInit {
       return;
     }
 
+    this.closeModal();
+
     const obs = this.editMode
       ? this.admin.updateFeature(this.form.feature_id, this.form)
       : this.admin.createFeature(this.form);
@@ -194,7 +196,6 @@ export class FeatureManagementComponent implements OnInit {
       next: () => {
         this.ngZone.run(() => {
           this.dashService.showToast(this.editMode ? 'Feature updated successfully!' : 'Feature created successfully!', 3500, 'success');
-          this.closeModal();
           this.load();
         });
       },
