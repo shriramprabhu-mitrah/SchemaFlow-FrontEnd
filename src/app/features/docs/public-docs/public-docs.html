@@ -2,20 +2,38 @@
 
   <!-- Top Header Navigation -->
   <header class="public-docs-header">
-    <div class="header-brand" routerLink="/" style="cursor: pointer;">
-      <app-icons name="db-diagram-logo" size="56"></app-icons>
-      <span class="brand-text">dbNexus </span><span class="docs-tag">Docs</span>
+    <div class="header-left">
+      <!-- Mobile Sidebar Hamburger Toggle Button (<= 1024px) -->
+      <button type="button" class="mobile-nav-toggle-btn" (click)="toggleMobileSidebar()"
+        [attr.aria-expanded]="mobileSidebarOpen" aria-label="Toggle navigation menu">
+        <svg *ngIf="!mobileSidebarOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+        <svg *ngIf="mobileSidebarOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" [size]="logoSize"></app-icons>
+        <span class="brand-text">dbNexus </span><span class="docs-tag">Docs</span>
+      </div>
     </div>
 
     <div class="header-right">
-      <!-- Search Bar -->
-      <div class="search-box-wrap">
+      <!-- Search Bar for Desktop & Tablet -->
+      <div class="search-box-wrap desktop-search">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" [(ngModel)]="searchQuery" placeholder="Search documentation, topics, DBML syntax..."
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Search documentation, topics..."
           class="search-input" />
         <button type="button" class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''">✕</button>
 
@@ -38,14 +56,27 @@
         </div>
       </div>
 
+      <!-- Mobile Search Toggle Button (<= 768px) -->
+      <button type="button" class="hdr-btn btn-mobile-search" (click)="toggleMobileSearch()"
+        [class.active]="mobileSearchOpen" title="Search Documentation" aria-label="Search documentation">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+
       <!-- Admin CMS Shortcut -->
-      <button type="button" class="hdr-btn btn-admin" *ngIf="isSuperAdmin()" (click)="goToAdminCms()">
-        ⚙️ Admin CMS Editor
+      <button type="button" class="hdr-btn btn-admin" *ngIf="isSuperAdmin()" (click)="goToAdminCms()"
+        title="Admin CMS Editor">
+        <span class="btn-icon">⚙️</span>
+        <span class="btn-text">Admin CMS Editor</span>
+        <span class="btn-text-short">CMS</span>
       </button>
 
       <!-- Theme Switcher -->
       <button type="button" class="hdr-btn btn-theme" (click)="toggleTheme()"
-        [title]="dashService.theme() === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+        [title]="dashService.theme() === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+        aria-label="Toggle Theme">
         <svg *ngIf="dashService.theme() === 'light'" width="18" height="18" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
@@ -63,17 +94,64 @@
       </button>
 
       <!-- Go To App -->
-      <button type="button" class="hdr-btn btn-app" (click)="goToApplication()">
-        Go To Application ↗
+      <button type="button" class="hdr-btn btn-app" (click)="goToApplication()" title="Go to Application">
+        <span class="btn-text">Go To Application ↗</span>
+        <span class="btn-text-short">App ↗</span>
       </button>
     </div>
   </header>
+
+  <!-- Mobile Search Bar (Collapsible Bar for Mobile screens) -->
+  <div class="mobile-search-bar-row" *ngIf="mobileSearchOpen">
+    <div class="search-box-wrap mobile-search-active">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input id="mobile-search-input" type="text" [(ngModel)]="searchQuery"
+        placeholder="Search documentation, topics..." class="search-input" />
+      <button type="button" class="clear-search-btn" (click)="closeMobileSearch()">✕</button>
+
+      <!-- Live Search Results Dropdown Mobile -->
+      <div class="search-results-dropdown" *ngIf="searchQuery.trim().length >= 2">
+        <div *ngIf="searchResults.length > 0; else noMobileResults" class="results-list">
+          <a *ngFor="let item of searchResults" class="search-result-item" (click)="selectSearchResult(item)">
+            <div class="res-title-row">
+              <span class="res-title">{{ item.title }}</span>
+              <span class="res-section-badge">{{ getSectionTitle(item.sectionId) }}</span>
+            </div>
+            <p class="res-snippet" *ngIf="item.description">{{ item.description }}</p>
+          </a>
+        </div>
+        <ng-template #noMobileResults>
+          <div class="no-search-results">
+            No documentation pages found for "{{ searchQuery }}".
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-backdrop" [class.show]="mobileSidebarOpen" (click)="closeMobileSidebar()"></div>
 
   <!-- Main Body Layout -->
   <div class="public-docs-layout">
 
     <!-- Left Navigation Sidebar -->
-    <aside class="docs-sidebar">
+    <aside class="docs-sidebar" [class.mobile-open]="mobileSidebarOpen">
+      <!-- Drawer Header for Mobile/Tablet -->
+      <div class="sidebar-drawer-header">
+        <div class="drawer-brand">
+          <app-icons name="db-diagram-logo" size="24"></app-icons>
+          <span class="drawer-title">Documentation</span>
+        </div>
+        <button type="button" class="drawer-close-btn" (click)="closeMobileSidebar()" aria-label="Close navigation">
+          ✕
+        </button>
+      </div>
+
       <nav class="sidebar-nav">
         <div *ngFor="let sec of sections" class="nav-section" [class.expanded]="isSectionExpanded(sec.id)">
           <div class="section-title-bar" (click)="toggleSection(sec.id)">
@@ -116,6 +194,36 @@
           </button>
         </div>
 
+        <!-- Mobile/Tablet In-Page Table of Contents Accordion (<= 1200px) -->
+        <div class="mobile-toc-accordion" *ngIf="tocItems.length > 0">
+          <button type="button" class="mobile-toc-trigger" (click)="toggleMobileToc()"
+            [attr.aria-expanded]="mobileTocOpen">
+            <div class="toc-trigger-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+              <span>On This Page</span>
+            </div>
+            <svg class="chevron-icon" [class.rotated]="mobileTocOpen" width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="mobile-toc-content" *ngIf="mobileTocOpen">
+            <ul class="mobile-toc-list">
+              <li *ngFor="let item of tocItems" [class.toc-h2]="item.level === 2" [class.toc-h3]="item.level === 3"
+                [class.active-toc-item]="activeTocId === item.id">
+                <a href="javascript:void(0)" (click)="scrollToToc(item.id, $event)">{{ item.text }}</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
         <!-- Featured Image Banner -->
         <div class="article-featured-img" *ngIf="currentPage.featuredImage">
           <img [src]="currentPage.featuredImage" [alt]="currentPage.title" />
@@ -147,12 +255,12 @@
         <div class="empty-docs-state">
           <app-icons name="db-diagram-logo" size="48"></app-icons>
           <h2>No Documentation Selected</h2>
-          <p>Please select a documentation topic from the left sidebar navigation.</p>
+          <p>Please select a documentation topic from the navigation menu.</p>
         </div>
       </ng-template>
     </main>
 
-    <!-- Right Side "On This Page" Table of Contents -->
+    <!-- Right Side "On This Page" Table of Contents (Desktop > 1200px) -->
     <aside class="docs-toc-sidebar" *ngIf="currentPage && tocItems.length > 0">
       <div class="toc-sticky-container">
         <div class="toc-header">On This Page</div>

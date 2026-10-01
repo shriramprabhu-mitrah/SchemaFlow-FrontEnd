@@ -1,20 +1,16 @@
 <div class="org-shell" [class.collapsed]="sidebarCollapsed">
   <!-- Sidebar -->
   <aside class="org-sidebar">
-    <div class="sidebar-header sidebar-header-flex">
+    <div class="sidebar-header sidebar-header-flex" style="width: 100%; min-width: 100%; display: flex; align-items: center; padding: 16px 20px; box-sizing: border-box;">
       <!-- Logo and brand text always centered inside header -->
-      <div class="header-brand" routerLink="/" style="cursor: pointer;">
-        <app-icons name="db-diagram-logo" size="56"></app-icons>
-        <span class="brand-text" *ngIf="!sidebarCollapsed">dbNexus</span>
-      </div>
-
-      <!-- <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
-        [class.tt-right]="sidebarCollapsed" data-tt="Go to Home">
+      <a routerLink="/" class="brand-mark tt brand-link-flex" [class.tt-bottom]="!sidebarCollapsed"
+        [class.tt-right]="sidebarCollapsed" data-tt="Go to Home" style="width: auto; display: flex; align-items: center;">
         <app-icons name="db-diagram-logo" size="48" class="brand-icon-wrap"></app-icons>
         <span class="brand-text brand-text-flex dbnexus-text" *ngIf="!sidebarCollapsed">dbNexus</span>
-      </a> -->
+      </a>
+
       <!-- Close button visible on mobile -->
-      <button class="collapse-btn mobile-close-btn" *ngIf="!sidebarCollapsed" (click)="toggleSidebar()">
+      <button class="mobile-close-btn" *ngIf="!sidebarCollapsed" (click)="toggleSidebar()" style="margin-left: auto; align-items: center; justify-content: center; padding: 6px; background: none; border: none; color: #64748b; cursor: pointer;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>

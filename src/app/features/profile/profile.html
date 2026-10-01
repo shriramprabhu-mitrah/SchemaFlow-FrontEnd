@@ -106,8 +106,10 @@
         </div>
       </div>
 
-      <!-- Navigation Tabs (Only 3 Tabs: Personal Details, Plan & Subscription, Preferences & Theme) -->
-      <div class="profile-tabs-nav">
+    </div>
+
+    <!-- Navigation Tabs (Only 3 Tabs: Personal Details, Plan & Subscription, Preferences & Theme) -->
+    <div class="profile-tabs-nav" aria-label="Profile sections">
         <button class="tab-btn" [class.active]="activeTab() === 'general'" (click)="setTab('general')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -133,7 +135,6 @@
           </svg>
           <span>Preferences & Theme</span>
         </button>
-      </div>
     </div>
 
     <!-- TAB 1: Personal Details (Only Username & Profile Picture Editable) -->
@@ -275,6 +276,12 @@
             </div>
           </div>
 
+          <ng-template #noPlansAvailable>
+            <div class="plans-empty-state">
+              <p>Plan details are temporarily unavailable.</p>
+              <button type="button" class="btn-secondary-link" (click)="goToPricing()">Open pricing</button>
+            </div>
+          </ng-template>
 
         </div>
       </div>

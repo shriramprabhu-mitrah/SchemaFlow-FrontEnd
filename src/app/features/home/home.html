@@ -20,6 +20,18 @@
         </a>
         <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign
           Out</app-button>
+        
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
@@ -185,7 +197,7 @@
       <div class="section-header text-center-override" style="margin-bottom: 40px;">
         <span class="blue-title-solid">SEAMLESS WORKFLOW</span>
         <h2>Visual Diagrams, SQL, DBML, and Diff Checker</h2>
-        <p style="max-width: 650px; margin: 16px auto 0; color: #64748b; font-size: 18px; line-height: 1.6;">
+        <p style="max-width: 650px; margin: 16px auto 0; color: #64748b; font-size: clamp(15px, 4vw, 18px); line-height: 1.6;">
           Effortlessly toggle between formats. Edit your visual schema and instantly see the generated SQL, or write DBML and watch your diagram build itself in real-time. Use the built-in diff checker to instantly compare versions.
         </p>
       </div>
@@ -199,7 +211,7 @@
     <div class="section-header text-center-override" style="margin-bottom: 40px;">
       <span class="blue-title-solid" style="color: #8b5cf6; background: rgba(139, 92, 246, 0.1);">AI-POWERED SCHEMA GENERATION</span>
       <h2>Design Databases at the Speed of Thought</h2>
-      <p style="max-width: 650px; margin: 16px auto 0; color: #64748b; font-size: 18px; line-height: 1.6;">
+      <p style="max-width: 650px; margin: 16px auto 0; color: #64748b; font-size: clamp(15px, 4vw, 18px); line-height: 1.6;">
         Describe your application in plain English, and watch as <span class="text-gradient-primary" style="font-weight: 700;">dbNexus AI</span> instantly writes the DBML, generates the tables, and draws the relationships for you. Prompt, iterate, and build faster than ever.
       </p>
     </div>
