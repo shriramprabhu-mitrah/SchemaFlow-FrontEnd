@@ -12,7 +12,7 @@
   app-sidebar {
     height: 100%;
     flex-shrink: 0;
-    transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+    transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
     &.collapsed {
       width: 0 !important;
@@ -384,6 +384,10 @@ app-sidebar.collapsed~#editor-pane #editor-toolbar {
 }
 
 app-sidebar.collapsed~app-diagram-inspector .inspector-header {
+  padding-left: 36px !important;
+}
+
+app-sidebar.collapsed~app-docs .docs-header {
   padding-left: 36px !important;
 }
 

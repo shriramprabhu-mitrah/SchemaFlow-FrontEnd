@@ -849,7 +849,7 @@ export class HeaderComponent implements OnInit {
 
   togglePersonalMenu(e?: Event): void {
     if (!this.isLoggedIn) return;
-    if (e) e.stopPropagation();
+    
     this.personalMenuOpen = !this.personalMenuOpen;
     if (this.personalMenuOpen) {
       this.exportMenuOpen = false;
@@ -863,7 +863,7 @@ export class HeaderComponent implements OnInit {
 
   openPersonalDropdown(e: Event): void {
     if (!this.isLoggedIn) return;
-    e.stopPropagation();
+    
     this.personalMenuOpen = !this.personalMenuOpen;
     if (this.personalMenuOpen) {
       this.exportMenuOpen = false;
@@ -883,7 +883,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleWorkspaceSubmenu(e: Event): void {
-    e.stopPropagation();
+    
     this.showWorkspaceSubmenu = !this.showWorkspaceSubmenu;
     if (this.showWorkspaceSubmenu) {
       this.showMyDiagramsSubmenu = false;
@@ -901,7 +901,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleMyDiagramsSubmenu(e: Event): void {
-    e.stopPropagation();
+    
     this.showMyDiagramsSubmenu = !this.showMyDiagramsSubmenu;
     if (this.showMyDiagramsSubmenu) {
       this.showWorkspaceSubmenu = false;
@@ -911,7 +911,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleSampleSubmenu(e: Event): void {
-    e.stopPropagation();
+    
     this.showSampleSubmenu = !this.showSampleSubmenu;
     if (this.showSampleSubmenu) {
       this.showWorkspaceSubmenu = false;
@@ -1014,7 +1014,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleProfileMenu(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.profileMenuOpen = !this.profileMenuOpen;
     if (this.profileMenuOpen) {
       this.personalMenuOpen = false;

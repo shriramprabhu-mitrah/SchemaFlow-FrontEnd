@@ -19,7 +19,7 @@
       <span class="nav-label">Import</span>
 
       <!-- Import Flyout Menu -->
-      <div class="sidebar-flyout-menu" *ngIf="importMenuOpen" (click)="$event.stopPropagation()">
+      <div class="sidebar-flyout-menu" *ngIf="importMenuOpen">
         <div class="flyout-header">Import from SQL</div>
 
         <button class="flyout-item" (click)="openImportDialect('postgres', $event)"
@@ -61,7 +61,7 @@
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="import-sqlite-btn"
-          (click)="openImportModal('sqlite'); $event.stopPropagation()"
+          (click)="openImportModal('sqlite')"
           [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
           <span class="db-icon sqlite-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -110,7 +110,7 @@
       <span class="nav-label">Export</span>
 
       <!-- Export Flyout Menu -->
-      <div class="sidebar-flyout-menu export-flyout" *ngIf="exportMenuOpen" (click)="$event.stopPropagation()">
+      <div class="sidebar-flyout-menu export-flyout" *ngIf="exportMenuOpen">
         <div class="flyout-header">Export as diagram</div>
 
         <button class="flyout-item" (click)="exportFormat('pdf', $event)"
@@ -203,7 +203,7 @@
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="export-sqlite-btn"
-          (click)="exportSQL('sqlite'); $event.stopPropagation()"
+          (click)="exportSQL('sqlite')"
           [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
           <span class="db-icon sqlite-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

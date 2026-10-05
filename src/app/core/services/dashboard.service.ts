@@ -34,6 +34,7 @@ export interface Column {
   increment: boolean;
   fk: boolean;
   originalName?: string;
+  originalType?: string;
   default: boolean;
   defaultVal?: string;
   check: boolean;
@@ -2465,7 +2466,10 @@ export class DashboardService {
             colType = colType.slice(1, -1).trim();
           }
 
-          const cleanType = colType.replace(/\s*\([^)]*\)/g, '').trim();
+          let cleanType = colType.trim();
+          if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+            cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+          }
           const attrsLower = rawAttrs.toLowerCase();
 
           const defaultMatch = rawAttrs.match(/default:\s*('[^']*'|"[^"]*"|`[^`]*`|[^,\]]+)/i);
@@ -2867,10 +2871,6 @@ export class DashboardService {
       localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
     }
 
-    const prevNames = this.tables.map(t => t.name).sort().join(',');
-    const newNames = parsed.tables.map(t => t.name).sort().join(',');
-    const tablesChanged = prevNames !== newNames;
-
     this.tables = parsed.tables.map((t) => {
       const pos = this.tablePositions[t.name];
       const height = this.getTableHeight(t.columns);
@@ -3025,9 +3025,6 @@ export class DashboardService {
 
     this.scheduleDraw();
 
-    if (tablesChanged) {
-      this.requestCanvasFit();
-    }
     this.updateEditorErrors();
     this.checkInvalidRefsTimeout();
   }
@@ -3250,7 +3247,13 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${newName} {\n${columns
-      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
+      .map((column) => {
+        let cleanType = column.type.trim();
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+          cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+        }
+        return `  ${column.name} ${cleanType}${attributes(column)}`;
+      })
       .join('\n')}\n}`;
 
     // Replace the table block
@@ -3618,7 +3621,13 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${name} {\n${columns
-      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
+      .map((column) => {
+        let cleanType = column.type.trim();
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+          cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+        }
+        return `  ${column.name} ${cleanType}${attributes(column)}`;
+      })
       .join('\n')}\n}`;
 
     const newRefs: string[] = [];

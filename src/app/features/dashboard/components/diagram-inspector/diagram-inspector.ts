@@ -319,7 +319,10 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
             if (rawAttrs.includes('increment')) attrs.push('increment');
             if (rawAttrs.includes('unique')) attrs.push('unique');
             const attrStr = attrs.length > 0 ? ` [${attrs.join(', ')}]` : '';
-            const cleanType = type.replace(/\s*\([^)]*\)/g, '').trim();
+            let cleanType = type.trim();
+            if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+              cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+            }
             return `  ${newColName} ${cleanType}${attrStr}`;
           }
           return line;
@@ -348,16 +351,8 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
   focusTable(tableName: string, e?: Event): void {
     if (e) e.stopPropagation();
     this.activeMenuTable = null;
-    const pos = this.svc.tablePositions[tableName];
-    if (pos) {
-      this.svc.view = {
-        x: -pos.x + 240,
-        y: -pos.y + 180,
-        scale: 1
-      };
-      this.svc.hoveredTableName = tableName;
-      this.svc.forceRedraw$.next();
-    }
+    this.svc.activeFocusedTable = tableName;
+    this.svc.forceRedraw$.next();
   }
 
   toggleTableMenu(tableName: string, e: Event): void {
@@ -394,10 +389,21 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  getBaseType(type: string | undefined): string {
+    if (!type) return "varchar";
+    return type.replace(/\s*\([^)]*\)/g, "").trim();
+  }
+
   selectFieldType(table: TableDef, col: Column, newType: string, e?: Event): void {
     if (e) e.stopPropagation();
     this.activeTypeDropdown = null;
-    this.onFieldTypeChange(table, col, newType);
+    
+    let finalType = newType;
+    if (this.getBaseType(col.type).toLowerCase() === newType.toLowerCase()) {
+      finalType = col.type || newType;
+    }
+    
+    this.onFieldTypeChange(table, col, finalType);
   }
 
 
