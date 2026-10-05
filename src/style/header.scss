@@ -781,7 +781,7 @@ app-docs {
 
       &:hover {
         background: transparent !important;
-        color: #e6eef9 !important;
+        color: inherit !important;
       }
 
       .chevron {
@@ -2904,5 +2904,111 @@ body.light-theme {
 
   app-icons {
     color: #3ec5c1;
+  }
+}
+@media (max-width: 600px) {
+  #topbar {
+    padding: 0 8px !important;
+    gap: 4px !important;
+  }
+
+  .header-brand {
+    gap: 0 !important;
+    
+    app-icons {
+      transform: scale(0.75);
+      transform-origin: left center;
+      margin-right: -10px; /* offset the scale spacing */
+    }
+  }
+
+  .personal-dropdown-wrap {
+    .personal-trigger-btn {
+      padding: 4px 6px !important;
+      font-size: 13px !important;
+      gap: 4px !important;
+
+      .personal-label {
+        max-width: 55px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .diagram-title-controls {
+    gap: 4px !important;
+    
+    .diagram-name-wrapper {
+      padding: 4px 8px !important;
+      
+      .diagram-name {
+        min-width: 20px !important;
+        max-width: 80px !important;
+        font-size: 12px !important;
+      }
+    }
+  }
+
+  /* Hide active users avatars on mobile to save space */
+  .active-users-container {
+    display: none !important;
+  }
+  
+  /* Make upgrade button an icon-only button on mobile */
+  .btn-upgrade, .btn-header-signin {
+    font-size: 0 !important;
+    padding: 6px !important;
+    
+    .btn-icon {
+      margin: 0 !important;
+      width: 16px !important;
+      height: 16px !important;
+    }
+  }
+  
+  .profile-trigger-btn {
+    .profile-avatar {
+      width: 28px !important;
+      height: 28px !important;
+      font-size: 12px !important;
+    }
+  }
+}
+
+
+.personal-dropdown-wrap {
+  .custom-tt {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #19191a;
+    color: #ffffff !important;
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 99999;
+    pointer-events: none;
+  }
+
+  .custom-tt::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 4px;
+    border-style: solid;
+    border-color: transparent transparent #19191a transparent;
+  }
+
+  .personal-trigger-btn:hover ~ .custom-tt {
+    display: block;
+    animation: tt-fade-bottom 0.15s ease-out;
   }
 }

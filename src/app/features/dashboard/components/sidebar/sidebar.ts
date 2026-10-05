@@ -156,7 +156,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ IMPORT ============
 
   toggleImportMenu(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -170,7 +170,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   openImportDialect(dialect: SqlDialect, e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     if (!this.isLoggedIn || this.isSampleDiagram()) {
@@ -198,7 +198,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ EXPORT ============
 
   toggleExportMenu(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -214,7 +214,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   exportFormat(format: 'pdf' | 'png' | 'svg', e?: Event): void {
-    if (e) e.stopPropagation();
+    
     if (this.hasDbmlErrors()) {
       return;
     }
@@ -237,7 +237,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   exportSQL(dialect: SqlDialect, e?: Event): void {
-    if (e) e.stopPropagation();
+    
     if (this.hasDbmlErrors()) {
       return;
     }
@@ -298,7 +298,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ SHARE ============
 
   openShare(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -334,7 +334,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ VERSION HISTORY ============
 
   toggleVersionHistory(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -365,7 +365,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ INSPECTOR (TABLES / REFS / DBML) ============
 
   toggleInspector(tab: 'tables' | 'refs', e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -410,7 +410,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   toggleAiChat(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -442,7 +442,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   showDbmlEditor(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     this.svc.showDocs = false;
@@ -472,7 +472,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ DIFF CHECKER ============
 
   toggleDiffChecker(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     this.svc.showDocs = false;
@@ -503,7 +503,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ VIEW DOCS ============
 
   toggleDocs(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (!this.isLoggedIn) {
@@ -570,7 +570,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ AUTH / SIGNOUT ============
 
   handleSignOut(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (!this.isLoggedIn) {

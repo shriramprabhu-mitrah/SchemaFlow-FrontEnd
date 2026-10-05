@@ -1062,6 +1062,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.svc.tables.forEach((t) => (geometry[t.name] = t));
 
     const toolbarsToDraw: { ref: RefDef; index: number; anchor: PathPoint }[] = [];
+    const focused = this.svc.activeFocusedTable;
+
+    if (focused) ctx.globalAlpha = 0.3;
     this.drawTableGroups(ctx, geometry);
     this.tableHeaderIcons = [];
 
@@ -1069,10 +1072,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.drawRefs(ctx, geometry, toolbarsToDraw);
     this.drawConnectionPreview(ctx, geometry);
+    if (focused) ctx.globalAlpha = 1.0;
 
     this.svc.tables.forEach((t) => {
       if (!this.svc.isTableHidden(t.name) && !this.isTableGroupCollapsed(t.name)) {
+        if (focused && t.name !== focused) {
+          ctx.globalAlpha = 0.3;
+        } else {
+          ctx.globalAlpha = 1.0;
+        }
         this.drawTable(ctx, t, highlightedColumns);
+        if (focused) {
+          ctx.globalAlpha = 1.0;
+        }
       }
     });
 
@@ -2947,6 +2959,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.editingNoteBodyId !== null) {
       this.editingNoteBodyId = null;
     }
+
+
     if (this.editingNoteId !== null) {
       this.commitEditNoteName();
     }
@@ -4400,6 +4414,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       columns: table.columns.map((column) => ({
         ...column,
         originalName: column.name,
+        originalType: column.type,
         type: (column.type || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
       })),
       error: '',
@@ -4609,6 +4624,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:mousedown', ['$event'])
   onDocumentMouseDown(event: MouseEvent): void {
+    if (this.svc.activeFocusedTable) {
+      const target = event.target as HTMLElement;
+      // We don't want to clear it if they are clicking the dropdown menu button that sets the focus
+      // But if they click anywhere else (sidebar, canvas, header, other tabs), it should clear.
+      // Wait, if they click the dropdown item to set focus, mousedown happens BEFORE click.
+      // If we clear it here, the click handler in diagram-inspector will set it right after! So it's safe to clear it.
+      this.svc.activeFocusedTable = null;
+      this.svc.forceRedraw$.next();
+    }
+
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (now - this.contextMenuOpenedAt < 250) {
       return;
@@ -4869,11 +4894,24 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    const columns = this.tableModal.columns.map((column, index) => ({
-      ...column,
-      name: names[index],
-      type: (column.type.trim() || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
-    }));
+    const columns = this.tableModal.columns.map((column, index) => {
+      let cleanType = (column.type || 'varchar').replace(/\s*\([^)]*\)/g, '').trim();
+      let finalType = cleanType;
+      
+      // If the base type is unchanged from what the diagram had, restore the original length if it existed.
+      if (column.originalType) {
+        const originalBaseType = column.originalType.replace(/\s*\([^)]*\)/g, '').trim();
+        if (cleanType === originalBaseType) {
+          finalType = column.originalType;
+        }
+      }
+
+      return {
+        ...column,
+        name: names[index],
+        type: finalType
+      };
+    });
 
     if (isNew) {
       this.svc.insertNewTableInCode(name, columns, this.pendingNewTablePosition.x, this.pendingNewTablePosition.y);

@@ -219,6 +219,11 @@
   gap: 48px;
   flex-wrap: wrap;
   padding: 0 24px;
+
+  @media (max-width: 768px) {
+    gap: 24px;
+    flex-direction: column;
+  }
 }
 
 .db-logo-item {

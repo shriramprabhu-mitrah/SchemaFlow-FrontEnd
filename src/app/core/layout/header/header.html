@@ -10,9 +10,9 @@
 
   <!-- PERSONAL DROPDOWN CONTROL (Image 1 & 2) -->
   <div class="personal-dropdown-wrap" *ngIf="!isProfilePage">
-    <button class="personal-trigger-btn tt tt-bottom" (click)="togglePersonalMenu($event)"
+    <button class="personal-trigger-btn" (click)="togglePersonalMenu($event)"
       [class.active]="personalMenuOpen" [class.not-logged-in]="!isLoggedIn"
-      [attr.data-tt]="isLoggedIn ? 'Open Workspace' : 'Please sign in to access workspace options'">
+      [attr.data-tt]="!isLoggedIn ? 'Please sign in to access workspace options' : null">
       <span class="personal-label">{{ (svc.diagramWorkspaceType() | titlecase) || 'Personal' }}</span>
       <svg class="chevron" [class.open]="personalMenuOpen" width="12" height="12" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
@@ -20,10 +20,11 @@
         <polyline points="6 9 12 15 18 9" />
       </svg>
     </button>
+    <div class="custom-tt" *ngIf="!isLoggedIn">Please sign in to access workspace options</div>
     <span class="path-separator">/</span>
 
     <!-- Dropdown Menu Popup (Image 1) -->
-    <div class="personal-menu" [class.visible]="personalMenuOpen" (click)="$event.stopPropagation()">
+    <div class="personal-menu" [class.visible]="personalMenuOpen">
       <div class="personal-menu-item-wrap">
         <button class="personal-menu-item" (click)="toggleWorkspaceSubmenu($event)">
           <span class="item-text" style="display: flex; align-items: center; gap: 4px;">
@@ -219,7 +220,7 @@
     </svg>
     Upgrade
   </app-button>
-  <app-button *ngIf="!isLoggedIn" variant="default" (onClick)="goToLogin()">
+  <app-button *ngIf="!isLoggedIn" variant="default" customClass="btn-header-signin" (onClick)="goToLogin()">
     <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
@@ -232,8 +233,8 @@
 
   <!-- User Profile Dropdown at Right End (Image 2) -->
   <div class="profile-dropdown-wrap" *ngIf="isLoggedIn">
-    <button class="profile-trigger-btn tt tt-bottom-right" (click)="toggleProfileMenu($event)"
-      [class.active]="profileMenuOpen" data-tt="User Profile Menu">
+    <button class="profile-trigger-btn" (click)="toggleProfileMenu($event)"
+      [class.active]="profileMenuOpen">
       <div class="profile-avatar">
         <img *ngIf="userProfilePicture" [src]="userProfilePicture"
           style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
@@ -241,7 +242,7 @@
       </div>
     </button>
 
-    <div class="profile-dropdown-menu" [class.visible]="profileMenuOpen" (click)="$event.stopPropagation()">
+    <div class="profile-dropdown-menu" [class.visible]="profileMenuOpen">
       <div class="profile-menu-header">
         <div class="profile-menu-avatar">
           <img *ngIf="userProfilePicture" [src]="userProfilePicture"
@@ -285,7 +286,7 @@
           </svg>
           <span>Dark Mode</span>
         </div>
-        <label class="switch-toggle" (click)="$event.stopPropagation()">
+        <label class="switch-toggle">
           <input type="checkbox" [checked]="svc.theme() === 'dark'" (change)="svc.toggleTheme()" />
           <span class="slider-round"></span>
         </label>
