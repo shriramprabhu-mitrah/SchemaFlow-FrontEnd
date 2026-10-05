@@ -462,6 +462,65 @@ input {
     cursor: not-allowed;
   }
 }
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0 16px;
+  color: #7c8aa6;
+  font-size: 13px;
+  font-weight: 500;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  span {
+    padding: 0 12px;
+  }
+}
+
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 10px;
+
+  .oauth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .oauth-icon {
+      display: flex;
+      align-items: center;
+    }
+  }
+}
 
 .form-footer {
   margin-top: 28px;
@@ -628,6 +687,27 @@ body.light-theme {
 
         &:hover {
           color: #286090 !important;
+        }
+      }
+    }
+
+    .oauth-divider {
+      color: #64748b !important;
+
+      &::before,
+      &::after {
+        border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+      }
+    }
+
+    .oauth-buttons {
+      .oauth-btn {
+        border-color: rgba(0, 0, 0, 0.15) !important;
+        color: #0f172a !important;
+
+        &:hover:not(:disabled) {
+          background: rgba(0, 0, 0, 0.03) !important;
+          border-color: rgba(0, 0, 0, 0.3) !important;
         }
       }
     }
