@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, catchError } from 'rxjs';
+import { Observable, of, catchError, throwError } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
 import { AuthService } from './auth.service';
@@ -81,7 +81,7 @@ export class ImportService {
    * Generates DBML schema from database connection string
    */
   generateFromConnectionString(databaseType: string, connectionString: string): Observable<string> {
-    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml || 'http://192.168.1.84:4000/api/dbml/generate';
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml || 'http://localhost:4201/api/dbml/generate';
     const token = this.authService ? this.authService.getToken() : null;
     let headers: Record<string, string> = {
       'Content-Type': 'application/json'
@@ -96,6 +96,33 @@ export class ImportService {
     };
 
     return this.http.post(url, body, { headers, responseType: 'text' });
+  }
+
+  /**
+   * Generates DBML schema from SQLite .db file
+   */
+  generateFromSqlite(file: File): Observable<string> {
+    const configUrl = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbmlSqlite;
+    const primaryUrl = configUrl || 'http://localhost:4201/api/dbml/generate-form-sqllite';
+    const fallbackUrl = 'http://localhost:4201/api/dbml/generate-sqlite';
+
+    const token = this.authService ? this.authService.getToken() : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    return this.http.post(primaryUrl, formData, { headers, responseType: 'text' }).pipe(
+      catchError((err: any) => {
+        if (err?.status === 404 && primaryUrl !== fallbackUrl) {
+          return this.http.post(fallbackUrl, formData, { headers, responseType: 'text' });
+        }
+        return throwError(() => err);
+      })
+    );
   }
 
   /**

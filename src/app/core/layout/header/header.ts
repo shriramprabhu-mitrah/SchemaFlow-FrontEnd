@@ -82,7 +82,9 @@ export class HeaderComponent implements OnInit {
   // Connection String import modal state
   connStringModalOpen = false;
   connStringConnectMode: 'host' | 'url' = 'host';
-  connStringDatabaseType: 'postgres' | 'mysql' | 'mssql' = 'postgres';
+  connStringDatabaseType: 'postgres' | 'mysql' | 'mssql' | 'sqlite' = 'postgres';
+  selectedSqliteFile: File | null = null;
+  isSqliteDraggingOver = false;
 
   // Host mode fields
   connHost = 'localhost';
@@ -728,6 +730,8 @@ export class HeaderComponent implements OnInit {
     this.connSchema = 'public';
     this.showConnPassword = false;
     this.connStringValue = '';
+    this.selectedSqliteFile = null;
+    this.isSqliteDraggingOver = false;
     this.connStringImporting = false;
     this.connStringError = null;
     this.cdr.markForCheck();
@@ -736,6 +740,8 @@ export class HeaderComponent implements OnInit {
   closeConnectionStringModal(): void {
     this.connStringModalOpen = false;
     this.connStringValue = '';
+    this.selectedSqliteFile = null;
+    this.isSqliteDraggingOver = false;
     this.connStringImporting = false;
     this.connStringError = null;
     this.cdr.markForCheck();
@@ -750,7 +756,11 @@ export class HeaderComponent implements OnInit {
   }
 
   onDatabaseTypeChange(): void {
-    if (this.connStringDatabaseType === 'postgres') {
+    this.connStringError = null;
+    if (this.connStringDatabaseType === 'sqlite') {
+      this.selectedSqliteFile = null;
+      this.isSqliteDraggingOver = false;
+    } else if (this.connStringDatabaseType === 'postgres') {
       if (!this.connPort || this.connPort === 3306 || this.connPort === 1433) this.connPort = 5432;
       if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa') this.connUsername = 'postgres';
     } else if (this.connStringDatabaseType === 'mysql') {
@@ -761,6 +771,66 @@ export class HeaderComponent implements OnInit {
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root') this.connUsername = 'sa';
     }
     this.cdr.markForCheck();
+  }
+
+  onSqliteFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.validateAndSetSqliteFile(input.files[0]);
+      input.value = '';
+    }
+  }
+
+  onSqliteDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isSqliteDraggingOver = true;
+  }
+
+  onSqliteDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isSqliteDraggingOver = false;
+  }
+
+  onSqliteDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isSqliteDraggingOver = false;
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      this.validateAndSetSqliteFile(event.dataTransfer.files[0]);
+    }
+  }
+
+  validateAndSetSqliteFile(file: File): void {
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith('.db')) {
+      this.connStringError = 'Invalid file type. Only .db files are supported.';
+      this.selectedSqliteFile = null;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.selectedSqliteFile = file;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+
+  removeSqliteFile(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.selectedSqliteFile = null;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+
+  formatFileSize(bytes: number): string {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
   getGeneratedConnectionString(): string {
@@ -797,6 +867,9 @@ export class HeaderComponent implements OnInit {
 
   isConnStringSubmitDisabled(): boolean {
     if (this.connStringImporting) return true;
+    if (this.connStringDatabaseType === 'sqlite') {
+      return !this.selectedSqliteFile;
+    }
     if (this.connStringConnectMode === 'host') {
       return !this.connHost.trim() || !this.connDatabase.trim();
     }
@@ -805,6 +878,68 @@ export class HeaderComponent implements OnInit {
 
   submitConnectionStringImport(): void {
     if (this.isConnStringSubmitDisabled()) {
+      return;
+    }
+
+    if (this.connStringDatabaseType === 'sqlite') {
+      if (!this.selectedSqliteFile) {
+        this.connStringError = 'Please upload a valid .db SQLite file.';
+        return;
+      }
+
+      this.connStringImporting = true;
+      this.connStringError = null;
+
+      this.importSvc.generateFromSqlite(this.selectedSqliteFile).pipe(
+        finalize(() => {
+          this.connStringImporting = false;
+          this.cdr.markForCheck();
+        })
+      ).subscribe({
+        next: (response: any) => {
+          let dbml = '';
+          try {
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            dbml = parsed?.data?.diagramdbml ?? parsed?.data?.dbml ?? parsed?.diagramdbml ?? parsed?.dbml ?? parsed?.result ?? parsed?.code ?? (typeof parsed === 'string' ? parsed : JSON.stringify(parsed));
+          } catch {
+            dbml = response;
+          }
+
+          if (!dbml || !dbml.trim()) {
+            this.connStringError = 'Import succeeded but no DBML was returned.';
+            this.cdr.markForCheck();
+            return;
+          }
+          this.svc.forceSetCode(dbml);
+          this.svc.showToast('Schema generated and imported successfully.', 2500, 'success');
+          this.closeConnectionStringModal();
+          this.cdr.markForCheck();
+        },
+        error: (err: any) => {
+          console.error('SQLite import failed:', err);
+          let errorMessage = 'Failed to generate DBML from SQLite file.';
+
+          if (err?.error) {
+            try {
+              const parsed = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+              if (parsed?.message) {
+                errorMessage = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+              } else if (parsed?.error) {
+                errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
+              }
+            } catch {
+              if (typeof err.error === 'string' && err.error.trim()) {
+                errorMessage = err.error.length > 250 ? err.error.substring(0, 250) + '...' : err.error;
+              }
+            }
+          } else if (err?.message) {
+            errorMessage = err.message;
+          }
+
+          this.connStringError = errorMessage;
+          this.cdr.markForCheck();
+        }
+      });
       return;
     }
 

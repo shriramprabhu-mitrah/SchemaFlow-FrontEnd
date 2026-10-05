@@ -36,6 +36,7 @@
 @use 'diff-checker';
 @use 'interactive-preview';
 @use '../app/features/profile/_profile.scss';
+@use 'sqlite-upload';
 
 /* ==========================================
    GLOBAL CUSTOM SCROLLBAR COLORS & VARIABLES
