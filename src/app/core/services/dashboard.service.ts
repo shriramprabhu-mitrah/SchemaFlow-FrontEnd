@@ -39,6 +39,7 @@ export interface Column {
   defaultVal?: string;
   check: boolean;
   checkVal?: string;
+  note?: string;
   fkTable?: string;
   fkCol?: string;
 }
@@ -2500,18 +2501,33 @@ export class DashboardService {
             checkVal = val;
           }
 
+          const noteMatch = rawAttrs.match(/note:\s*('[^']*'|"[^"]*"|`[^`]*`)/i);
+          let noteVal: string | undefined = undefined;
+          if (noteMatch) {
+            let val = noteMatch[1].trim();
+            if ((val.startsWith("'") && val.endsWith("'")) ||
+              (val.startsWith('"') && val.endsWith('"')) ||
+              (val.startsWith('`') && val.endsWith('`'))) {
+              val = val.slice(1, -1);
+            }
+            noteVal = val;
+          }
+
+          const attrsNoStrings = rawAttrs.replace(/('[^']*'|"[^"]*"|`[^`]*`)/g, '').toLowerCase();
+
           cols.push({
             name: colName,
             type: cleanType,
-            pk: attrsLower.includes('pk') || attrsLower.includes('primary key'),
-            notNull: attrsLower.includes('not null'),
-            unique: attrsLower.includes('unique'),
-            increment: attrsLower.includes('increment'),
+            pk: attrsNoStrings.includes('pk') || attrsNoStrings.includes('primary key'),
+            notNull: attrsNoStrings.includes('not null'),
+            unique: attrsNoStrings.includes('unique'),
+            increment: attrsNoStrings.includes('increment'),
             fk: false,
             default: hasDefault,
             defaultVal,
             check: hasCheck,
-            checkVal
+            checkVal,
+            note: noteVal
           });
         }
       });

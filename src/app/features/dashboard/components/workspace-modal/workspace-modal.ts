@@ -1189,36 +1189,53 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
   }
 
+  memberDropdownPos: { top: string, right: string } | null = null;
   isMemberDropdownUpward: boolean = false;
+  activeMemberDropdownTarget: any = null;
+
+  getPermissionOfTarget(target: any): string {
+    let member: any = undefined;
+    if (typeof target === 'number') {
+      if (target >= 0 && target < this.membersList.length) member = this.membersList[target];
+    } else if (target && typeof target === 'object') {
+      member = target;
+    }
+    return member ? member.permission : '';
+  }
 
   toggleMemberDropdown(target: any, e: Event): void {
     if (e) e.stopPropagation();
     const key = (target && typeof target === 'object') ? target.email : target;
     if (this.activeMemberDropdownIndex === key) {
       this.activeMemberDropdownIndex = null;
+      this.activeMemberDropdownTarget = null;
+      this.memberDropdownPos = null;
       return;
     }
 
     this.activeMemberDropdownIndex = key;
-    this.cdr.detectChanges();
-
-    requestAnimationFrame(() => {
-      const menuEl = document.querySelector('.permission-dropdown-menu.member-perm-menu') as HTMLElement;
-      if (menuEl) {
-        const wrapper = menuEl.closest('.members-list-wrapper') as HTMLElement;
-        if (wrapper) {
-          const menuRect = menuEl.getBoundingClientRect();
-          const wrapperRect = wrapper.getBoundingClientRect();
-          if (menuRect.bottom > wrapperRect.bottom) {
-            const diff = menuRect.bottom - wrapperRect.bottom + 16;
-            wrapper.scrollBy({ top: diff, behavior: 'smooth' });
-          } else if (menuRect.top < wrapperRect.top) {
-            const diff = wrapperRect.top - menuRect.top + 8;
-            wrapper.scrollBy({ top: -diff, behavior: 'smooth' });
-          }
-        }
+    this.activeMemberDropdownTarget = target;
+    
+    if (e.currentTarget) {
+      const btn = e.currentTarget as HTMLElement;
+      const rect = btn.getBoundingClientRect();
+      const menuHeight = 200; // Approx height
+      const spaceBelow = window.innerHeight - rect.bottom;
+      
+      if (spaceBelow < menuHeight && rect.top > menuHeight) {
+        this.memberDropdownPos = {
+          top: `${rect.top - menuHeight - 4}px`,
+          right: `${window.innerWidth - rect.right}px`
+        };
+      } else {
+        this.memberDropdownPos = {
+          top: `${rect.bottom + 4}px`,
+          right: `${window.innerWidth - rect.right}px`
+        };
       }
-    });
+    }
+    
+    this.cdr.detectChanges();
   }
 
   changeMemberPermission(target: any, permission: PermissionType, e?: Event): void {
@@ -1235,6 +1252,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       member.permission = permission;
     }
     this.activeMemberDropdownIndex = null;
+    this.activeMemberDropdownTarget = null;
     this.cdr.detectChanges();
   }
 
@@ -1865,7 +1883,15 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       this.permissionDropdownOpen = false;
     }
   }
-
+  @HostListener('window:wheel', ['$event'])
+  onWindowWheel(e: Event): void {
+    if (this.activeMemberDropdownIndex !== null) {
+      this.activeMemberDropdownIndex = null;
+      this.activeMemberDropdownTarget = null;
+      this.memberDropdownPos = null;
+      this.cdr.detectChanges();
+    }
+  }
   @HostListener('document:click', ['$event'])
   onDocumentClick(e?: MouseEvent): void {
     if (e) {
