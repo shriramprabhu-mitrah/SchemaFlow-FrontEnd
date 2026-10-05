@@ -39,7 +39,6 @@ export interface Column {
   defaultVal?: string;
   check: boolean;
   checkVal?: string;
-  note?: string;
   fkTable?: string;
   fkCol?: string;
 }
@@ -1077,6 +1076,9 @@ export class DashboardService {
       }
     }
 
+    this.aiDiffOriginalCode.set('');
+    this.aiDiffProposedCode.set('');
+
     this.parseAndLayout();
     this.scheduleDraw();
   }
@@ -1487,6 +1489,7 @@ export class DashboardService {
   forceRedraw$ = new Subject<void>();
   readonly splitViewRequested$ = new Subject<void>();
   readonly canvasFitRequested$ = new Subject<void>();
+  readonly diagramReset$ = new Subject<void>();
 
   // Collaboration State
   readonly activeRoomUsers = signal<any[]>([]);
@@ -2501,33 +2504,18 @@ export class DashboardService {
             checkVal = val;
           }
 
-          const noteMatch = rawAttrs.match(/note:\s*('[^']*'|"[^"]*"|`[^`]*`)/i);
-          let noteVal: string | undefined = undefined;
-          if (noteMatch) {
-            let val = noteMatch[1].trim();
-            if ((val.startsWith("'") && val.endsWith("'")) ||
-              (val.startsWith('"') && val.endsWith('"')) ||
-              (val.startsWith('`') && val.endsWith('`'))) {
-              val = val.slice(1, -1);
-            }
-            noteVal = val;
-          }
-
-          const attrsNoStrings = rawAttrs.replace(/('[^']*'|"[^"]*"|`[^`]*`)/g, '').toLowerCase();
-
           cols.push({
             name: colName,
             type: cleanType,
-            pk: attrsNoStrings.includes('pk') || attrsNoStrings.includes('primary key'),
-            notNull: attrsNoStrings.includes('not null'),
-            unique: attrsNoStrings.includes('unique'),
-            increment: attrsNoStrings.includes('increment'),
+            pk: attrsLower.includes('pk') || attrsLower.includes('primary key'),
+            notNull: attrsLower.includes('not null'),
+            unique: attrsLower.includes('unique'),
+            increment: attrsLower.includes('increment'),
             fk: false,
             default: hasDefault,
             defaultVal,
             check: hasCheck,
-            checkVal,
-            note: noteVal
+            checkVal
           });
         }
       });
@@ -4358,6 +4346,8 @@ export class DashboardService {
   }
 
   private applyLoadedDiagram(response: any, id: number, fallbackWorkspace?: { id: number; name?: string } | null): void {
+    this.closeAiDiffReview(false);
+    this.diagramReset$.next();
     const diagram = response?.data?.diagram ?? response?.data ?? response?.diagram ?? response;
     const rawWsId = diagram?.workspaceid ?? diagram?.workspaceId ?? diagram?.workspace_id ?? diagram?.workspaceID
       ?? diagram?.workspace?.id ?? diagram?.workspace?.workspaceid
@@ -4974,6 +4964,9 @@ export class DashboardService {
   }
 
   clearDiagram(preserveDiagramId = false): void {
+    // 1. Immediately abort/close any active AI diff review and clear unaccepted proposed code!
+    this.closeAiDiffReview(false);
+
     for (const entry of this.invalidRefTimers.values()) {
       clearTimeout(entry.timer);
     }
@@ -4995,6 +4988,8 @@ export class DashboardService {
     this.tableColorsMap = {};
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.removeItem('table_colors_map');
+      localStorage.removeItem('active_diagram_code');
+      localStorage.removeItem('dbml_code');
     }
     this.diagramName = '';
     this.showDocs = false;
@@ -5002,6 +4997,7 @@ export class DashboardService {
     this.isDocUnlocked.set(false);
     this.showDiffChecker.set(false);
     this.showCanvasPlaceholder = false;
+    this.showCanvasPlaceholder = true;
     this.isAllFields = true;
     this.isKeyOnly = false;
     this.isColumnNameOnly = false;
@@ -5030,6 +5026,9 @@ export class DashboardService {
     this.updateGutter();
     this.scheduleDraw();
     this.updateOriginalState();
+
+    // 2. Notify listeners that a new/cleared diagram has been initialized
+    this.diagramReset$.next();
   }
 
   private zoomBy(factor: number): void {

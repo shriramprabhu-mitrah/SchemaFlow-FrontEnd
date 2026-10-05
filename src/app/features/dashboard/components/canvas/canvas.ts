@@ -85,7 +85,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   hoveredGroupColorIcon: string | null = null;
   hoveredGroupName: string | null = null;
   private groupColorIcons: { groupName: string; x: number; y: number }[] = [];
-  activeTooltip: { x: number; y: number; label: string; column?: any } | null = null;
+  activeTooltip: { x: number; y: number; label: string } | null = null;
   hoveredColumn: { tableName: string; columnName: string } | null = null;
   isMouseOverCanvas = false;
   private lastMouseWorldPoint: { x: number; y: number } | null = null;
@@ -1094,13 +1094,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       // Render active tooltip at the absolute top layer
-      const tooltip = this.activeTooltip as { x: number; y: number; label: string; column?: any } | null;
+      const tooltip = this.activeTooltip as { x: number; y: number; label: string } | null;
       if (tooltip) {
-        if (tooltip.column) {
-          this.drawColumnRichTooltip(ctx, tooltip.x, tooltip.y, tooltip.column);
-        } else {
-          this.drawIconTooltip(ctx, tooltip.x, tooltip.y, tooltip.label);
-        }
+        this.drawIconTooltip(ctx, tooltip.x, tooltip.y, tooltip.label);
       }
     }
 
@@ -1613,14 +1609,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         typeWidth = ctx.measureText(typeText).width;
       }
 
-      let badgeExtraWidth = 0;
-      if (c.notNull) {
-        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        badgeExtraWidth += ctx.measureText('NN').width + 14; // badge width + margin
-      }
-
       // Max width available for column name
-      const maxNameWidth = Math.max(20, availableWidth - typeWidth - badgeExtraWidth - minGap);
+      const maxNameWidth = Math.max(20, availableWidth - typeWidth - minGap);
 
       let prefix = '';
       if (c.pk) prefix += '\u{1F511} ';
@@ -1642,24 +1632,25 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.textAlign = 'left';
       ctx.fillText(label, t.x + padding, textY);
 
-      if (this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
-        if (c.defaultVal || c.note) {
-          this.activeTooltip = {
-            x: t.x + t.width,
-            y: textY,
-            label: '',
-            column: c
-          };
-        } else if (c.name !== displayColName) {
-          this.activeTooltip = {
-            x: t.x + padding,
-            y: textY,
-            label: c.name
-          };
-        }
+      if ((c.name !== displayColName) && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
+        this.activeTooltip = {
+          x: t.x + padding,
+          y: textY,
+          label: c.name
+        };
       }
 
-      let currentRightX = t.x + t.width - 12;
+      if (c.name.length > 15 && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
+        this.activeTooltip = {
+          x: t.x + 12,
+          y: textY,
+          label: c.name
+        };
+      }
+
+      ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
+      ctx.textAlign = 'right';
 
       let colDiff: 'added' | 'modified' | 'deleted' | null = null;
       if (this.svc.aiDiffReviewActive()) {
@@ -1667,39 +1658,20 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       if (colDiff) {
-        ctx.textAlign = 'right';
         const badgeText = colDiff === 'added' ? ' [Added]' : ' [Modified]';
         const badgeColor = colDiff === 'added' ? '#10b981' : '#f59e0b';
+
         ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         const badgeWidth = ctx.measureText(badgeText).width;
         ctx.fillStyle = badgeColor;
-        ctx.fillText(badgeText, currentRightX, textY);
-        currentRightX -= badgeWidth + 3;
-      }
+        ctx.fillText(badgeText, t.x + t.width - 12, textY);
 
-      if (c.notNull) {
-        const nnText = 'NN';
-        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        const tw = ctx.measureText(nnText).width;
-        const bw = tw + 8;
-        const bh = 16;
-        
-        ctx.fillStyle = isLight ? '#e2e8f0' : '#334155';
-        ctx.beginPath();
-        this.roundRectPath(ctx, currentRightX - bw, textY - bh / 2 + 1, bw, bh, 3);
-        ctx.fill();
-        
-        ctx.fillStyle = isLight ? '#475569' : '#cbd5e1';
-        ctx.textAlign = 'center';
-        ctx.fillText(nnText, currentRightX - bw / 2, textY + 1); 
-        
-        currentRightX -= bw + 6;
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
+        ctx.fillText(c.type, t.x + t.width - 12 - badgeWidth - 3, textY);
+      } else {
+        ctx.fillText(c.type, t.x + t.width - 12, textY);
       }
-
-      ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
-      ctx.textAlign = 'right';
-      ctx.fillText(typeText, currentRightX, textY);
     });
 
     const hiddenCount = t.columns.length - visibleColumns.length;
@@ -2896,146 +2868,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     return lines.length > 0 ? lines : [text];
-  }
-
-  private drawColumnRichTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, column: any): void {
-    const isLight = this.svc.theme() === 'light';
-    const bg = isLight ? '#ffffff' : '#141d31';
-    const textMain = isLight ? '#1a202c' : '#f8fafc';
-    const textSub = isLight ? '#718096' : '#94a3b8';
-    const textHighlight = isLight ? '#d97706' : '#f59e0b'; // orange
-    const shadowColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.5)';
-    
-    const rawDef = column.defaultVal !== undefined && column.defaultVal !== null ? String(column.defaultVal) : '';
-    const defVal = rawDef.replace(/^'|'$/g, '');
-    const hasDefault = defVal !== '';
-    const hasNote = !!column.note;
-    
-    ctx.save();
-    
-    let prefix = '';
-    if (column.pk) prefix += '\u{1F511} ';
-    if (column.fk) prefix += '\u{1F517} ';
-    if (column.unique && !column.pk) prefix += '\u{1F4A0} ';
-    
-    // Header Line
-    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const line1Prefix = prefix + (column.name || '') + '   ';
-    const w1Prefix = ctx.measureText(line1Prefix).width;
-    ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const w1Suffix = ctx.measureText(column.type || '').width;
-    let maxW = w1Prefix + w1Suffix;
-    
-    // Default Line
-    let w2Prefix = 0, w2Suffix = 0;
-    if (hasDefault) {
-        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        w2Prefix = ctx.measureText('Default ').width;
-        ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        w2Suffix = ctx.measureText(defVal).width;
-        maxW = Math.max(maxW, w2Prefix + w2Suffix);
-    }
-    
-    // Note Lines
-    let noteLines: string[] = [];
-    if (hasNote) {
-        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        maxW = Math.max(maxW, ctx.measureText('Note').width);
-        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        noteLines = this.getWrappedTooltipLines(ctx, column.note, 260); // give it more room
-        for (const line of noteLines) {
-            maxW = Math.max(maxW, ctx.measureText(line).width);
-        }
-    }
-    
-    const paddingX = 14;
-    const paddingY = 12;
-    const boxW = maxW + paddingX * 2;
-    
-    // Calculate Box Height
-    let boxH = paddingY * 2 + 13; // Header line height ~13
-    if (hasDefault) {
-        boxH += 22; // Default line height
-    }
-    if (hasNote) {
-        boxH += 22; // 'Note' label line height
-        boxH += noteLines.length * 18; // Note text line height
-    }
-    
-    const boxX = x + 8; // 8px padding to the right
-    const boxY = y - boxH / 2; // vertically centered
-    
-    // Draw bubble
-    ctx.beginPath();
-    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 8); // more rounded
-    ctx.shadowColor = shadowColor;
-    ctx.shadowBlur = 16; // softer shadow
-    ctx.shadowOffsetY = 6;
-    ctx.fillStyle = bg;
-    ctx.fill();
-    
-    ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = isLight ? '#cbd5e1' : '#334155';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    // Draw arrow pointing left
-    ctx.beginPath();
-    ctx.moveTo(boxX, y - 6);
-    ctx.lineTo(boxX - 6, y);
-    ctx.lineTo(boxX, y + 6);
-    ctx.fillStyle = bg;
-    ctx.fill();
-    ctx.stroke();
-    
-    // clean up overlapping border
-    ctx.beginPath();
-    ctx.moveTo(boxX + 1, y - 5);
-    ctx.lineTo(boxX + 1, y + 5);
-    ctx.strokeStyle = bg;
-    ctx.stroke();
-    
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    
-    const startX = boxX + paddingX;
-    
-    // Draw Header Line
-    let currY = boxY + paddingY + 6.5;
-    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = textMain;
-    ctx.fillText(line1Prefix, startX, currY);
-    ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = textSub;
-    ctx.fillText(column.type || '', startX + w1Prefix, currY);
-    
-    // Draw Default Line
-    if (hasDefault) {
-        currY += 22;
-        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = textSub;
-        ctx.fillText('Default ', startX, currY);
-        ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = textHighlight;
-        ctx.fillText(defVal, startX + w2Prefix, currY);
-    }
-    
-    // Draw Note
-    if (hasNote) {
-        currY += 22;
-        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = textSub; // Note label is gray and small
-        ctx.fillText('Note', startX, currY);
-        
-        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = textMain; // Note text is primary color and larger
-        for (const line of noteLines) {
-            currY += 18;
-            ctx.fillText(line, startX, currY);
-        }
-    }
-    
-    ctx.restore();
   }
 
   private drawIconTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, label: string): void {
