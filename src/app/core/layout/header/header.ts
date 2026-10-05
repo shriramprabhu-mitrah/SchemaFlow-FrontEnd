@@ -805,8 +805,10 @@ export class HeaderComponent implements OnInit {
   validateAndSetSqliteFile(file: File): void {
     if (!file) return;
     const name = file.name.toLowerCase();
-    if (!name.endsWith('.db')) {
-      this.connStringError = 'Invalid file type. Only .db files are supported.';
+    const validExtensions = ['.db', '.sqlite', '.sqlite3', '.db3'];
+    const isValid = validExtensions.some(ext => name.endsWith(ext));
+    if (!isValid) {
+      this.connStringError = 'Invalid file type. Only .db, .sqlite, .sqlite3, and .db3 files are supported.';
       this.selectedSqliteFile = null;
       this.cdr.markForCheck();
       return;
@@ -815,7 +817,6 @@ export class HeaderComponent implements OnInit {
     this.connStringError = null;
     this.cdr.markForCheck();
   }
-
   removeSqliteFile(event?: Event): void {
     if (event) {
       event.stopPropagation();
@@ -883,7 +884,7 @@ export class HeaderComponent implements OnInit {
 
     if (this.connStringDatabaseType === 'sqlite') {
       if (!this.selectedSqliteFile) {
-        this.connStringError = 'Please upload a valid .db SQLite file.';
+        this.connStringError = 'Please upload a valid SQLite database file (.db, .sqlite, .sqlite3 and .db3).';
         return;
       }
 

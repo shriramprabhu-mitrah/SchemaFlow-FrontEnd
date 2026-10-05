@@ -99,12 +99,10 @@ export class ImportService {
   }
 
   /**
-   * Generates DBML schema from SQLite .db file
+   * Generates DBML schema from SQLite database file (.db, .sqlite, .sqlite3, .db3)
    */
   generateFromSqlite(file: File): Observable<string> {
-    const configUrl = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbmlSqlite;
-    const primaryUrl = configUrl || 'http://localhost:4201/api/dbml/generate-form-sqllite';
-    const fallbackUrl = 'http://localhost:4201/api/dbml/generate-sqlite';
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbmlSqlite || 'http://localhost:4201/api/dbml/generate-sqlite';
 
     const token = this.authService ? this.authService.getToken() : null;
     let headers: Record<string, string> = {};
@@ -115,14 +113,7 @@ export class ImportService {
     const formData = new FormData();
     formData.append('file', file, file.name);
 
-    return this.http.post(primaryUrl, formData, { headers, responseType: 'text' }).pipe(
-      catchError((err: any) => {
-        if (err?.status === 404 && primaryUrl !== fallbackUrl) {
-          return this.http.post(fallbackUrl, formData, { headers, responseType: 'text' });
-        }
-        return throwError(() => err);
-      })
-    );
+    return this.http.post(url, formData, { headers, responseType: 'text' });
   }
 
   /**

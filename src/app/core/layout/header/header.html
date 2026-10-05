@@ -440,7 +440,7 @@
             <option value="postgres">PostgreSQL</option>
             <option value="mysql">MySQL</option>
             <option value="mssql">SQL Server (MSSQL)</option>
-            <option value="sqlite">SQLite</option>
+            <!-- <option value="sqlite">SQLite</option> -->
           </select>
           <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="6 9 12 15 18 9"></polyline>
@@ -460,7 +460,7 @@
             (drop)="onSqliteDrop($event)"
             (click)="sqliteFileInput.click()">
 
-            <input #sqliteFileInput type="file" accept=".db" style="display: none;" (change)="onSqliteFileSelected($event)" />
+            <input #sqliteFileInput type="file" accept=".db,.sqlite,.sqlite3,.db3" style="display: none;" (change)="onSqliteFileSelected($event)" />
 
             <!-- Empty State: Drag and drop folder / upload prompt -->
             <div class="sqlite-dropzone-inner" *ngIf="!selectedSqliteFile">
@@ -473,9 +473,9 @@
               </div>
               <div class="sqlite-dropzone-text">
                 <div class="sqlite-main-text">
-                  Drag and drop your <strong>.db</strong> file here, or <span class="sqlite-browse-btn">browse files</span>
+                  Drag and drop your SQLite file here, or <span class="sqlite-browse-btn">browse files</span>
                 </div>
-                <div class="sqlite-sub-text">Only SQLite database files (.db) are supported</div>
+                <div class="sqlite-sub-text">Supported formats: .db, .sqlite, .sqlite3, .db3</div>
               </div>
             </div>
 
