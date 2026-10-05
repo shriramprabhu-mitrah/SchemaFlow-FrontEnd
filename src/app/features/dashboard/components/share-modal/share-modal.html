@@ -110,8 +110,8 @@
         <div class="embed-code-box mb-3">
           <input type="text" class="db-input code-input" [value]="getShareLink()" readonly
             [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
-          <button class="btn btn-primary copy-btn" (click)="copyToClipboard(getShareLink(), 'link')"
-            [disabled]="hasDbmlErrors() || isDiagramEmpty()" title="Copy Link">
+          <button class="btn btn-primary copy-btn tt tt-bottom" (click)="copyToClipboard(getShareLink(), 'link')"
+            [disabled]="hasDbmlErrors() || isDiagramEmpty()" [attr.data-tt]="linkCopied ? 'Copied!' : 'Copy Link'">
             <svg *ngIf="!linkCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -198,7 +198,7 @@
         <p class="section-desc mb-2">Embed Code</p>
         <div class="embed-code-box">
           <input type="text" class="db-input code-input" [value]="getEmbedCode()" readonly />
-          <button class="btn btn-primary copy-btn" (click)="copyToClipboard(getEmbedCode(), 'embed')">
+          <button class="btn btn-primary copy-btn tt tt-bottom" (click)="copyToClipboard(getEmbedCode(), 'embed')" [attr.data-tt]="embedCopied ? 'Copied!' : 'Copy Embed Code'">
             <svg *ngIf="!embedCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
