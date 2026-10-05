@@ -71,6 +71,17 @@ export class EditorComponent implements OnInit, OnDestroy {
         this.highlight.nativeElement.innerHTML = this.colorize(this.displayCode);
       }
     });
+
+    // Auto-scroll to active hunk when diff review activates or active hunk changes
+    effect(() => {
+      const active = this.svc.aiDiffReviewActive();
+      const hunkId = this.svc.currentActiveHunkId();
+      if (active && hunkId !== null) {
+        setTimeout(() => {
+          this.scrollToHunkId(hunkId);
+        }, 60);
+      }
+    });
   }
 
   get isLoggedIn(): boolean {
@@ -555,31 +566,108 @@ export class EditorComponent implements OnInit, OnDestroy {
     return idx >= 0 ? idx : 0;
   }
 
-  prevHunk(): void {
-    const curr = this.currentPendingHunkIndex;
-    if (curr > 0) {
-      this.scrollToPendingHunk(curr - 1);
+  prevHunk(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
     }
+    const pending = this.pendingHunks;
+    if (pending.length === 0) return;
+    if (pending.length === 1) {
+      this.scrollToPendingHunk(0);
+      return;
+    }
+    const curr = this.currentPendingHunkIndex;
+    const prev = (curr - 1 + pending.length) % pending.length;
+    this.scrollToPendingHunk(prev);
   }
 
-  nextHunk(): void {
-    const pending = this.pendingHunks;
-    const curr = this.currentPendingHunkIndex;
-    if (curr < pending.length - 1) {
-      this.scrollToPendingHunk(curr + 1);
+  nextHunk(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
     }
+    const pending = this.pendingHunks;
+    if (pending.length === 0) return;
+    if (pending.length === 1) {
+      this.scrollToPendingHunk(0);
+      return;
+    }
+    const curr = this.currentPendingHunkIndex;
+    const next = (curr + 1) % pending.length;
+    this.scrollToPendingHunk(next);
+  }
+
+  scrollToCurrentHunk(): void {
+    this.scrollToPendingHunk(this.currentPendingHunkIndex);
   }
 
   scrollToPendingHunk(index: number): void {
     const pending = this.pendingHunks;
-    const hunk = pending[index];
+    if (pending.length === 0) return;
+    const safeIdx = Math.max(0, Math.min(index, pending.length - 1));
+    const hunk = pending[safeIdx];
     if (hunk) {
       this.svc.currentActiveHunkId.set(hunk.id);
-      this.svc.activeDiffHunkIndex.set(index);
-      const el = document.querySelector(`[data-hunk-id="${hunk.id}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      this.svc.activeDiffHunkIndex.set(safeIdx);
+      this.scrollToHunkId(hunk.id);
+    }
+  }
+
+  scrollToHunkId(hunkId: number): void {
+    const container = (this.elRef?.nativeElement?.querySelector('.editor-diff-review-view') as HTMLElement | null)
+      || (document.querySelector('.editor-diff-review-view') as HTMLElement | null);
+
+    const rows = (this.elRef?.nativeElement?.querySelectorAll(`[data-hunk-id="${hunkId}"]`) as NodeListOf<HTMLElement> | undefined)
+      ?? (document.querySelectorAll(`[data-hunk-id="${hunkId}"]`) as NodeListOf<HTMLElement>);
+
+    if (!rows || rows.length === 0) {
+      setTimeout(() => {
+        const retryRows = (this.elRef?.nativeElement?.querySelectorAll(`[data-hunk-id="${hunkId}"]`) as NodeListOf<HTMLElement> | undefined)
+          ?? (document.querySelectorAll(`[data-hunk-id="${hunkId}"]`) as NodeListOf<HTMLElement>);
+        if (retryRows && retryRows.length > 0) {
+          this.scrollToHunkId(hunkId);
+        }
+      }, 50);
+      return;
+    }
+
+    const firstRow = rows[0];
+    const lastRow = rows[rows.length - 1];
+
+    if (container) {
+      // Ensure outer #editor-scroll container has scrollTop reset
+      const editorScroll = (this.elRef?.nativeElement?.querySelector('#editor-scroll') as HTMLElement | null)
+        || (document.querySelector('#editor-scroll') as HTMLElement | null);
+      if (editorScroll && editorScroll.scrollTop !== 0) {
+        editorScroll.scrollTop = 0;
       }
+
+      const containerRect = container.getBoundingClientRect();
+      const firstRect = firstRow.getBoundingClientRect();
+      const lastRect = lastRow.getBoundingClientRect();
+
+      const hunkHeight = lastRect.bottom - firstRect.top;
+      const hunkTopInContent = (firstRect.top - containerRect.top) + container.scrollTop;
+
+      // Effective visible height minus floating bottom bar (~80px)
+      const effectiveVisibleHeight = Math.max(100, container.clientHeight - 80);
+
+      let targetScrollTop = 0;
+      if (hunkHeight < effectiveVisibleHeight) {
+        targetScrollTop = hunkTopInContent - (effectiveVisibleHeight - hunkHeight) / 2;
+      } else {
+        targetScrollTop = hunkTopInContent - 24;
+      }
+
+      targetScrollTop = Math.max(0, Math.round(targetScrollTop));
+
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
+    } else {
+      firstRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 

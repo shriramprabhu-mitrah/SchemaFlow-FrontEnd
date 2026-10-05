@@ -241,6 +241,7 @@ export class HeaderComponent implements OnInit {
       return;
     }
     this.runWithUnsavedChangesCheck(() => {
+      this.svc.closeAiDiffReview(false);
       this.svc.requestSplitView();
 
       const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
@@ -1058,6 +1059,7 @@ export class HeaderComponent implements OnInit {
     }
     this.runWithUnsavedChangesCheck(() => {
 
+      this.svc.closeAiDiffReview(false);
       this.svc.requestSplitView();
       this.svc.clearDiagram(true);
       this.svc.code = this.svc.getSampleCode(type);

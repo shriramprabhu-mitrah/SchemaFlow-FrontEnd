@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { AppConfigService } from '../../../../core/services/app-config.service';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
@@ -112,6 +113,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     private sanitizer = inject(DomSanitizer);
     private auth = inject(AuthService);
     private streamingTimer: any = null;
+    private streamCompleteTimer: any = null;
+    private applySnippetTimer: any = null;
+    private diagramResetSub?: Subscription;
 
     availableModels = signal<AiChatModel[]>([{ ...DEFAULT_DBNEXUS_MODEL }]);
     selectedModel = signal<AiChatModel | null>({ ...DEFAULT_DBNEXUS_MODEL });
@@ -138,9 +142,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     // Usage Limit Pop-up Card State (dbnexus AI default model)
     isUsagePopupOpen = signal<boolean>(false);
-    usedTokens = signal<number>(this.loadStoredUsedTokens());
-    tokenLimit = signal<number>(this.loadStoredTokenLimit());
-    hasRemainingQuota = signal<boolean>(this.loadStoredQuota());
+    usedTokens = signal<number>(0);
+    tokenLimit = signal<number>(50000);
+    hasRemainingQuota = signal<boolean>(true);
 
     sessionTitle = signal<string>(this.formatSessionTitle());
     promptText = signal<string>('');
@@ -210,8 +214,16 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             }
             return;
         }
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('dbnexus_ai_used_tokens');
+            localStorage.removeItem('dbnexus_ai_limit');
+            localStorage.removeItem('dbnexus_ai_has_quota');
+        }
         this.loadModels();
         this.loadLatestSessionAndHistory();
+        this.diagramResetSub = this.svc.diagramReset$.subscribe(() => {
+            this.onDiagramReset();
+        });
     }
 
     ngOnDestroy(): void {
@@ -220,6 +232,41 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             clearInterval(this.streamingTimer);
             this.streamingTimer = null;
         }
+        if (this.streamCompleteTimer) {
+            clearTimeout(this.streamCompleteTimer);
+            this.streamCompleteTimer = null;
+        }
+        if (this.applySnippetTimer) {
+            clearTimeout(this.applySnippetTimer);
+            this.applySnippetTimer = null;
+        }
+        if (this.diagramResetSub) {
+            this.diagramResetSub.unsubscribe();
+        }
+    }
+
+    private onDiagramReset(): void {
+        if (this.streamingTimer) {
+            clearInterval(this.streamingTimer);
+            this.streamingTimer = null;
+        }
+        if (this.streamCompleteTimer) {
+            clearTimeout(this.streamCompleteTimer);
+            this.streamCompleteTimer = null;
+        }
+        if (this.applySnippetTimer) {
+            clearTimeout(this.applySnippetTimer);
+            this.applySnippetTimer = null;
+        }
+        this.stopThinkingStatusCycle();
+        this.isThinking.set(false);
+        this.applyingSnippetMsgId.set(null);
+        this.svc.isDiagramLoading.set(false);
+
+        // Reset applied state on all messages since the unaccepted AI code was discarded
+        this.messages.update(msgs =>
+            msgs.map(m => m.applied ? { ...m, applied: false } : m)
+        );
     }
 
     private startThinkingStatusCycle(): void {
@@ -788,10 +835,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 data.forEach(m => {
                     if (this.isNoApiKeyRequired(m)) {
                         if (m.max_tokens && typeof m.max_tokens === 'number' && m.max_tokens > 0) {
-                            if (!localStorage.getItem('dbnexus_ai_limit')) {
-                                this.tokenLimit.set(m.max_tokens);
-                            }
+                            this.tokenLimit.set(m.max_tokens);
                         }
+                        this.updateUsageFromApiResponse(m);
                         return;
                     }
                     if (m.api_key === null) {
@@ -1405,38 +1451,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
         // Update token usage and limit for dbnexus AI default model
         if (this.isNoApiKeyRequired(currentModel)) {
-            const data = res?.data;
-
-            // 1. Update Limit from response if provided (e.g. data.limit = 50000)
-            const responseLimit = data?.limit ?? res?.limit;
-            if (responseLimit !== undefined && responseLimit !== null && !isNaN(Number(responseLimit))) {
-                const limitNum = Number(responseLimit);
-                this.tokenLimit.set(limitNum);
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('dbnexus_ai_limit', String(limitNum));
-                }
-            }
-
-            // 2. Update Usage from response (e.g. data.usage = 20255)
-            const responseUsage = data?.usage ?? data?.used_tokens ?? data?.tokens_used ?? data?.usedTokens;
-            if (responseUsage !== undefined && responseUsage !== null && !isNaN(Number(responseUsage))) {
-                this.updateUsedTokens(Number(responseUsage));
-            } else {
-                const rawTokens = data?.total_tokens ?? data?.tokens ?? res?.total_tokens;
-                if (rawTokens !== undefined && rawTokens !== null && !isNaN(Number(rawTokens))) {
-                    this.updateUsedTokens(this.usedTokens() + Number(rawTokens));
-                }
-            }
-
-            // 3. Update Remaining Quota boolean flag if provided (e.g. data.hasRemainingQuota = true)
-            const remainingQuota = data?.hasRemainingQuota ?? res?.hasRemainingQuota;
-            if (remainingQuota !== undefined && remainingQuota !== null) {
-                const hasQuota = Boolean(remainingQuota);
-                this.hasRemainingQuota.set(hasQuota);
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('dbnexus_ai_has_quota', String(hasQuota));
-                }
-            }
+            this.updateUsageFromApiResponse(res);
         }
 
         this.shouldScrollToBottom = true;
@@ -1444,6 +1459,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     private handleChatErrorResponse(err: any, currentModel: AiChatModel, userMsg?: ChatMessage): void {
         console.error('AI chat error:', err);
+
+        // Update token usage and limit if provided in the error response (e.g. token limit reached)
+        this.updateUsageFromApiResponse(err);
+
         const errMsg = this.formatAiErrorMessage(err);
         this.svc.showToast(errMsg, 4000, 'error');
 
@@ -1459,36 +1478,86 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.stopThinkingStatusCycle();
     }
 
-    loadStoredUsedTokens(): number {
-        if (typeof window === 'undefined') return 0;
-        const stored = localStorage.getItem('dbnexus_ai_used_tokens');
-        // Clear any old static dummy data if present
-        if (stored === '13635') {
-            localStorage.removeItem('dbnexus_ai_used_tokens');
-            return 0;
-        }
-        if (stored !== null && stored !== undefined && !isNaN(Number(stored))) {
-            return Number(stored);
-        }
-        return 0;
-    }
+    private updateUsageFromApiResponse(res: any): void {
+        if (!res) return;
 
-    loadStoredTokenLimit(): number {
-        if (typeof window === 'undefined') return 50000;
-        const stored = localStorage.getItem('dbnexus_ai_limit');
-        if (stored !== null && stored !== undefined && !isNaN(Number(stored)) && Number(stored) > 0) {
-            return Number(stored);
+        let data = res;
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch {
+                return;
+            }
         }
-        return 50000;
-    }
 
-    loadStoredQuota(): boolean {
-        if (typeof window === 'undefined') return true;
-        const stored = localStorage.getItem('dbnexus_ai_has_quota');
-        if (stored === 'false') {
-            return false;
+        let errorObj = data?.error;
+        if (typeof errorObj === 'string') {
+            try {
+                errorObj = JSON.parse(errorObj);
+            } catch {
+                errorObj = null;
+            }
         }
-        return true;
+
+        const payloadData = data?.data;
+
+        // 1. Update Limit from response if provided (e.g. data.limit = 50000)
+        const responseLimit =
+            data?.limit ??
+            payloadData?.limit ??
+            errorObj?.limit ??
+            (typeof data?.error === 'object' ? data?.error?.limit : undefined);
+
+        if (responseLimit !== undefined && responseLimit !== null && !isNaN(Number(responseLimit))) {
+            const limitNum = Number(responseLimit);
+            if (limitNum > 0) {
+                this.tokenLimit.set(limitNum);
+            }
+        }
+
+        // 2. Update Usage from response (e.g. data.usage = 53576)
+        const responseUsage =
+            data?.usage ??
+            data?.used_tokens ??
+            data?.tokens_used ??
+            data?.usedTokens ??
+            payloadData?.usage ??
+            payloadData?.used_tokens ??
+            payloadData?.tokens_used ??
+            payloadData?.usedTokens ??
+            errorObj?.usage ??
+            errorObj?.used_tokens ??
+            errorObj?.tokens_used ??
+            errorObj?.usedTokens ??
+            (typeof data?.error === 'object'
+                ? (data?.error?.usage ?? data?.error?.used_tokens ?? data?.error?.tokens_used ?? data?.error?.usedTokens)
+                : undefined);
+
+        if (responseUsage !== undefined && responseUsage !== null && !isNaN(Number(responseUsage))) {
+            this.updateUsedTokens(Number(responseUsage));
+        } else {
+            const rawTokens =
+                data?.total_tokens ??
+                data?.tokens ??
+                payloadData?.total_tokens ??
+                payloadData?.tokens;
+            if (rawTokens !== undefined && rawTokens !== null && !isNaN(Number(rawTokens))) {
+                this.updateUsedTokens(this.usedTokens() + Number(rawTokens));
+            }
+        }
+
+        // 3. Update Remaining Quota boolean flag if provided (e.g. data.hasRemainingQuota = false)
+        const remainingQuota =
+            data?.hasRemainingQuota ??
+            payloadData?.hasRemainingQuota ??
+            errorObj?.hasRemainingQuota ??
+            (typeof data?.error === 'object' ? data?.error?.hasRemainingQuota : undefined);
+
+        if (remainingQuota !== undefined && remainingQuota !== null) {
+            this.hasRemainingQuota.set(Boolean(remainingQuota));
+        } else if (this.getMaxTokens() > 0 && this.usedTokens() >= this.getMaxTokens()) {
+            this.hasRemainingQuota.set(false);
+        }
     }
 
     getMaxTokens(): number {
@@ -1537,11 +1606,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     updateUsedTokens(newCount: number): void {
-        const max = this.getMaxTokens();
-        const capped = Math.min(max, Math.max(0, newCount));
-        this.usedTokens.set(capped);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('dbnexus_ai_used_tokens', String(capped));
+        const val = Math.max(0, newCount);
+        this.usedTokens.set(val);
+        if (this.getMaxTokens() > 0 && val >= this.getMaxTokens()) {
+            this.hasRemainingQuota.set(false);
         }
     }
 
@@ -1684,7 +1752,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
             // Apply query ONLY AFTER chat response is completely displayed on screen
             if (onComplete) {
-                setTimeout(() => {
+                if (this.streamCompleteTimer) {
+                    clearTimeout(this.streamCompleteTimer);
+                }
+                this.streamCompleteTimer = setTimeout(() => {
+                    this.streamCompleteTimer = null;
                     onComplete();
                 }, 600);
             }
@@ -1838,39 +1910,82 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         // this.svc.closeAiChat();
     }
 
-    copySnippet(snippet: string, msgId: string): void {
-        if (!snippet) return;
-        const onCopied = () => {
-            this.copiedSnippetId.set(msgId);
-            setTimeout(() => {
-                if (this.copiedSnippetId() === msgId) {
-                    this.copiedSnippetId.set(null);
-                }
-            }, 2000);
-        };
+    // copySnippet(snippet: string, msgId: string): void {
+    //     if (!snippet) return;
+    //     navigator.clipboard.writeText(snippet).then(() => {
+    //         this.copiedSnippetId.set(msgId);
+    //         setTimeout(() => {
+    //             if (this.copiedSnippetId() === msgId) {
+    //                 this.copiedSnippetId.set(null);
+    //             }
+    //         }, 2000);
+    //     });
+    // }
+    async copySnippet(snippetOrMsg: string | ChatMessage, maybeMsgId?: string): Promise<void> {
+        let textToCopy = '';
+        let msgId = '';
 
-        if (navigator.clipboard?.writeText) {
-            navigator.clipboard.writeText(snippet).then(onCopied).catch(() => {
-                this.fallbackCopySnippet(snippet, onCopied);
-            });
+        if (typeof snippetOrMsg === 'object' && snippetOrMsg !== null) {
+            msgId = snippetOrMsg.id;
+            textToCopy = (snippetOrMsg.displayCodeSnippet !== undefined && snippetOrMsg.displayCodeSnippet !== null && snippetOrMsg.displayCodeSnippet.trim() !== '')
+                ? snippetOrMsg.displayCodeSnippet
+                : (snippetOrMsg.codeSnippet || '');
+        } else {
+            textToCopy = snippetOrMsg || '';
+            msgId = maybeMsgId || '';
+        }
+
+        textToCopy = (textToCopy || '').trim();
+        if (!textToCopy) {
+            this.svc.showToast('No code snippet available to copy.', 2000, 'info');
             return;
         }
 
-        this.fallbackCopySnippet(snippet, onCopied);
-    }
+        let copied = false;
 
-    private fallbackCopySnippet(snippet: string, onCopied: () => void): void {
-        const textArea = document.createElement('textarea');
-        textArea.value = snippet;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-9999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            if (document.execCommand('copy')) onCopied();
-        } finally {
-            document.body.removeChild(textArea);
+        // 1. Try modern navigator.clipboard (available in secure contexts like HTTPS/localhost)
+        if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                copied = true;
+            } catch (err) {
+                console.warn('navigator.clipboard.writeText failed, trying fallback textarea copy...', err);
+            }
+        }
+
+        // 2. Reliable fallback for non-secure contexts (HTTP, LAN IP address, iframes, etc.)
+        if (!copied && typeof document !== 'undefined') {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = textToCopy;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '-9999px';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                ta.setSelectionRange(0, textToCopy.length);
+                copied = document.execCommand('copy');
+                document.body.removeChild(ta);
+            } catch (fallbackErr) {
+                console.warn('Fallback document.execCommand copy failed', fallbackErr);
+            }
+        }
+
+        if (copied) {
+            if (msgId) {
+                this.copiedSnippetId.set(msgId);
+                setTimeout(() => {
+                    if (this.copiedSnippetId() === msgId) {
+                        this.copiedSnippetId.set(null);
+                    }
+                }, 2000);
+            }
+            this.svc.showToast('Code copied to clipboard!', 2000, 'success');
+        } else {
+            this.svc.showToast('Failed to copy to clipboard.', 2500, 'error');
         }
     }
 
@@ -1907,7 +2022,14 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.applyingSnippetMsgId.set(msg.id);
         this.svc.isDiagramLoading.set(true);
 
-        setTimeout(() => {
+        if (this.applySnippetTimer) {
+            clearTimeout(this.applySnippetTimer);
+        }
+        this.applySnippetTimer = setTimeout(() => {
+            this.applySnippetTimer = null;
+            if (this.applyingSnippetMsgId() !== msg.id) {
+                return;
+            }
             try {
                 let snippet = msg.codeSnippet!.trim();
                 // Strip markdown code fences if present (e.g. ```dbml ... ```)
