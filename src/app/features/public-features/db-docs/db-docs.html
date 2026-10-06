@@ -1,0 +1,262 @@
+<div class="landing-container light-mode-enforced">
+  <!-- NAVIGATION HEADER -->
+  <header class="landing-header clean-header">
+    <div class="header-inner">
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text">dbNexus</span>
+      </div>
+      <nav class="header-nav">
+        <div class="nav-item-dropdown">
+          <a class="nav-link" style="cursor: pointer;">
+            Features
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </a>
+          <div class="dropdown-menu">
+            <a routerLink="/features/db-docs" class="dropdown-item">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Docs</span>
+                <span class="desc">Generate beautiful documentation for your database schema</span>
+              </div>
+            </a>
+            <a routerLink="/features/live-connection" class="dropdown-item">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Live Connection</span>
+                <span class="desc">Connect securely directly to your live database</span>
+              </div>
+            </a>
+          </div>
+        </div>
+        <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
+        <a routerLink="/docs" target="_blank" routerLinkActive="active" class="nav-link">Docs</a>
+        <a routerLink="/diff" routerLinkActive="active" class="nav-link">SQL Compare</a>
+      </nav>
+      <div class="header-actions">
+        <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-signin-light">Sign In</app-button>
+        </a>
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign Out</app-button>
+        
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE MENU OVERLAY -->
+  <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
+    <nav class="mobile-nav">
+      <a routerLink="/features/db-docs" class="mobile-nav-link" (click)="toggleMobileMenu()">DB Docs</a>
+      <a routerLink="/features/live-connection" class="mobile-nav-link" (click)="toggleMobileMenu()">Live Connection</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
+      <a routerLink="/diff" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">SQL Compare</a>
+
+      <div class="mobile-nav-bottom">
+        <div class="mobile-nav-divider"></div>
+        <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
+      </div>
+    </nav>
+  </div>
+
+  <section class="hero-clean-wrapper">
+    <div class="hero-bg-shape shape-left"></div>
+    <div class="hero-bg-shape shape-right"></div>
+    
+    <div class="hero-content" style="position: relative; z-index: 10; width: 100%; max-width: 1000px;">
+      <div class="hero-badge">
+        <div class="badge-pulse"></div>
+        ✨ Interactive Data Dictionary
+      </div>
+      <h1 class="hero-title">Database Documentation</h1>
+      <p class="hero-subtitle">Generate beautiful, interactive, and easy-to-read documentation directly from your database schema in seconds.</p>
+      <div class="hero-actions" style="margin-top: 5px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <button class="btn btn-primary" (click)="onCreateDiagram()" style="padding: 12px 24px; border-radius: 6px; font-weight: 600; background: #2563eb; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 16px;">
+          Get Started
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+      </div>
+      <div style="margin-top: 20px; display: flex; justify-content: center; width: 100%;">
+        <object type="image/svg+xml" data="/assets/data-dictionary-animation.svg" title="Database Documentation Animation" style="width: 100%; max-width: 1000px; aspect-ratio: 1200/760; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border: 1px solid #e5e7eb; background: white;"></object>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why dbdocs? -->
+  <section class="feature-grid-section" style="padding: 80px 24px; max-width: 1200px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 64px;">
+      <h2 style="font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px;">Why DBNexus Docs?</h2>
+      <p style="font-size: 18px; color: #6b7280; max-width: 600px; margin: 0 auto;">Generate modern, interactive database documentation that saves you time and keeps your data perfectly organized.</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px;">
+      
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        </div>
+        <h3>Database As Code (DBML)</h3>
+        <p>Define your database schema rapidly using the intuitive Database Markup Language (DBML). Keep your definitions structured, readable, and perfectly version-controlled.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        </div>
+        <h3>Interactive Table Views</h3>
+        <p>Instantly visualize your schema. Easily hide, highlight, and explore specific tables and their complex relationships without having to write or maintain complex SQL queries.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        </div>
+        <h3>1-Click Markdown Export</h3>
+        <p>Generate clean, portable Markdown documentation directly from your schema structure. Download it instantly to seamlessly integrate into your own wikis and internal knowledge bases.</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works-section">
+    <div class="how-it-works-container">
+      <div class="how-it-works-content">
+        <h2 class="how-it-works-title">How it works</h2>
+        
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number">1</div>
+            <h4>Define schema using DBML</h4>
+          </div>
+          <p>Write your database schema using our open-source Database Markup Language (DBML). It's simple, readable, and designed specifically for defining and documenting schemas.</p>
+        </div>
+        
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number">2</div>
+            <h4>Generate Documentation</h4>
+          </div>
+          <p>DBNexus takes your DBML code and instantly generates a beautiful, interactive documentation site that you can view, share, and export as Markdown.</p>
+        </div>
+
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number">3</div>
+            <h4>Interactive Table View & Export</h4>
+          </div>
+          <p>Explore your schema with an interactive table view that clearly displays relationships. You can easily hide or highlight specific tables to focus on what matters, and download your documentation as Markdown.</p>
+        </div>
+      </div>
+      
+      <div class="how-it-works-ide">
+        <div class="ide-header">
+          <div class="ide-dot red"></div>
+          <div class="ide-dot yellow"></div>
+          <div class="ide-dot green"></div>
+        </div>
+        <pre class="ide-code">
+<span class="keyword">Table</span> users {{ '{' }}
+  id <span class="type">integer</span> [primary key]
+  username <span class="type">varchar</span>
+  created_at <span class="type">timestamp</span>
+{{ '}' }}
+
+<span class="keyword">Table</span> posts {{ '{' }}
+  id <span class="type">integer</span> [primary key]
+  user_id <span class="type">integer</span>
+  body <span class="type">text</span>
+{{ '}' }}
+
+<span class="comment">// Relationships</span>
+<span class="ref">Ref:</span> posts.user_id > users.id
+        </pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Data Dictionary (Redesigned & Elaborative) -->
+  <section class="interactive-dict-section">
+    <div style="max-width: 1200px; margin: 0 auto;">
+      
+      <div style="text-align: center; margin-bottom: 64px;">
+        <h2>Interactive Data Dictionary</h2>
+        <p class="subtitle">
+          DBNexus automatically compiles your DBML schema into a searchable, living Data Dictionary. Bridge the gap between engineering and business by giving data scientists, backend engineers, and product managers a crystal-clear view of your data model.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px;">
+        
+        <!-- Feature 1 -->
+        <div class="interactive-dict-card">
+          <div style="width: 48px; height: 48px; background: #dbeafe; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          </div>
+          <h3>Organized Grid Layout</h3>
+          <p>
+            View your tables in a beautifully structured grid. Instantly see columns, data types, primary/foreign keys, and relationships without writing complex SQL queries.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="interactive-dict-card">
+          <div style="width: 48px; height: 48px; background: #dcfce7; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+          <h3>Instant Search & Filtering</h3>
+          <p>
+            Navigate massive schemas effortlessly. Use the side panel to search for specific tables, columns, or data types, and toggle their visibility on the fly.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="interactive-dict-card">
+          <div style="width: 48px; height: 48px; background: #f3e8ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </div>
+          <h3>Export to Markdown</h3>
+          <p>
+            Need to update your internal wiki? Export the entire data dictionary as a Markdown file with a single click and paste it into GitHub, Notion, or Confluence.
+          </p>
+        </div>
+
+      </div>
+      
+      <!-- Highlight Banner -->
+      <div class="highlight-banner">
+        <div class="highlight-content">
+          <h3>Effortless Database Documentation</h3>
+          <p>
+            Generate an interactive dictionary directly from your schema. View tables, analyze relationships, and download your entire documentation as Markdown with a single click.
+          </p>
+        </div>
+        <div class="highlight-icon-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <app-footer></app-footer>
+</div>
+

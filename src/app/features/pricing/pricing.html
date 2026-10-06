@@ -12,7 +12,32 @@
         <span class="brand-text">dbNexus</span>
       </div>
       <nav class="header-nav">
-        <a routerLink="/" class="nav-link">Features</a>
+        <div class="nav-item-dropdown">
+          <a class="nav-link" style="cursor: pointer;">
+            Features
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </a>
+          <div class="dropdown-menu">
+            <a routerLink="/features/db-docs" class="dropdown-item">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Docs</span>
+                <span class="desc">Generate beautiful documentation for your database schema</span>
+              </div>
+            </a>
+            <a routerLink="/features/live-connection" class="dropdown-item">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Live Connection</span>
+                <span class="desc">Connect securely directly to your live database</span>
+              </div>
+            </a>
+          </div>
+        </div>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
         <a routerLink="/docs" target="_blank" class="nav-link">Docs</a>
         <a routerLink="/diff" routerLinkActive="active" class="nav-link">SQL Compare</a>
