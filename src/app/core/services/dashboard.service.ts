@@ -137,108 +137,108 @@ export type SqlDialect = 'postgres' | 'mysql' | 'mssql';
 
 
 export const SAMPLE = `Table Department {
-  DepartmentId int [pk]
-  DepartmentName varchar
-  Location varchar
+  DepartmentId INT [pk]
+  DepartmentName VARCHAR
+  Location VARCHAR
 }
  
 Table Role {
-  RoleId int [pk]
-  RoleName varchar
+  RoleId INT [pk]
+  RoleName VARCHAR
 }
  
 Table Employee {
-  EmployeeId int [pk]
-  DepartmentId int
-  RoleId int
-  ManagerId int
-  FirstName varchar
-  LastName varchar
-  Email varchar
-  Phone varchar
-  HireDate date
-  Salary decimal
-  Status varchar
+  EmployeeId INT [pk]
+  DepartmentId INT
+  RoleId INT
+  ManagerId INT
+  FirstName VARCHAR
+  LastName VARCHAR
+  Email VARCHAR
+  Phone VARCHAR
+  HireDate DATE
+  Salary DECIMAL
+  Status VARCHAR
 }
  
 Table Client {
-  ClientId int [pk]
-  CompanyName varchar
-  ContactPerson varchar
-  Email varchar
-  Phone varchar
+  ClientId INT [pk]
+  CompanyName VARCHAR
+  ContactPerson VARCHAR
+  Email VARCHAR
+  Phone VARCHAR
 }
  
 Table Project {
-  ProjectId int [pk]
-  ClientId int
-  ProjectManagerId int
-  ProjectName varchar
-  StartDate date
-  EndDate date
-  Status varchar
+  ProjectId INT [pk]
+  ClientId INT
+  ProjectManagerId INT
+  ProjectName VARCHAR
+  StartDate DATE
+  EndDate DATE
+  Status VARCHAR
 }
  
 Table EmployeeProject {
-  EmployeeProjectId int [pk]
-  EmployeeId int
-  ProjectId int
-  AssignedDate date
-  AllocationPercentage int
+  EmployeeProjectId INT [pk]
+  EmployeeId INT
+  ProjectId INT
+  AssignedDate DATE
+  AllocationPercentage INT
 }
  
 Table Attendance {
-  AttendanceId int [pk]
-  EmployeeId int
-  AttendanceDate date
-  CheckIn time
-  CheckOut time
-  Status varchar
+  AttendanceId INT [pk]
+  EmployeeId INT
+  AttendanceDate DATE
+  CheckIn TIME
+  CheckOut TIME
+  Status VARCHAR
 }
  
 Table LeaveRequest {
-  LeaveRequestId int [pk]
-  EmployeeId int
-  LeaveType varchar
-  FromDate date
-  ToDate date
-  Reason varchar
-  ApprovalStatus varchar
+  LeaveRequestId INT [pk]
+  EmployeeId INT
+  LeaveType VARCHAR
+  FromDate DATE
+  ToDate DATE
+  Reason VARCHAR
+  ApprovalStatus VARCHAR
 }
  
 Table Timesheet {
-  TimesheetId int [pk]
-  EmployeeId int
-  ProjectId int
-  WorkDate date
-  HoursWorked decimal
+  TimesheetId INT [pk]
+  EmployeeId INT
+  ProjectId INT
+  WorkDate DATE
+  HoursWorked DECIMAL
 }
  
 Table Invoice {
-  InvoiceId int [pk]
-  ClientId int
-  ProjectId int
-  InvoiceDate date
-  DueDate date
-  TotalAmount decimal
-  Status varchar
+  InvoiceId INT [pk]
+  ClientId INT
+  ProjectId INT
+  InvoiceDate DATE
+  DueDate DATE
+  TotalAmount DECIMAL
+  Status VARCHAR
 }
  
 Table InvoiceItem {
-  InvoiceItemId int [pk]
-  InvoiceId int
-  Description varchar
-  Quantity int
-  UnitPrice decimal
-  Amount decimal
+  InvoiceItemId INT [pk]
+  InvoiceId INT
+  Description VARCHAR
+  Quantity INT
+  UnitPrice DECIMAL
+  Amount DECIMAL
 }
  
 Table Payment {
-  PaymentId int [pk]
-  InvoiceId int
-  PaymentDate date
-  Amount decimal
-  PaymentMethod varchar
+  PaymentId INT [pk]
+  InvoiceId INT
+  PaymentDate DATE
+  Amount DECIMAL
+  PaymentMethod VARCHAR
 }
  
 Ref: Employee.DepartmentId > Department.DepartmentId
@@ -2545,7 +2545,7 @@ export class DashboardService {
       localStorage.removeItem('drag position');
     }
     this.code = `Table Untitled {
-  id int [pk]
+  id INT [pk]
 }`;
     this.isDocUnlocked.set(false);
     this.showDocs = false;
@@ -3444,7 +3444,7 @@ export class DashboardService {
 
     const tableBlock = `Table ${newName} {\n${columns
       .map((column) => {
-        let cleanType = column.type.trim();
+        let cleanType = column.type.trim().toUpperCase();
         if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
@@ -3818,7 +3818,7 @@ export class DashboardService {
 
     const tableBlock = `Table ${name} {\n${columns
       .map((column) => {
-        let cleanType = column.type.trim();
+        let cleanType = column.type.trim().toUpperCase();
         if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
@@ -3887,7 +3887,7 @@ export class DashboardService {
 
     const tableBlock =
       `\nTable ${tableName} {\n` +
-      `  id int [pk]\n` +
+      `  id INT [pk]\n` +
       `}\n`;
     this.code = this.code.trimEnd() + '\n' + tableBlock;
     this.updateGutter();

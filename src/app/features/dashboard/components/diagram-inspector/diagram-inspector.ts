@@ -319,7 +319,7 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
             if (rawAttrs.includes('increment')) attrs.push('increment');
             if (rawAttrs.includes('unique')) attrs.push('unique');
             const attrStr = attrs.length > 0 ? ` [${attrs.join(', ')}]` : '';
-            let cleanType = type.trim();
+            let cleanType = type.trim().toUpperCase();
             if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
               cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
             }

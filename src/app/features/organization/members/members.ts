@@ -315,7 +315,7 @@ export class MembersComponent implements OnInit {
       return;
     }
 
-    const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces'];
+    const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces', 'realtime_collab', 'realtime_collaboration'];
     this.selectedFeatures = [...new Set([...this.selectedFeatures, ...this.availableFeatures.filter((f: any) => required.includes(f.feature_key)).map((f: any) => f.feature_key)])];
 
     this.orgService.updateMemberRole(this.orgId, userId, targetRole, this.selectedFeatures).subscribe({
@@ -409,7 +409,7 @@ export class MembersComponent implements OnInit {
     }
 
     const role = this.isAdminSelected ? 'admin' : 'member';
-    const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces'];
+    const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces', 'realtime_collab', 'realtime_collaboration'];
     this.selectedFeatures = [...new Set([...this.selectedFeatures, ...this.availableFeatures.filter((f: any) => required.includes(f.feature_key)).map((f: any) => f.feature_key)])];
 
     this.orgService.inviteMember(this.orgId, this.addEmail.trim(), role, this.orgName, this.selectedFeatures).subscribe({
@@ -498,7 +498,7 @@ export class MembersComponent implements OnInit {
     return colors[Math.abs(hash) % colors.length];
   }
   isFeatureRequired(key: string): boolean {
-    const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces'];
+    const required = ['create_diagrams', 'edit_diagram', 'customize_canvas', 'create_diagram', 'diagram_creation', 'create_workspace', 'create_workspaces', 'realtime_collab', 'realtime_collaboration'];
     return required.includes(key);
   }
 

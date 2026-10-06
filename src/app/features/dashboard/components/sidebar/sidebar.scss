@@ -78,7 +78,6 @@
   color: #cfd3d8 ;
   position: relative;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-
   .sidebar-crown-badge {
     position: absolute;
     top: 1px;
@@ -104,7 +103,6 @@
       transition: transform 0.15s ease, stroke 0.15s ease;
     }
   }
-
   .nav-label {
     font-size: 10.5px;
     font-weight: 500;
@@ -125,7 +123,6 @@
       color: #3ec5c1;
       transform: translateY(-1px);
     }
-
     .nav-label {
       color: #3ec5c1;
     }
@@ -140,7 +137,6 @@
       stroke: #3ec5c1;
       color: #3ec5c1;
     }
-
     .nav-label {
       color: #3ec5c1;
       font-weight: 600;
@@ -155,7 +151,6 @@
         stroke: #3ec5c1;
         color: #3ec5c1;
       }
-
       .nav-label {
         color: #3ec5c1;
       }
@@ -176,7 +171,6 @@
         color: #cfd3d8 !important;
         transform: none !important;
       }
-
       .nav-label {
         color: #cfd3d8 !important;
       }
@@ -334,7 +328,6 @@
       stroke: #64748b;
       color: #64748b;
     }
-
     .nav-label {
       color: #64748b;
     }
@@ -348,7 +341,6 @@
         stroke: #0f172a;
         color: #0f172a;
       }
-
       .nav-label {
         color: #0f172a;
       }
@@ -362,7 +354,6 @@
         stroke: #337ab7;
         color: #337ab7;
       }
-
       .nav-label {
         color: #337ab7;
       }
@@ -376,7 +367,6 @@
           stroke: #337ab7;
           color: #337ab7;
         }
-
         .nav-label {
           color: #337ab7;
         }
@@ -397,7 +387,6 @@
           color: #64748b !important;
           transform: none !important;
         }
-
         .nav-label {
           color: #64748b !important;
         }
@@ -436,3 +425,4 @@
     }
   }
 }
+
