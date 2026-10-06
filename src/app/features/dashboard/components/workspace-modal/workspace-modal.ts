@@ -1838,36 +1838,6 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     });
   }
 
-  formatDate(dateVal: string | Date | null | undefined): string {
-    if (!dateVal) return '—';
-    try {
-      const d = new Date(dateVal);
-      if (isNaN(d.getTime())) return String(dateVal);
-
-      const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
-      const month = monthNames[d.getMonth()];
-      const day = d.getDate();
-      let suffix = 'th';
-      if (day === 1 || day === 21 || day === 31) suffix = 'st';
-      else if (day === 2 || day === 22) suffix = 'nd';
-      else if (day === 3 || day === 23) suffix = 'rd';
-
-      const year = d.getFullYear();
-      let hours = d.getHours();
-      const minutes = d.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12;
-
-      return `${month} ${day}${suffix} ${year}, ${hours}:${minutes} ${ampm}`;
-    } catch {
-      return '—';
-    }
-  }
-
   onContainerClick(e: MouseEvent): void {
     e.stopPropagation();
     const target = e.target as HTMLElement;
