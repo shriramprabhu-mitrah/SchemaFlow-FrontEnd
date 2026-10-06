@@ -119,6 +119,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/public-viewer/public-viewer').then(m => m.PublicViewerComponent)
   },
   {
+    path: 'features/db-docs',
+    title: 'Database Documentation - DBNexus',
+    loadComponent: () => import('./features/public-features/db-docs/db-docs').then(m => m.DbDocsComponent)
+  },
+  {
+    path: 'features/live-connection',
+    title: 'Live DB Connection - DBNexus',
+    loadComponent: () => import('./features/public-features/live-connection/live-connection').then(m => m.LiveConnectionComponent)
+  },
+  {
     path: '**',
     title: '404 - Page Not Found - DBNexus',
     loadComponent: () => import('./features/not-found/not-found').then(m => m.NotFoundComponent)
