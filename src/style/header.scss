@@ -428,6 +428,77 @@ body.light-theme {
     }
   }
 
+  .modal-select-field {
+    background-color: #f8fafc !important;
+    background-image: none !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    color: #0f172a !important;
+
+    &:focus, &:hover, &:active {
+      background-image: none !important;
+    }
+
+    option {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
+  }
+
+  .connect-by-segment {
+    background: #f1f5f9 !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+
+    .segment-option {
+      color: #64748b !important;
+
+      &:hover {
+        color: #0f172a !important;
+      }
+
+      &.active {
+        background: #337ab7 !important;
+        color: #ffffff !important;
+
+        svg {
+          stroke: #ffffff !important;
+        }
+      }
+    }
+  }
+
+  .modal-input-field {
+    background-color: #f8fafc !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    color: #0f172a !important;
+
+    &::placeholder {
+      color: rgba(15, 23, 42, 0.4) !important;
+    }
+  }
+
+  .modal-textarea-field {
+    background: #f8fafc !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    color: #0f172a !important;
+
+    &::placeholder {
+      color: rgba(15, 23, 42, 0.4) !important;
+    }
+  }
+
+  .conn-preview-box {
+    background: #f8fafc !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+
+    .preview-label {
+      color: #64748b !important;
+    }
+
+    .preview-code {
+      color: #2563eb !important;
+    }
+  }
+
   .import-modal-footer {
     border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
   }
@@ -781,7 +852,7 @@ app-docs {
 
       &:hover {
         background: transparent !important;
-        color: inherit !important;
+        color: #e6eef9 !important;
       }
 
       .chevron {
@@ -2159,6 +2230,216 @@ canvas {
     border-top-color: #0c1222;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
+  }
+}
+
+.conn-string-modal {
+  width: 580px;
+  max-width: calc(100vw - 40px);
+
+  .modal-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .modal-form-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+
+    .flex-1 { flex: 1; }
+    .flex-2 { flex: 2; }
+    .flex-3 { flex: 3; }
+  }
+
+  .connect-by-segment {
+    display: flex;
+    gap: 10px;
+    background: rgba(8, 14, 26, 0.6);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    .segment-option {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+
+      input[type="radio"] {
+        display: none;
+      }
+
+      &:hover {
+        color: #e6eef9;
+      }
+
+      &.active {
+        background: #3ec5c1;
+        color: #08101f;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(62, 197, 193, 0.3);
+
+        svg {
+          stroke: #08101f;
+        }
+      }
+    }
+  }
+
+  .select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .modal-select-field {
+      width: 100%;
+      height: 42px;
+      padding: 0 36px 0 14px;
+      background-color: rgba(8, 14, 26, 0.9);
+      background-image: none !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #e6eef9;
+      font-size: 13.5px;
+      font-weight: 500;
+      outline: none;
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      cursor: pointer;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+      &:focus, &:hover, &:active {
+        background-image: none !important;
+        border-color: #3ec5c1;
+        box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.15);
+      }
+
+      option {
+        background: #141d31;
+        color: #e6eef9;
+      }
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 14px;
+      pointer-events: none;
+      color: #94a3b8;
+    }
+  }
+
+  .modal-input-field {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    background: rgba(8, 14, 26, 0.9);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9px;
+    color: #e6eef9;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+      border-color: #3ec5c1;
+      box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.15);
+    }
+
+    &::placeholder {
+      color: rgba(152, 167, 196, 0.4);
+    }
+  }
+
+  .password-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .modal-input-field {
+      padding-right: 36px;
+    }
+
+    .toggle-pwd-btn {
+      position: absolute;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+
+      &:hover {
+        color: #ffffff;
+      }
+    }
+  }
+
+  .modal-textarea-field {
+    width: 100%;
+    min-height: 95px;
+    background: rgba(8, 14, 26, 0.9);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #e6eef9;
+    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    outline: none;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+      border-color: #3ec5c1;
+      box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.15);
+    }
+
+    &::placeholder {
+      color: rgba(152, 167, 196, 0.4);
+    }
+  }
+
+  .conn-preview-box {
+    background: rgba(8, 14, 26, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .preview-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #8a99b5;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .preview-code {
+      font-family: 'Fira Code', 'Courier New', Courier, monospace;
+      font-size: 11.5px;
+      color: #3ec5c1;
+      word-break: break-all;
+    }
   }
 }
 

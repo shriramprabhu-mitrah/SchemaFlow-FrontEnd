@@ -1316,6 +1316,12 @@ export class DashboardService {
     this.openImportModal$.next(dialect);
   }
 
+  openConnectionStringModal$ = new Subject<void>();
+
+  openConnectionStringModal(): void {
+    this.openConnectionStringModal$.next();
+  }
+
   formatVersionDate(dateStr: string | Date): string {
     if (!dateStr) return 'Unknown Date';
     const date = new Date(dateStr);
@@ -2656,7 +2662,7 @@ export class DashboardService {
       tables.push({ name, columns: cols });
     }
 
-    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/gi;
+   const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?/gi;
     while ((m = refRe.exec(text)) !== null) {
       const matchIndex = m.index;
       const lineNumber = text.substring(0, matchIndex).split('\n').length;
