@@ -101,6 +101,12 @@ export class EntitlementService {
           localStorage.removeItem('organization_id');
           localStorage.removeItem('org_role');
           localStorage.setItem('account_type', 'individual');
+        } else if (data?.orgRole) {
+          this.auth.setOrgRole(data.orgRole);
+        }
+
+        if (data?.isSuperAdmin !== undefined) {
+          this.auth.setSuperAdmin(data.isSuperAdmin);
         }
 
         return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
