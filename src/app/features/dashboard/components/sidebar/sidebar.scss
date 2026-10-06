@@ -2,8 +2,7 @@
   display: block;
   height: 100%;
   flex-shrink: 0;
-  z-index: 60;
-  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &.collapsed {
     width: 0 !important;
@@ -79,7 +78,6 @@
   color: #cfd3d8 ;
   position: relative;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-
   .sidebar-crown-badge {
     position: absolute;
     top: 1px;
@@ -105,7 +103,6 @@
       transition: transform 0.15s ease, stroke 0.15s ease;
     }
   }
-
   .nav-label {
     font-size: 10.5px;
     font-weight: 500;
@@ -116,7 +113,8 @@
     transition: color 0.15s ease;
   }
 
-  &:hover {
+    &:hover {
+    z-index: 1000;
     color: #3ec5c1;
     background: rgba(255, 255, 255, 0.08);
 
@@ -125,7 +123,6 @@
       color: #3ec5c1;
       transform: translateY(-1px);
     }
-
     .nav-label {
       color: #3ec5c1;
     }
@@ -140,13 +137,13 @@
       stroke: #3ec5c1;
       color: #3ec5c1;
     }
-
     .nav-label {
       color: #3ec5c1;
       font-weight: 600;
     }
 
-    &:hover {
+      &:hover {
+    z-index: 1000;
       background: rgba(62, 197, 193, 0.22);
       color: #3ec5c1;
 
@@ -154,7 +151,6 @@
         stroke: #3ec5c1;
         color: #3ec5c1;
       }
-
       .nav-label {
         color: #3ec5c1;
       }
@@ -165,7 +161,8 @@
     opacity: 0.38;
     cursor: not-allowed;
 
-    &:hover {
+      &:hover {
+    z-index: 1000;
       background: transparent !important;
       color: #cfd3d8 !important;
 
@@ -174,7 +171,6 @@
         color: #cfd3d8 !important;
         transform: none !important;
       }
-
       .nav-label {
         color: #cfd3d8 !important;
       }
@@ -272,6 +268,9 @@
       &.pdf-icon {
         color: #ef4444;
       }
+       &.conn-string-icon {
+        color: #8b5cf6;
+      }
       &.png-icon {
         color: #10b981;
       }
@@ -329,12 +328,12 @@
       stroke: #64748b;
       color: #64748b;
     }
-
     .nav-label {
       color: #64748b;
     }
 
-    &:hover {
+      &:hover {
+    z-index: 1000;
       color: #0f172a;
       background: rgba(0, 0, 0, 0.05);
 
@@ -342,7 +341,6 @@
         stroke: #0f172a;
         color: #0f172a;
       }
-
       .nav-label {
         color: #0f172a;
       }
@@ -356,12 +354,12 @@
         stroke: #337ab7;
         color: #337ab7;
       }
-
       .nav-label {
         color: #337ab7;
       }
 
-      &:hover {
+        &:hover {
+    z-index: 1000;
         background: rgba(51, 122, 183, 0.14);
         color: #337ab7;
 
@@ -369,7 +367,6 @@
           stroke: #337ab7;
           color: #337ab7;
         }
-
         .nav-label {
           color: #337ab7;
         }
@@ -380,7 +377,8 @@
       opacity: 0.38;
       cursor: not-allowed;
 
-      &:hover {
+        &:hover {
+    z-index: 1000;
         background: transparent !important;
         color: #64748b !important;
 
@@ -389,7 +387,6 @@
           color: #64748b !important;
           transform: none !important;
         }
-
         .nav-label {
           color: #64748b !important;
         }
@@ -428,3 +425,4 @@
     }
   }
 }
+

@@ -263,35 +263,29 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
   }
 
 
-  formatDate(dateStr: string | Date): string {
-    if (!dateStr) return 'Unknown Date';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return String(dateStr);
-
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-
-    const yesterday = new Date();
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    const timeOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const timeStr = date.toLocaleTimeString(undefined, timeOptions);
-
-    if (isToday) {
-      return `Today at ${timeStr}`;
-    } else if (isYesterday) {
-      return `Yesterday at ${timeStr}`;
-    } else {
-      const dateOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-      const dateValStr = date.toLocaleDateString(undefined, dateOptions);
-      return `${dateValStr} at ${timeStr}`;
-    }
-  }
 
   getInitials(email: string): string {
     if (!email) return '?';
     return email.charAt(0).toUpperCase();
+  }
+
+  isToday(dateStr: any): boolean {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  }
+
+  isYesterday(dateStr: any): boolean {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return date.getDate() === yesterday.getDate() &&
+           date.getMonth() === yesterday.getMonth() &&
+           date.getFullYear() === yesterday.getFullYear();
   }
 
   @HostListener('document:click', ['$event'])

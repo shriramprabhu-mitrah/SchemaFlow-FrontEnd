@@ -224,10 +224,10 @@
                   </div>
                 </td>
                 <td class="col-modified">
-                  {{ formatDate(d.updated_at || d.created_at) }}
+                  {{ (d.updated_at || d.created_at) | date:'MMM d, y, h:mm a' }}
                 </td>
                 <td class="col-created">
-                  {{ formatDate(d.created_at) }}
+                  {{ d.created_at | date:'MMM d, y, h:mm a' }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
                   <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
@@ -415,7 +415,7 @@
                   </div>
                 </td>
                 <td class="col-created">
-                  {{ formatDate(d.shared_date) }}
+                  {{ d.shared_date | date:'MMM d, y, h:mm a' }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
                   <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.diagramid ? 99999 : 'auto'"
@@ -539,10 +539,10 @@
             </div>
             <p class="empty-desc">{{ workspacesSearch ? 'Try searching for something else.' : 'Create your first
               workspace to collaborate on diagrams with your team.' }}</p>
-            <button *ngIf="auth.hasWorkspaceCreatePermission()" class="btn-create-first"
+            <!-- <button *ngIf="auth.hasWorkspaceCreatePermission()" class="btn-create-first"
               (click)="entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces')">+
               Create
-              Workspace</button>
+              Workspace</button> -->
           </div>
 
           <div class="diagrams-table-container"
@@ -840,10 +840,10 @@
                     </div>
                   </td>
                   <td class="col-modified">
-                    {{ formatDate(d.updated_at || d.created_at) }}
+                    {{ (d.updated_at || d.created_at) | date:'MMM d, y, h:mm a' }}
                   </td>
                   <td class="col-created">
-                    {{ formatDate(d.created_at) }}
+                    {{ d.created_at | date:'MMM d, y, h:mm a' }}
                   </td>
                   <td class="col-actions" (click)="$event.stopPropagation()">
                     <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
@@ -1034,33 +1034,7 @@
                       </svg>
                     </button>
 
-                    <div class="permission-dropdown-menu member-perm-menu" *ngIf="activeMemberDropdownIndex === i"
-                      (click)="$event.stopPropagation()">
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor & Inviter', $event)"
-                        [class.selected]="m.permission === 'Editor & Inviter'">
-                        <div class="perm-option-header">
-                          <span class="perm-option-title">Editor & Invite <span
-                              *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
-                        </div>
-                        <div class="perm-option-desc">Can edit & invite people.</div>
-                      </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Editor', $event)"
-                        [class.selected]="m.permission === 'Editor'">
-                        <div class="perm-option-header">
-                          <span class="perm-option-title">Can edit <span
-                              *ngIf="m.permission === 'Editor'">✓</span></span>
-                        </div>
-                        <div class="perm-option-desc">Can edit, but not invite people.</div>
-                      </div>
-                      <div class="perm-option-item" (click)="changeMemberPermission(i, 'Viewer', $event)"
-                        [class.selected]="m.permission === 'Viewer'">
-                        <div class="perm-option-header">
-                          <span class="perm-option-title">Can view <span
-                              *ngIf="m.permission === 'Viewer'">✓</span></span>
-                        </div>
-                        <div class="perm-option-desc">Can view, but not edit.</div>
-                      </div>
-                    </div>
+
                   </div>
 
                   <button type="button" class="btn-remove-member-icon" (click)="removeMember(i, $event)"
@@ -1178,7 +1152,7 @@
                     <div class="member-permission-dropdown-wrap"
                       *ngIf="!m.status || m.status.toLowerCase() !== 'pending'" (click)="$event.stopPropagation()">
                       <button type="button" class="btn-member-perm-select"
-                        (click)="toggleMemberDropdown(m.email, $event)">
+                        (click)="toggleMemberDropdown(m, $event)">
                         <span>{{ getPermissionLabel(m.permission) }}</span>
                         <svg class="chevron"
                           [class.open]="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i"
@@ -1188,34 +1162,7 @@
                         </svg>
                       </button>
 
-                      <div class="permission-dropdown-menu member-perm-menu"
-                        *ngIf="activeMemberDropdownIndex === m.email || activeMemberDropdownIndex === i"
-                        (click)="$event.stopPropagation()">
-                        <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor & Inviter', $event)"
-                          [class.selected]="m.permission === 'Editor & Inviter'">
-                          <div class="perm-option-header">
-                            <span class="perm-option-title">Editor & Invite <span
-                                *ngIf="m.permission === 'Editor & Inviter'">✓</span></span>
-                          </div>
-                          <div class="perm-option-desc">Can edit & invite people.</div>
-                        </div>
-                        <div class="perm-option-item" (click)="changeMemberPermission(m, 'Editor', $event)"
-                          [class.selected]="m.permission === 'Editor'">
-                          <div class="perm-option-header">
-                            <span class="perm-option-title">Can edit <span
-                                *ngIf="m.permission === 'Editor'">✓</span></span>
-                          </div>
-                          <div class="perm-option-desc">Can edit, but not invite people.</div>
-                        </div>
-                        <div class="perm-option-item" (click)="changeMemberPermission(m, 'Viewer', $event)"
-                          [class.selected]="m.permission === 'Viewer'">
-                          <div class="perm-option-header">
-                            <span class="perm-option-title">Can view <span
-                                *ngIf="m.permission === 'Viewer'">✓</span></span>
-                          </div>
-                          <div class="perm-option-desc">Can view, but not edit.</div>
-                        </div>
-                      </div>
+
                     </div>
 
                     <button type="button" class="btn-remove-member-icon" [disabled]="!m.isNew"
@@ -1610,6 +1557,39 @@
           <button type="button" class="btn-success-ok" (click)="closeDeleteDiagramConfirm()">OK</button>
         </div>
       </ng-template>
+    </div>
+  </div>
+
+
+  <!-- Global Member Permission Dropdown -->
+  <div class="permission-dropdown-menu member-perm-menu floating-perm-menu"
+    *ngIf="activeMemberDropdownIndex !== null && activeMemberDropdownTarget !== null"
+    [style.--menu-top]="memberDropdownPos?.top" 
+    [style.--menu-right]="memberDropdownPos?.right"
+    (click)="$event.stopPropagation()">
+    <div class="perm-option-item" (click)="changeMemberPermission(activeMemberDropdownTarget, 'Editor & Inviter', $event)"
+      [class.selected]="getPermissionOfTarget(activeMemberDropdownTarget) === 'Editor & Inviter'">
+      <div class="perm-option-header">
+        <span class="perm-option-title">Editor & Invite <span
+            *ngIf="getPermissionOfTarget(activeMemberDropdownTarget) === 'Editor & Inviter'">✓</span></span>
+      </div>
+      <div class="perm-option-desc">Can edit & invite people.</div>
+    </div>
+    <div class="perm-option-item" (click)="changeMemberPermission(activeMemberDropdownTarget, 'Editor', $event)"
+      [class.selected]="getPermissionOfTarget(activeMemberDropdownTarget) === 'Editor'">
+      <div class="perm-option-header">
+        <span class="perm-option-title">Can edit <span
+            *ngIf="getPermissionOfTarget(activeMemberDropdownTarget) === 'Editor'">✓</span></span>
+      </div>
+      <div class="perm-option-desc">Can edit, but not invite people.</div>
+    </div>
+    <div class="perm-option-item" (click)="changeMemberPermission(activeMemberDropdownTarget, 'Viewer', $event)"
+      [class.selected]="getPermissionOfTarget(activeMemberDropdownTarget) === 'Viewer'">
+      <div class="perm-option-header">
+        <span class="perm-option-title">Can view <span
+            *ngIf="getPermissionOfTarget(activeMemberDropdownTarget) === 'Viewer'">✓</span></span>
+      </div>
+      <div class="perm-option-desc">Can view, but not edit.</div>
     </div>
   </div>
 

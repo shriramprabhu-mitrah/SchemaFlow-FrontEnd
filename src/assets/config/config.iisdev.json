@@ -43,7 +43,10 @@
   "importExportApiUrls": {
     "validateSql": "http://192.168.1.201:3001/api/validate/sql",
     "import": "http://192.168.1.201:3001/api/import",
-    "export": "http://192.168.1.201:3001/api/export/{id}"
+    "export": "http://192.168.1.201:3001/api/export/{id}",
+    "generateDbml": "http://192.168.1.201:3001/api/dbml/generate",
+    "generateDbmlSqlite": "http://192.168.1.201:3001/api/dbml/generate-form-sqllite"
+
   },
   "pricingApiUrls": {
     "plans": "http://192.168.1.201:3001/api/pricing/plans",

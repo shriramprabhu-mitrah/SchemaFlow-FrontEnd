@@ -300,25 +300,28 @@ export class ShareModalComponent implements OnInit {
       this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
       return;
     }
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => {
-        if (type === 'link') {
-          this.linkCopied = true;
-          this.svc.showToast('Link copied to clipboard!', 2000, 'success');
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'absolute';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      document.execCommand('copy');
+      if (type === 'link') {
+        this.linkCopied = true;
+        this.svc.showToast('Link copied to clipboard!', 2000, 'success');
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.linkCopied = false;
           this.cdr.detectChanges();
-          setTimeout(() => {
-            this.linkCopied = false;
-            this.cdr.detectChanges();
-          }, 2000);
-        } /* else {
-          this.embedCopied = true;
-          this.cdr.detectChanges();
-          setTimeout(() => {
-            this.embedCopied = false;
-            this.cdr.detectChanges();
-          }, 2000);
-        } */
-      });
+        }, 2000);
+      }
+    } catch (err) {
+      this.svc.showToast('Failed to copy', 2000, 'error');
+    } finally {
+      document.body.removeChild(textArea);
     }
   }
 }

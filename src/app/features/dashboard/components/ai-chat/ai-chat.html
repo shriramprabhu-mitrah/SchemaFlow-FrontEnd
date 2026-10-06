@@ -198,6 +198,7 @@
                 <div class="snippet-actions">
                   <button type="button" class="btn-snippet-copy"
                     (click)="copySnippet(msg.codeSnippet || msg.displayCodeSnippet || '', msg.id)">
+                    <!-- (click)="$event.stopPropagation(); copySnippet(msg)"> -->
                     <svg *ngIf="copiedSnippetId() !== msg.id" width="12" height="12" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -379,9 +380,9 @@
             [class.limit-reached]="getUsagePercentage() >= 100 || !hasRemainingQuota()"
             [style.width.%]="getUsagePercentage()"></div>
         </div>
-        <div class="usage-reset-row">
+        <!-- <div class="usage-reset-row">
           <span>Reset on: {{ getResetDate() }}</span>
-        </div>
+        </div> -->
       </div>
 
       <!-- Trigger Button -->
@@ -407,7 +408,7 @@
   <div class="ai-key-modal-overlay" *ngIf="showApiKeyModal()" (click)="closeApiKeyModal()">
     <div class="ai-key-modal-card" (click)="$event.stopPropagation()">
       <div class="ai-key-card-header">
-        <div class="key-icon-wrap">
+        <!-- <div class="key-icon-wrap">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path
@@ -415,7 +416,7 @@
             </path>
             <circle cx="15.5" cy="8.5" r="1.5"></circle>
           </svg>
-        </div>
+        </div> -->
         <div class="key-header-text">
           <h3 class="key-modal-title">{{ hasUserApiKey(pendingModelForApiKey) ? 'Edit API Key' : 'API Key Required' }}</h3>
           <p class="key-modal-subtitle">
