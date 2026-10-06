@@ -3406,11 +3406,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const columnHit = this.findColumnAt(wp.x, wp.y);
-    if (columnHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
-      if (this.svc.aiDiffReviewActive()) {
-        this.svc.showAiDiffEditBlockedToast();
-        return;
-      }
+    if (columnHit && !this.svc.isReadOnly && !this.isSampleDiagram() && !this.svc.aiDiffReviewActive()) {
       this.connectionDraft = {
         fromTable: columnHit.table.name,
         fromColumn: columnHit.column.name,
@@ -3424,10 +3420,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const hit = this.findTableAt(wp.x, wp.y);
     if (hit) {
-      if (this.svc.aiDiffReviewActive()) {
-        this.svc.showAiDiffEditBlockedToast();
-        return;
-      }
       this.draggingTable = hit.name;
       this.dragTableStartPos = { x: hit.x, y: hit.y };
       this.dragOffset = { x: wp.x - hit.x, y: wp.y - hit.y };
@@ -3725,26 +3717,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.svc.aiDiffReviewActive()) {
-      const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
-      const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
-      const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
-      const tableHit = this.findTableAt(wp.x, wp.y);
-      if (
-        endpointHit ||
-        this.hoveredIcon ||
-        this.hoveredTableHeaderIcon ||
-        this.hoveredGroupColorIcon ||
-        cornerHit ||
-        midpointHit ||
-        this.svc.hoveredConnectionIndex !== -1 ||
-        tableHit ||
-        this.hoveredGroupName
-      ) {
-        canvas.style.cursor = 'not-allowed';
-        return;
-      }
-    }
     if (this.draggingTable) {
       canvas.style.cursor = 'move';
       return;
@@ -3765,6 +3737,25 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.reconnectDraft) {
       canvas.style.cursor = 'cell';
       return;
+    }
+
+    if (this.svc.aiDiffReviewActive()) {
+      const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
+      const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
+      const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
+      if (
+        endpointHit ||
+        this.hoveredIcon ||
+        this.hoveredTableHeaderIcon ||
+        this.hoveredGroupColorIcon ||
+        cornerHit ||
+        midpointHit ||
+        this.svc.hoveredConnectionIndex !== -1 ||
+        this.hoveredGroupName
+      ) {
+        canvas.style.cursor = 'not-allowed';
+        return;
+      }
     }
 
     // 1.5 Hovering endpoints of connection line
@@ -3803,6 +3794,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     // 5. Hovering table
     const table = this.findTableAt(wp.x, wp.y);
     if (table) {
+      if (this.svc.aiDiffReviewActive()) {
+        canvas.style.cursor = 'move';
+        return;
+      }
       // Check if hovering table header draggable area
       const inHeader = wp.y >= table.y && wp.y <= table.y + this.svc.HEADER_H;
       if (inHeader) {

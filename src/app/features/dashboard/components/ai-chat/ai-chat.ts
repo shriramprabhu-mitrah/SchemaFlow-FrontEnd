@@ -2034,7 +2034,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 let snippet = msg.codeSnippet!.trim();
                 // Strip markdown code fences if present (e.g. ```dbml ... ```)
                 snippet = snippet.replace(/^```(?:dbml|sql)?\r?\n?/i, '').replace(/\r?\n?```$/i, '').trim();
-                const currentCode = (this.svc.code || '').trim();
+                const wasReviewActive = this.svc.aiDiffReviewActive();
+                const currentCode = (wasReviewActive
+                    ? this.svc.getCommittedAiDiffCode()
+                    : (this.svc.code || '')).trim();
 
                 let proposedCode = '';
                 if (!currentCode) {
@@ -2096,14 +2099,21 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 if (normCurrent !== normProposed) {
                     this.svc.startAiDiffReview(normCurrent, normProposed);
                     msg.applied = true;
-                    this.messages.update(m => [...m]);
+                    this.messages.update(msgs =>
+                        msgs.map(m => m.id === msg.id ? { ...m, applied: true } : (m.applied ? { ...m, applied: false } : m))
+                    );
 
                     if (showToast) {
                         this.svc.showToast('AI changes ready for review. Click Accept or Reject.', 3000, 'info');
                     }
                 } else {
+                    if (wasReviewActive) {
+                        this.svc.closeAiDiffReview(false);
+                    }
                     msg.applied = true;
-                    this.messages.update(m => [...m]);
+                    this.messages.update(msgs =>
+                        msgs.map(m => m.id === msg.id ? { ...m, applied: true } : (m.applied ? { ...m, applied: false } : m))
+                    );
 
                     if (showToast) {
                         this.svc.showToast('Current DBML already matches AI response.', 2500, 'info');
