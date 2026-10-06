@@ -125,32 +125,39 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    if (this.auth.getCurrentPlanStatus() === 'expired') return true;
     switch (item) {
       case 'import':
-        return !this.hasFeatureAccess('import_sql');
+        return !this.entitlementService.orgHasFeature('import_sql');
       case 'export':
-        return !this.hasFeatureAccess('export_image') && !this.hasFeatureAccess('export_sql');
+        return !this.entitlementService.orgHasFeature('export_image') && !this.entitlementService.orgHasFeature('export_sql');
       case 'share':
-        return !this.hasFeatureAccess('share_diagram');
+        return !this.entitlementService.orgHasFeature('share_diagram');
       case 'versions':
-        return !this.hasFeatureAccess('version_history');
+        return !this.entitlementService.orgHasFeature('version_history');
       case 'tables':
       case 'refs':
-        return !this.hasFeatureAccess('table_relationships');
+        return !this.entitlementService.orgHasFeature('table_relationships');
       case 'docs':
         if (this.svc.isDocUnlocked()) {
           if (this.auth.getCurrentPlanStatus() !== 'expired') {
             return false;
           }
         }
-        return !this.hasFeatureAccess('document_view');
+        return !this.entitlementService.orgHasFeature('document_view');
       case 'compare':
-        return !this.hasFeatureAccess('code_compare');
+        return !this.entitlementService.orgHasFeature('code_compare');
       case 'ai':
-        return !this.hasFeatureAccess('ai_chat');
+        return !this.entitlementService.orgHasFeature('ai_chat');
       default:
         return false;
     }
+  }
+
+  isMemberRestricted(featureKeys: string[]): boolean {
+    if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    // If the feature is not there in memberFeatureAccess just disable the button in ui
+    return featureKeys.every(k => !this.entitlementService.canUseFeature(k));
   }
 
   // ============ IMPORT ============

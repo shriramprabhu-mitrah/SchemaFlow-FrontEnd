@@ -1376,7 +1376,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const gColorY = y + headerH / 2;
       const isGroupColorHovered = this.hoveredGroupColorIcon === g.name;
 
-      if (!this.svc.isReadOnly && this.auth.isLoggedIn()) {
+      if (!this.svc.isReadOnly && !this.isSampleDiagram() && this.auth.isLoggedIn()) {
         this.drawSettingIcon(ctx, gColorX, gColorY, isGroupColorHovered);
         if (isGroupColorHovered) {
           this.activeTooltip = { x: gColorX, y: gColorY, label: 'Settings' };
@@ -1594,7 +1594,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const isSettingsHovered = this.hoveredTableHeaderIcon?.tableName === t.name && this.hoveredTableHeaderIcon.type === 'settings';
 
-    if (!this.svc.isReadOnly && this.auth.isLoggedIn()) {
+    if (!this.svc.isReadOnly && !this.isSampleDiagram() && this.auth.isLoggedIn()) {
       // Draw Settings Icon
       this.drawSettingIcon(ctx, settingX, editY, isSettingsHovered);
 
@@ -1661,7 +1661,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Measure type width
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      let typeText = c.type || '';
+      let typeText = (c.type || '').toUpperCase();
       let typeWidth = ctx.measureText(typeText).width;
 
       const maxTypeWidth = Math.max(30, availableWidth * 0.6);
@@ -2999,7 +2999,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const line1Prefix = prefix + (column.name || '') + '   ';
     const w1Prefix = ctx.measureText(line1Prefix).width;
     ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const w1Suffix = ctx.measureText(column.type || '').width;
+    const w1Suffix = ctx.measureText((column.type || '').toUpperCase()).width;
     let maxW = w1Prefix + w1Suffix;
     
     // Default Line
@@ -3083,7 +3083,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.fillText(line1Prefix, startX, currY);
     ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = textSub;
-    ctx.fillText(column.type || '', startX + w1Prefix, currY);
+    ctx.fillText((column.type || '').toUpperCase(), startX + w1Prefix, currY);
     
     // Draw Default Line
     if (hasDefault) {
@@ -3695,7 +3695,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           : false;
         const column = this.contextMenu.column;
         const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-        const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+        const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
+        const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
+        const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
           (label === 'Edit Column' && column && (column.pk || column.fk)) ||
           (label === 'Edit Table' && isRestrictedTableGroup);
 
@@ -5496,7 +5498,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+      const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
+      const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
+      const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
         (label === 'Edit Table' && isRestrictedTableGroup);
 
@@ -5658,7 +5662,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+      const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
+      const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
+      const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
         (label === 'Edit Table' && isRestrictedTableGroup);
 
