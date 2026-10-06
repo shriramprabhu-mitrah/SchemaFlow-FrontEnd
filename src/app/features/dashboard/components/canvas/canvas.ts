@@ -91,6 +91,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private lastMouseWorldPoint: { x: number; y: number } | null = null;
   private drawingClean = false;
   private forceHighlightConnections = false;
+  private watermarkLogo: HTMLImageElement | null = null;
+  private exportingPdf = false;
+
+  private isCanvasLight(): boolean {
+    return this.exportingPdf || this.svc.theme() === 'light';
+  }
 
   private wheelListener!: (e: WheelEvent) => void;
   private scrollListener!: () => void;
@@ -505,15 +511,31 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.exporting = true;
     this.drawingClean = true;
+    this.exportingPdf = true;
 
     try {
       // Load watermark logo first
-      const logo = await new Promise<HTMLImageElement | null>((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = 'assets/db-diagram-logo.png';
-      });
+      if (!this.watermarkLogo && typeof window !== 'undefined') {
+        this.watermarkLogo = await new Promise<HTMLImageElement | null>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            const fallback = new Image();
+            fallback.onload = () => resolve(fallback);
+            fallback.onerror = () => resolve(null);
+            fallback.src = 'assets/icons/db-diagram-logo.png';
+          };
+          img.src = 'assets/db-diagram-logo.png';
+        });
+      }
+      const logo = this.watermarkLogo;
+
+      // Ensure brand font is loaded if available
+      if (typeof document !== 'undefined' && document.fonts) {
+        try {
+          await document.fonts.load('800 46px "Plus Jakarta Sans"');
+        } catch (_) {}
+      }
 
       const geometry: Record<string, TableDef> = {};
       this.svc.tables.forEach((t) => (geometry[t.name] = t));
@@ -549,45 +571,75 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const drawWatermark = () => {
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 0.05; // subtle watermark
-        const fontSize = 60;
-        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
-        const text = "DBNexus";
+        ctx.globalAlpha = 0.05; // subtle, elegant brand watermark
+        const fontSize = 46;
+        ctx.font = `800 ${fontSize}px "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        const text = 'dbNexus';
         const textMetrics = ctx.measureText(text);
-        
-        const logoWidth = logo ? 50 : 0;
-        const logoHeight = logo ? (logo.height / logo.width) * 50 : 0;
-        const gap = 15;
-        
-        const watermarkWidth = logoWidth + (logoWidth ? gap : 0) + textMetrics.width;
-        const watermarkHeight = Math.max(logoHeight, fontSize);
-        
-        const spacingX = watermarkWidth * 2.5;
-        const spacingY = watermarkHeight * 4;
-        
+
+        // Crop source icon to remove transparent margins (192, 266, 627, 399) on 1024x665 image
+        const isStandardLogo = logo && logo.naturalWidth === 1024 && logo.naturalHeight === 665;
+        const sw = isStandardLogo ? 627 : (logo?.naturalWidth || 627);
+        const sh = isStandardLogo ? 399 : (logo?.naturalHeight || 399);
+        const sx = isStandardLogo ? 192 : 0;
+        const sy = isStandardLogo ? 266 : 0;
+
+        const iconH = Math.round(fontSize * 0.95);
+        const iconW = logo ? Math.round(iconH * (sw / sh)) : 0;
+        const gap = logo ? Math.round(fontSize * 0.16) : 0;
+
+        const watermarkWidth = iconW + gap + textMetrics.width;
+        const watermarkHeight = Math.max(iconH, fontSize);
+
+        // Keep wide spacing so watermark only appears centrally without overcrowding
+        const spacingX = Math.max(760, watermarkWidth * 2.8);
+        const spacingY = Math.max(220, watermarkHeight * 5.0);
+
         ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.rotate(-Math.PI / 6); // 30 degree tilt
-        
+
         const diag = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
-        
+
         const cols = Math.ceil(diag / spacingX);
         const rows = Math.ceil(diag / spacingY);
-        
-        ctx.fillStyle = this.svc.theme() === 'light' ? "#0f172a" : "#f1f5f9";
-        ctx.textBaseline = "middle";
-        
+
+        ctx.textBaseline = 'middle';
+
         for (let i = -cols; i <= cols; i++) {
           for (let j = -rows; j <= rows; j++) {
             const cx = i * spacingX + (j % 2 === 0 ? 0 : spacingX / 2);
             const cy = j * spacingY;
-            
-            if (logo) {
-              ctx.drawImage(logo, cx - watermarkWidth / 2, cy - logoHeight / 2, logoWidth, logoHeight);
+
+            const startX = cx - watermarkWidth / 2;
+
+            if (logo && logo.naturalWidth > 0) {
+              ctx.drawImage(
+                logo,
+                sx,
+                sy,
+                sw,
+                sh,
+                startX,
+                cy - iconH / 2,
+                iconW,
+                iconH
+              );
             }
-            ctx.fillText(text, cx - watermarkWidth / 2 + logoWidth + (logoWidth ? gap : 0), cy);
+
+            const textX = startX + iconW + gap;
+            const grad = ctx.createLinearGradient(
+              textX,
+              cy - fontSize * 0.35,
+              textX + textMetrics.width,
+              cy + fontSize * 0.35
+            );
+            grad.addColorStop(0, '#3ec5c1');
+            grad.addColorStop(1, '#3b82f6');
+            ctx.fillStyle = grad;
+            ctx.fillText(text, textX, cy);
           }
         }
-        
+
         ctx.restore();
       };
 
@@ -623,6 +675,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const pdfBlob = this.create2PagePdfFromJpegs(width, height, jpeg1Bytes, jpeg2Bytes);
 
       // Restore
+      this.exportingPdf = false;
       canvas.width = oldW;
       canvas.height = oldH;
       canvas.style.width = oldStyleW;
@@ -644,6 +697,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } finally {
+      this.exportingPdf = false;
       this.exporting = false;
       this.drawingClean = false;
       this.forceHighlightConnections = false;
@@ -1103,7 +1157,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const h = this.exporting ? canvas.height : canvas.clientHeight;
 
     ctx.clearRect(0, 0, w, h);
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     ctx.fillStyle = isLight ? '#f8fafc' : '#08101f';
     ctx.fillRect(0, 0, w, h);
 
@@ -1239,7 +1293,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const startX = (((this.svc.view.x % spacing) + spacing) % spacing);
     const startY = (((this.svc.view.y % spacing) + spacing) % spacing);
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     ctx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.24)' : 'rgba(255, 255, 255, 0.24)';
 
     for (let x = startX; x < w; x += spacing) {
@@ -1338,7 +1392,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.entitlementService.canUseFeature('table_group')) return;
     if (!this.svc.groups || this.svc.groups.length === 0) return;
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
 
     this.svc.groups.forEach((g) => {
       const bounds = this.getGroupBounds(g, geometry);
@@ -1565,7 +1619,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private drawTable(ctx: CanvasRenderingContext2D, t: TableDef, highlightedColumns: Set<string>): void {
     const radius = 1;
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
 
     ctx.save();
     ctx.shadowColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.24)';
@@ -1941,7 +1995,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const isInvalid = this.isRefInvalid(ref);
-      const isLight = this.svc.theme() === 'light';
+      const isLight = this.isCanvasLight();
       const defaultLineColor = isLight ? '#94a3b8' : '#70c8c3';
       const baseColor = isInvalid ? '#ef4444' : (ref.color || defaultLineColor);
       const activeColor = isInvalid ? '#f87171' : (ref.color || (isLight ? '#3b82f6' : '#70c8c3'));
@@ -2266,7 +2320,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const resetPos = { x: anchor.x, y: baseY };
     const deletePos = { x: anchor.x + spacing, y: baseY };
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     const hasCustomPath = !!ref.waypoints;
 
     ctx.save();
@@ -2432,7 +2486,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private drawHandle(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, faint = false): void {
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     ctx.beginPath();
     ctx.arc(x, y, faint ? 3 : 4, 0, Math.PI * 2);
     ctx.fillStyle = faint
@@ -2828,7 +2882,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ];
 
       ctx.save();
-      const isLight = this.svc.theme() === 'light';
+      const isLight = this.isCanvasLight();
       ctx.strokeStyle = isLight ? '#7c3aed' : '#03fff7';
       ctx.lineWidth = 1.5;
       ctx.lineCap = 'round';
@@ -2868,7 +2922,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ];
 
       ctx.save();
-      const isLight = this.svc.theme() === 'light';
+      const isLight = this.isCanvasLight();
       const defaultLineColor = isLight ? '#94a3b8' : '#70c8c3';
       const color = ref.color || defaultLineColor;
       ctx.strokeStyle = color;
@@ -2975,7 +3029,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private drawColumnRichTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, column: any): void {
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     const bg = isLight ? '#ffffff' : '#141d31';
     const textMain = isLight ? '#1a202c' : '#f8fafc';
     const textSub = isLight ? '#718096' : '#94a3b8';
@@ -5470,7 +5524,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const h = items.length * this.menuItemHeight;
     const radius = 10;
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
 
     ctx.save();
     ctx.shadowColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.35)';
