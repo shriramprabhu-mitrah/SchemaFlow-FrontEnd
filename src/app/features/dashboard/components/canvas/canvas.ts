@@ -500,13 +500,21 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ], { type: 'application/pdf' });
   }
 
-  exportAsPdf(): void {
+  async exportAsPdf(): Promise<void> {
     if (typeof window === 'undefined') return;
 
     this.exporting = true;
     this.drawingClean = true;
 
     try {
+      // Load watermark logo first
+      const logo = await new Promise<HTMLImageElement | null>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = 'assets/db-diagram-logo.png';
+      });
+
       const geometry: Record<string, TableDef> = {};
       this.svc.tables.forEach((t) => (geometry[t.name] = t));
 
@@ -538,8 +546,54 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.svc.view.y = -minY;
       this.svc.view.scale = 1;
 
+      const drawWatermark = () => {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 0.05; // subtle watermark
+        const fontSize = 60;
+        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        const text = "DBNexus";
+        const textMetrics = ctx.measureText(text);
+        
+        const logoWidth = logo ? 50 : 0;
+        const logoHeight = logo ? (logo.height / logo.width) * 50 : 0;
+        const gap = 15;
+        
+        const watermarkWidth = logoWidth + (logoWidth ? gap : 0) + textMetrics.width;
+        const watermarkHeight = Math.max(logoHeight, fontSize);
+        
+        const spacingX = watermarkWidth * 2.5;
+        const spacingY = watermarkHeight * 4;
+        
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(-Math.PI / 6); // 30 degree tilt
+        
+        const diag = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
+        
+        const cols = Math.ceil(diag / spacingX);
+        const rows = Math.ceil(diag / spacingY);
+        
+        ctx.fillStyle = this.svc.theme() === 'light' ? "#0f172a" : "#f1f5f9";
+        ctx.textBaseline = "middle";
+        
+        for (let i = -cols; i <= cols; i++) {
+          for (let j = -rows; j <= rows; j++) {
+            const cx = i * spacingX + (j % 2 === 0 ? 0 : spacingX / 2);
+            const cy = j * spacingY;
+            
+            if (logo) {
+              ctx.drawImage(logo, cx - watermarkWidth / 2, cy - logoHeight / 2, logoWidth, logoHeight);
+            }
+            ctx.fillText(text, cx - watermarkWidth / 2 + logoWidth + (logoWidth ? gap : 0), cy);
+          }
+        }
+        
+        ctx.restore();
+      };
+
       // Draw Page 1 (Clean regular diagram)
       this.draw();
+      drawWatermark();
 
       // Get JPEG 1
       const jpeg1DataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -554,6 +608,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.drawingClean = true;
       this.forceHighlightConnections = true;
       this.draw();
+      drawWatermark();
 
       // Get JPEG 2
       const jpeg2DataUrl = canvas.toDataURL('image/jpeg', 0.95);
