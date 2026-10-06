@@ -4568,14 +4568,27 @@ body.light-theme {
     cursor: pointer !important;
     text-align: left !important;
     box-sizing: border-box !important;
-    transition: background 0.15s ease !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
 
     &:hover {
       background: rgba(255, 255, 255, 0.08) !important;
     }
 
     &.selected {
-      background: rgba(59, 130, 246, 0.12) !important;
+      background: rgba(56, 189, 248, 0.12) !important;
+      
+      .perm-option-title {
+        color: #38bdf8 !important;
+      }
+      
+      .perm-option-desc {
+        color: rgba(56, 189, 248, 0.8) !important;
+      }
+      
+      svg {
+        color: #38bdf8 !important;
+        fill: #38bdf8 !important;
+      }
     }
 
     .perm-option-header {
@@ -4621,9 +4634,18 @@ body.light-theme {
       &.selected {
         background: rgba(37, 99, 235, 0.08) !important;
         border-color: rgba(37, 99, 235, 0.2) !important;
-
+        
         .perm-option-title {
           color: #2563eb !important;
+        }
+
+        .perm-option-desc {
+          color: rgba(37, 99, 235, 0.8) !important;
+        }
+
+        svg {
+          color: #2563eb !important;
+          fill: #2563eb !important;
         }
       }
 
@@ -4638,13 +4660,4 @@ body.light-theme {
       }
     }
   }
-}
-
-/* Forcing inline styles for floating action menus */
-.action-menu-dropdown.floating-action-menu {
-  position: fixed !important;
-  top: var(--menu-top) !important;
-  right: var(--menu-right) !important;
-  bottom: auto !important;
-  margin: 0 !important;
 }
