@@ -224,10 +224,10 @@
                   </div>
                 </td>
                 <td class="col-modified">
-                  {{ formatDate(d.updated_at || d.created_at) }}
+                  {{ (d.updated_at || d.created_at) | date:'MMM d, y, h:mm a' }}
                 </td>
                 <td class="col-created">
-                  {{ formatDate(d.created_at) }}
+                  {{ d.created_at | date:'MMM d, y, h:mm a' }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
                   <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
@@ -415,7 +415,7 @@
                   </div>
                 </td>
                 <td class="col-created">
-                  {{ formatDate(d.shared_date) }}
+                  {{ d.shared_date | date:'MMM d, y, h:mm a' }}
                 </td>
                 <td class="col-actions" (click)="$event.stopPropagation()">
                   <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.diagramid ? 99999 : 'auto'"
@@ -840,10 +840,10 @@
                     </div>
                   </td>
                   <td class="col-modified">
-                    {{ formatDate(d.updated_at || d.created_at) }}
+                    {{ (d.updated_at || d.created_at) | date:'MMM d, y, h:mm a' }}
                   </td>
                   <td class="col-created">
-                    {{ formatDate(d.created_at) }}
+                    {{ d.created_at | date:'MMM d, y, h:mm a' }}
                   </td>
                   <td class="col-actions" (click)="$event.stopPropagation()">
                     <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"

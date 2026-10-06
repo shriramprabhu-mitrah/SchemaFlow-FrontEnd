@@ -232,9 +232,11 @@ export class ImportService {
         if (Array.isArray(col.fields)) {
           for (const field of col.fields) {
             const isPk = field.primary || field.name === '_id' || field.name === 'id';
-            let typeStr = (field.type || 'varchar').toLowerCase();
-            if (typeStr === 'string') typeStr = 'varchar';
-            else if (typeStr === 'number') typeStr = 'decimal';
+            let typeStr = field.type || 'varchar';
+            let typeStrLower = typeStr.toLowerCase();
+            let isUpper = typeStr === typeStr.toUpperCase();
+            if (typeStrLower === 'string') typeStr = isUpper ? 'VARCHAR' : 'varchar';
+            else if (typeStrLower === 'number') typeStr = isUpper ? 'DECIMAL' : 'decimal';
             const attrs: string[] = [];
             if (isPk) attrs.push('pk');
             if (field.required && !isPk) attrs.push('not null');
