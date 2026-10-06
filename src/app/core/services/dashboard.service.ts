@@ -605,6 +605,44 @@ export class DashboardService {
   readonly refDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
   readonly columnDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
 
+  areRefsEqual(r1: RefDef, r2: RefDef): boolean {
+    if (!r1 || !r2) return false;
+    const f1T = (r1.fromTable || '').toLowerCase();
+    const f1C = (r1.fromCol || '').toLowerCase();
+    const t1T = (r1.toTable || '').toLowerCase();
+    const t1C = (r1.toCol || '').toLowerCase();
+
+    const f2T = (r2.fromTable || '').toLowerCase();
+    const f2C = (r2.fromCol || '').toLowerCase();
+    const t2T = (r2.toTable || '').toLowerCase();
+    const t2C = (r2.toCol || '').toLowerCase();
+
+    const directMatch = f1T === f2T && f1C === f2C && t1T === t2T && t1C === t2C;
+    const reverseMatch = f1T === t2T && f1C === t2C && t1T === f2T && t1C === f2C;
+    return directMatch || reverseMatch;
+  }
+
+  setRefDiffStatus(map: Record<string, 'added' | 'modified' | 'deleted'>, ref: RefDef, status: 'added' | 'modified' | 'deleted'): void {
+    if (!ref) return;
+    const fT = (ref.fromTable || '').toLowerCase();
+    const fC = (ref.fromCol || '').toLowerCase();
+    const tT = (ref.toTable || '').toLowerCase();
+    const tC = (ref.toCol || '').toLowerCase();
+
+    // Store in all key variations (with > and with ->, forward and reverse, lower and exact case)
+    map[`${fT}.${fC}>${tT}.${tC}`] = status;
+    map[`${tT}.${tC}>${fT}.${fC}`] = status;
+    map[`${fT}.${fC}->${tT}.${tC}`] = status;
+    map[`${tT}.${tC}->${fT}.${fC}`] = status;
+
+    if (ref.fromTable && ref.toTable) {
+      map[`${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}`] = status;
+      map[`${ref.toTable}.${ref.toCol}>${ref.fromTable}.${ref.fromCol}`] = status;
+      map[`${ref.fromTable}.${ref.fromCol}->${ref.toTable}.${ref.toCol}`] = status;
+      map[`${ref.toTable}.${ref.toCol}->${ref.fromTable}.${ref.fromCol}`] = status;
+    }
+  }
+
   startAiDiffReview(originalCode: string, proposedCode: string): void {
     const origNorm = (originalCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
     const propNorm = (proposedCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
@@ -704,11 +742,13 @@ export class DashboardService {
       const ot = oldTableMap.get(nt.name.toLowerCase());
       if (!ot) {
         tStatus[nt.name] = 'added';
+        tStatus[nt.name.toLowerCase()] = 'added';
       } else {
         const otCols = ot.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         const ntCols = nt.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         if (otCols !== ntCols) {
           tStatus[nt.name] = 'modified';
+          tStatus[nt.name.toLowerCase()] = 'modified';
         }
       }
     });
@@ -717,23 +757,22 @@ export class DashboardService {
     oldParsed.tables.forEach(ot => {
       if (!newTableMap.has(ot.name.toLowerCase())) {
         tStatus[ot.name] = 'deleted';
+        tStatus[ot.name.toLowerCase()] = 'deleted';
       }
     });
     this.tableDiffStatus.set(tStatus);
 
     const rStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
-    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
     newParsed.refs.forEach(nr => {
-      const key = `${nr.fromTable}.${nr.fromCol}>${nr.toTable}.${nr.toCol}`;
-      if (!oldRefKeys.has(key)) {
-        rStatus[key] = 'added';
+      const existsInOld = oldParsed.refs.some(or => this.areRefsEqual(or, nr));
+      if (!existsInOld) {
+        this.setRefDiffStatus(rStatus, nr, 'added');
       }
     });
-    const newRefKeys = new Set(newParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
     oldParsed.refs.forEach(or => {
-      const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
-      if (!newRefKeys.has(key)) {
-        rStatus[key] = 'deleted';
+      const existsInNew = newParsed.refs.some(nr => this.areRefsEqual(nr, or));
+      if (!existsInNew) {
+        this.setRefDiffStatus(rStatus, or, 'deleted');
       }
     });
     this.refDiffStatus.set(rStatus);
@@ -748,8 +787,10 @@ export class DashboardService {
           const colKey = `${nt.name}.${nc.name}`;
           if (!oc) {
             cStatus[colKey] = 'added';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'added';
           } else if (oc.type !== nc.type || oc.pk !== nc.pk || oc.fk !== nc.fk || oc.unique !== nc.unique) {
             cStatus[colKey] = 'modified';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'modified';
           }
         });
       }
@@ -832,11 +873,13 @@ export class DashboardService {
       const ot = oldTableMap.get(nameLower);
       if (!ot) {
         tStatus[nt.name] = 'added';
+        tStatus[nt.name.toLowerCase()] = 'added';
       } else {
         const otCols = ot.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         const ntCols = nt.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         if (otCols !== ntCols) {
           tStatus[nt.name] = 'modified';
+          tStatus[nt.name.toLowerCase()] = 'modified';
         }
       }
     });
@@ -845,6 +888,7 @@ export class DashboardService {
       if (!currParsed.tables.some(ct => ct.name.toLowerCase() === nameLower)) {
         if (pendingTableNames.has(nameLower)) {
           tStatus[ot.name] = 'deleted';
+          tStatus[ot.name.toLowerCase()] = 'deleted';
         }
       }
     });
@@ -863,8 +907,10 @@ export class DashboardService {
           const colKey = `${nt.name}.${nc.name}`;
           if (!oc) {
             cStatus[colKey] = 'added';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'added';
           } else if (oc.type !== nc.type || oc.pk !== nc.pk || oc.fk !== nc.fk || oc.unique !== nc.unique) {
             cStatus[colKey] = 'modified';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'modified';
           }
         });
       }
@@ -872,34 +918,82 @@ export class DashboardService {
     this.columnDiffStatus.set(cStatus);
 
     const pendingRefKeys = new Set<string>();
+    let currentPendingRefTable: string | null = null;
     for (const l of this.aiDiffLines()) {
-      if (!l.hunkId) continue;
       const trimmed = l.text.trim();
+      const tMatch = trimmed.match(/^Table\s+([A-Za-z0-9_.]+)/i);
+      if (tMatch) currentPendingRefTable = tMatch[1].toLowerCase();
+      if (trimmed.endsWith('}') && !trimmed.includes('{')) {
+        currentPendingRefTable = null;
+      }
+
+      if (!l.hunkId) continue;
       const match = trimmed.match(/^Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(?:<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
       if (match) {
-        pendingRefKeys.add(`${match[1].toLowerCase()}.${match[2].toLowerCase()}>${match[3].toLowerCase()}.${match[4].toLowerCase()}`);
-        pendingRefKeys.add(`${match[3].toLowerCase()}.${match[4].toLowerCase()}>${match[1].toLowerCase()}.${match[2].toLowerCase()}`);
+        const t1 = match[1].toLowerCase();
+        const c1 = match[2].toLowerCase();
+        const t2 = match[3].toLowerCase();
+        const c2 = match[4].toLowerCase();
+        pendingRefKeys.add(`${t1}.${c1}>${t2}.${c2}`);
+        pendingRefKeys.add(`${t2}.${c2}>${t1}.${c1}`);
+        pendingRefKeys.add(`${t1}.${c1}->${t2}.${c2}`);
+        pendingRefKeys.add(`${t2}.${c2}->${t1}.${c1}`);
+      } else if (currentPendingRefTable) {
+        const inlineMatch = trimmed.match(/ref:\s*(?:<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
+        if (inlineMatch) {
+          const colMatch = trimmed.match(/^(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([A-Za-z0-9_]+))\s+/);
+          const colName = colMatch ? (colMatch[1] || colMatch[2] || colMatch[3] || colMatch[4]) : null;
+          if (colName) {
+            const t1 = currentPendingRefTable;
+            const c1 = colName.toLowerCase();
+            const t2 = inlineMatch[1].toLowerCase();
+            const c2 = inlineMatch[2].toLowerCase();
+            pendingRefKeys.add(`${t1}.${c1}>${t2}.${c2}`);
+            pendingRefKeys.add(`${t2}.${c2}>${t1}.${c1}`);
+            pendingRefKeys.add(`${t1}.${c1}->${t2}.${c2}`);
+            pendingRefKeys.add(`${t2}.${c2}->${t1}.${c1}`);
+          }
+        }
       }
     }
 
     const rStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
-    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase()));
     currParsed.refs.forEach(nr => {
-      const key = `${nr.fromTable}.${nr.fromCol}>${nr.toTable}.${nr.toCol}`;
-      const keyLower = key.toLowerCase();
-      if (!oldRefKeys.has(keyLower)) {
-        if (pendingRefKeys.has(keyLower)) {
-          rStatus[key] = 'added';
+      const isOld = oldParsed.refs.some(or => this.areRefsEqual(or, nr));
+      if (!isOld) {
+        const fT = (nr.fromTable || '').toLowerCase();
+        const fC = (nr.fromCol || '').toLowerCase();
+        const tT = (nr.toTable || '').toLowerCase();
+        const tC = (nr.toCol || '').toLowerCase();
+        if (
+          pendingRefKeys.has(`${fT}.${fC}>${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}>${fT}.${fC}`) ||
+          pendingRefKeys.has(`${fT}.${fC}->${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}->${fT}.${fC}`) ||
+          pendingTableNames.has(fT) ||
+          pendingTableNames.has(tT)
+        ) {
+          this.setRefDiffStatus(rStatus, nr, 'added');
         }
       }
     });
-    const currRefKeys = new Set(currParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase()));
+
     oldParsed.refs.forEach(or => {
-      const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
-      const keyLower = key.toLowerCase();
-      if (!currRefKeys.has(keyLower)) {
-        if (pendingRefKeys.has(keyLower)) {
-          rStatus[key] = 'deleted';
+      const isCurr = currParsed.refs.some(cr => this.areRefsEqual(cr, or));
+      if (!isCurr) {
+        const fT = (or.fromTable || '').toLowerCase();
+        const fC = (or.fromCol || '').toLowerCase();
+        const tT = (or.toTable || '').toLowerCase();
+        const tC = (or.toCol || '').toLowerCase();
+        if (
+          pendingRefKeys.has(`${fT}.${fC}>${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}>${fT}.${fC}`) ||
+          pendingRefKeys.has(`${fT}.${fC}->${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}->${fT}.${fC}`) ||
+          pendingTableNames.has(fT) ||
+          pendingTableNames.has(tT)
+        ) {
+          this.setRefDiffStatus(rStatus, or, 'deleted');
         }
       }
     });
@@ -2533,6 +2627,30 @@ export class DashboardService {
             checkVal,
             note: noteVal
           });
+
+          const inlineRefMatch = rawAttrs.match(/ref:\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
+          if (inlineRefMatch) {
+            let fromTable = name;
+            let fromCol = colName;
+            const relType = inlineRefMatch[1];
+            let toTable = inlineRefMatch[2];
+            let toCol = inlineRefMatch[3];
+            if (relType === '<') {
+              const tempTable = fromTable;
+              const tempCol = fromCol;
+              fromTable = toTable;
+              fromCol = toCol;
+              toTable = tempTable;
+              toCol = tempCol;
+            }
+            refs.push({
+              fromTable,
+              fromCol,
+              toTable,
+              toCol,
+              relType
+            });
+          }
         }
       });
       tables.push({ name, columns: cols });
@@ -2907,12 +3025,11 @@ export class DashboardService {
 
       t.columns.forEach((c) => {
         const visibleIndex = visibleColumns.findIndex(vc => vc.name === c.name);
-        if (visibleIndex !== -1) {
-          colY[c.name] = this.HEADER_H + visibleIndex * this.ROW_H + this.ROW_H / 2;
-        } else {
-          // Hidden fields point to the center of the "+ N hidden fields" footer
-          colY[c.name] = this.HEADER_H + visibleColumns.length * this.ROW_H + this.ROW_H / 2;
-        }
+        const yVal = visibleIndex !== -1
+          ? this.HEADER_H + visibleIndex * this.ROW_H + this.ROW_H / 2
+          : this.HEADER_H + visibleColumns.length * this.ROW_H + this.ROW_H / 2;
+        colY[c.name] = yVal;
+        colY[c.name.toLowerCase()] = yVal;
       });
       return {
         name: t.name,
@@ -2938,7 +3055,9 @@ export class DashboardService {
           const height = this.getTableHeight(ot.columns);
           const colY: Record<string, number> = {};
           ot.columns.forEach((c, idx) => {
-            colY[c.name] = this.HEADER_H + idx * this.ROW_H + this.ROW_H / 2;
+            const yVal = this.HEADER_H + idx * this.ROW_H + this.ROW_H / 2;
+            colY[c.name] = yVal;
+            colY[c.name.toLowerCase()] = yVal;
           });
           this.tables.push({
             name: ot.name,
@@ -3024,17 +3143,26 @@ export class DashboardService {
 
     if (this.aiDiffReviewActive()) {
       const origParsed = this.parseDBML(this.aiDiffOriginalCode());
-      const deletedRefKeys = new Set(
-        Object.entries(this.refDiffStatus())
-          .filter(([_, status]) => status === 'deleted')
-          .map(([k]) => k.toLowerCase())
-      );
+      const rStatus = this.refDiffStatus();
 
       origParsed.refs.forEach((or) => {
-        const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`.toLowerCase();
-        const fromExists = this.tables.some(t => t.name.toLowerCase() === or.fromTable.toLowerCase());
-        const toExists = this.tables.some(t => t.name.toLowerCase() === or.toTable.toLowerCase());
-        if (fromExists && toExists && deletedRefKeys.has(key) && !this.refs.some(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase() === key)) {
+        const fT = (or.fromTable || '').toLowerCase();
+        const fC = (or.fromCol || '').toLowerCase();
+        const tT = (or.toTable || '').toLowerCase();
+        const tC = (or.toCol || '').toLowerCase();
+
+        const isDeleted =
+          rStatus[`${fT}.${fC}>${tT}.${tC}`] === 'deleted' ||
+          rStatus[`${tT}.${tC}>${fT}.${fC}`] === 'deleted' ||
+          rStatus[`${fT}.${fC}->${tT}.${tC}`] === 'deleted' ||
+          rStatus[`${tT}.${tC}->${fT}.${fC}`] === 'deleted' ||
+          rStatus[`${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`] === 'deleted' ||
+          rStatus[`${or.toTable}.${or.toCol}>${or.fromTable}.${or.fromCol}`] === 'deleted';
+
+        const fromExists = this.tables.some(t => t.name.toLowerCase() === fT);
+        const toExists = this.tables.some(t => t.name.toLowerCase() === tT);
+
+        if (fromExists && toExists && isDeleted && !this.refs.some(r => this.areRefsEqual(r, or))) {
           this.refs.push(or);
         }
       });

@@ -691,7 +691,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const trunkXByAnchor: Record<string, number> = {};
     this.svc.refs.forEach((ref, i) => {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) return;
-      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) return;
+      const fromGeom = geometry[ref.fromTable] || geometry[ref.fromTable?.toLowerCase()];
+      const toGeom = geometry[ref.toTable] || geometry[ref.toTable?.toLowerCase()];
+      if (this.svc.aiDiffReviewActive() && (!fromGeom || !toGeom)) return;
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return;
 
@@ -1114,7 +1116,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.scale(this.svc.view.scale, this.svc.view.scale);
 
     const geometry: Record<string, TableDef> = {};
-    this.svc.tables.forEach((t) => (geometry[t.name] = t));
+    this.svc.tables.forEach((t) => {
+      geometry[t.name] = t;
+      geometry[t.name.toLowerCase()] = t;
+    });
 
     const toolbarsToDraw: { ref: RefDef; index: number; anchor: PathPoint }[] = [];
     const focused = this.svc.activeFocusedTable;
@@ -1718,7 +1723,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       let colDiff: 'added' | 'modified' | 'deleted' | null = null;
       if (this.svc.aiDiffReviewActive()) {
-        colDiff = this.svc.columnDiffStatus()[`${t.name}.${c.name}`] || null;
+        colDiff = this.svc.columnDiffStatus()[`${t.name}.${c.name}`] ||
+          this.svc.columnDiffStatus()[`${t.name.toLowerCase()}.${c.name.toLowerCase()}`] ||
+          null;
       }
 
       if (colDiff) {
@@ -1795,7 +1802,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // AI Diff Review: draw badge and dashed border
     if (this.svc.aiDiffReviewActive()) {
-      const diffStatus = this.svc.tableDiffStatus()[t.name];
+      const diffStatus = this.svc.tableDiffStatus()[t.name] || this.svc.tableDiffStatus()[t.name.toLowerCase()];
       if (diffStatus) {
         const badgeColor = diffStatus === 'added' ? '#10b981' : (diffStatus === 'modified' ? '#f59e0b' : '#ef4444');
         const badgeText = diffStatus === 'added' ? '[Added]' : (diffStatus === 'modified' ? '[Modified]' : '[Deleted]');
@@ -1833,7 +1840,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) {
         return null;
       }
-      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) {
+      const fromGeom = geometry[ref.fromTable] || geometry[ref.fromTable?.toLowerCase()];
+      const toGeom = geometry[ref.toTable] || geometry[ref.toTable?.toLowerCase()];
+      if (this.svc.aiDiffReviewActive() && (!fromGeom || !toGeom)) {
         return null;
       }
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
@@ -1940,17 +1949,29 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       // AI Diff Review status for this relation
       let diffStatus: 'added' | 'modified' | 'deleted' | null = null;
       if (this.svc.aiDiffReviewActive()) {
-        const refKey = `${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}->${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}`;
-        const revKey = `${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}->${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}`;
-        const rDiff = this.svc.refDiffStatus()[refKey] || this.svc.refDiffStatus()[revKey];
-        const fromTDiff = this.svc.tableDiffStatus()[ref.fromTable];
-        const toTDiff = this.svc.tableDiffStatus()[ref.toTable];
+        const fromT = (ref.fromTable || '').toLowerCase();
+        const fromC = (ref.fromCol || '').toLowerCase();
+        const toT = (ref.toTable || '').toLowerCase();
+        const toC = (ref.toCol || '').toLowerCase();
+        const rDiffStatus = this.svc.refDiffStatus();
+        const rDiff =
+          rDiffStatus[`${fromT}.${fromC}>${toT}.${toC}`] ||
+          rDiffStatus[`${toT}.${toC}>${fromT}.${fromC}`] ||
+          rDiffStatus[`${fromT}.${fromC}->${toT}.${toC}`] ||
+          rDiffStatus[`${toT}.${toC}->${fromT}.${fromC}`] ||
+          rDiffStatus[`${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}`] ||
+          rDiffStatus[`${ref.toTable}.${ref.toCol}>${ref.fromTable}.${ref.fromCol}`] ||
+          rDiffStatus[`${ref.fromTable}.${ref.fromCol}->${ref.toTable}.${ref.toCol}`] ||
+          rDiffStatus[`${ref.toTable}.${ref.toCol}->${ref.fromTable}.${ref.fromCol}`];
 
-        if (rDiff === 'added' || fromTDiff === 'added' || toTDiff === 'added') {
+        const fromTDiff = this.svc.tableDiffStatus()[ref.fromTable] || this.svc.tableDiffStatus()[fromT];
+        const toTDiff = this.svc.tableDiffStatus()[ref.toTable] || this.svc.tableDiffStatus()[toT];
+
+        if (rDiff) {
+          diffStatus = rDiff;
+        } else if (fromTDiff === 'added' || toTDiff === 'added') {
           diffStatus = 'added';
-        } else if (rDiff === 'modified' || fromTDiff === 'modified' || toTDiff === 'modified') {
-          diffStatus = 'modified';
-        } else if (rDiff === 'deleted' || fromTDiff === 'deleted' || toTDiff === 'deleted') {
+        } else if (fromTDiff === 'deleted' || toTDiff === 'deleted') {
           diffStatus = 'deleted';
         }
       }
@@ -2506,13 +2527,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     refIndex?: number,
     anchorUsage?: Record<string, number[]>
   ): PathPoint[] | null {
-    let a = geometry[ref.fromTable];
-    let b = geometry[ref.toTable];
+    let a = geometry[ref.fromTable] || geometry[ref.fromTable?.toLowerCase()];
+    let b = geometry[ref.toTable] || geometry[ref.toTable?.toLowerCase()];
     if (!a && !b) return null;
 
     if (a && !b) {
       const stubX = a.x + a.width + 130;
-      const stubY = a.y + (a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
+      const stubY = a.y + (a.colY[ref.fromCol] ?? a.colY[ref.fromCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
       b = {
         name: ref.toTable,
         columns: [],
@@ -2520,12 +2541,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         y: stubY - this.svc.HEADER_H / 2,
         width: 100,
         height: 36,
-        colY: { [ref.toCol]: this.svc.HEADER_H / 2 },
+        colY: { [ref.toCol]: this.svc.HEADER_H / 2, [ref.toCol?.toLowerCase()]: this.svc.HEADER_H / 2 },
         color: '#ef4444'
       };
     } else if (!a && b) {
       const stubX = b.x - 130;
-      const stubY = b.y + (b.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+      const stubY = b.y + (b.colY[ref.toCol] ?? b.colY[ref.toCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
       a = {
         name: ref.fromTable,
         columns: [],
@@ -2533,7 +2554,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         y: stubY - this.svc.HEADER_H / 2,
         width: 100,
         height: 36,
-        colY: { [ref.fromCol]: this.svc.HEADER_H / 2 },
+        colY: { [ref.fromCol]: this.svc.HEADER_H / 2, [ref.fromCol?.toLowerCase()]: this.svc.HEADER_H / 2 },
         color: '#ef4444'
       };
     }
@@ -2606,8 +2627,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     a = aGeom;
     b = bGeom;
 
-    let ay = a.y + (a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
-    let by = b.y + (b.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+    let ay = a.y + (a.colY[ref.fromCol] ?? a.colY[ref.fromCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
+    let by = b.y + (b.colY[ref.toCol] ?? b.colY[ref.toCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
 
     if (refIndex !== undefined && anchorUsage) {
       ay += this.svc.anchorOffset(ref.fromTable, ref.fromCol, refIndex, anchorUsage);
