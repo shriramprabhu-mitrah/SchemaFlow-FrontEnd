@@ -10,6 +10,7 @@ import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
  import { AppConfigService } from '../../../core/services/app-config.service';
  import { Icons } from '../../../core/component/icons/icons';
  import { ButtonComponent } from '../../../shared/button/button';
+import { config } from '../../../app.config.server';
  
 @Component({
    selector: 'app-login',
@@ -30,7 +31,9 @@ import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
    forgotPasswordEmail = '';
    forgotPasswordEmailError = '';
  
-  private readonly backendUrl = 'http://localhost:4007';
+  private get backendUrl(): string {
+    return this.appConfig.environment?.apiConfig?.baseUrl ?? '';
+  }
  
   constructor(
  	private auth: AuthService,

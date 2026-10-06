@@ -511,3 +511,97 @@ body.light-theme .interactive-preview-wrapper,
   width: 100%;
   user-select: none;
 }
+
+
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .interactive-preview-wrapper {
+    margin: 0 auto 40px auto;
+  }
+  
+  /* Hide custom thick scrollbars inside the interactive preview for a cleaner mobile look */
+  .interactive-preview-wrapper * {
+    scrollbar-width: none !important;
+  }
+  .interactive-preview-wrapper *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  .interactive-preview-wrapper *::-webkit-scrollbar-thumb,
+  .interactive-preview-wrapper *::-webkit-scrollbar-track {
+    display: none !important;
+  }
+
+  /* Make tabs wrap beautifully on mobile */
+  .ip-tabs-container {
+    padding: 12px 10px;
+    justify-content: center;
+  }
+  
+  .ip-tabs {
+    flex-wrap: wrap;
+    width: 100%;
+    border-radius: 16px;
+    justify-content: center;
+    gap: 6px;
+  }
+  
+  .ip-tab {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  
+  /* Code & Diagram scaling */
+  .ip-content-container {
+    height: 380px;
+  }
+  
+  .ip-canvas-container {
+    overflow: auto;
+    touch-action: pan-x pan-y;
+  }
+  
+  .ip-canvas-grid, .ip-canvas-container > svg {
+    min-width: 750px;
+    min-height: 400px;
+  }
+
+  .ip-code-content {
+    font-size: 12px !important;
+    padding: 12px !important;
+  }
+  
+  .ip-code-line-numbers {
+    font-size: 12px !important;
+    padding: 12px 8px !important;
+    min-width: 30px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .ip-content-container {
+    height: 320px;
+  }
+  
+  .ip-diff-container {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  
+  .ip-diff-pane {
+    flex: none;
+    min-height: 250px;
+    height: auto;
+    overflow: visible;
+    
+    &.left-pane {
+      border-right: none !important;
+      border-bottom: 2px solid var(--ip-diff-border);
+    }
+  }
+}
