@@ -643,8 +643,35 @@ export class DashboardService {
     }
   }
 
+  getCommittedAiDiffCode(): string {
+    if (!this.aiDiffReviewActive()) {
+      return (this.code || '').trim();
+    }
+    const hunks = this.aiDiffHunks();
+    const anyAccepted = hunks.some(h => h.status === 'accepted');
+    if (!anyAccepted) {
+      return (this.aiDiffOriginalCode() || '').trim();
+    }
+    const lines = this.aiDiffLines();
+    const result: string[] = [];
+    for (const line of lines) {
+      if (line.type === 'context') {
+        result.push(line.text);
+      } else if (line.type === 'delete' && line.hunkId) {
+        // A deletion hunk was NOT accepted (pending), so keep original line in baseline
+        result.push(line.text);
+      }
+    }
+    return result.join('\n').replace(/\n+$/, '').trim();
+  }
+
   startAiDiffReview(originalCode: string, proposedCode: string): void {
-    const origNorm = (originalCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
+    // If a diff review was already active with unaccepted changes, ensure the baseline remains the committed code
+    const actualOriginal = this.aiDiffReviewActive()
+      ? this.getCommittedAiDiffCode()
+      : originalCode;
+
+    const origNorm = (actualOriginal || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
     const propNorm = (proposedCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
 
     if (origNorm === propNorm) {
@@ -1093,6 +1120,11 @@ export class DashboardService {
         }
         this.showToast('Accepted changes saved!', 2500, 'success');
       } else {
+        if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
+          this.saveDiagram().subscribe({
+            error: () => { }
+          });
+        }
         this.showToast('AI changes rejected.', 2500);
       }
     } else {
@@ -1125,6 +1157,13 @@ export class DashboardService {
     this.showCanvasPlaceholder = !original.trim();
     this.closeAiDiffReview(false);
     this.requestCanvasFit();
+
+    if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
+      this.saveDiagram().subscribe({
+        error: () => { }
+      });
+    }
+
     this.showToast('AI changes rejected.', 2500);
   }
 
@@ -1168,6 +1207,9 @@ export class DashboardService {
           localStorage.setItem('active_diagram_code', orig);
           localStorage.setItem('dbml_code', orig);
         }
+      }
+      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+        this.emitCollabChange();
       }
     }
 
