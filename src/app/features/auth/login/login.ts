@@ -92,6 +92,7 @@ import { config } from '../../../app.config.server';
    	}
    	if (params['isSuperAdmin'] !== undefined) this.auth.setSuperAdmin(params['isSuperAdmin'] === 'true');
    	if (params['accountType']) this.auth.setAccountType(params['accountType']);
+   	if (params['authProvider']) this.auth.setAuthProvider(params['authProvider']);
    	if (params['orgRole']) this.auth.setOrgRole(params['orgRole']);
  
   	this.handlePostLoginNavigation();

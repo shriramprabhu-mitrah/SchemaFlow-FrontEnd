@@ -53,6 +53,9 @@ export class AuthService {
         if (accountType) {
           this.setAccountType(accountType);
         }
+        if (data?.authProvider) {
+          this.setAuthProvider(data.authProvider);
+        }
         if (data?.organizationId) {
           this.setOrganizationId(data.organizationId);
         }
@@ -273,6 +276,21 @@ export class AuthService {
     return this.getAccountType() === 'organization';
   }
 
+  // ── Auth Provider ──
+
+  setAuthProvider(isSso: boolean | string): void {
+    if (isPlatformBrowser(this.platformId) && isSso !== undefined && isSso !== null) {
+      localStorage.setItem('auth_provider', String(isSso === true || isSso === 'true'));
+    }
+  }
+
+  getAuthProvider(): boolean {
+    if (isPlatformBrowser(this.platformId)) {
+      return localStorage.getItem('auth_provider') === 'true';
+    }
+    return false;
+  }
+
   // Organization Owner role has been removed. Admins now have top-level access.
 
   setOrgRole(role: string): void {
@@ -373,6 +391,7 @@ export class AuthService {
 
       localStorage.removeItem('org_role');
       localStorage.removeItem('account_type');
+      localStorage.removeItem('auth_provider');
       localStorage.removeItem('dbml_code');
       localStorage.removeItem('active_diagram_code');
       localStorage.removeItem('active_diagram_name');
