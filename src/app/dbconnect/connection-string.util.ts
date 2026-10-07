@@ -70,7 +70,7 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
   return null;
 }
 
-function parseUriConnectionString(value: string): ConnectionDetails | null {
+function parseUriConnectionString(value: string, defaultSchema = 'public'): ConnectionDetails | null {
   const urlValue = value.replace(/^jdbc:/i, '');
   const schemeMatch = urlValue.match(/^([a-z][a-z0-9+.-]*):\/\//i);
   if (!schemeMatch) return null;
@@ -83,14 +83,14 @@ function parseUriConnectionString(value: string): ConnectionDetails | null {
   }
 
   const host = url.hostname;
-  const port = url.port ? Number(url.port) : (url.protocol === 'mysql:' ? 3306 : url.protocol === 'oracle:' ? 1521 : 5432);
+  const port = url.port ? Number(url.port) : (url.protocol === 'mysql:' || url.protocol === 'mariadb:' ? 3306 : url.protocol === 'oracle:' ? 1521 : 5432);
   const pathParts = url.pathname.split('/').filter(Boolean);
   const database = pathParts[0] ? decodeValue(pathParts[0]) : '';
   if (!host) return null;
 
   const username = url.username ? decodeValue(url.username) : '';
   const password = url.password ? decodeValue(url.password) : '';
-  const schema = url.searchParams.get('schemas') || url.searchParams.get('schema') || 'public';
+  const schema = url.searchParams.get('schemas') || url.searchParams.get('schema') || defaultSchema;
 
   return {
     host,
@@ -102,7 +102,7 @@ function parseUriConnectionString(value: string): ConnectionDetails | null {
   };
 }
 
-export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mssql' | 'sqlite' | 'oracle'): ConnectionDetails | null {
+export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle'): ConnectionDetails | null {
   const raw = value.trim();
   if (!raw || databaseType === 'sqlite') return null;
 
@@ -123,7 +123,11 @@ export function parseConnectionDetails(value: string, databaseType: 'postgres' |
     if (!uriValue.toLowerCase().startsWith('mysql://')) {
       return null;
     }
+  } else if (databaseType === 'mariadb') {
+    if (!uriValue.toLowerCase().startsWith('mariadb://') && !uriValue.toLowerCase().startsWith('mysql://')) {
+      return null;
+    }
   }
 
-  return parseUriConnectionString(raw);
+  return parseUriConnectionString(raw, databaseType === 'mariadb' ? '' : 'public');
 }

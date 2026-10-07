@@ -85,7 +85,7 @@ export class HeaderComponent implements OnInit {
   // Connection String import modal state
   connStringModalOpen = false;
   connStringConnectMode: 'host' | 'url' = 'host';
-  connStringDatabaseType: 'postgres' | 'mysql' | 'mssql' | 'sqlite' | 'oracle' = 'postgres';
+  connStringDatabaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' = 'postgres';
   selectedSqliteFile: File | null = null;
   isSqliteDraggingOver = false;
 
@@ -799,7 +799,7 @@ openConnectionStringModal(): void {
   onDatabaseTypeChange(event?: Event): void {
     const selectedType = (event?.target as HTMLSelectElement | null)?.value;
     if (selectedType) {
-      this.connStringDatabaseType = selectedType as 'postgres' | 'mysql' | 'mssql' | 'sqlite' | 'oracle';
+      this.connStringDatabaseType = selectedType as 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle';
     }
 
     this.connStringError = null;
@@ -809,9 +809,14 @@ openConnectionStringModal(): void {
     } else if (this.connStringDatabaseType === 'postgres') {
       if (!this.connPort || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 5432;
       if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'postgres';
+      if (!this.connSchema) this.connSchema = 'public';
     } else if (this.connStringDatabaseType === 'mysql') {
       if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
+    } else if (this.connStringDatabaseType === 'mariadb') {
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
+      if (this.connSchema === 'public') this.connSchema = '';
     } else if (this.connStringDatabaseType === 'mssql') {
       if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1521) this.connPort = 1433;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root' || this.connUsername === 'system') this.connUsername = 'sa';
@@ -896,7 +901,7 @@ openConnectionStringModal(): void {
     }
 
     const host = this.connHost.trim() || 'localhost';
-    const port = this.connPort || (this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' ? 3306 : this.connStringDatabaseType === 'oracle' ? 1521 : 1433);
+    const port = this.connPort || (this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' || this.connStringDatabaseType === 'mariadb' ? 3306 : this.connStringDatabaseType === 'oracle' ? 1521 : 1433);
     const db = this.connDatabase.trim();
     const user = this.connUsername.trim();
     const pass = this.connPassword;
@@ -918,6 +923,9 @@ openConnectionStringModal(): void {
       return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schemas=${schema}` : ''}`;
     } else if (this.connStringDatabaseType === 'mysql') {
       return `mysql://${userPass}${host}:${port}/${db}`;
+    } else if (this.connStringDatabaseType === 'mariadb') {
+      const schemaQuery = this.connSchema.trim() ? `?schema=${encodeURIComponent(this.connSchema.trim())}` : '';
+      return `mariadb://${userPass}${host}:${port}/${db}${schemaQuery}`;
     }
 
     return `postgresql://${userPass}${host}:${port}/${db}`;
