@@ -1434,6 +1434,7 @@ openConnectionStringModal(): void {
     }
     this.runWithUnsavedChangesCheck(() => {
 
+      this.svc.closeAiChat();
       this.svc.closeAiDiffReview(false);
       this.svc.requestSplitView();
       this.svc.clearDiagram(true);
@@ -1451,3 +1452,4 @@ openConnectionStringModal(): void {
   }
 
 }
+

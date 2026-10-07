@@ -112,6 +112,7 @@
     "aiChatModels": "http://localhost:4000/api/ai/models/",
     "aiChat": "http://localhost:4000/api/ai/chat",
     "aiChatHistoryById": "http://localhost:4000/api/ai/chat/history/{id}",
+    "aiChatHistoryApplied": "http://localhost:4000/api/ai/chat/history/applied",
     "aiSessions": "http://localhost:4000/api/ai/sessions",
     "aiSessionHistory": "http://localhost:4000/api/ai/sessions/{sessionId}/history",
     "aiModelConfig": "http://localhost:4000/api/ai/models/{modelId}/config"

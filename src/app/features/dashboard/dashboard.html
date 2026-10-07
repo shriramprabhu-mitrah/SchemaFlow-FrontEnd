@@ -153,7 +153,7 @@
     <!-- NORMAL VIEW: EDITOR + CANVAS + DOCS -->
     <ng-container *ngIf="!svc.showDiffChecker()">
       <!-- EDITOR (expands to full page when showDocs is true) -->
-      <app-editor [class.ai-open]="svc.showAiChat()"
+      <app-editor [class.ai-open]="svc.showAiChat() && !svc.isSampleDiagram()"
         [style.width.%]="(paneMode === 'split' && !svc.showDocs) ? svc.editorWidthPct() : 100"
         [style.display]="(paneMode === 'canvas' && !svc.showDocs) ? 'none' : 'block'"></app-editor>
 

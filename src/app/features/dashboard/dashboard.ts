@@ -117,6 +117,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
         if (isSample) {
           this.isInitialLoad = false;
+          this.svc.closeAiChat();
           this.svc.clearDiagram(false);
           const sampleType = sampleParam === 'group' ? 'group' : 'normal';
           this.svc.code = this.svc.getSampleCode(sampleType);
