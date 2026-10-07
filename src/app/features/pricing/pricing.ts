@@ -20,6 +20,28 @@ import { environment } from '../../../environment/environment';
   templateUrl: './pricing.html',
 })
 export class PricingComponent implements OnInit {
+
+  isFeaturesDropdownOpen = false;
+
+  toggleFeaturesDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.isFeaturesDropdownOpen = !this.isFeaturesDropdownOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeFeaturesDropdownOnGlobalClick(event: Event): void {
+    this.isFeaturesDropdownOpen = false;
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    if (this.isFeaturesDropdownOpen) {
+      this.isFeaturesDropdownOpen = false;
+    }
+  }
+
+
   isLoggedIn = false;
   isMobileMenuOpen = false;
 

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -23,6 +23,28 @@ interface HeroTable {
   templateUrl: './home.html',
 })
 export class HomeComponent implements OnInit {
+
+  isFeaturesDropdownOpen = false;
+
+  toggleFeaturesDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.isFeaturesDropdownOpen = !this.isFeaturesDropdownOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeFeaturesDropdownOnGlobalClick(event: Event): void {
+    this.isFeaturesDropdownOpen = false;
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    if (this.isFeaturesDropdownOpen) {
+      this.isFeaturesDropdownOpen = false;
+    }
+  }
+
+
   isLoggedIn = false;
   isMobileMenuOpen = false;
 
