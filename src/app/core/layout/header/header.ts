@@ -14,7 +14,7 @@ import { EntitlementService } from '../../../core/services/entitlement.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
-import { parseConnectionDetails } from './connection-string.util';
+import { parseConnectionDetails } from '../../../dbconnect/connection-string.util';
 
 @Component({
   selector: 'app-header',
