@@ -161,6 +161,8 @@ body.light-theme .editor-shell {
   font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
   font-size: 15px !important;
   line-height: 1.62 !important;
+  letter-spacing: 0px !important;
+  word-spacing: 0px !important;
   text-align: right !important;
   white-space: pre !important;
   pointer-events: none !important;
@@ -188,6 +190,8 @@ body.light-theme .editor-shell {
   font-family: 'Fira Code', Consolas, monospace;
   font-size: 15px !important;
   line-height: 1.62 !important;
+  letter-spacing: 0px !important;
+  word-spacing: 0px !important;
   white-space: pre;
   word-wrap: normal;
   overflow-wrap: normal;
@@ -240,7 +244,7 @@ body.light-theme .editor-shell {
 
 .keyword {
   color: #2979ff;
-  font-weight: bold;
+  font-weight: normal !important;
 }
 
 .datatype {
@@ -310,6 +314,8 @@ body.light-theme .editor-shell {
   font-family: 'Fira Code', 'Courier New', Courier, monospace !important;
   font-size: 15px !important;
   line-height: 1.62 !important;
+  letter-spacing: 0px !important;
+  word-spacing: 0px !important;
   text-align: right !important;
   width: 36px !important;
 }
@@ -397,11 +403,15 @@ app-sidebar.collapsed~app-ai-chat .ai-chat-header {
 
 #highlight {
   background-color: transparent !important;
+  padding-bottom: 64px !important;
+  padding-right: 64px !important;
   background: transparent !important;
   color: #e6eef9 !important;
   font-family: 'Fira Code', Consolas, monospace !important;
   font-size: 15px !important;
   line-height: 1.62 !important;
+  letter-spacing: 0px !important;
+  word-spacing: 0px !important;
   padding-left: 52px !important;
 }
 
@@ -418,6 +428,8 @@ textarea#codearea {
   font-family: 'Fira Code', Consolas, monospace !important;
   font-size: 15px !important;
   line-height: 1.62 !important;
+  letter-spacing: 0px !important;
+  word-spacing: 0px !important;
   padding-left: 52px !important;
   scrollbar-width: thin !important;
   scrollbar-color: rgba(62, 197, 193, 0.3) rgba(255, 255, 255, 0.02) !important;
@@ -450,7 +462,7 @@ textarea#codearea::-webkit-scrollbar-thumb:hover {
 
 .keyword {
   color: #2979ff !important;
-  font-weight: 700 !important;
+  font-weight: normal !important;
 }
 
 .datatype {
@@ -581,17 +593,19 @@ body.light-theme {
 
   #highlight {
     background-color: transparent !important;
+  padding-bottom: 64px !important;
+  padding-right: 64px !important;
     background: transparent !important;
     color: #0f172a !important;
 
     .keyword {
       color: #2563eb !important;
-      font-weight: 700 !important;
+      font-weight: normal !important;
     }
 
     .datatype {
       color: #059669 !important;
-      font-weight: 600 !important;
+      font-weight: normal !important;
     }
 
     .attribute {
@@ -604,7 +618,7 @@ body.light-theme {
 
     .groupName {
       color: #7c3aed !important;
-      font-weight: 600 !important;
+      font-weight: normal !important;
     }
   }
 
@@ -1181,6 +1195,8 @@ body.light-theme,
   font-family: 'Fira Code', Consolas, monospace;
   font-size: 15px !important;
   line-height: 1.62 !important;
+  letter-spacing: 0px !important;
+  word-spacing: 0px !important;
   user-select: text;
   cursor: not-allowed !important;
   padding: 16px 0 70px 0;

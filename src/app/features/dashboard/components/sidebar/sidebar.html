@@ -99,7 +99,7 @@
         <!-- Connection String -->
         <button class="flyout-item" id="import-connstring-btn"
           (click)="openConnectionStringModal($event)"
-          [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql'))">
+          [disabled]="importing || (entitlementService.orgHasFeature('db_connect') && !entitlementService.hasMemberAccess('db_connect'))">
           <span class="db-icon conn-string-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
@@ -107,6 +107,7 @@
             </svg>
           </span>
           <span class="item-name">Connection String</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('db_connect')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
         </button>
       </div>
     </div>
@@ -273,6 +274,7 @@
       (click)="openConnectionStringModal($event)"
       [attr.data-tt]="!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'Connect to a database')"
       aria-label="Connect to a database">
+      <div class="sidebar-crown-badge" *ngIf="showCrown('connect')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
       <div class="nav-icon-box">
         <app-icons name="connections" size="20"></app-icons>
       </div>
