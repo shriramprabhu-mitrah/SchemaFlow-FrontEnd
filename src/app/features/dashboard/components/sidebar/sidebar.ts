@@ -108,7 +108,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   isSampleDiagram(): boolean {
-    return this.svc.diagramName === 'Sample Diagram';
+    return this.svc.isSampleDiagram();
   }
 
   isDiagramEmpty(): boolean {
@@ -464,6 +464,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      if (this.isSampleDiagram()) {
+        this.svc.showToast('DBNexus AI is disabled for sample diagrams.', 3000, 'info');
+      }
       return;
     }
     if (!this.entitlementService.canUseFeature('ai_chat')) {

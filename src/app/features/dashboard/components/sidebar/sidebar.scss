@@ -113,6 +113,12 @@
     transition: color 0.15s ease;
   }
 
+  &.connect-item .nav-label {
+    font-size: 10.5px;
+    letter-spacing: -0.2px;
+    text-wrap: auto;
+  }
+
     &:hover {
     z-index: 1000;
     color: #3ec5c1;
@@ -180,8 +186,9 @@
   &.docs-item .nav-label,
   &.logout-item .nav-label,
   &.login-item .nav-label {
-    font-size: 9.5px;
+    font-size: 10.5px;
     letter-spacing: -0.2px;
+    text-wrap: auto;
   }
 }
 
