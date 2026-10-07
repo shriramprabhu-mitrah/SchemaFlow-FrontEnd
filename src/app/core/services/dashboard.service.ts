@@ -133,7 +133,7 @@ export interface PaginatedResult<T> {
 
 export type Tool = 'select' | 'pan';
 export type ContextMenuTarget = '' | 'column' | 'table' | 'connection' | 'empty' | 'tableHeader' | 'groupHeader';
-export type SqlDialect = 'postgres' | 'mysql' | 'mssql';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'mssql';
 
 
 export const SAMPLE = `Table Department {
@@ -5547,6 +5547,17 @@ export class DashboardService {
       decimal: 'DECIMAL(10,2)',
       date: 'DATE'
     },
+    mariadb: {
+      int: 'INT',
+      varchar: 'VARCHAR(255)',
+      text: 'TEXT',
+      datetime: 'DATETIME',
+      boolean: 'TINYINT(1)',
+      bool: 'TINYINT(1)',
+      float: 'FLOAT',
+      decimal: 'DECIMAL(10,2)',
+      date: 'DATE'
+    },
     mssql: {
       int: 'INT',
       varchar: 'VARCHAR(255)',
@@ -5576,7 +5587,7 @@ export class DashboardService {
   }
 
   private quoteIdent(dialect: SqlDialect, name: string): string {
-    if (dialect === 'mysql') return `\`${name}\``;
+    if (dialect === 'mysql' || dialect === 'mariadb') return `\`${name}\``;
     if (dialect === 'mssql') return `[${name}]`;
     return `"${name}"`;
   }
@@ -5595,7 +5606,7 @@ export class DashboardService {
         if (c.pk && c.increment) {
           if (dialect === 'postgres') {
             line = `  ${this.quoteIdent(dialect, c.name)} SERIAL`;
-          } else if (dialect === 'mysql') {
+          } else if (dialect === 'mysql' || dialect === 'mariadb') {
             line += ' AUTO_INCREMENT';
           } else if (dialect === 'mssql') {
             line += ' IDENTITY(1,1)';

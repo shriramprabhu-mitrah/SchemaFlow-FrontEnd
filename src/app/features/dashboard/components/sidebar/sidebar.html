@@ -45,6 +45,18 @@
           
         </button>
 
+        <button class="flyout-item" (click)="openImportDialect('mariadb', $event)"
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql')">
+          <span class="db-icon mariadb-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm4 0h-2v-4h2v4zm-2-8a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 13 9zm-4 0a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 9 9z" />
+            </svg>
+          </span>
+          <span class="item-name">MariaDB</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
+            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button>
+
         <button class="flyout-item" (click)="openImportDialect('sqlserver', $event)"
           [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon mssql-icon">
@@ -196,6 +208,18 @@
           
         </button>
 
+        <button class="flyout-item" (click)="exportSQL('mariadb', $event)"
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          <span class="db-icon mariadb-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm4 0h-2v-4h2v4zm-2-8a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 13 9zm-4 0a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 9 9z" />
+            </svg>
+          </span>
+          <span class="item-name">MariaDB</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
+            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button>
+
         <button class="flyout-item" (click)="exportSQL('sqlserver', $event)"
           [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon mssql-icon">
@@ -240,6 +264,19 @@
           <span class="spinner"></span> Converting...
         </div>
       </div>
+    </div>
+
+    <!-- Connect Button (directly below Export) -->
+    <div class="activity-nav-item connect-item tt-right"
+      [class.active]="false"
+      [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      (click)="openConnectionStringModal($event)"
+      [attr.data-tt]="!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'Connect to a database')"
+      aria-label="Connect to a database">
+      <div class="nav-icon-box">
+        <app-icons name="connections" size="20"></app-icons>
+      </div>
+      <span class="nav-label">Connect</span>
     </div>
 
     <!-- Share Button -->
