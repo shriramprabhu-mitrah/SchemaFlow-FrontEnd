@@ -286,18 +286,18 @@ export class ProfileComponent {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (file) {
-      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
       const fileName = (file.name || '').toLowerCase();
       const hasAllowedExtension =
         fileName.endsWith('.png') ||
         fileName.endsWith('.jpg') ||
         fileName.endsWith('.jpeg') ||
-        fileName.endsWith('.svg');
+        fileName.endsWith('.webp');
 
       const isTypeValid = (file.type && allowedTypes.includes(file.type.toLowerCase())) || hasAllowedExtension;
 
       if (!isTypeValid) {
-        const errorMsg = 'Only PNG, JPG, and SVG files are allowed.';
+        const errorMsg = 'Only PNG, JPG, and WEBP files are allowed.';
         this.dashService.showToast(errorMsg, 4000, 'error');
         input.value = '';
         return;
