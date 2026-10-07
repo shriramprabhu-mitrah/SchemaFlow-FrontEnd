@@ -68,6 +68,12 @@
           
         </button>
 
+        <button class="flyout-item" (click)="openImportDialect('oracle', $event)"
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
+          <span class="db-icon oracle-icon"><app-icons name="oracle" size="14" color="#EA1B22"></app-icons></span>
+          <span class="item-name">Oracle</span>
+        </button>
+
         <!-- SQLite -->
         <button class="flyout-item export-item" id="import-sqlite-btn"
           (click)="openImportModal('sqlite')"
@@ -230,6 +236,13 @@
           <span class="item-name">SQL Server</span>
           <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
           
+        </button>
+
+        <button class="flyout-item" (click)="exportSQL('oracle', $event)"
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
+          <span class="db-icon oracle-icon"><app-icons name="oracle" size="14" color="#EA1B22"></app-icons></span>
+          <span class="item-name">Oracle</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
         </button>
 
         <!-- SQLite -->

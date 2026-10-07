@@ -584,6 +584,12 @@ body.light-theme {
     border: 1px solid rgba(239, 68, 68, 0.15) !important;
   }
 
+  .oracle-badge {
+    background: rgba(234, 27, 34, 0.08) !important;
+    color: #d71920 !important;
+    border: 1px solid rgba(234, 27, 34, 0.15) !important;
+  }
+
   .mongodb-badge {
     background: rgba(16, 185, 129, 0.08) !important;
     color: #059669 !important;
@@ -2026,6 +2032,12 @@ canvas {
   background: rgba(232, 96, 96, 0.15);
   color: #e86060;
   border: 1px solid rgba(232, 96, 96, 0.25);
+}
+
+.oracle-badge {
+  background: rgba(234, 27, 34, 0.15);
+  color: #ea1b22;
+  border: 1px solid rgba(234, 27, 34, 0.25);
 }
 
 .mongodb-badge {

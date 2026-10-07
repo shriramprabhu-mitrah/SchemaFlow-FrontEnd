@@ -41,6 +41,35 @@ function parseSqlServerConnectionString(value: string): ConnectionDetails | null
   };
 }
 
+function parseOracleConnectionString(value: string): ConnectionDetails | null {
+  const jdbcUrl = value.match(/^jdbc:oracle:thin:(?:(?<username>[^/]+)\/(?<password>[^@]*)@)?@?\/\/(?<host>[^:/?#]+)(?::(?<port>\d+))?\/(?<database>[^?;]+)/i);
+  const sidUrl = value.match(/^jdbc:oracle:thin:@?(?<host>[^:/?#]+)(?::(?<port>\d+))?:(?<database>[^?;]+)/i);
+
+  if (jdbcUrl?.groups || sidUrl?.groups) {
+    const groups = jdbcUrl?.groups ?? sidUrl!.groups!;
+    const username = decodeValue(groups['username'] ?? '');
+    return {
+      host: groups['host'],
+      port: Number(groups['port'] || 1521),
+      database: decodeValue(groups['database']),
+      username,
+      password: decodeValue(groups['password'] ?? ''),
+      schema: username || 'public'
+    };
+  }
+
+  if (value.toLowerCase().startsWith('oracle://')) {
+    const details = parseUriConnectionString(value);
+    if (details) {
+      details.port = details.port || 1521;
+      details.schema = details.username || 'public';
+    }
+    return details;
+  }
+
+  return null;
+}
+
 function parseUriConnectionString(value: string): ConnectionDetails | null {
   const urlValue = value.replace(/^jdbc:/i, '');
   const schemeMatch = urlValue.match(/^([a-z][a-z0-9+.-]*):\/\//i);
@@ -54,7 +83,7 @@ function parseUriConnectionString(value: string): ConnectionDetails | null {
   }
 
   const host = url.hostname;
-  const port = url.port ? Number(url.port) : (url.protocol === 'mysql:' ? 3306 : 5432);
+  const port = url.port ? Number(url.port) : (url.protocol === 'mysql:' ? 3306 : url.protocol === 'oracle:' ? 1521 : 5432);
   const pathParts = url.pathname.split('/').filter(Boolean);
   const database = pathParts[0] ? decodeValue(pathParts[0]) : '';
   if (!host) return null;
@@ -73,12 +102,16 @@ function parseUriConnectionString(value: string): ConnectionDetails | null {
   };
 }
 
-export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mssql' | 'sqlite'): ConnectionDetails | null {
+export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mssql' | 'sqlite' | 'oracle'): ConnectionDetails | null {
   const raw = value.trim();
   if (!raw || databaseType === 'sqlite') return null;
 
   if (databaseType === 'mssql' || raw.toLowerCase().startsWith('server=') || raw.toLowerCase().startsWith('data source=')) {
     return parseSqlServerConnectionString(raw);
+  }
+
+  if (databaseType === 'oracle') {
+    return parseOracleConnectionString(raw);
   }
 
   const uriValue = raw.replace(/^jdbc:/i, '');
