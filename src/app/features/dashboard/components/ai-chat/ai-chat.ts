@@ -913,9 +913,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.modelDisclaimerTimer = null;
         }, 8000);
 
-        if (showToast) {
-            this.svc.showToast('Warning: Changing the model may affect response accuracy and token consumption.', 4000, 'info');
-        }
+        // if (showToast) {
+        //     this.svc.showToast('Warning: Changing the model may affect response accuracy and token consumption.', 4000, 'info');
+        // }
     }
 
     dismissModelDisclaimer(): void {
@@ -1112,6 +1112,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     selectCard(card: PromptCard): void {
+        if (this.svc.aiDiffReviewActive()) {
+            this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+            return;
+        }
         this.promptText.set(card.prompt);
         this.sendMessage();
     }
@@ -1150,11 +1154,37 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     onKeyDown(event: KeyboardEvent): void {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
+            if (this.svc.aiDiffReviewActive()) {
+                this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+                return;
+            }
             this.sendMessage();
         }
     }
 
+    onSendClick(): void {
+        if (this.svc.aiDiffReviewActive()) {
+            this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+            return;
+        }
+        if (this.isSendDisabled()) {
+            return;
+        }
+        this.sendMessage();
+    }
+
+    isSendDisabled(): boolean {
+        return !this.promptText().trim() ||
+            this.isThinking() ||
+            this.svc.aiDiffReviewActive() ||
+            (this.isNoApiKeyRequired(this.selectedModel()) && (!this.hasRemainingQuota() || (this.getMaxTokens() > 0 && this.usedTokens() >= this.getMaxTokens())));
+    }
+
     sendMessage(): void {
+        if (this.svc.aiDiffReviewActive()) {
+            this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+            return;
+        }
         if (!this.entitlementService.canUseFeature('ai_chat')) {
             if (!this.entitlementService.orgHasFeature('ai_chat')) {
                 this.svc.showUpgradeModal('ai_chat');

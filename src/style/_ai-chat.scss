@@ -1375,14 +1375,16 @@
             cursor: pointer;
             transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 
-            &:hover:not(:disabled) {
+            &:hover:not(:disabled):not(.disabled) {
               background: #1d4ed8;
               transform: translateY(-1px);
             }
 
-            &:disabled {
+            &:disabled,
+            &.disabled {
               opacity: 0.35;
               cursor: not-allowed;
+              pointer-events: auto;
             }
           }
         }
@@ -2393,7 +2395,7 @@
 
             .send-btn {
               background: #0284c7 !important;
-              &:hover:not(:disabled) {
+              &:hover:not(:disabled):not(.disabled) {
                 background: #0369a1 !important;
               }
             }
