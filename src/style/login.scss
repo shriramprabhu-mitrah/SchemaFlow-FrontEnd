@@ -54,19 +54,36 @@
   max-width: 520px;
 }
 
+.brand-content .header-brand,
 .brand-content .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #ffffff;
-  margin-bottom: 40px;
+  gap: 8px;
+  margin-bottom: 28px;
+  cursor: pointer;
+
+  app-icons {
+    display: inline-flex;
+    align-items: center;
+    color: #3ec5c1;
+  }
+
+  .brand-text,
+  .dbnexus-text {
+    font-size: 46px !important;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    background: linear-gradient(135deg, #3ec5c1, #3b82f6) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
 
   svg {
     color: #3ec5c1;
-    filter: drop-shadow(0 0 8px rgba(62, 197, 193, 0.4));
+    
   }
 }
 

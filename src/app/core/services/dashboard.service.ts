@@ -2932,7 +2932,21 @@ export class DashboardService {
       };
     }) : [];
 
-    const totalTables = parsed.tables.length;
+    let deletedTablesForDiff: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
+    if (this.aiDiffReviewActive()) {
+      const origParsed = this.parseDBML(this.aiDiffOriginalCode());
+      const deletedTableNames = Object.entries(this.tableDiffStatus())
+        .filter(([_, status]) => status === 'deleted')
+        .map(([name]) => name.toLowerCase());
+
+      deletedTablesForDiff = origParsed.tables.filter(ot =>
+        deletedTableNames.includes(ot.name.toLowerCase()) &&
+        !parsed.tables.some(t => t.name.toLowerCase() === ot.name.toLowerCase())
+      );
+    }
+
+    const allCanvasTables = [...parsed.tables, ...deletedTablesForDiff];
+    const totalTables = allCanvasTables.length;
     const numGroupCols = groups.length * 2;
     let perRow = 3;
     if (totalTables > 12) {
@@ -2945,9 +2959,31 @@ export class DashboardService {
       perRow = Math.max(perRow, numGroupCols + 2);
     }
 
-    const colHeights = Array.from({ length: perRow }, () => 60);
     const horizGap = 150;
     const vertGap = 100;
+
+    // Accommodate any existing positions that might already be in higher columns
+    allCanvasTables.forEach(t => {
+      const pos = this.tablePositions[t.name];
+      if (pos) {
+        const col = Math.round((pos.x - 60) / (this.CARD_W + horizGap));
+        if (col >= 0) {
+          perRow = Math.max(perRow, col + 1);
+        }
+      }
+    });
+
+    const colHeights = Array.from({ length: perRow }, () => 60);
+
+    // Register all tables that ALREADY have positions first so heights/columns are occupied
+    allCanvasTables.forEach(t => {
+      const pos = this.tablePositions[t.name];
+      if (pos) {
+        const height = this.getTableHeight(t.columns);
+        const col = Math.min(perRow - 1, Math.max(0, Math.round((pos.x - 60) / (this.CARD_W + horizGap))));
+        colHeights[col] = Math.max(colHeights[col], pos.y + height + vertGap);
+      }
+    });
 
     parsed.tables.forEach((t) => {
       const height = this.getTableHeight(t.columns);
@@ -2971,10 +3007,25 @@ export class DashboardService {
         const y = colHeights[col];
         this.tablePositions[t.name] = { x, y };
         colHeights[col] += height + vertGap;
-      } else {
-        const pos = this.tablePositions[t.name];
-        const col = Math.min(perRow - 1, Math.max(0, Math.round((pos.x - 60) / (this.CARD_W + horizGap))));
-        colHeights[col] = Math.max(colHeights[col], pos.y + height + vertGap);
+      }
+    });
+
+    deletedTablesForDiff.forEach((ot) => {
+      const height = this.getTableHeight(ot.columns);
+      const width = this.CARD_W;
+      ot.width = width;
+      ot.height = height;
+      if (!this.tablePositions[ot.name]) {
+        let minCol = numGroupCols;
+        for (let c = numGroupCols; c < perRow; c++) {
+          if (colHeights[c] < colHeights[minCol]) {
+            minCol = c;
+          }
+        }
+        const x = 60 + minCol * (this.CARD_W + horizGap);
+        const y = colHeights[minCol];
+        this.tablePositions[ot.name] = { x, y };
+        colHeights[minCol] += height + vertGap;
       }
     });
 
@@ -3092,13 +3143,8 @@ export class DashboardService {
     });
 
     if (this.aiDiffReviewActive()) {
-      const origParsed = this.parseDBML(this.aiDiffOriginalCode());
-      const deletedTableNames = Object.entries(this.tableDiffStatus())
-        .filter(([_, status]) => status === 'deleted')
-        .map(([name]) => name.toLowerCase());
-
-      origParsed.tables.forEach(ot => {
-        if (deletedTableNames.includes(ot.name.toLowerCase()) && !this.tables.some(t => t.name.toLowerCase() === ot.name.toLowerCase())) {
+      deletedTablesForDiff.forEach(ot => {
+        if (!this.tables.some(t => t.name.toLowerCase() === ot.name.toLowerCase())) {
           const pos = this.tablePositions[ot.name] || { x: 60, y: 60 };
           const height = this.getTableHeight(ot.columns);
           const colY: Record<string, number> = {};
@@ -3120,6 +3166,8 @@ export class DashboardService {
         }
       });
     }
+
+    this.resolveTableOverlaps(groupBoxes, perRow);
 
     const prevByKey = new Map(
       this.refs.map((r) => [
@@ -3223,6 +3271,154 @@ export class DashboardService {
 
     this.updateEditorErrors();
     this.checkInvalidRefsTimeout();
+  }
+
+  private resolveTableOverlaps(
+    groupBoxes: { left: number; right: number; top: number; bottom: number }[] = [],
+    perRow = 3
+  ): void {
+    if (!this.tables || this.tables.length <= 1) return;
+
+    const minGapX = 40;
+    const minGapY = 40;
+    const horizGap = 150;
+    const vertGap = 100;
+    const colStep = this.CARD_W + horizGap;
+
+    const diffStatus = this.tableDiffStatus();
+
+    const boxesOverlap = (
+      x1: number, y1: number, w1: number, h1: number,
+      x2: number, y2: number, w2: number, h2: number
+    ): boolean => {
+      return (
+        x1 < x2 + w2 + minGapX &&
+        x1 + w1 + minGapX > x2 &&
+        y1 < y2 + h2 + minGapY &&
+        y1 + h1 + minGapY > y2
+      );
+    };
+
+    const overlapsGroup = (
+      tName: string,
+      x: number, y: number, w: number, h: number
+    ): boolean => {
+      const isMember = this.groups.some(g => g.tables.includes(tName));
+      if (isMember) return false;
+      return groupBoxes.some(b =>
+        x < b.right + 20 && x + w + 20 > b.left &&
+        y < b.bottom + 20 && y + h + 20 > b.top
+      );
+    };
+
+    const shouldMoveSecond = (t1: TableDef, t2: TableDef): boolean => {
+      const s1 = diffStatus[t1.name] || diffStatus[t1.name.toLowerCase()];
+      const s2 = diffStatus[t2.name] || diffStatus[t2.name.toLowerCase()];
+
+      if (s1 === 'added' && s2 !== 'added') return false;
+      if (s2 === 'added' && s1 !== 'added') return true;
+
+      const t1InGroup = this.groups.some(g => g.tables.includes(t1.name));
+      const t2InGroup = this.groups.some(g => g.tables.includes(t2.name));
+      if (t1InGroup && !t2InGroup) return true;
+      if (!t1InGroup && t2InGroup) return false;
+
+      return true;
+    };
+
+    let hasCollisions = true;
+    let iteration = 0;
+    const maxIterations = 35;
+
+    while (hasCollisions && iteration < maxIterations) {
+      hasCollisions = false;
+      iteration++;
+
+      for (let i = 0; i < this.tables.length; i++) {
+        for (let j = i + 1; j < this.tables.length; j++) {
+          const t1 = this.tables[i];
+          const t2 = this.tables[j];
+
+          const t1W = t1.width || this.CARD_W;
+          const t1H = t1.height || this.getTableHeight(t1.columns);
+          const t2W = t2.width || this.CARD_W;
+          const t2H = t2.height || this.getTableHeight(t2.columns);
+
+          if (boxesOverlap(t1.x, t1.y, t1W, t1H, t2.x, t2.y, t2W, t2H)) {
+            hasCollisions = true;
+            const moveT2 = shouldMoveSecond(t1, t2);
+            const toMove = moveT2 ? t2 : t1;
+            const stationary = moveT2 ? t1 : t2;
+            const moveW = toMove.width || this.CARD_W;
+            const moveH = toMove.height || this.getTableHeight(toMove.columns);
+
+            const otherTables = this.tables.filter(t => t.name.toLowerCase() !== toMove.name.toLowerCase());
+
+            let bestX = toMove.x;
+            let bestY = toMove.y;
+            let bestScore = Infinity;
+            let found = false;
+
+            const maxColToSearch = Math.max(perRow + 2, 8);
+            for (let c = 0; c <= maxColToSearch; c++) {
+              const candX = 60 + c * colStep;
+              const candYs: number[] = [60];
+
+              otherTables.forEach(ot => {
+                const otW = ot.width || this.CARD_W;
+                const otH = ot.height || this.getTableHeight(ot.columns);
+                if (candX < ot.x + otW + minGapX && candX + moveW + minGapX > ot.x) {
+                  candYs.push(ot.y + otH + vertGap);
+                }
+              });
+
+              candYs.sort((a, b) => a - b);
+
+              for (const candY of candYs) {
+                const collidesWithOther = otherTables.some(ot => {
+                  const otW = ot.width || this.CARD_W;
+                  const otH = ot.height || this.getTableHeight(ot.columns);
+                  return boxesOverlap(candX, candY, moveW, moveH, ot.x, ot.y, otW, otH);
+                });
+
+                if (!collidesWithOther && !overlapsGroup(toMove.name, candX, candY, moveW, moveH)) {
+                  const score = (c >= perRow ? (c - perRow + 1) * 300 : 0) + c * 50 + candY;
+                  if (score < bestScore) {
+                    bestScore = score;
+                    bestX = candX;
+                    bestY = candY;
+                    found = true;
+                  }
+                }
+              }
+            }
+
+            if (!found) {
+              let maxBottom = 60;
+              otherTables.forEach(ot => {
+                const otH = ot.height || this.getTableHeight(ot.columns);
+                if (ot.y + otH > maxBottom) maxBottom = ot.y + otH;
+              });
+              bestX = toMove.x;
+              bestY = maxBottom + vertGap;
+            }
+
+            toMove.x = bestX;
+            toMove.y = bestY;
+            this.tablePositions[toMove.name] = { x: bestX, y: bestY };
+            if (this.tablePositions[toMove.name.toLowerCase()]) {
+              this.tablePositions[toMove.name.toLowerCase()] = { x: bestX, y: bestY };
+            }
+            break;
+          }
+        }
+        if (hasCollisions) break;
+      }
+    }
+
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
+    }
   }
 
   /* ============ ACTIONS ============ */
