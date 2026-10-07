@@ -22,7 +22,7 @@
       <div class="workspace-action-buttons">
         <button class="btn-workspace-action primary-action tt tt-right" style="position: relative;"
           (click)="!entitlementService.isMember() && (entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces'))"
-          [class.disabled]="entitlementService.isMember() || (entitlementService.orgHasFeature('create_workspaces') && !entitlementService.canUseFeature('create_workspaces'))"
+          [class.disabled]="entitlementService.isMember() || (entitlementService.orgHasFeature('create_workspaces') && !entitlementService.hasMemberAccess('create_workspaces'))"
           data-tt="Create New Workspace">
           <span class="plus-icon">+</span>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Create New
@@ -45,7 +45,7 @@
 
         <button class="nav-item" [class.active]="activeTab === 'shared'" style="position: relative;"
           (click)="entitlementService.canUseFeature('share_diagram') ? openSharedTab() : svc.showUpgradeModal('share_diagram')"
-          [class.disabled]="entitlementService.orgHasFeature('share_diagram') && !entitlementService.canUseFeature('share_diagram')">
+          [class.disabled]="entitlementService.orgHasFeature('share_diagram') && !entitlementService.hasMemberAccess('share_diagram')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
             <polyline points="16 6 12 2 8 6" />

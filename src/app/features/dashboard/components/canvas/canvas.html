@@ -193,11 +193,11 @@
     (blur)="commitInlineEdit()" (mousedown)="$event.stopPropagation()" />
 
   <div id="create-table-control" *ngIf="!svc.isPublicViewer"
-    [class.disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.canUseFeature('edit_diagram')">
+    [class.disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('edit_diagram')">
     <app-button variant="toolbar" customClass="create-table-button"
       (onClick)="entitlementService.canUseFeature('edit_diagram') ? createTable() : svc.showUpgradeModal()"
-      [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.canUseFeature('edit_diagram')"
-      [tooltip]="!entitlementService.canUseFeature('edit_diagram') ? '' : (isSampleDiagram() ? 'Create table is disabled for sample diagrams' : (!auth.isLoggedIn() ? 'Sign in to create table' : ''))"
+      [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('edit_diagram')"
+      [tooltip]="!entitlementService.hasMemberAccess('edit_diagram') ? '' : (isSampleDiagram() ? 'Create table is disabled for sample diagrams' : (!auth.isLoggedIn() ? 'Sign in to create table' : ''))"
       tooltipPosition="bottom">
       <span class="create-table-icon"><app-icons name="plus" size="17"></app-icons></span>
       <span>Create table</span>
@@ -208,9 +208,9 @@
   <div id="layout-control" *ngIf="!svc.isPublicViewer">
     <app-button [variant]="svc.showDiagramViews ? 'toolbar-active' : 'toolbar'"
       (onClick)="toggleDiagramViews(false, $event)"
-      [tooltip]="!entitlementService.canUseFeature('digram_view') ? '' : (isSampleDiagram() ? 'Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Diagram Views' : 'Diagram Views'))"
+      [tooltip]="!entitlementService.hasMemberAccess('digram_view') ? '' : (isSampleDiagram() ? 'Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Diagram Views' : 'Diagram Views'))"
       tooltipPosition="left" style="position: relative;"
-      [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.canUseFeature('digram_view')">
+      [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('digram_view')">
       <svg viewBox="0 0 24 24" style="width: 17px; height: 17px;" stroke="currentColor" stroke-width="2.2"
         stroke-linecap="round" stroke-linejoin="round" fill="none">
         <polygon points="12 2 2 7 12 12 22 7 12 2" />
@@ -334,7 +334,7 @@
           </button>
           <button type="button" class="toggle-option" [class.active]="tableModal.isGroup"
             (click)="toggleGroupOption(true)" style="display: flex; align-items: center; gap: 4px;"
-            [disabled]="!entitlementService.canUseFeature('table_group')">
+            [disabled]="!entitlementService.hasMemberAccess('table_group')">
             Group
             
           </button>
@@ -685,9 +685,9 @@
       <ng-container *ngIf="!svc.isReadOnly">
         <app-button variant="extra"
           (onClick)="entitlementService.canUseFeature('diagram_notes') ? addNoteAtCenter() : svc.showUpgradeModal()"
-          [tooltip]="!entitlementService.canUseFeature('diagram_notes') ? '' : (isSampleDiagram() ? 'Add sticky note (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to add sticky note' : 'Add sticky note — ' + svc.notes.length))"
+          [tooltip]="!entitlementService.hasMemberAccess('diagram_notes') ? '' : (isSampleDiagram() ? 'Add sticky note (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to add sticky note' : 'Add sticky note — ' + svc.notes.length))"
           style="position: relative;"
-          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.canUseFeature('diagram_notes')">
+          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('diagram_notes')">
           <svg viewBox="0 0 24 24" style="width:16px;height:16px;" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4h16v10l-6 6H4z"></path>
@@ -702,9 +702,9 @@
         <!-- Detail Level Trigger Button -->
         <app-button [variant]="showDetailLevelMenu ? 'extra-active' : 'extra'" customClass="detail-level-btn"
           (onClick)="entitlementService.canUseFeature('diagram_detailing') ? toggleDetailLevelMenu($event) : svc.showUpgradeModal()"
-          [tooltip]="!entitlementService.canUseFeature('diagram_detailing') ? '' : (isSampleDiagram() ? 'Detail level (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to change detail level' : 'Change diagram detail level'))"
+          [tooltip]="!entitlementService.hasMemberAccess('diagram_detailing') ? '' : (isSampleDiagram() ? 'Detail level (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to change detail level' : 'Change diagram detail level'))"
           style="position: relative;"
-          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.canUseFeature('diagram_detailing')">
+          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('diagram_detailing')">
           <div style="display: flex; align-items: center; padding: 0 4px;">
             <app-icons [name]="getCurrentDetailLevelIcon()" size="15" style="display: flex;"></app-icons>
             <span style="margin: 0 6px 0 6px; font-size: 12px; font-weight: 500; white-space: nowrap;">{{
@@ -716,9 +716,9 @@
         </app-button>
         <app-button variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
           (onClick)="toggleDiagramViews(true, $event)"
-          [tooltip]="!entitlementService.canUseFeature('digram_view') ? '' : (isSampleDiagram() ? 'Search / Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Search / Diagram Views' : 'Search / Diagram Views'))"
+          [tooltip]="!entitlementService.hasMemberAccess('digram_view') ? '' : (isSampleDiagram() ? 'Search / Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Search / Diagram Views' : 'Search / Diagram Views'))"
           style="position: relative;"
-          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.canUseFeature('digram_view')">
+          [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('digram_view')">
           <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;" fill="none" stroke="currentColor"
             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>

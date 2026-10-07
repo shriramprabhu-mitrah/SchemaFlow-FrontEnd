@@ -392,7 +392,7 @@
     <!-- Footer -->
     <div class="import-modal-footer">
       <app-button variant="none" customClass="import-btn-cancel" id="import-cancel-btn" (onClick)="closeImportModal()"
-        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">Cancel</app-button>
+        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql'))">Cancel</app-button>
       <app-button variant="none" customClass="import-btn-convert" id="import-convert-btn" (onClick)="submitImport()"
         [disabled]="importing || !importSqlText.trim() || !!importValidationError || importValidating">
         <span *ngIf="importing">

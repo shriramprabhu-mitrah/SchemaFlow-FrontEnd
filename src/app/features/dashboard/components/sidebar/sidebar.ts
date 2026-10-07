@@ -157,12 +157,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
   isMemberRestricted(featureKeys: string[]): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     // If the feature is not there in memberFeatureAccess just disable the button in ui
-    return featureKeys.every(k => !this.entitlementService.canUseFeature(k));
+    return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k));
   }
 
   // ============ IMPORT ============
 
   toggleImportMenu(e?: Event): void {
+    
+    if (this.isMemberRestricted(['import_sql'])) return;
     
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
@@ -223,6 +225,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ EXPORT ============
 
   toggleExportMenu(e?: Event): void {
+    
+    if (this.isMemberRestricted(['export_image', 'export_sql'])) return;
     
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
@@ -324,6 +328,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   openShare(e?: Event): void {
     
+    if (this.isMemberRestricted(['share_diagram'])) return;
+    
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -360,6 +366,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleVersionHistory(e?: Event): void {
     
+    if (this.isMemberRestricted(['version_history'])) return;
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -390,6 +398,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ INSPECTOR (TABLES / REFS / DBML) ============
 
   toggleInspector(tab: 'tables' | 'refs', e?: Event): void {
+    if (this.isMemberRestricted(['table_relationships'])) return;
     
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
@@ -435,6 +444,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   toggleAiChat(e?: Event): void {
+    
+    if (this.isMemberRestricted(['ai_chat'])) return;
     
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
@@ -498,6 +509,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   toggleDiffChecker(e?: Event): void {
     
+    if (this.isMemberRestricted(['code_compare'])) return;
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     this.svc.showDocs = false;
@@ -528,6 +541,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ VIEW DOCS ============
 
   toggleDocs(e?: Event): void {
+    
+    if (this.isMemberRestricted(['document_view'])) return;
     
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
