@@ -139,20 +139,38 @@
     }
   }
 
-  .hero-content {
+  .hero-content,
+  .profile-hero-content {
     position: relative;
     z-index: 2;
-    padding: 32px 32px 24px;
-    display: flex;
-    align-items: center;
-    gap: 28px;
-    flex-wrap: wrap;
+    padding: 26px 28px 16px;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 22px;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100%;
+    box-sizing: border-box;
 
-    @media (max-width: 768px) {
-      padding: 24px 20px 20px;
-      gap: 20px;
+    @media (max-width: 640px) {
+      padding: 20px 16px 14px;
+      gap: 18px;
+    }
+  }
+
+  /* Top Row: Avatar & Details */
+  .hero-main-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+    width: 100%;
+
+    @media (max-width: 480px) {
       flex-direction: column;
-      align-items: flex-start;
+      gap: 12px;
     }
   }
 
@@ -163,16 +181,16 @@
 
     .avatar-ring-wrap {
       position: relative;
-      width: 96px;
-      height: 96px;
+      width: 76px;
+      height: 76px;
       border-radius: 50%;
       cursor: pointer;
-      box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.35), 0 8px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.35), 0 6px 20px rgba(0, 0, 0, 0.35);
       transition: all 0.25s ease;
 
       &:hover {
         transform: scale(1.03);
-        box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.6), 0 10px 28px rgba(62, 197, 193, 0.2);
+        box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.6), 0 8px 24px rgba(62, 197, 193, 0.2);
 
         .avatar-overlay-badge {
           background: #3ec5c1;
@@ -206,7 +224,7 @@
         justify-content: center;
         background: linear-gradient(135deg, #3ec5c1 0%, #2563eb 100%);
         color: #ffffff;
-        font-size: 34px;
+        font-size: 26px;
         font-weight: 700;
         letter-spacing: -0.5px;
         user-select: none;
@@ -215,10 +233,10 @@
 
     .avatar-overlay-badge {
       position: absolute;
-      bottom: 2px;
-      right: 2px;
-      width: 30px;
-      height: 30px;
+      bottom: 0px;
+      right: 0px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       background: #0d1626;
       border: 2px solid rgba(62, 197, 193, 0.6);
@@ -227,49 +245,60 @@
       align-items: center;
       justify-content: center;
       transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
   }
 
   /* Identity Details */
   .hero-details {
     flex: 1;
-    min-width: 240px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding-top: 2px;
 
     .hero-name-row {
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: flex-start;
+      gap: 10px;
       flex-wrap: wrap;
+      text-align: left;
 
       .hero-display-name {
         margin: 0;
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 700;
         color: #ffffff;
         letter-spacing: -0.3px;
+        line-height: 1.25;
+        text-align: left;
       }
     }
 
     .hero-email {
-      margin: 4px 0 14px;
-      font-size: 13.5px;
+      margin: 3px 0 10px;
+      font-size: 13px;
       color: #94a3b8;
+      text-align: left;
     }
 
     .hero-badges-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: flex-start;
+      gap: 8px;
       flex-wrap: wrap;
 
       .badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        font-size: 12px;
+        gap: 5px;
+        font-size: 11.5px;
         font-weight: 600;
-        padding: 4px 10px;
+        padding: 3.5px 9px;
         border-radius: 6px;
         transition: all 0.2s ease;
       }
@@ -298,22 +327,20 @@
   .hero-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
-
-    @media (max-width: 768px) {
-      width: 100%;
-    }
+    gap: 8px;
+    flex-wrap: wrap;
 
     .btn-hero-action {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      height: 38px;
-      padding: 0 16px;
-      border-radius: 9px;
-      font-size: 13px;
+      gap: 6px;
+      height: 36px;
+      padding: 0 15px;
+      border-radius: 8px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.2s ease;
 
       &.primary {
@@ -1332,10 +1359,24 @@ html.light-theme {
         color: #64748b;
       }
 
-      .hero-badges-row .badge-account-type {
-        background: #f1f5f9;
-        border-color: #e2e8f0;
-        color: #475569;
+      .hero-badges-row {
+        .badge-role {
+          background: rgba(139, 92, 246, 0.1);
+          border-color: rgba(139, 92, 246, 0.25);
+          color: #7c3aed;
+        }
+
+        .badge-plan {
+          background: rgba(14, 165, 233, 0.1);
+          border-color: rgba(14, 165, 233, 0.28);
+          color: #0284c7;
+        }
+
+        .badge-account-type {
+          background: #f1f5f9;
+          border-color: #e2e8f0;
+          color: #475569;
+        }
       }
     }
 
@@ -1684,10 +1725,15 @@ html.light-theme {
   }
 
   .profile-hero-card {
-    .hero-content {
-      align-items: flex-start;
+    .hero-content,
+    .profile-hero-content {
+      align-items: flex-start !important;
+      gap: 18px;
+      padding: 18px 16px 14px;
+    }
+
+    .hero-main-row {
       gap: 14px;
-      padding: 20px 16px 18px;
     }
 
     .hero-details {
@@ -1701,16 +1747,15 @@ html.light-theme {
     }
 
     .hero-actions {
-      flex-direction: column;
-      align-items: stretch;
+      flex-direction: row;
+      align-items: center;
       gap: 8px;
 
       .btn-hero-action {
-        width: 100%;
+        width: auto;
         justify-content: center;
       }
     }
-
   }
 
   .profile-tabs-nav {

@@ -101,6 +101,10 @@ export class ProfileComponent {
         this.previewUrl.set(this.sanitizer.bypassSecurityTrustUrl(savedPic));
         this.base64Image.set(savedPic);
         this.initialBase64Image.set(savedPic);
+      } else {
+        this.previewUrl.set(null);
+        this.base64Image.set('');
+        this.initialBase64Image.set('');
       }
 
       this.isLoading.set(true);
@@ -128,10 +132,16 @@ export class ProfileComponent {
             }
 
             const profilePic = user.profilepicture || user.profilePicture;
-            if (profilePic) {
+            if (profilePic && profilePic.trim() !== '') {
               this.previewUrl.set(this.sanitizer.bypassSecurityTrustUrl(profilePic));
               this.base64Image.set(profilePic);
               this.initialBase64Image.set(profilePic);
+              this.auth.setUserProfilePicture(profilePic);
+            } else {
+              this.previewUrl.set(null);
+              this.base64Image.set('');
+              this.initialBase64Image.set('');
+              this.auth.setUserProfilePicture('');
             }
           }
         },
@@ -208,9 +218,7 @@ export class ProfileComponent {
 
   saveProfile(): void {
     if (!this.displayName().trim()) {
-      this.errorMessage.set('Display name cannot be empty.');
-      this.showErrorMessage.set(true);
-      setTimeout(() => this.showErrorMessage.set(false), 3000);
+      this.dashService.showToast('Display name cannot be empty.', 3000, 'error');
       return;
     }
 
@@ -224,40 +232,81 @@ export class ProfileComponent {
     this.auth.updateProfile(payload).subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        const newPic = res?.data?.profilepicture || res?.data?.profilePicture;
-        if (newPic) {
-          this.auth.setUserProfilePicture(newPic);
-        } else if (this.base64Image() === '') {
-          this.auth.setUserProfilePicture('');
-        }
+        this.dashService.showToast('Your profile has been saved successfully!', 3000, 'success');
 
-        this.initialDisplayName.set(this.displayName().trim());
-        this.initialBase64Image.set(this.base64Image());
-        this.showSuccessMessage.set(true);
-        setTimeout(() => {
-          this.showSuccessMessage.set(false);
-        }, 3000);
+        // Immediately call api/user-details to refresh user details and reflect removed/updated profile picture
+        this.auth.getUserDetails().subscribe({
+          next: (userRes) => {
+            const user = userRes?.data || userRes;
+            if (user) {
+              const name = user.username || user.userName || user.name || (this.email() ? this.email().split('@')[0] : '');
+              this.displayName.set(name);
+              this.initialDisplayName.set(name);
+
+              const email = user.email || this.email();
+              this.email.set(email);
+
+              const profilePic = user.profilepicture || user.profilePicture;
+              if (profilePic && profilePic.trim() !== '') {
+                this.previewUrl.set(this.sanitizer.bypassSecurityTrustUrl(profilePic));
+                this.base64Image.set(profilePic);
+                this.initialBase64Image.set(profilePic);
+                this.auth.setUserProfilePicture(profilePic);
+              } else {
+                this.previewUrl.set(null);
+                this.base64Image.set('');
+                this.initialBase64Image.set('');
+                this.auth.setUserProfilePicture('');
+              }
+              this.cdr.detectChanges();
+            }
+          },
+          error: (err) => {
+            console.error('Failed to refresh user details after profile update:', err);
+            if (!this.base64Image() || this.base64Image() === '') {
+              this.previewUrl.set(null);
+              this.auth.setUserProfilePicture('');
+            }
+            this.initialDisplayName.set(this.displayName().trim());
+            this.initialBase64Image.set(this.base64Image());
+            this.cdr.detectChanges();
+          }
+        });
       },
       error: (err) => {
         this.isLoading.set(false);
         console.error('Failed to update profile:', err);
         const msg = err?.error?.message || err?.message || 'Failed to update profile.';
-        this.errorMessage.set(msg);
-        this.showErrorMessage.set(true);
-        setTimeout(() => {
-          this.showErrorMessage.set(false), 4000;
-        });
+        this.dashService.showToast(msg, 4000, 'error');
       }
     });
   }
 
   onFileSelected(event: any): void {
-    const file = event.target.files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (file) {
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+      const fileName = (file.name || '').toLowerCase();
+      const hasAllowedExtension =
+        fileName.endsWith('.png') ||
+        fileName.endsWith('.jpg') ||
+        fileName.endsWith('.jpeg') ||
+        fileName.endsWith('.svg');
+
+      const isTypeValid = (file.type && allowedTypes.includes(file.type.toLowerCase())) || hasAllowedExtension;
+
+      if (!isTypeValid) {
+        const errorMsg = 'Only PNG, JPG, and SVG files are allowed.';
+        this.dashService.showToast(errorMsg, 4000, 'error');
+        input.value = '';
+        return;
+      }
+
       if (file.size > 5 * 1024 * 1024) {
-        this.errorMessage.set('Image size exceeds 5MB limit. Please choose a smaller file.');
-        this.showErrorMessage.set(true);
-        setTimeout(() => this.showErrorMessage.set(false), 4000);
+        const errorMsg = 'Image size exceeds 5MB limit. Please choose a smaller file.';
+        this.dashService.showToast(errorMsg, 4000, 'error');
+        input.value = '';
         return;
       }
 
@@ -269,12 +318,14 @@ export class ProfileComponent {
         this.base64Image.set(e.target.result);
       };
       reader.readAsDataURL(file);
+      input.value = '';
     }
   }
 
   removePhoto(): void {
     this.previewUrl.set(null);
     this.base64Image.set('');
+    this.auth.setUserProfilePicture('');
   }
 
   getInitials(): string {
@@ -316,11 +367,48 @@ export class ProfileComponent {
   }
 
   goToDashboard(): void {
-    this.router.navigate(['/dashboard']);
+    this.auth.getUserDetails().subscribe({
+      next: (res) => {
+        const user = res?.data || res;
+        if (user) {
+          const profilePic = user.profilepicture || user.profilePicture;
+          if (profilePic && profilePic.trim() !== '') {
+            this.auth.setUserProfilePicture(profilePic);
+          } else {
+            this.auth.setUserProfilePicture('');
+          }
+        }
+        this.router.navigate(['/dashboard']);
+      },
+      error: () => {
+        this.router.navigate(['/dashboard']);
+      }
+    });
   }
 
   goBack(): void {
-    this.location.back();
+    this.auth.getUserDetails().subscribe({
+      next: (res) => {
+        const user = res?.data || res;
+        if (user) {
+          const profilePic = user.profilepicture || user.profilePicture;
+          if (profilePic && profilePic.trim() !== '') {
+            this.auth.setUserProfilePicture(profilePic);
+          } else {
+            this.auth.setUserProfilePicture('');
+          }
+          const email = user.email;
+          if (email) {
+            this.auth.setUserEmail(email);
+          }
+        }
+        this.location.back();
+      },
+      error: (err) => {
+        console.error('Failed to get user details on back:', err);
+        this.location.back();
+      }
+    });
   }
 
   showCancelModal = false;
@@ -328,9 +416,7 @@ export class ProfileComponent {
   requestCancellation(): void {
     const subId = this.subscriptionId();
     if (!subId) {
-      this.errorMessage.set('Could not find active subscription to cancel.');
-      this.showErrorMessage.set(true);
-      setTimeout(() => this.showErrorMessage.set(false), 3000);
+      this.dashService.showToast('Could not find active subscription to cancel.', 3000, 'error');
       return;
     }
     this.showCancelModal = true;

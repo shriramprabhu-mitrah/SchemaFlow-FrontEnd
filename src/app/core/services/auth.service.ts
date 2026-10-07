@@ -118,15 +118,20 @@ export class AuthService {
     }
   }
 
-  setUserProfilePicture(profilePicture: string): void {
-    if (isPlatformBrowser(this.platformId) && profilePicture) {
-      localStorage.setItem('user_profile_picture', profilePicture);
+  setUserProfilePicture(profilePicture: string | null | undefined): void {
+    if (isPlatformBrowser(this.platformId)) {
+      if (profilePicture && typeof profilePicture === 'string' && profilePicture.trim() !== '') {
+        localStorage.setItem('user_profile_picture', profilePicture);
+      } else {
+        localStorage.removeItem('user_profile_picture');
+      }
     }
   }
 
   getUserProfilePicture(): string | null {
     if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('user_profile_picture');
+      const pic = localStorage.getItem('user_profile_picture');
+      return pic && pic.trim() !== '' ? pic : null;
     }
     return null;
   }
