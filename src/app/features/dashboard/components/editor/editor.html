@@ -76,7 +76,7 @@
       <ng-container *ngIf="!svc.aiDiffReviewActive()">
         <div id="gutter" [style.transform]="svc.gutterTransform">{{ svc.lineNumbers.join('\n') }}</div>
         <pre #highlight id="highlight" [innerHTML]="colorize(displayCode)"></pre>
-        <textarea id="codearea" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
+        <textarea id="codearea" wrap="off" spellcheck="false" autocapitalize="off" autocorrect="off" [value]="displayCode"
           [readonly]="!isLoggedIn || svc.isReadOnly || isSampleDiagram() || svc.aiDiffReviewActive()" (click)="onCursorEvent($event)"
           (keyup)="onCursorEvent($event)" (mousemove)="onCodeAreaMouseMove($event)"
           (mouseleave)="onCodeAreaMouseLeave()" (blur)="onCodeAreaBlur()" (input)="onTextInput($event)"

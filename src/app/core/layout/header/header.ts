@@ -713,9 +713,9 @@ export class HeaderComponent implements OnInit {
   }
 
 openConnectionStringModal(): void {
-    if (!this.entitlementService.canUseFeature('import_sql')) {
-      if (!this.entitlementService.orgHasFeature('import_sql')) {
-        this.svc.showUpgradeModal('import_sql');
+    if (!this.entitlementService.canUseFeature('db_connect')) {
+      if (!this.entitlementService.orgHasFeature('db_connect')) {
+        this.svc.showUpgradeModal('db_connect');
       }
       return;
     }

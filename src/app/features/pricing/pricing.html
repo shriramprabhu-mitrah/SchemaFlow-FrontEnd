@@ -250,14 +250,6 @@
               <span>{{ getFeatureName(ent) }}</span>
             </li>
           </ul>
-          <button *ngIf="hasMoreFeatures(plan)" type="button" class="btn-show-features"
-            [style.color]="plan.highlight_color || '#3ec5c1'" (click)="togglePlanFeatures(plan)">
-            <span>{{ isPlanExpanded(plan) ? 'Show less' : 'Show more' }}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round" [class.rotated]="isPlanExpanded(plan)">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
         </div>
 
         <!-- ADD-ONS SECTION -->
