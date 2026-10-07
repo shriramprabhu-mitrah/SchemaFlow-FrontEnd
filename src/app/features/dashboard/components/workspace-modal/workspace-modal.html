@@ -210,7 +210,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let d of diagrams" [class.active]="d.id === svc.diagramId()">
+              <tr *ngFor="let d of diagrams" [class.active]="d.id === svc.diagramId()" [class.row-menu-open]="openMenuId === d.id">
                 <td class="col-name">
                   <div class="diagram-name-cell">
                     <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -232,7 +232,7 @@
                 <td class="col-actions" (click)="$event.stopPropagation()">
                   <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
                     [style.position]="openMenuId === d.id ? 'relative' : 'static'">
-                    <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
+                    <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id" [class.menu-open]="openMenuId === d.id"
                       (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2.5">
@@ -313,7 +313,7 @@
           <div class="page-size-selector">
             <div class="custom-select-container">
               <button class="custom-select-btn"
-                (click)="showDiagramsLimitDropdown = !showDiagramsLimitDropdown; $event.stopPropagation()">
+                (click)="toggleLimitDropdown('diagrams', $event)">
                 <span>{{ diagramsLimit }}</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -381,7 +381,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let d of sharedDiagrams">
+              <tr *ngFor="let d of sharedDiagrams" [class.row-menu-open]="openMenuId === d.diagramid">
                 <td class="col-name">
                   <div class="diagram-name-cell">
                     <svg *ngIf="d.ispublic" class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -420,7 +420,7 @@
                 <td class="col-actions" (click)="$event.stopPropagation()">
                   <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.diagramid ? 99999 : 'auto'"
                     [style.position]="openMenuId === d.diagramid ? 'relative' : 'static'">
-                    <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.diagramid"
+                    <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.diagramid" [class.menu-open]="openMenuId === d.diagramid"
                       (click)="toggleRowMenu(d.diagramid, $event)"
                       [attr.data-tt]="openMenuId !== d.diagramid ? 'Options' : null">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -504,7 +504,7 @@
           <div class="page-size-selector">
             <div class="custom-select-container">
               <button type="button" class="custom-select-btn"
-                (click)="showSharedLimitDropdown = !showSharedLimitDropdown; $event.stopPropagation()">
+                (click)="toggleLimitDropdown('shared', $event)">
                 <span>{{ sharedDiagramsLimit }}</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -578,7 +578,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let ws of svc.workspaces()">
+                <tr *ngFor="let ws of svc.workspaces()" [class.row-menu-open]="openWorkspaceMenuId === ws.id">
                   <td class="col-name">
                     <div class="diagram-name-cell">
                       <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -609,7 +609,7 @@
                   <td class="col-actions" (click)="$event.stopPropagation()">
                     <div class="action-menu-wrap" [style.zIndex]="openWorkspaceMenuId === ws.id ? 99999 : 'auto'"
                       [style.position]="openWorkspaceMenuId === ws.id ? 'relative' : 'static'">
-                      <button class="three-dots-btn tt-left" [class.tt]="openWorkspaceMenuId !== ws.id"
+                      <button class="three-dots-btn tt-left" [class.tt]="openWorkspaceMenuId !== ws.id" [class.menu-open]="openWorkspaceMenuId === ws.id"
                         (click)="toggleWorkspaceMenu(ws.id, $event)"
                         [attr.data-tt]="openWorkspaceMenuId !== ws.id ? 'Options' : null">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -763,7 +763,7 @@
             <div class="page-size-selector">
               <div class="custom-select-container">
                 <button class="custom-select-btn"
-                  (click)="showWorkspacesLimitDropdown = !showWorkspacesLimitDropdown; $event.stopPropagation()">
+                  (click)="toggleLimitDropdown('workspaces', $event)">
                   <span>{{ workspacesLimit }}</span>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                     <polyline points="6 9 12 15 18 9"></polyline>
@@ -826,7 +826,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let d of diagrams" [class.active]="d.id === svc.diagramId()">
+                <tr *ngFor="let d of diagrams" [class.active]="d.id === svc.diagramId()" [class.row-menu-open]="openMenuId === d.id">
                   <td class="col-name">
                     <div class="diagram-name-cell">
                       <svg class="globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -848,7 +848,7 @@
                   <td class="col-actions" (click)="$event.stopPropagation()">
                     <div class="action-menu-wrap" [style.zIndex]="openMenuId === d.id ? 99999 : 'auto'"
                       [style.position]="openMenuId === d.id ? 'relative' : 'static'">
-                      <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id"
+                      <button class="three-dots-btn tt-left" [class.tt]="openMenuId !== d.id" [class.menu-open]="openMenuId === d.id"
                         (click)="toggleRowMenu(d.id, $event)" [attr.data-tt]="openMenuId !== d.id ? 'Options' : null">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                           stroke-width="2.5">
@@ -934,7 +934,7 @@
             <div class="page-size-selector">
               <div class="custom-select-container">
                 <button class="custom-select-btn"
-                  (click)="showDiagramsLimitDropdown = !showDiagramsLimitDropdown; $event.stopPropagation()">
+                  (click)="toggleLimitDropdown('diagrams', $event)">
                   <span>{{ diagramsLimit }}</span>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                     <polyline points="6 9 12 15 18 9"></polyline>
@@ -1205,7 +1205,7 @@
               <div class="page-size-selector">
                 <div class="custom-select-container">
                   <button type="button" class="custom-select-btn"
-                    (click)="showMembersLimitDropdown = !showMembersLimitDropdown; $event.stopPropagation()">
+                    (click)="toggleLimitDropdown('members', $event)">
                     <span>{{ membersLimit }}</span>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                       <polyline points="6 9 12 15 18 9"></polyline>
@@ -1377,7 +1377,7 @@
             <div class="page-size-selector">
               <div class="custom-select-container">
                 <button type="button" class="custom-select-btn"
-                  (click)="showMembersLimitDropdown = !showMembersLimitDropdown; $event.stopPropagation()">
+                  (click)="toggleLimitDropdown('members', $event)">
                   <span>{{ membersLimit }}</span>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                     <polyline points="6 9 12 15 18 9"></polyline>
