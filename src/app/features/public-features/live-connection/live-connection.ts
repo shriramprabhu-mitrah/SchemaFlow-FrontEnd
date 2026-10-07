@@ -12,7 +12,8 @@ import { Footer } from '../../../shared/components/footer/footer';
   selector: 'app-live-connection',
   standalone: true,
   imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer],
-  templateUrl: './live-connection.html'
+  templateUrl: './live-connection.html',
+  styleUrls: ['./live-connection.scss']
 })
 export class LiveConnectionComponent implements OnInit {
 
@@ -50,6 +51,15 @@ export class LiveConnectionComponent implements OnInit {
     if (typeof window !== 'undefined') {
       this.isLoggedIn = this.auth.isLoggedIn();
     }
+  }
+
+  
+  isMobileFeaturesDropdownOpen = false;
+
+  toggleMobileFeaturesDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.isMobileFeaturesDropdownOpen = !this.isMobileFeaturesDropdownOpen;
   }
 
   toggleMobileMenu(): void {

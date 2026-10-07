@@ -22,12 +22,12 @@
                 <span class="desc">Generate beautiful documentation for your database schema</span>
               </div>
             </a>
-            <a routerLink="/features/live-connection" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+            <a routerLink="/features/db-connect" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
               <div class="dropdown-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
               </div>
               <div class="dropdown-text">
-                <span class="title">DB Live Connection</span>
+                <span class="title">DB Connect</span>
                 <span class="desc">Connect securely directly to your live database</span>
               </div>
             </a>
@@ -62,8 +62,19 @@
   <!-- MOBILE MENU OVERLAY -->
   <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
     <nav class="mobile-nav">
-      <a routerLink="/features/db-docs" class="mobile-nav-link" (click)="toggleMobileMenu()">DB Docs</a>
-      <a routerLink="/features/live-connection" class="mobile-nav-link" (click)="toggleMobileMenu()">Live Connection</a>
+      <!-- Features Dropdown for Mobile -->
+      <div class="mobile-nav-item" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+        <div class="mobile-nav-link" (click)="toggleMobileFeaturesDropdown($event)" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          Features
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="isMobileFeaturesDropdownOpen ? 'rotate(180deg)' : 'rotate(0)'" style="transition: transform 0.2s;">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+        <div class="mobile-dropdown-menu" *ngIf="isMobileFeaturesDropdownOpen" style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px; align-items: center; width: 100%;">
+          <a routerLink="/features/db-docs" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">DB Docs</a>
+          <a routerLink="/features/db-connect" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">DB Connect</a>
+        </div>
+      </div>
       <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
       <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
       <a routerLink="/diff" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">SQL Compare</a>
@@ -94,8 +105,9 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </button>
       </div>
-      <div style="margin-top: 20px; display: flex; justify-content: center; width: 100%;">
-        <object type="image/svg+xml" data="/assets/data-dictionary-animation.svg" title="Database Documentation Animation" style="width: 100%; max-width: 1000px; aspect-ratio: 1200/760; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border: 1px solid #e5e7eb; background: white;"></object>
+      <div class="dbdocs-img-wrapper" style="margin-top: 20px;">
+        <object *ngIf="svc.theme() !== 'dark'" type="image/svg+xml" data="/assets/data-dictionary-animation.svg" title="Database Documentation Animation" class="lc-animation-img dbdocs-light" style="width: 100%; max-width: 1000px; aspect-ratio: 1200/760; overflow: hidden; background: transparent; border: none; outline: none;"></object>
+        <object *ngIf="svc.theme() === 'dark'" type="image/svg+xml" data="/assets/data-dictionary-dark.svg" title="Database Documentation Animation Dark" class="lc-animation-img dbdocs-dark" style="width: 100%; max-width: 1000px; aspect-ratio: 1200/760; overflow: hidden; background: transparent; border: none; outline: none;"></object>
       </div>
     </div>
   </section>
@@ -103,11 +115,11 @@
   <!-- Why dbdocs? -->
   <section class="feature-grid-section" style="padding: 80px 24px; max-width: 1200px; margin: 0 auto;">
     <div style="text-align: center; margin-bottom: 64px;">
-      <h2 style="font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px;">Why DBNexus Docs?</h2>
-      <p style="font-size: 18px; color: #6b7280; max-width: 600px; margin: 0 auto;">Generate modern, interactive database documentation that saves you time and keeps your data perfectly organized.</p>
+      <h2 class="lc-section-title" style="font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px;">Why DBNexus Docs?</h2>
+      <p class="lc-section-subtitle" style="font-size: 18px; color: #6b7280; max-width: 600px; margin: 0 auto;">Generate modern, interactive database documentation that saves you time and keeps your data perfectly organized.</p>
     </div>
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px;">
       
       <div class="feature-card">
         <div class="feature-card-icon">
@@ -204,7 +216,7 @@
         </p>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px;">
         
         <!-- Feature 1 -->
         <div class="interactive-dict-card">

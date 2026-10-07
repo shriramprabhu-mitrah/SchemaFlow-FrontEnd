@@ -48,6 +48,15 @@ export class HomeComponent implements OnInit {
   isLoggedIn = false;
   isMobileMenuOpen = false;
 
+  
+  isMobileFeaturesDropdownOpen = false;
+
+  toggleMobileFeaturesDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.isMobileFeaturesDropdownOpen = !this.isMobileFeaturesDropdownOpen;
+  }
+
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
