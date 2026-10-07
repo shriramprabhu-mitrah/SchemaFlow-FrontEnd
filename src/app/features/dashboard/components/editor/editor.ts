@@ -82,6 +82,13 @@ export class EditorComponent implements OnInit, OnDestroy {
         }, 60);
       }
     });
+
+    // Ensure AI chat is closed in sample diagrams
+    effect(() => {
+      if (this.isSampleDiagram() && this.svc.showAiChat()) {
+        this.svc.closeAiChat();
+      }
+    });
   }
 
   get isLoggedIn(): boolean {
@@ -89,7 +96,7 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
 
   isSampleDiagram(): boolean {
-    return this.svc.diagramName === 'Sample Diagram';
+    return this.svc.isSampleDiagram();
   }
 
   goToLogin(): void {

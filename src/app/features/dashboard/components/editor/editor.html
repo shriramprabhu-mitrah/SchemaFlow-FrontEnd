@@ -1,4 +1,4 @@
-<div class="editor-shell" [class.ai-chat-open]="svc.showAiChat()">
+<div class="editor-shell" [class.ai-chat-open]="svc.showAiChat() && !isSampleDiagram()">
   <!-- Sidebar docked on the left near editor -->
   <app-sidebar [class.collapsed]="svc.sidebarCollapsed()"></app-sidebar>
 
@@ -15,12 +15,12 @@
   </button>
 
   <!-- AI Chat Pane (Expandable & Resizable) -->
-  <app-ai-chat *ngIf="svc.showAiChat()" [style.width]="svc.aiChatWidth() ? (svc.aiChatWidth() + 'px') : null"
+  <app-ai-chat *ngIf="svc.showAiChat() && !isSampleDiagram()" [style.width]="svc.aiChatWidth() ? (svc.aiChatWidth() + 'px') : null"
     [style.flex]="svc.aiChatWidth() ? ('0 0 ' + svc.aiChatWidth() + 'px') : null" [class.is-resizing]="isResizingAiChat"
     (close)="svc.closeAiChat()"></app-ai-chat>
 
   <!-- AI Chat Resizer Divider -->
-  <div class="ai-chat-resizer" *ngIf="svc.showAiChat()" [class.active]="isResizingAiChat"
+  <div class="ai-chat-resizer" *ngIf="svc.showAiChat() && !isSampleDiagram()" [class.active]="isResizingAiChat"
     (mousedown)="onAiResizerMouseDown($event)" (dblclick)="svc.toggleAiChatExpand()"
     title="Drag to resize AI chat (double-click to expand/collapse)">
     <div class="resizer-handle-pill"></div>

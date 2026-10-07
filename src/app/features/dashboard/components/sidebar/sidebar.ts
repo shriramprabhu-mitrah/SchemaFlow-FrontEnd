@@ -388,11 +388,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.entitlementService.canUseFeature('version_history')) {
+      const status = this.auth.getCurrentPlanStatus();
+      if (status !== 'cancelled') {
       if (!this.entitlementService.orgHasFeature('version_history')) {
         this.svc.showUpgradeModal('version_history');
       }
       return;
     }
+  }
     this.svc.showVersionHistory.set(!this.svc.showVersionHistory());
     this.cdr.markForCheck();
   }

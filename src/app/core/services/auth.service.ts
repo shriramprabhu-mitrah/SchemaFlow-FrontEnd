@@ -40,6 +40,10 @@ export class AuthService {
         if (profilePic) {
           this.setUserProfilePicture(profilePic);
         }
+        const userId = data?.user?.id || data?.user?.userId || data?.user?.user_id || data?.userId || data?.id;
+        if (userId && !isNaN(Number(userId))) {
+          this.setUserId(Number(userId));
+        }
         // Store organization context and super admin flag
         if (data?.organizationId) {
           this.setOrganizationId(data.organizationId);
@@ -98,6 +102,10 @@ export class AuthService {
         if (data?.organizationId) {
           this.setOrganizationId(data.organizationId);
         }
+        const userId = data?.user?.id || data?.user?.userId || data?.user?.user_id || data?.userId || data?.id;
+        if (userId && !isNaN(Number(userId))) {
+          this.setUserId(Number(userId));
+        }
       })
     );
   }
@@ -132,6 +140,46 @@ export class AuthService {
     if (isPlatformBrowser(this.platformId)) {
       const pic = localStorage.getItem('user_profile_picture');
       return pic && pic.trim() !== '' ? pic : null;
+    }
+    return null;
+  }
+
+  setUserId(userId: number | string | null | undefined): void {
+    if (isPlatformBrowser(this.platformId)) {
+      if (userId !== null && userId !== undefined && !isNaN(Number(userId))) {
+        localStorage.setItem('user_id', String(userId));
+      } else {
+        localStorage.removeItem('user_id');
+      }
+    }
+  }
+
+  getUserId(): number | null {
+    if (isPlatformBrowser(this.platformId)) {
+      // 1. Direct local storage key
+      const stored = localStorage.getItem('user_id');
+      if (stored && !isNaN(Number(stored))) {
+        return Number(stored);
+      }
+
+      // 2. JWT token payload
+      const payload = this.getTokenPayload();
+      const id = payload?.userId ?? payload?.user_id ?? payload?.id ?? payload?.sub;
+      if (id !== undefined && id !== null && !isNaN(Number(id))) {
+        return Number(id);
+      }
+
+      // 3. User data stored JSON
+      try {
+        const userDataStr = localStorage.getItem('user_data');
+        if (userDataStr) {
+          const userData = JSON.parse(userDataStr);
+          const uId = userData?.id ?? userData?.userId ?? userData?.user_id;
+          if (uId !== undefined && uId !== null && !isNaN(Number(uId))) {
+            return Number(uId);
+          }
+        }
+      } catch (e) { }
     }
     return null;
   }
@@ -389,6 +437,7 @@ export class AuthService {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_email');
+      localStorage.removeItem('user_id');
       localStorage.removeItem('user_data');
       localStorage.removeItem('user_profile_picture');
       localStorage.removeItem('organization_id');
@@ -436,7 +485,15 @@ export class AuthService {
 
   getUserDetails(): Observable<any> {
     const url = this.appConfig.environment?.userApiUrls?.userDetails ?? '';
-    return this.http.get<any>(url, { withCredentials: true });
+    return this.http.get<any>(url, { withCredentials: true }).pipe(
+      tap((res) => {
+        const user = res?.data || res;
+        const id = user?.id || user?.userId || user?.user_id;
+        if (id && !isNaN(Number(id))) {
+          this.setUserId(Number(id));
+        }
+      })
+    );
   }
 
   updateProfile(payload: any): Observable<any> {

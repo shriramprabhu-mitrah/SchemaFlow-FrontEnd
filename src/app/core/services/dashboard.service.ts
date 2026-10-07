@@ -599,6 +599,10 @@ export class DashboardService {
   readonly activeDiffHunkIndex = signal<number>(0);
   readonly currentActiveHunkId = signal<number | null>(null);
   readonly pendingAiDiffHunks = computed(() => this.aiDiffHunks().filter(h => h.status === 'pending'));
+  readonly activeAiDiffMeta = signal<{ chat_history_id?: number; session_id?: number } | null>(null);
+  readonly latestAiChatMessageId = signal<number | null>(null);
+  readonly latestAiChatSessionId = signal<number | null>(null);
+  readonly aiDiffReviewClosed = new Subject<boolean>();
 
   // Canvas visual diff status (tables and relations)
   readonly tableDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
@@ -665,7 +669,13 @@ export class DashboardService {
     return result.join('\n').replace(/\n+$/, '').trim();
   }
 
-  startAiDiffReview(originalCode: string, proposedCode: string): void {
+  startAiDiffReview(originalCode: string, proposedCode: string, meta?: { chat_history_id?: number; session_id?: number }): void {
+    const resolvedMeta = {
+      chat_history_id: meta?.chat_history_id ?? this.latestAiChatMessageId() ?? undefined,
+      session_id: meta?.session_id ?? this.latestAiChatSessionId() ?? undefined
+    };
+    this.activeAiDiffMeta.set(resolvedMeta);
+
     // If a diff review was already active with unaccepted changes, ensure the baseline remains the committed code
     const actualOriginal = this.aiDiffReviewActive()
       ? this.getCommittedAiDiffCode()
@@ -1059,6 +1069,7 @@ export class DashboardService {
 
     const pending = hunks.filter(h => h.status === 'pending');
     if (pending.length === 0) {
+      this.recordAiChatHistoryApplied(true);
       this.closeAiDiffReview(true);
       if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
         this.saveDiagram().subscribe({
@@ -1111,6 +1122,7 @@ export class DashboardService {
         const original = this.aiDiffOriginalCode();
         this.code = original;
       }
+      this.recordAiChatHistoryApplied(anyAccepted);
       this.closeAiDiffReview(anyAccepted);
       if (anyAccepted) {
         if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
@@ -1135,7 +1147,58 @@ export class DashboardService {
     }
   }
 
+  recordAiChatHistoryApplied(isApplied: boolean): void {
+    const meta = this.activeAiDiffMeta();
+    const chatHistoryId = meta?.chat_history_id ?? this.latestAiChatMessageId();
+    const sessionId = meta?.session_id ?? this.latestAiChatSessionId();
+
+    // Immediately clear meta to avoid duplicate triggers for this diff session
+    this.activeAiDiffMeta.set(null);
+
+    if (!chatHistoryId) {
+      console.warn('Cannot record AI chat history applied: chat_history_id (messageId) is not available.');
+      return;
+    }
+
+    const userId = this.auth.getUserId();
+    const payload: {
+      chat_history_id: number;
+      session_id: number | null;
+      user_id: number | null;
+      is_applied: boolean;
+    } = {
+      chat_history_id: Number(chatHistoryId),
+      session_id: sessionId !== null && sessionId !== undefined ? Number(sessionId) : null,
+      user_id: userId !== null && userId !== undefined ? Number(userId) : null,
+      is_applied: Boolean(isApplied)
+    };
+
+    const url = (this.appConfig.environment as any)?.aiChatHistoryApplied ||
+      (this.appConfig.environment?.adminApiUrls as any)?.aiChatHistoryApplied ||
+      (this.appConfig.environment?.aiChat ? `${this.appConfig.environment.aiChat.replace(/\/+$/, '')}/history/applied` : '') ||
+      (this.appConfig.environment?.adminApiUrls?.aiChat ? `${this.appConfig.environment.adminApiUrls.aiChat.replace(/\/+$/, '')}/history/applied` : '') ||
+      (this.appConfig.environment?.apiConfig?.baseUrl ? `${this.appConfig.environment.apiConfig.baseUrl.replace(/\/+$/, '')}/api/ai/chat/history/applied` : '/api/ai/chat/history/applied');
+
+    const token = this.auth.getToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    this.http.put<any>(url, payload, { headers, withCredentials: true }).subscribe({
+      next: (res) => {
+        // AI chat history applied status recorded successfully
+      },
+      error: (err) => {
+        console.warn('Failed to record AI chat history applied status:', err);
+      }
+    });
+  }
+
   acceptAllAiDiff(): void {
+    this.recordAiChatHistoryApplied(true);
     const proposed = (this.aiDiffProposedCode() || '').replace(/\n+$/, '');
     this.code = proposed;
     this.showCanvasPlaceholder = !proposed.trim();
@@ -1152,6 +1215,7 @@ export class DashboardService {
   }
 
   rejectAllAiDiff(): void {
+    this.recordAiChatHistoryApplied(false);
     const original = this.aiDiffOriginalCode();
     this.code = original;
     this.showCanvasPlaceholder = !original.trim();
@@ -1182,6 +1246,10 @@ export class DashboardService {
   }
 
   closeAiDiffReview(anyAccepted = false): void {
+    if (this.activeAiDiffMeta()) {
+      this.recordAiChatHistoryApplied(anyAccepted);
+    }
+    this.aiDiffReviewClosed.next(anyAccepted);
     this.aiDiffReviewActive.set(false);
     this.tableDiffStatus.set({});
     this.refDiffStatus.set({});
@@ -1293,9 +1361,24 @@ export class DashboardService {
 
   set diagramName(value: string) {
     this.diagramNameSignal.set(value);
+    if (value === 'Sample Diagram' && this.showAiChat()) {
+      this.closeAiChat();
+    }
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('active_diagram_name', value);
     }
+  }
+
+  isSampleDiagram(): boolean {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('sample') && !params.get('id')) {
+          return true;
+        }
+      } catch (e) { }
+    }
+    return this.diagramNameSignal() === 'Sample Diagram';
   }
 
   unlockDocs(id: number): Observable<any> {
@@ -1416,6 +1499,10 @@ export class DashboardService {
   workspacesFetched = false;
 
   toggleAiChat(force?: boolean): void {
+    if (this.isSampleDiagram()) {
+      this.closeAiChat();
+      return;
+    }
     const next = force !== undefined ? force : !this.showAiChat();
     this.showAiChat.set(next);
     if (next) {
@@ -1784,6 +1871,10 @@ export class DashboardService {
     this.entitlementService.entitlements$.subscribe(() => {
       this.parseAndLayout();
     });
+
+    if (!this.auth.getUserId() && this.auth.isLoggedIn()) {
+      this.auth.getUserDetails().subscribe({ error: () => {} });
+    }
 
     // Subscribe to local code changes for instant real-time collab emission
     this.code$.pipe(debounceTime(300)).subscribe(() => {
