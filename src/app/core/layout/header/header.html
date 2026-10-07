@@ -10,7 +10,7 @@
 
   <!-- PERSONAL DROPDOWN CONTROL (Image 1 & 2) -->
   <div class="personal-dropdown-wrap" *ngIf="!isProfilePage">
-    <button class="personal-trigger-btn tt tt-bottom" (click)="togglePersonalMenu($event)"
+    <button class="personal-trigger-btn" (click)="togglePersonalMenu($event)"
       [class.active]="personalMenuOpen" [class.not-logged-in]="!isLoggedIn"
       [attr.data-tt]="isLoggedIn ? 'Open Workspace' : 'Please sign in to access workspace options'">
       <span class="personal-label">{{ (svc.diagramWorkspaceType() | titlecase) || 'Personal' }}</span>
@@ -232,7 +232,7 @@
 
   <!-- User Profile Dropdown at Right End (Image 2) -->
   <div class="profile-dropdown-wrap" *ngIf="isLoggedIn">
-    <button class="profile-trigger-btn tt tt-bottom-right" (click)="toggleProfileMenu($event)"
+    <button class="profile-trigger-btn" (click)="toggleProfileMenu($event)"
       [class.active]="profileMenuOpen" data-tt="User Profile Menu">
       <div class="profile-avatar">
         <img *ngIf="userProfilePicture" [src]="userProfilePicture"
