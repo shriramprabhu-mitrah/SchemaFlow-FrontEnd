@@ -759,7 +759,7 @@
                 transition: all 0.15s ease;
                 margin: 0 !important;
 
-                &:hover {
+                &:hover, &.menu-open {
                   color: #ffffff !important;
                   background: rgba(255, 255, 255, 0.1) !important;
                   opacity: 1;
@@ -1544,7 +1544,7 @@
             cursor: default;
             transition: background 0.15s ease;
 
-            &:hover {
+            &:hover, &.row-menu-open {
               background: rgba(255, 255, 255, 0.04);
 
               .three-dots-btn {
@@ -1630,7 +1630,7 @@
                 opacity: 0.5;
                 transition: all 0.15s ease;
 
-                &:hover {
+                &:hover, &.menu-open {
                   color: #ffffff;
                   background: rgba(255, 255, 255, 0.1);
                   opacity: 1;
@@ -2127,7 +2127,7 @@ body.light-theme {
                 .three-dots-btn {
                   color: #64748b !important;
 
-                  &:hover {
+                  &:hover, &.menu-open {
                     color: #0f172a !important;
                     background: rgba(0, 0, 0, 0.06) !important;
                   }
@@ -2360,7 +2360,7 @@ body.light-theme {
 
           tbody {
             tr {
-              &:hover {
+              &:hover, &.row-menu-open {
                 background: #f8fafc;
               }
 
@@ -2396,7 +2396,7 @@ body.light-theme {
                 .three-dots-btn {
                   color: #64748b;
 
-                  &:hover {
+                  &:hover, &.menu-open {
                     color: #0f172a;
                     background: rgba(0, 0, 0, 0.06);
                   }
@@ -2513,13 +2513,13 @@ body.light-theme {
 }
 
 /* Make dropdowns in the last 2 rows open upwards to prevent expanding the scroll container */
-tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-dropdown {
+tr:nth-last-child(-n+4):not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)) .action-menu-dropdown {
   top: auto !important;
   bottom: calc(100% + 6px) !important;
 }
 
 /* Make dropdowns in the last 2 rows open upwards to prevent expanding the scroll container */
-.member-item-row:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .member-context-menu {
+.member-item-row:nth-last-child(-n+4):not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)) .member-context-menu {
   top: auto !important;
   bottom: calc(100% + 6px) !important;
 }

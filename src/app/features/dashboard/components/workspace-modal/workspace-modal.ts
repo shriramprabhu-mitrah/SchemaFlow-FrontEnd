@@ -1205,6 +1205,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   toggleMemberDropdown(target: any, e: Event): void {
     if (e) e.stopPropagation();
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    this.permissionDropdownOpen = false;
+    this.openMenuId = null;
+    this.openWorkspaceMenuId = null;
     const key = (target && typeof target === 'object') ? target.email : target;
     if (this.activeMemberDropdownIndex === key) {
       this.activeMemberDropdownIndex = null;
@@ -1333,9 +1340,41 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
     return 'Viewer';
   }
+  toggleLimitDropdown(dropdownName: 'diagrams' | 'workspaces' | 'shared' | 'members', e: Event): void {
+    e.stopPropagation();
+    
+    this.openMenuId = null;
+    this.openWorkspaceMenuId = null;
+    this.activeMemberDropdownIndex = null;
+    this.permissionDropdownOpen = false;
+    
+    const wasOpen = this[`show${dropdownName.charAt(0).toUpperCase() + dropdownName.slice(1)}LimitDropdown` as keyof this];
+    
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    
+    if (!wasOpen) {
+      if (dropdownName === 'diagrams') this.showDiagramsLimitDropdown = true;
+      if (dropdownName === 'workspaces') this.showWorkspacesLimitDropdown = true;
+      if (dropdownName === 'shared') this.showSharedLimitDropdown = true;
+      if (dropdownName === 'members') this.showMembersLimitDropdown = true;
+    }
+    
+    this.cdr.detectChanges();
+  }
+
 
   toggleWorkspaceMenu(id: number, e: Event): void {
     e.stopPropagation();
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    this.activeMemberDropdownIndex = null;
+    this.permissionDropdownOpen = false;
+    this.openMenuId = null;
     if (this.openWorkspaceMenuId === id) {
       this.openWorkspaceMenuId = null;
       return;
@@ -1760,6 +1799,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   toggleRowMenu(id: number, e: Event): void {
     e.stopPropagation();
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    this.activeMemberDropdownIndex = null;
+    this.permissionDropdownOpen = false;
+    this.openWorkspaceMenuId = null;
     if (this.openMenuId === id) {
       this.openMenuId = null;
       return;
@@ -1851,6 +1897,12 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       this.activeMemberDropdownIndex = null;
       this.isMemberDropdownUpward = false;
       this.permissionDropdownOpen = false;
+    }
+    if (!target.closest('.custom-select-container')) {
+      this.showDiagramsLimitDropdown = false;
+      this.showWorkspacesLimitDropdown = false;
+      this.showSharedLimitDropdown = false;
+      this.showMembersLimitDropdown = false;
     }
   }
   @HostListener('window:wheel', ['$event'])
