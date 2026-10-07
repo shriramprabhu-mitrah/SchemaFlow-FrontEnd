@@ -257,13 +257,17 @@
       [class.active]="false"
       [class.disabled]="!isLoggedIn || isSampleDiagram()"
       (click)="openConnectionStringModal($event)"
-      [attr.data-tt]="!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'Connect to a database')"
-      aria-label="Connect to a database">
+      [attr.data-tt]="!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'DB connect')"
+      aria-label="DB connect">
       <div class="sidebar-crown-badge" *ngIf="showCrown('connect')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
       <div class="nav-icon-box">
-        <app-icons name="connections" size="20"></app-icons>
+        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
       </div>
-      <span class="nav-label">Connect</span>
+      <span class="nav-label">DB connect</span>
     </div>
 
     <!-- Share Button -->
