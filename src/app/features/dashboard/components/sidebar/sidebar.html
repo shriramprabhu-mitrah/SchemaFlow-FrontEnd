@@ -3,11 +3,11 @@
   <div class="activity-top-group">
     <!-- Import Button -->
     <div class="activity-nav-item import-item tt tt-right" *ngIf="!isCanViewOnly" [class.active]="importMenuOpen"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleImportMenu($event)"
-      [attr.data-tt]="importMenuOpen ? null : (!isLoggedIn ? 'Sign in to import SQL' : (isSampleDiagram() ? 'Import is disabled for sample diagrams' : 'Import from SQL'))"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['import_sql'])" (click)="toggleImportMenu($event)"
+      [attr.data-tt]="isMemberRestricted(['import_sql']) || importMenuOpen ? null : (!isLoggedIn ? 'Sign in to import SQL' : (isSampleDiagram() ? 'Import is disabled for sample diagrams' : 'Import from SQL'))"
       aria-label="Import from SQL">
-      <app-icons *ngIf="showCrown('import')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('import')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -19,23 +19,22 @@
       <span class="nav-label">Import</span>
 
       <!-- Import Flyout Menu -->
-      <div class="sidebar-flyout-menu" *ngIf="importMenuOpen" (click)="$event.stopPropagation()">
+      <div class="sidebar-flyout-menu" *ngIf="importMenuOpen">
         <div class="flyout-header">Import from SQL</div>
 
         <button class="flyout-item" (click)="openImportDialect('postgres', $event)"
-          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql')">
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon postgres-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
             </svg>
           </span>
           <span class="item-name">PostgreSQL</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <button class="flyout-item" (click)="openImportDialect('mysql', $event)"
-          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql')">
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon mysql-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -43,26 +42,24 @@
             </svg>
           </span>
           <span class="item-name">MySQL</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <button class="flyout-item" (click)="openImportDialect('sqlserver', $event)"
-          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql')">
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon mssql-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
             </svg>
           </span>
           <span class="item-name">SQL Server</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="import-sqlite-btn"
-          (click)="openImportModal('sqlite'); $event.stopPropagation()"
-          [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
+          (click)="openImportModal('sqlite')"
+          [disabled]="importing || !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon sqlite-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -70,35 +67,48 @@
             </svg>
           </span>
           <span class="item-name">SQLite</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <!-- MongoDB (NoSQL) -->
         <button class="flyout-item" id="import-mongodb-btn"
           (click)="openImportDialect('mongodb', $event)"
-          [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">
+          [disabled]="importing || !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon mongodb-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C11.5 4.5 9 8 9 12c0 3.5 2 6.5 3 8 1-1.5 3-4.5 3-8 0-4-2.5-7.5-3-10z" />
             </svg>
           </span>
           <span class="item-name">MongoDB (NoSQL)</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
+        </button>
+        <div class="flyout-divider"></div>
+
+        <!-- Connection String -->
+        <button class="flyout-item" id="import-connstring-btn"
+          (click)="openConnectionStringModal($event)"
+          [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql'))">
+          <span class="db-icon conn-string-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </span>
+          <span class="item-name">Connection String</span>
         </button>
       </div>
     </div>
+    
 
     <!-- Export Button -->
     <div class="activity-nav-item export-item-wrap tt-right"
       [class.tt]="!exportMenuOpen && !hasDbmlErrors()"
       [class.active]="exportMenuOpen"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleExportMenu($event)"
-      [attr.data-tt]="exportMenuOpen || hasDbmlErrors() ? null : (!isLoggedIn ? 'Sign in to export diagram or SQL' : (isSampleDiagram() ? 'Export is disabled for sample diagrams' : 'Export diagram or SQL'))"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['export_image', 'export_sql'])" (click)="toggleExportMenu($event)"
+      [attr.data-tt]="isMemberRestricted(['export_image', 'export_sql']) || exportMenuOpen || hasDbmlErrors() ? null : (!isLoggedIn ? 'Sign in to export diagram or SQL' : (isSampleDiagram() ? 'Export is disabled for sample diagrams' : 'Export diagram or SQL'))"
       aria-label="Export diagram or SQL">
-      <app-icons *ngIf="showCrown('export')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('export')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -110,11 +120,11 @@
       <span class="nav-label">Export</span>
 
       <!-- Export Flyout Menu -->
-      <div class="sidebar-flyout-menu export-flyout" *ngIf="exportMenuOpen" (click)="$event.stopPropagation()">
+      <div class="sidebar-flyout-menu export-flyout" *ngIf="exportMenuOpen">
         <div class="flyout-header">Export as diagram</div>
 
         <button class="flyout-item" (click)="exportFormat('pdf', $event)"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || !entitlementService.hasMemberAccess('export_image')">
           <span class="db-icon pdf-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -126,12 +136,11 @@
             </svg>
           </span>
           <span class="item-name">PDF</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_image')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <button class="flyout-item" (click)="exportFormat('png', $event)"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || !entitlementService.hasMemberAccess('export_image')">
           <span class="db-icon png-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -141,12 +150,11 @@
             </svg>
           </span>
           <span class="item-name">PNG</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_image')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <button class="flyout-item" (click)="exportFormat('svg', $event)"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || (entitlementService.orgHasFeature('export_image') && !entitlementService.canUseFeature('export_image'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || !entitlementService.hasMemberAccess('export_image')">
           <span class="db-icon svg-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -156,8 +164,7 @@
             </svg>
           </span>
           <span class="item-name">SVG</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_image')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <div class="flyout-divider"></div>
@@ -165,19 +172,19 @@
         <div class="flyout-header">Export as SQL</div>
 
         <button class="flyout-item" (click)="exportSQL('postgres', $event)"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon postgres-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z" />
             </svg>
           </span>
           <span class="item-name">PostgreSQL</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <button class="flyout-item" (click)="exportSQL('mysql', $event)"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon mysql-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -185,26 +192,26 @@
             </svg>
           </span>
           <span class="item-name">MySQL</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <button class="flyout-item" (click)="exportSQL('sqlserver', $event)"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon mssql-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
             </svg>
           </span>
           <span class="item-name">SQL Server</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="export-sqlite-btn"
-          (click)="exportSQL('sqlite'); $event.stopPropagation()"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          (click)="exportSQL('sqlite')"
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon sqlite-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -212,21 +219,21 @@
             </svg>
           </span>
           <span class="item-name">SQLite</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <!-- MongoDB (NoSQL) -->
         <button class="flyout-item" (click)="exportSQL('mongodb', $event)"
-          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon mongodb-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C11.5 4.5 9 8 9 12c0 3.5 2 6.5 3 8 1-1.5 3-4.5 3-8 0-4-2.5-7.5-3-10z" />
             </svg>
           </span>
           <span class="item-name">MongoDB (NoSQL)</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
-            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+          
         </button>
 
         <div class="flyout-status" *ngIf="exporting">
@@ -238,12 +245,12 @@
     <!-- Share Button -->
     <div class="activity-nav-item share-item tt-right" *ngIf="!isCanViewOnly"
       [class.tt]="!hasDbmlErrors()"
-      [class.active]="svc.shareModalVisible()" [class.disabled]="!isLoggedIn || isSampleDiagram() || hasDbmlErrors() || isDiagramEmpty()"
+      [class.active]="svc.shareModalVisible()" [class.disabled]="!isLoggedIn || isSampleDiagram() || hasDbmlErrors() || isDiagramEmpty() || isMemberRestricted(['share_diagram'])"
       (click)="openShare($event)"
-      [attr.data-tt]="hasDbmlErrors() ? null : (!isLoggedIn ? 'Sign in to share diagram' : (isSampleDiagram() ? 'Sharing is disabled for sample diagrams' : 'Share diagram'))"
+      [attr.data-tt]="isMemberRestricted(['share_diagram']) || hasDbmlErrors() ? null : (!isLoggedIn ? 'Sign in to share diagram' : (isSampleDiagram() ? 'Sharing is disabled for sample diagrams' : 'Share diagram'))"
       aria-label="Share diagram">
-      <app-icons *ngIf="showCrown('share')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('share')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -259,12 +266,12 @@
 
     <!-- Versions Button (below Share, no New badge) -->
     <div class="activity-nav-item versions-item tt tt-right" *ngIf="!isCanViewOnly"
-      [class.active]="svc.showVersionHistory()" [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      [class.active]="svc.showVersionHistory()" [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['version_history'])"
       (click)="toggleVersionHistory($event)"
-      [attr.data-tt]="!isLoggedIn ? 'Sign in for Version History' : (isSampleDiagram() ? 'Version History is disabled for sample diagrams' : 'Version History')"
+      [attr.data-tt]="isMemberRestricted(['version_history']) ? null : (!isLoggedIn ? 'Sign in for Version History' : (isSampleDiagram() ? 'Version History is disabled for sample diagrams' : 'Version History'))"
       aria-label="Version History">
-      <app-icons *ngIf="showCrown('versions')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('versions')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -278,12 +285,12 @@
 
     <!-- AI Assistant Button -->
     <div class="activity-nav-item ai-item tt tt-right" *ngIf="!isCanViewOnly"
-      [class.active]="svc.showAiChat()" [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      [class.active]="svc.showAiChat()" [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['ai_chat'])"
       (click)="toggleAiChat($event)"
-      [attr.data-tt]="!isLoggedIn ? 'Sign in for DBNexus AI' : (isSampleDiagram() ? 'DBNexus AI is disabled for sample diagrams' : 'DBNexus AI')"
+      [attr.data-tt]="isMemberRestricted(['ai_chat']) ? null : (!isLoggedIn ? 'Sign in for DBNexus AI' : (isSampleDiagram() ? 'DBNexus AI is disabled for sample diagrams' : 'DBNexus AI'))"
       aria-label="DBNexus AI">
-      <app-icons *ngIf="showCrown('ai')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('ai')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -313,10 +320,10 @@
     </div>
 
     <!-- Diff Checker Button -->
-    <div class="activity-nav-item diff-item tt tt-right" [class.active]="svc.showDiffChecker()"
-      (click)="toggleDiffChecker($event)" data-tt="SQL Compare" aria-label="SQL Compare">
-      <app-icons *ngIf="showCrown('compare')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+    <div class="activity-nav-item diff-item tt tt-right" [class.active]="svc.showDiffChecker()" [class.disabled]="isMemberRestricted(['code_compare'])"
+      (click)="toggleDiffChecker($event)" [attr.data-tt]="isMemberRestricted(['code_compare']) ? null : 'SQL Compare'" aria-label="SQL Compare">
+      <div class="sidebar-crown-badge" *ngIf="showCrown('compare')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -334,11 +341,11 @@
     <!-- Tables Button -->
     <div class="activity-nav-item tables-item tt tt-right" *ngIf="!isCanViewOnly"
       [class.active]="svc.sidebarInspectorTab() === 'tables' && !svc.showDiffChecker() && !svc.showDocs"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleInspector('tables', $event)"
-      [attr.data-tt]="!isLoggedIn ? 'Sign in to access Tables' : (isSampleDiagram() ? 'Tables disabled for sample diagrams' : 'Tables')"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['table_relationships'])" (click)="toggleInspector('tables', $event)"
+      [attr.data-tt]="isMemberRestricted(['table_relationships']) ? null : (!isLoggedIn ? 'Sign in to access Tables' : (isSampleDiagram() ? 'Tables disabled for sample diagrams' : 'Tables'))"
       aria-label="Tables">
-      <app-icons *ngIf="showCrown('tables')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('tables')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -354,11 +361,11 @@
     <!-- Refs / Relationships Button -->
     <div class="activity-nav-item refs-item tt tt-right"
       [class.active]="svc.sidebarInspectorTab() === 'refs' && !svc.showDiffChecker() && !svc.showDocs"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleInspector('refs', $event)"
-      [attr.data-tt]="!isLoggedIn ? 'Sign in to access Relationships' : (isSampleDiagram() ? 'Relationships disabled for sample diagrams' : 'Relationships')"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['table_relationships'])" (click)="toggleInspector('refs', $event)"
+      [attr.data-tt]="isMemberRestricted(['table_relationships']) ? null : (!isLoggedIn ? 'Sign in to access Relationships' : (isSampleDiagram() ? 'Relationships disabled for sample diagrams' : 'Relationships'))"
       aria-label="Relationships">
-      <app-icons *ngIf="showCrown('refs')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('refs')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -373,11 +380,11 @@
     </div>  
     <!-- View Docs Button -->
     <div class="activity-nav-item docs-item tt tt-right" [class.active]="svc.showDocs"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()" (click)="toggleDocs($event)"
-      [attr.data-tt]="!isLoggedIn ? 'Sign in to access Docs' : (isSampleDiagram() ? 'Docs disabled for sample diagrams' : (svc.showDocs ? 'View Diagram' : 'View Docs'))"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['document_view'])" (click)="toggleDocs($event)"
+      [attr.data-tt]="isMemberRestricted(['document_view']) ? null : (!isLoggedIn ? 'Sign in to access Docs' : (isSampleDiagram() ? 'Docs disabled for sample diagrams' : (svc.showDocs ? 'View Diagram' : 'View Docs')))"
       [attr.aria-label]="svc.showDocs ? 'View Diagram' : 'View Docs'">
-      <app-icons *ngIf="showCrown('docs')" class="sidebar-crown-badge" name="premium-crown" size="10"
-        color="#f59e0b"></app-icons>
+      <div class="sidebar-crown-badge" *ngIf="showCrown('docs')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      
       <div class="nav-icon-box">
         <svg *ngIf="!svc.showDocs" class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

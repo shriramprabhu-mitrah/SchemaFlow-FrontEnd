@@ -1189,36 +1189,60 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
   }
 
+  memberDropdownPos: { top: string, right: string } | null = null;
   isMemberDropdownUpward: boolean = false;
+  activeMemberDropdownTarget: any = null;
+
+  getPermissionOfTarget(target: any): string {
+    let member: any = undefined;
+    if (typeof target === 'number') {
+      if (target >= 0 && target < this.membersList.length) member = this.membersList[target];
+    } else if (target && typeof target === 'object') {
+      member = target;
+    }
+    return member ? member.permission : '';
+  }
 
   toggleMemberDropdown(target: any, e: Event): void {
     if (e) e.stopPropagation();
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    this.permissionDropdownOpen = false;
+    this.openMenuId = null;
+    this.openWorkspaceMenuId = null;
     const key = (target && typeof target === 'object') ? target.email : target;
     if (this.activeMemberDropdownIndex === key) {
       this.activeMemberDropdownIndex = null;
+      this.activeMemberDropdownTarget = null;
+      this.memberDropdownPos = null;
       return;
     }
 
     this.activeMemberDropdownIndex = key;
-    this.cdr.detectChanges();
-
-    requestAnimationFrame(() => {
-      const menuEl = document.querySelector('.permission-dropdown-menu.member-perm-menu') as HTMLElement;
-      if (menuEl) {
-        const wrapper = menuEl.closest('.members-list-wrapper') as HTMLElement;
-        if (wrapper) {
-          const menuRect = menuEl.getBoundingClientRect();
-          const wrapperRect = wrapper.getBoundingClientRect();
-          if (menuRect.bottom > wrapperRect.bottom) {
-            const diff = menuRect.bottom - wrapperRect.bottom + 16;
-            wrapper.scrollBy({ top: diff, behavior: 'smooth' });
-          } else if (menuRect.top < wrapperRect.top) {
-            const diff = wrapperRect.top - menuRect.top + 8;
-            wrapper.scrollBy({ top: -diff, behavior: 'smooth' });
-          }
-        }
+    this.activeMemberDropdownTarget = target;
+    
+    if (e.currentTarget) {
+      const btn = e.currentTarget as HTMLElement;
+      const rect = btn.getBoundingClientRect();
+      const menuHeight = 200; // Approx height
+      const spaceBelow = window.innerHeight - rect.bottom;
+      
+      if (spaceBelow < menuHeight && rect.top > menuHeight) {
+        this.memberDropdownPos = {
+          top: `${rect.top - menuHeight - 4}px`,
+          right: `${window.innerWidth - rect.right}px`
+        };
+      } else {
+        this.memberDropdownPos = {
+          top: `${rect.bottom + 4}px`,
+          right: `${window.innerWidth - rect.right}px`
+        };
       }
-    });
+    }
+    
+    this.cdr.detectChanges();
   }
 
   changeMemberPermission(target: any, permission: PermissionType, e?: Event): void {
@@ -1235,6 +1259,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       member.permission = permission;
     }
     this.activeMemberDropdownIndex = null;
+    this.activeMemberDropdownTarget = null;
     this.cdr.detectChanges();
   }
 
@@ -1315,9 +1340,41 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     }
     return 'Viewer';
   }
+  toggleLimitDropdown(dropdownName: 'diagrams' | 'workspaces' | 'shared' | 'members', e: Event): void {
+    e.stopPropagation();
+    
+    this.openMenuId = null;
+    this.openWorkspaceMenuId = null;
+    this.activeMemberDropdownIndex = null;
+    this.permissionDropdownOpen = false;
+    
+    const wasOpen = this[`show${dropdownName.charAt(0).toUpperCase() + dropdownName.slice(1)}LimitDropdown` as keyof this];
+    
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    
+    if (!wasOpen) {
+      if (dropdownName === 'diagrams') this.showDiagramsLimitDropdown = true;
+      if (dropdownName === 'workspaces') this.showWorkspacesLimitDropdown = true;
+      if (dropdownName === 'shared') this.showSharedLimitDropdown = true;
+      if (dropdownName === 'members') this.showMembersLimitDropdown = true;
+    }
+    
+    this.cdr.detectChanges();
+  }
+
 
   toggleWorkspaceMenu(id: number, e: Event): void {
     e.stopPropagation();
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    this.activeMemberDropdownIndex = null;
+    this.permissionDropdownOpen = false;
+    this.openMenuId = null;
     if (this.openWorkspaceMenuId === id) {
       this.openWorkspaceMenuId = null;
       return;
@@ -1742,6 +1799,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   toggleRowMenu(id: number, e: Event): void {
     e.stopPropagation();
+    this.showDiagramsLimitDropdown = false;
+    this.showWorkspacesLimitDropdown = false;
+    this.showSharedLimitDropdown = false;
+    this.showMembersLimitDropdown = false;
+    this.activeMemberDropdownIndex = null;
+    this.permissionDropdownOpen = false;
+    this.openWorkspaceMenuId = null;
     if (this.openMenuId === id) {
       this.openMenuId = null;
       return;
@@ -1820,36 +1884,6 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     });
   }
 
-  formatDate(dateVal: string | Date | null | undefined): string {
-    if (!dateVal) return '—';
-    try {
-      const d = new Date(dateVal);
-      if (isNaN(d.getTime())) return String(dateVal);
-
-      const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
-      const month = monthNames[d.getMonth()];
-      const day = d.getDate();
-      let suffix = 'th';
-      if (day === 1 || day === 21 || day === 31) suffix = 'st';
-      else if (day === 2 || day === 22) suffix = 'nd';
-      else if (day === 3 || day === 23) suffix = 'rd';
-
-      const year = d.getFullYear();
-      let hours = d.getHours();
-      const minutes = d.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12;
-
-      return `${month} ${day}${suffix} ${year}, ${hours}:${minutes} ${ampm}`;
-    } catch {
-      return '—';
-    }
-  }
-
   onContainerClick(e: MouseEvent): void {
     e.stopPropagation();
     const target = e.target as HTMLElement;
@@ -1864,8 +1898,22 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       this.isMemberDropdownUpward = false;
       this.permissionDropdownOpen = false;
     }
+    if (!target.closest('.custom-select-container')) {
+      this.showDiagramsLimitDropdown = false;
+      this.showWorkspacesLimitDropdown = false;
+      this.showSharedLimitDropdown = false;
+      this.showMembersLimitDropdown = false;
+    }
   }
-
+  @HostListener('window:wheel', ['$event'])
+  onWindowWheel(e: Event): void {
+    if (this.activeMemberDropdownIndex !== null) {
+      this.activeMemberDropdownIndex = null;
+      this.activeMemberDropdownTarget = null;
+      this.memberDropdownPos = null;
+      this.cdr.detectChanges();
+    }
+  }
   @HostListener('document:click', ['$event'])
   onDocumentClick(e?: MouseEvent): void {
     if (e) {

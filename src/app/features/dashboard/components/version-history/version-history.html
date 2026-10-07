@@ -45,7 +45,11 @@
           </div>
           
           <div class="version-info-col">
-            <span class="version-time">{{ formatDate(v.created_at || v.timestamp) }}</span>
+            <span class="version-time">
+              <ng-container *ngIf="isToday(v.created_at || v.timestamp)">Today, {{ (v.created_at || v.timestamp) | date:'h:mm a' }}</ng-container>
+              <ng-container *ngIf="isYesterday(v.created_at || v.timestamp)">Yesterday, {{ (v.created_at || v.timestamp) | date:'h:mm a' }}</ng-container>
+              <ng-container *ngIf="!isToday(v.created_at || v.timestamp) && !isYesterday(v.created_at || v.timestamp)">{{ (v.created_at || v.timestamp) | date:'MMM d, y, h:mm a' }}</ng-container>
+            </span>
           </div>
         </div>
         

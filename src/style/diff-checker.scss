@@ -1220,3 +1220,121 @@ html:not(.light-theme),
     }
   }
 }
+/* Responsive adjustments for Tablets and Mobile */
+@media (max-width: 992px) {
+  .diff-checker-container {
+    overflow-y: auto !important;
+  }
+
+  .diff-headers-bar,
+  .diff-main-workspace {
+    display: contents !important;
+  }
+
+  .diff-toolbar {
+    order: 1;
+    width: 100%;
+  }
+
+  /* Base structure for stacked headers */
+  .sub-header-left, .sub-header-right {
+    padding: 10px 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex: 0 0 auto !important;
+  }
+
+  .sub-header-left {
+    order: 2;
+  }
+
+  .left-column {
+    order: 3;
+    width: 100% !important;
+    min-height: 40vh !important;
+    flex: 1 0 auto !important;
+    border-right: none !important;
+  }
+
+  .sub-header-right {
+    order: 4;
+  }
+
+  .right-column {
+    order: 5;
+    width: 100% !important;
+    min-height: 40vh !important;
+    flex: 1 0 auto !important;
+    border-left: none !important;
+  }
+
+  .sub-header-divider,
+  .diff-column-divider {
+    display: none !important;
+  }
+
+  /* Light Theme Colors (Default) */
+  body.light-theme .sub-header-left,
+  html.light-theme .sub-header-left,
+  :not([data-theme="dark"]) .sub-header-left,
+  .sub-header-left {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  
+  body.light-theme .sub-header-right,
+  html.light-theme .sub-header-right,
+  :not([data-theme="dark"]) .sub-header-right,
+  .sub-header-right {
+    background: #f8fafc !important;
+    border-top: 6px solid #e2e8f0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  /* Dark Theme Colors */
+  body:not(.light-theme) .sub-header-left,
+  html:not(.light-theme) .sub-header-left,
+  [data-theme="dark"] .sub-header-left {
+    background: #111d35 !important;
+    border-bottom: 2px solid #22375d !important;
+  }
+
+  body:not(.light-theme) .sub-header-right,
+  html:not(.light-theme) .sub-header-right,
+  [data-theme="dark"] .sub-header-right {
+    background: #111d35 !important;
+    border-top: 6px solid #22375d !important;
+    border-bottom: 2px solid #22375d !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .diff-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto !important;
+    padding: 12px 16px !important;
+    gap: 12px;
+  }
+
+  .diff-toolbar-left {
+    justify-content: flex-start;
+  }
+
+  .diff-toolbar-right {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .sub-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+
+  .sub-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+

@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, HostListener, Input, OnInit, effect, NgZone, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { ButtonComponent } from '../../../shared/button/button';
 import { Icons } from '../../component/icons/icons';
@@ -17,7 +18,7 @@ import { UpgradeModalComponent } from '../../../features/dashboard/components/up
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, ButtonComponent, Icons, WorkspaceModalComponent, ShareModalComponent, UpgradeModalComponent],
+  imports: [CommonModule,FormsModule, ButtonComponent, Icons, WorkspaceModalComponent, ShareModalComponent, UpgradeModalComponent],
   templateUrl: './header.html',
 })
 
@@ -77,6 +78,30 @@ export class HeaderComponent implements OnInit {
   importError: string | null = null;
   private readonly validateTrigger$ = new Subject<void>();
   private validateDebounce: any;
+
+
+
+  // Connection String import modal state
+  connStringModalOpen = false;
+  connStringConnectMode: 'host' | 'url' = 'host';
+  connStringDatabaseType: 'postgres' | 'mysql' | 'mssql' | 'sqlite' = 'postgres';
+  selectedSqliteFile: File | null = null;
+  isSqliteDraggingOver = false;
+
+  // Host mode fields
+  connHost = 'localhost';
+  connPort: number | null = 5432;
+  connDatabase = '';
+  connUsername = 'postgres';
+  connPassword = '';
+  connSchema = 'public';
+  showConnPassword = false;
+
+  // URL mode field
+  connStringValue = '';
+
+  connStringImporting = false;
+  connStringError: string | null = null;
 
   // Deletion warning alert modal state
 
@@ -178,6 +203,10 @@ export class HeaderComponent implements OnInit {
       this.openImportModal(dialect);
       this.cdr.detectChanges();
     });
+      this.svc.openConnectionStringModal$.subscribe(() => {
+      this.openConnectionStringModal();
+      this.cdr.detectChanges();
+    });
   }
 
 
@@ -241,6 +270,7 @@ export class HeaderComponent implements OnInit {
       return;
     }
     this.runWithUnsavedChangesCheck(() => {
+      this.svc.closeAiDiffReview(false);
       this.svc.requestSplitView();
 
       const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
@@ -681,6 +711,306 @@ export class HeaderComponent implements OnInit {
     this.resetImportState();
   }
 
+openConnectionStringModal(): void {
+    if (!this.entitlementService.canUseFeature('import_sql')) {
+      if (!this.entitlementService.orgHasFeature('import_sql')) {
+        this.svc.showUpgradeModal('import_sql');
+      }
+      return;
+    }
+    this.connStringModalOpen = true;
+    this.importMenuOpen = false;
+    this.connStringConnectMode = 'host';
+    this.connStringDatabaseType = 'postgres';
+    this.connHost = 'localhost';
+    this.connPort = 5432;
+    this.connDatabase = '';
+    this.connUsername = 'postgres';
+    this.connPassword = '';
+    this.connSchema = 'public';
+    this.showConnPassword = false;
+    this.connStringValue = '';
+    this.selectedSqliteFile = null;
+    this.isSqliteDraggingOver = false;
+    this.connStringImporting = false;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+
+  closeConnectionStringModal(): void {
+    this.connStringModalOpen = false;
+    this.connStringValue = '';
+    this.selectedSqliteFile = null;
+    this.isSqliteDraggingOver = false;
+    this.connStringImporting = false;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+
+  onConnPasswordInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.value.includes(' ')) {
+      input.value = input.value.replace(/\s+/g, '');
+      this.connPassword = input.value;
+    }
+  }
+
+  onDatabaseTypeChange(): void {
+    this.connStringError = null;
+    if (this.connStringDatabaseType === 'sqlite') {
+      this.selectedSqliteFile = null;
+      this.isSqliteDraggingOver = false;
+    } else if (this.connStringDatabaseType === 'postgres') {
+      if (!this.connPort || this.connPort === 3306 || this.connPort === 1433) this.connPort = 5432;
+      if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa') this.connUsername = 'postgres';
+    } else if (this.connStringDatabaseType === 'mysql') {
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433) this.connPort = 3306;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa') this.connUsername = 'root';
+    } else if (this.connStringDatabaseType === 'mssql') {
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306) this.connPort = 1433;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root') this.connUsername = 'sa';
+    }
+    this.cdr.markForCheck();
+  }
+
+  onSqliteFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.validateAndSetSqliteFile(input.files[0]);
+      input.value = '';
+    }
+  }
+
+  onSqliteDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isSqliteDraggingOver = true;
+  }
+
+  onSqliteDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isSqliteDraggingOver = false;
+  }
+
+  onSqliteDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isSqliteDraggingOver = false;
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      this.validateAndSetSqliteFile(event.dataTransfer.files[0]);
+    }
+  }
+
+  validateAndSetSqliteFile(file: File): void {
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    const validExtensions = ['.db', '.sqlite', '.sqlite3', '.db3'];
+    const isValid = validExtensions.some(ext => name.endsWith(ext));
+    if (!isValid) {
+      this.connStringError = 'Invalid file type. Only .db, .sqlite, .sqlite3, and .db3 files are supported.';
+      this.selectedSqliteFile = null;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.selectedSqliteFile = file;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+  removeSqliteFile(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.selectedSqliteFile = null;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+
+  formatFileSize(bytes: number): string {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  getGeneratedConnectionString(): string {
+    if (this.connStringConnectMode === 'url') {
+      let raw = this.connStringValue.trim();
+      if (raw.toLowerCase().startsWith('jdbc:')) {
+        raw = raw.substring(5);
+      }
+      return raw;
+    }
+
+    const host = this.connHost.trim() || 'localhost';
+    const port = this.connPort || (this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' ? 3306 : 1433);
+    const db = this.connDatabase.trim();
+    const user = this.connUsername.trim();
+    const pass = this.connPassword;
+    const schema = this.connSchema.trim() || 'public';
+
+    if (this.connStringDatabaseType === 'mssql') {
+      const authPart = user ? `User Id=${user};Password=${pass};` : '';
+      return `Server=${host},${port};Database=${db};${authPart}Encrypt=false;TrustServerCertificate=true;`;
+    }
+
+    const userPass = user ? (pass ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}@` : `${encodeURIComponent(user)}@`) : '';
+
+    if (this.connStringDatabaseType === 'postgres') {
+      return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schemas=${schema}` : ''}`;
+    } else if (this.connStringDatabaseType === 'mysql') {
+      return `mysql://${userPass}${host}:${port}/${db}`;
+    }
+
+    return `postgresql://${userPass}${host}:${port}/${db}`;
+  }
+
+  isConnStringSubmitDisabled(): boolean {
+    if (this.connStringImporting) return true;
+    if (this.connStringDatabaseType === 'sqlite') {
+      return !this.selectedSqliteFile;
+    }
+    if (this.connStringConnectMode === 'host') {
+      return !this.connHost.trim() || !this.connDatabase.trim();
+    }
+    return !this.connStringValue.trim();
+  }
+
+  submitConnectionStringImport(): void {
+    if (this.isConnStringSubmitDisabled()) {
+      return;
+    }
+
+    if (this.connStringDatabaseType === 'sqlite') {
+      if (!this.selectedSqliteFile) {
+        this.connStringError = 'Please upload a valid SQLite database file (.db, .sqlite, .sqlite3 and .db3).';
+        return;
+      }
+
+      this.connStringImporting = true;
+      this.connStringError = null;
+
+      this.importSvc.generateFromSqlite(this.selectedSqliteFile).pipe(
+        finalize(() => {
+          this.connStringImporting = false;
+          this.cdr.markForCheck();
+        })
+      ).subscribe({
+        next: (response: any) => {
+          let dbml = '';
+          try {
+            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            dbml = parsed?.data?.diagramdbml ?? parsed?.data?.dbml ?? parsed?.diagramdbml ?? parsed?.dbml ?? parsed?.result ?? parsed?.code ?? (typeof parsed === 'string' ? parsed : JSON.stringify(parsed));
+          } catch {
+            dbml = response;
+          }
+
+          if (!dbml || !dbml.trim()) {
+            this.connStringError = 'Import succeeded but no DBML was returned.';
+            this.cdr.markForCheck();
+            return;
+          }
+          this.svc.forceSetCode(dbml);
+          this.svc.showToast('Schema generated and imported successfully.', 2500, 'success');
+          this.closeConnectionStringModal();
+          this.cdr.markForCheck();
+        },
+        error: (err: any) => {
+          console.error('SQLite import failed:', err);
+          let errorMessage = 'Failed to generate DBML from SQLite file.';
+
+          if (err?.error) {
+            try {
+              const parsed = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+              if (parsed?.message) {
+                errorMessage = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+              } else if (parsed?.error) {
+                errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
+              }
+            } catch {
+              if (typeof err.error === 'string' && err.error.trim()) {
+                errorMessage = err.error.length > 250 ? err.error.substring(0, 250) + '...' : err.error;
+              }
+            }
+          } else if (err?.message) {
+            errorMessage = err.message;
+          }
+
+          this.connStringError = errorMessage;
+          this.cdr.markForCheck();
+        }
+      });
+      return;
+    }
+
+    const finalConnString = this.getGeneratedConnectionString();
+    if (!finalConnString || !finalConnString.trim()) {
+      this.connStringError = 'Please specify valid connection parameters.';
+      return;
+    }
+
+    this.connStringImporting = true;
+    this.connStringError = null;
+
+    this.importSvc.generateFromConnectionString(this.connStringDatabaseType, finalConnString).pipe(
+      finalize(() => {
+        this.connStringImporting = false;
+        this.cdr.markForCheck();
+      })
+    ).subscribe({
+      next: (response: any) => {
+        let dbml = '';
+        try {
+          const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+          dbml = parsed?.data?.diagramdbml ?? parsed?.data?.dbml ?? parsed?.diagramdbml ?? parsed?.dbml ?? parsed?.result ?? parsed?.code ?? (typeof parsed === 'string' ? parsed : JSON.stringify(parsed));
+        } catch {
+          dbml = response;
+        }
+
+        if (!dbml || !dbml.trim()) {
+          this.connStringError = 'Import succeeded but no DBML was returned.';
+          this.cdr.markForCheck();
+          return;
+        }
+        this.svc.forceSetCode(dbml);
+        this.svc.showToast('Schema generated and imported successfully.', 2500, 'success');
+        this.closeConnectionStringModal();
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        console.error('Connection string import failed:', err);
+        let errorMessage = 'Failed to generate DBML from connection string.';
+
+        if (err?.error) {
+          try {
+            const parsed = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
+            if (parsed?.message) {
+              errorMessage = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+            } else if (parsed?.error) {
+              errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
+            }
+          } catch {
+            if (typeof err.error === 'string' && err.error.trim()) {
+              errorMessage = err.error.length > 250 ? err.error.substring(0, 250) + '...' : err.error;
+            }
+          }
+        } else if (err?.message) {
+          errorMessage = err.message;
+        }
+
+        if (errorMessage.toLowerCase().includes('authentication failed') || errorMessage.toLowerCase().includes('password authentication failed')) {
+          errorMessage = 'Database Authentication Failed: Incorrect database username or password in connection string.';
+        } else if (err?.status === 503) {
+          errorMessage = 'Service Unavailable (503): Backend failed to reach the target database. Check host and port.';
+        }
+
+        this.connStringError = errorMessage;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+   
   closeImportModal(): void {
     this.importModalOpen = false;
     this.resetImportState();
@@ -849,7 +1179,7 @@ export class HeaderComponent implements OnInit {
 
   togglePersonalMenu(e?: Event): void {
     if (!this.isLoggedIn) return;
-    if (e) e.stopPropagation();
+    
     this.personalMenuOpen = !this.personalMenuOpen;
     if (this.personalMenuOpen) {
       this.exportMenuOpen = false;
@@ -863,7 +1193,7 @@ export class HeaderComponent implements OnInit {
 
   openPersonalDropdown(e: Event): void {
     if (!this.isLoggedIn) return;
-    e.stopPropagation();
+    
     this.personalMenuOpen = !this.personalMenuOpen;
     if (this.personalMenuOpen) {
       this.exportMenuOpen = false;
@@ -883,7 +1213,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleWorkspaceSubmenu(e: Event): void {
-    e.stopPropagation();
+    
     this.showWorkspaceSubmenu = !this.showWorkspaceSubmenu;
     if (this.showWorkspaceSubmenu) {
       this.showMyDiagramsSubmenu = false;
@@ -901,7 +1231,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleMyDiagramsSubmenu(e: Event): void {
-    e.stopPropagation();
+    
     this.showMyDiagramsSubmenu = !this.showMyDiagramsSubmenu;
     if (this.showMyDiagramsSubmenu) {
       this.showWorkspaceSubmenu = false;
@@ -911,7 +1241,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleSampleSubmenu(e: Event): void {
-    e.stopPropagation();
+    
     this.showSampleSubmenu = !this.showSampleSubmenu;
     if (this.showSampleSubmenu) {
       this.showWorkspaceSubmenu = false;
@@ -1014,7 +1344,7 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleProfileMenu(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.profileMenuOpen = !this.profileMenuOpen;
     if (this.profileMenuOpen) {
       this.personalMenuOpen = false;
@@ -1058,6 +1388,7 @@ export class HeaderComponent implements OnInit {
     }
     this.runWithUnsavedChangesCheck(() => {
 
+      this.svc.closeAiDiffReview(false);
       this.svc.requestSplitView();
       this.svc.clearDiagram(true);
       this.svc.code = this.svc.getSampleCode(type);

@@ -264,11 +264,3 @@
   }
 }
 
-/* Disable tooltips entirely on touch devices to prevent sticky tooltips on tap */
-@media (hover: none) {
-  .tt::after,
-  .tt::before {
-    display: none !important;
-    content: none !important;
-  }
-}

@@ -125,38 +125,47 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    if (this.auth.getCurrentPlanStatus() === 'expired') return true;
     switch (item) {
       case 'import':
-        return !this.hasFeatureAccess('import_sql');
+        return !this.entitlementService.orgHasFeature('import_sql');
       case 'export':
-        return !this.hasFeatureAccess('export_image') && !this.hasFeatureAccess('export_sql');
+        return !this.entitlementService.orgHasFeature('export_image') && !this.entitlementService.orgHasFeature('export_sql');
       case 'share':
-        return !this.hasFeatureAccess('share_diagram');
+        return !this.entitlementService.orgHasFeature('share_diagram');
       case 'versions':
-        return !this.hasFeatureAccess('version_history');
+        return !this.entitlementService.orgHasFeature('version_history');
       case 'tables':
       case 'refs':
-        return !this.hasFeatureAccess('table_relationships');
+        return !this.entitlementService.orgHasFeature('table_relationships');
       case 'docs':
         if (this.svc.isDocUnlocked()) {
           if (this.auth.getCurrentPlanStatus() !== 'expired') {
             return false;
           }
         }
-        return !this.hasFeatureAccess('document_view');
+        return !this.entitlementService.orgHasFeature('document_view');
       case 'compare':
-        return !this.hasFeatureAccess('code_compare');
+        return !this.entitlementService.orgHasFeature('code_compare');
       case 'ai':
-        return !this.hasFeatureAccess('ai_chat');
+        return !this.entitlementService.orgHasFeature('ai_chat');
       default:
         return false;
     }
   }
 
+  isMemberRestricted(featureKeys: string[]): boolean {
+    if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    // If the feature is not there in memberFeatureAccess just disable the button in ui
+    return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k));
+  }
+
   // ============ IMPORT ============
 
   toggleImportMenu(e?: Event): void {
-    if (e) e.stopPropagation();
+    
+    if (this.isMemberRestricted(['import_sql'])) return;
+    
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -170,7 +179,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   openImportDialect(dialect: SqlDialect, e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     if (!this.isLoggedIn || this.isSampleDiagram()) {
@@ -191,6 +200,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.openImportDialect(dialect, e);
   }
 
+
+  openConnectionStringModal(e?: Event): void {
+    if (e) e.stopPropagation();
+    this.svc.closeErrorsCard();
+    this.importMenuOpen = false;
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      return;
+    }
+    if (!this.entitlementService.canUseFeature('import_sql')) {
+      if (!this.entitlementService.orgHasFeature('import_sql')) {
+        this.svc.showUpgradeModal('import_sql');
+      }
+      return;
+    }
+    this.svc.openConnectionStringModal();
+    this.cdr.markForCheck();
+  }
   hasDbmlErrors(): boolean {
     return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;
   }
@@ -198,7 +225,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ EXPORT ============
 
   toggleExportMenu(e?: Event): void {
-    if (e) e.stopPropagation();
+    
+    if (this.isMemberRestricted(['export_image', 'export_sql'])) return;
+    
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -214,7 +243,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   exportFormat(format: 'pdf' | 'png' | 'svg', e?: Event): void {
-    if (e) e.stopPropagation();
+    
     if (this.hasDbmlErrors()) {
       return;
     }
@@ -237,7 +266,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   exportSQL(dialect: SqlDialect, e?: Event): void {
-    if (e) e.stopPropagation();
+    
     if (this.hasDbmlErrors()) {
       return;
     }
@@ -298,7 +327,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ SHARE ============
 
   openShare(e?: Event): void {
-    if (e) e.stopPropagation();
+    
+    if (this.isMemberRestricted(['share_diagram'])) return;
+    
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
@@ -334,7 +365,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ VERSION HISTORY ============
 
   toggleVersionHistory(e?: Event): void {
-    if (e) e.stopPropagation();
+    
+    if (this.isMemberRestricted(['version_history'])) return;
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -365,7 +398,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ INSPECTOR (TABLES / REFS / DBML) ============
 
   toggleInspector(tab: 'tables' | 'refs', e?: Event): void {
-    if (e) e.stopPropagation();
+    if (this.isMemberRestricted(['table_relationships'])) return;
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -410,7 +444,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   toggleAiChat(e?: Event): void {
-    if (e) e.stopPropagation();
+    
+    if (this.isMemberRestricted(['ai_chat'])) return;
+    
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -442,7 +478,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   showDbmlEditor(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     this.svc.showDocs = false;
@@ -472,7 +508,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ DIFF CHECKER ============
 
   toggleDiffChecker(e?: Event): void {
-    if (e) e.stopPropagation();
+    
+    if (this.isMemberRestricted(['code_compare'])) return;
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     this.svc.showDocs = false;
@@ -503,7 +541,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ VIEW DOCS ============
 
   toggleDocs(e?: Event): void {
-    if (e) e.stopPropagation();
+    
+    if (this.isMemberRestricted(['document_view'])) return;
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (!this.isLoggedIn) {
@@ -570,7 +610,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ AUTH / SIGNOUT ============
 
   handleSignOut(e?: Event): void {
-    if (e) e.stopPropagation();
+    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (!this.isLoggedIn) {

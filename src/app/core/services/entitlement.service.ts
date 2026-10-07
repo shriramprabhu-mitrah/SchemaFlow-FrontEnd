@@ -101,6 +101,12 @@ export class EntitlementService {
           localStorage.removeItem('organization_id');
           localStorage.removeItem('org_role');
           localStorage.setItem('account_type', 'individual');
+        } else if (data?.orgRole) {
+          this.auth.setOrgRole(data.orgRole);
+        }
+
+        if (data?.isSuperAdmin !== undefined) {
+          this.auth.setSuperAdmin(data.isSuperAdmin);
         }
 
         return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
@@ -214,8 +220,8 @@ export class EntitlementService {
   }
 
   hasMemberAccess(featureKey: string): boolean {
-    if (this.auth.isSuperAdmin() || this.auth.isOrganizationAdmin()) return true;
-    if (!this.auth.getOrganizationId()) return true; // Personal workspaces have no member restrictions
+    if (this.auth.isSuperAdmin()) return true; // Allow super admin bypass, but not org admin, so memberFeatureAccess is respected
+    if (!this.auth.getOrganizationId() && !this.memberFeatureAccess) return true; // Personal workspaces have no member restrictions, unless memberFeatureAccess is explicitly set
     
     if (this.memberFeatureAccess) {
       if (this.memberFeatureAccess.includes(featureKey)) return true;

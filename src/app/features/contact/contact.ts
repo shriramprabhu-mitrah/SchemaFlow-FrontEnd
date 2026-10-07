@@ -19,6 +19,28 @@ import { Footer } from '../../shared/components/footer/footer';
   encapsulation: ViewEncapsulation.None
 })
 export class ContactComponent implements OnInit {
+
+  isFeaturesDropdownOpen = false;
+
+  toggleFeaturesDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.isFeaturesDropdownOpen = !this.isFeaturesDropdownOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeFeaturesDropdownOnGlobalClick(event: Event): void {
+    this.isFeaturesDropdownOpen = false;
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    if (this.isFeaturesDropdownOpen) {
+      this.isFeaturesDropdownOpen = false;
+    }
+  }
+
+
   @ViewChild('fileUploadInput') fileUploadInput?: ElementRef<HTMLInputElement>;
 
   isLoggedIn = false;
