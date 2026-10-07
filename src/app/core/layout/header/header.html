@@ -321,8 +321,8 @@
         </svg>
         Import from
         <span class="dialect-badge"
-          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : importDialect === 'mongodb' ? 'mongodb-badge' : 'sqlserver-badge'">
-          {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect ===
+          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'mariadb' ? 'mariadb-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : importDialect === 'mongodb' ? 'mongodb-badge' : 'sqlserver-badge'">
+          {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect === 'mariadb' ? 'MariaDB' : importDialect ===
           'sqlite' ? 'SQLite' : importDialect === 'mongodb' ? 'MongoDB (NoSQL)' : 'SQL Server' }}
         </span>
       </div>
@@ -413,7 +413,7 @@
 </div>
 
 <!-- ============ CONNECTION STRING IMPORT MODAL ============ -->
-<div class="import-modal-overlay" *ngIf="connStringModalOpen" (click)="closeConnectionStringModal()">
+<div class="import-modal-overlay" *ngIf="connStringModalOpen">
   <div class="import-modal conn-string-modal" (click)="$event.stopPropagation()">
 
     <!-- Header -->
@@ -431,6 +431,18 @@
 
     <!-- Body -->
     <div class="import-modal-body">
+
+      <!-- Live Connection Warning -->
+      <div class="connection-risk-card" role="alert">
+        <div class="connection-risk-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.3 3.7 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+        </div>
+        <p>Please verify the connection details before proceeding. DB Nexus is not responsible for any data loss or changes resulting from the live database connection.</p>
+      </div>
 
       <!-- Database Type Dropdown -->
       <div class="modal-form-group">
@@ -525,7 +537,7 @@
           <label class="import-modal-label">Connect By</label>
           <div class="connect-by-segment">
             <label class="segment-option" [class.active]="connStringConnectMode === 'host'">
-              <input type="radio" name="connectByMode" value="host" [(ngModel)]="connStringConnectMode" />
+              <input type="radio" name="connectByMode" value="host" [(ngModel)]="connStringConnectMode" (change)="onConnectModeChange('host')" />
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
                 <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
@@ -535,7 +547,7 @@
               Host & Settings
             </label>
             <label class="segment-option" [class.active]="connStringConnectMode === 'url'">
-              <input type="radio" name="connectByMode" value="url" [(ngModel)]="connStringConnectMode" />
+              <input type="radio" name="connectByMode" value="url" [(ngModel)]="connStringConnectMode" (change)="onConnectModeChange('url')" />
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
@@ -547,6 +559,13 @@
 
         <!-- HOST FORM FIELDS -->
         <ng-container *ngIf="connStringConnectMode === 'host'">
+          <div class="modal-form-group conn-top-slot" style="margin-top: 14px;">
+            <label class="import-modal-label">Generated Connection String</label>
+            <div class="conn-preview-box">
+              <code class="preview-code">{{ getGeneratedConnectionString() }}</code>
+            </div>
+          </div>
+
           <div class="modal-form-row" style="margin-top: 14px;">
             <!-- Host -->
             <div class="modal-form-group flex-3">
@@ -579,14 +598,14 @@
             <!-- Username -->
             <div class="modal-form-group flex-1">
               <label class="import-modal-label" for="conn-username">Username</label>
-              <input type="text" id="conn-username" class="modal-input-field" placeholder="postgres" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" />
+              <input type="text" id="conn-username" name="db_host_username" class="modal-input-field" placeholder="postgres" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" data-lpignore="true" />
             </div>
 
             <!-- Password -->
             <div class="modal-form-group flex-1">
               <label class="import-modal-label" for="conn-password">Password</label>
               <div class="password-input-wrap">
-                <input [type]="showConnPassword ? 'text' : 'password'" id="conn-password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="off" />
+                <input [type]="showConnPassword ? 'text' : 'password'" id="conn-password" name="db_host_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
                 <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
                   <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -600,26 +619,62 @@
               </div>
             </div>
           </div>
-
-          <!-- Generated String Preview Box -->
-          <div class="conn-preview-box" style="margin-top: 14px;">
-            <span class="preview-label">Generated Connection String:</span>
-            <code class="preview-code">{{ getGeneratedConnectionString() }}</code>
-          </div>
         </ng-container>
 
         <!-- URL FORM FIELD -->
         <ng-container *ngIf="connStringConnectMode === 'url'">
-          <div class="modal-form-group" style="margin-top: 14px;">
+          <div class="modal-form-group conn-top-slot" style="margin-top: 14px;">
             <label class="import-modal-label" for="conn-string-input">Connection URL</label>
             <div class="input-wrapper">
-              <textarea id="conn-string-input" class="modal-textarea-field" rows="3"
+              <textarea id="conn-string-input" class="modal-textarea-field" rows="2"
                 [placeholder]="connStringDatabaseType === 'mssql' ? 'Server=localhost,1433;Database=student_db;User Id=sa;Password=SqlServer@12345;Encrypt=false;TrustServerCertificate=true;' : (connStringDatabaseType === 'mysql' ? 'mysql://root:password@localhost:3306/dbname' : 'postgresql://postgres:password@localhost:5432/mailService?schemas=public')"
-                [(ngModel)]="connStringValue" spellcheck="false" autocomplete="off"></textarea>
+                [(ngModel)]="connStringValue" (input)="onConnStringInput($event)" spellcheck="false" autocomplete="off"></textarea>
             </div>
-            <span class="field-hint" style="font-size: 11.5px; color: #8a99b5; margin-top: 5px; display: block;">
-              Paste connection URL or DBeaver URL (e.g. jdbc:postgresql://localhost:5432/postgres).
-            </span>
+          </div>
+
+          <div class="modal-form-row" style="margin-top: 14px;">
+            <div class="modal-form-group flex-3">
+              <label class="import-modal-label" for="conn-url-host">Host</label>
+              <input type="text" id="conn-url-host" class="modal-input-field" placeholder="localhost" [(ngModel)]="connHost" readonly spellcheck="false" autocomplete="off" />
+            </div>
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-url-port">Port</label>
+              <input type="number" id="conn-url-port" class="modal-input-field" placeholder="5432" [(ngModel)]="connPort" readonly autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="modal-form-row" style="margin-top: 12px;">
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-url-database">Database</label>
+              <input type="text" id="conn-url-database" class="modal-input-field" placeholder="my_database" [(ngModel)]="connDatabase" readonly spellcheck="false" autocomplete="off" />
+            </div>
+            <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres'">
+              <label class="import-modal-label" for="conn-url-schema">Schema</label>
+              <input type="text" id="conn-url-schema" class="modal-input-field" placeholder="public" [(ngModel)]="connSchema" readonly spellcheck="false" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="modal-form-row" style="margin-top: 12px;">
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-url-username">Username</label>
+              <input type="text" id="conn-url-username" name="db_url_username" class="modal-input-field" placeholder="postgres" [(ngModel)]="connUsername" readonly spellcheck="false" autocomplete="off" data-lpignore="true" />
+            </div>
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-url-password">Password</label>
+              <div class="password-input-wrap">
+                <input [type]="showConnPassword ? 'text' : 'password'" id="conn-url-password" name="db_url_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" readonly (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
+                <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
+                  <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </ng-container>
       </ng-container>

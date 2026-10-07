@@ -14,6 +14,7 @@ import { EntitlementService } from '../../../core/services/entitlement.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
+import { parseConnectionDetails } from './connection-string.util';
 
 @Component({
   selector: 'app-header',
@@ -755,6 +756,46 @@ openConnectionStringModal(): void {
     }
   }
 
+  syncFromConnectionString(): void {
+    if (!this.connStringValue.trim()) {
+      return;
+    }
+    const details = parseConnectionDetails(
+      this.connStringValue,
+      this.connStringDatabaseType
+    );
+
+    if (!details) return;
+
+    this.connHost = details.host;
+    this.connPort = details.port;
+    this.connDatabase = details.database;
+    this.connUsername = details.username;
+    this.connPassword = details.password;
+    this.connSchema = details.schema;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+
+  onConnStringInput(event: Event): void {
+    const input = event.target as HTMLTextAreaElement;
+    this.connStringValue = input.value;
+    this.syncFromConnectionString();
+  }
+
+  onConnectModeChange(mode?: 'host' | 'url'): void {
+    if (mode) {
+      this.connStringConnectMode = mode;
+    }
+    if (this.connStringConnectMode === 'url') {
+      if (!this.connStringValue.trim()) {
+        this.connStringValue = this.getGeneratedConnectionString();
+      }
+      this.syncFromConnectionString();
+    }
+    this.cdr.markForCheck();
+  }
+
   onDatabaseTypeChange(): void {
     this.connStringError = null;
     if (this.connStringDatabaseType === 'sqlite') {
@@ -769,6 +810,9 @@ openConnectionStringModal(): void {
     } else if (this.connStringDatabaseType === 'mssql') {
       if (!this.connPort || this.connPort === 5432 || this.connPort === 3306) this.connPort = 1433;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root') this.connUsername = 'sa';
+    }
+    if (this.connStringConnectMode === 'url' && this.connStringValue.trim()) {
+      this.syncFromConnectionString();
     }
     this.cdr.markForCheck();
   }
@@ -872,9 +916,11 @@ openConnectionStringModal(): void {
       return !this.selectedSqliteFile;
     }
     if (this.connStringConnectMode === 'host') {
-      return !this.connHost.trim() || !this.connDatabase.trim();
+      return !this.connHost.trim()
+        || !this.connDatabase.trim()
+        || (!this.connUsername.trim() || !this.connPassword.trim());
     }
-    return !this.connStringValue.trim();
+    return !this.connStringValue.trim() || !this.connDatabase.trim();
   }
 
   submitConnectionStringImport(): void {

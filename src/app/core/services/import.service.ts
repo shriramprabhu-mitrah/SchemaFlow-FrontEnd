@@ -5,7 +5,7 @@ import { AppConfigService } from './app-config.service';
 
 import { AuthService } from './auth.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'sqlserver' | 'oracle' | 'sqlite' | 'mongodb';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'sqlite' | 'mongodb';
 
 export interface ImportRequest {
   databaseType: string;
@@ -25,6 +25,7 @@ export class ImportService {
   private readonly databaseTypeMap: Record<SqlDialect, string> = {
     postgres: 'Postgres',
     mysql: 'Mysql',
+    mariadb: 'MariaDB',
     sqlserver: 'SqlServer',
     sqlite: 'Sqlite',
     oracle: 'Oracle',
@@ -81,7 +82,7 @@ export class ImportService {
    * Generates DBML schema from database connection string
    */
   generateFromConnectionString(databaseType: string, connectionString: string): Observable<string> {
-    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml || 'http://localhost:4201/api/dbml/generate';
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml || 'http://localhost:4000/api/dbml/generate';
     const token = this.authService ? this.authService.getToken() : null;
     let headers: Record<string, string> = {
       'Content-Type': 'application/json'
@@ -102,7 +103,7 @@ export class ImportService {
    * Generates DBML schema from SQLite database file (.db, .sqlite, .sqlite3, .db3)
    */
   generateFromSqlite(file: File): Observable<string> {
-    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbmlSqlite || 'http://localhost:4201/api/dbml/generate-sqlite';
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbmlSqlite || 'http://localhost:4000/api/dbml/generate-sqlite';
 
     const token = this.authService ? this.authService.getToken() : null;
     let headers: Record<string, string> = {};
