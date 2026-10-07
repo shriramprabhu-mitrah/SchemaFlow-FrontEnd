@@ -1,0 +1,259 @@
+
+<div class="landing-container light-mode-enforced">
+  <!-- NAVIGATION HEADER -->
+  <header class="landing-header clean-header">
+    <div class="header-inner">
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text">dbNexus</span>
+      </div>
+      <nav class="header-nav">
+        <div class="nav-item-dropdown" [class.show]="isFeaturesDropdownOpen">
+          <a class="nav-link" style="cursor: pointer;" (click)="toggleFeaturesDropdown($event)">
+            Features
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </a>
+          <div class="dropdown-menu" (click)="$event.stopPropagation()">
+            <a routerLink="/features/db-docs" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Docs</span>
+                <span class="desc">Generate beautiful documentation for your database schema</span>
+              </div>
+            </a>
+            <a routerLink="/features/live-connection" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Live Connection</span>
+                <span class="desc">Connect securely directly to your live database</span>
+              </div>
+            </a>
+          </div>
+        </div>
+        <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
+        <a routerLink="/docs" target="_blank" routerLinkActive="active" class="nav-link">Docs</a>
+        <a routerLink="/diff" routerLinkActive="active" class="nav-link">SQL Compare</a>
+      </nav>
+      <div class="header-actions">
+        <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-signin-light">Sign In</app-button>
+        </a>
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign Out</app-button>
+        
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE MENU OVERLAY -->
+  <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
+    <nav class="mobile-nav">
+      <a routerLink="/features/db-docs" class="mobile-nav-link" (click)="toggleMobileMenu()">DB Docs</a>
+      <a routerLink="/features/live-connection" class="mobile-nav-link" (click)="toggleMobileMenu()">Live Connection</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
+      <a routerLink="/diff" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">SQL Compare</a>
+
+      <div class="mobile-nav-bottom">
+        <div class="mobile-nav-divider"></div>
+        <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
+      </div>
+    </nav>
+  </div>
+
+    <section class="hero-clean-wrapper" style="padding-top: 100px; padding-bottom: 100px;">
+    <div class="hero-bg-shape shape-left"></div>
+    <div class="hero-bg-shape shape-right"></div>
+    
+    <div class="hero-content-split" style="position: relative; z-index: 10; width: 100%; max-width: 1200px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin: 0 auto;">
+      
+      <div class="hero-text-side" style="text-align: left;">
+        <div class="hero-badge" style="margin-bottom: 24px;">
+          <div class="badge-pulse"></div>
+          🔌 Secure & Instant Sync
+        </div>
+        <h1 class="hero-title" style="margin: 0 0 20px 0; font-size: clamp(36px, 5vw, 56px); line-height: 1.1; color: #0f172a;">Live DB Connection</h1>
+        <p class="hero-subtitle" style="margin: 0 0 32px 0; font-size: 18px; line-height: 1.6; color: #475569;">Connect directly to your PostgreSQL, MySQL, or SQL Server databases. Reverse engineer schemas instantly without writing or running manual exports.</p>
+        
+        <div class="hero-actions" style="display: flex; gap: 16px;">
+          <button class="btn btn-primary" (click)="onCreateDiagram()" style="padding: 14px 28px; border-radius: 8px; font-weight: 600; background: #2563eb; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 16px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);">
+            Connect Now
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-visual-side" style="position: relative;">
+        <!-- Glowing aura behind the mockup -->
+        <div style="position: absolute; inset: -20px; background: radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%); z-index: 1; filter: blur(20px);"></div>
+        
+        <!-- Live DB Connection related UI Mockup -->
+        <div class="live-ui-mockup" style="position: relative; z-index: 2; background: white; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; overflow: hidden; transform: perspective(1000px) rotateY(-5deg) rotateX(2deg); transition: transform 0.3s ease;">
+          
+          <div class="mockup-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444;"></div>
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b;"></div>
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: #10b981;"></div>
+            </div>
+            <span style="font-size: 13px; color: #64748b; font-weight: 600;">Connect Database</span>
+            <div style="width: 40px;"></div> <!-- spacer -->
+          </div>
+          
+          <div class="mockup-body" style="padding: 24px;">
+            <!-- DB Type Selector -->
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+              <div style="flex: 1; border: 2px solid #3b82f6; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #eff6ff; color: #1e40af; cursor: pointer; transition: all 0.2s;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span style="font-weight: 700; font-size: 14px;">PostgreSQL</span>
+              </div>
+              <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #64748b; cursor: pointer; background: #f8fafc;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                <span style="font-weight: 600; font-size: 14px;">MySQL</span>
+              </div>
+            </div>
+            
+            <!-- Connection Form Fields Mockup -->
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px;">
+              <div>
+                <div style="width: 80px; height: 10px; background: #cbd5e1; border-radius: 4px; margin-bottom: 8px;"></div>
+                <div class="mockup-field" style="height: 40px; background: white; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; align-items: center; padding: 0 12px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                  <div style="width: 140px; height: 10px; background: #94a3b8; border-radius: 4px;"></div>
+                </div>
+              </div>
+              
+              <div style="display: flex; gap: 12px;">
+                <div style="flex: 2;">
+                  <div style="width: 50px; height: 10px; background: #cbd5e1; border-radius: 4px; margin-bottom: 8px;"></div>
+                  <div class="mockup-field" style="height: 40px; background: white; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; align-items: center; padding: 0 12px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                    <div style="width: 100px; height: 10px; background: #e2e8f0; border-radius: 4px;"></div>
+                  </div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="width: 40px; height: 10px; background: #cbd5e1; border-radius: 4px; margin-bottom: 8px;"></div>
+                  <div class="mockup-field" style="height: 40px; background: white; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; align-items: center; padding: 0 12px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                    <div style="width: 40px; height: 10px; background: #e2e8f0; border-radius: 4px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <button style="width: 100%; background: #10b981; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              Connect Successfully
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- Why it's useful -->
+  <section class="how-it-works-section">
+    <div class="how-it-works-container">
+      <div class="how-it-works-content">
+        <h2 class="how-it-works-title">Why Live Connection?</h2>
+        
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number" style="background: #ef4444; color: white; border-color: #fca5a5;">!</div>
+            <h4>Eliminates Manual Exports</h4>
+          </div>
+          <p>Stop asking your DBAs to run pg_dump or export DDL scripts every time a schema changes. DBNexus connects directly and reads your database's metadata in real-time.</p>
+        </div>
+        
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number" style="background: #f59e0b; color: white; border-color: #fcd34d;">✓</div>
+            <h4>Guarantees Accuracy</h4>
+          </div>
+          <p>Manual documentation quickly becomes outdated. By connecting directly to your live staging or production environment, you ensure your architecture diagrams are 100% accurate.</p>
+        </div>
+
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number" style="background: #10b981; color: white; border-color: #6ee7b7;">★</div>
+            <h4>Automates DBML Generation</h4>
+          </div>
+          <p>We automatically translate your live tables, columns, and foreign key relationships into readable DBML code, which you can edit, version control, or use to generate interactive data dictionaries.</p>
+        </div>
+      </div>
+      
+      <div class="how-it-works-ide" style="background: none; border: none; box-shadow: none; display: flex; align-items: center; justify-content: center;">
+        <img src="/assets/connect-database-dialog.svg" alt="Connect to a Database" style="max-width: 100%; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);" />
+      </div>
+    </div>
+  </section>
+
+  <section class="feature-grid-section" style="padding: 60px 24px 80px; max-width: 1200px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 64px;">
+      <h2 style="font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px;">Instant Reverse Engineering</h2>
+      <p style="font-size: 18px; color: #6b7280; max-width: 600px; margin: 0 auto;">Securely connect to your live database to extract tables, columns, and relationships in seconds. Keep your diagrams automatically synced with your production or staging environments.</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px;">
+      
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h3>Secure Encrypted Connections</h3>
+        <p>Your database credentials never leave your browser unencrypted. We prioritize security to ensure your data models and connections are fully protected.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        </div>
+        <h3>Multiple SQL Flavors</h3>
+        <p>We natively support pulling live schema metadata from PostgreSQL, MySQL, and Microsoft SQL Server right out of the box.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+        </div>
+        <h3>Always Up-to-Date</h3>
+        <p>Forget about manually running DDL export scripts. Our secure live connector reads the information_schema directly to keep everything perfectly synced.</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- Highlight Banner (Re-used for consistency) -->
+  <section class="interactive-dict-section" style="padding-bottom: 80px;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+      <div class="highlight-banner">
+        <div class="highlight-content">
+          <h3>One-Click Schema Sync</h3>
+          <p>
+            Connect instantly and visualize your complex architectures without any configuration overhead. Safe, secure, and blazing fast.
+          </p>
+        </div>
+        <div class="highlight-icon-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <app-footer></app-footer>
+</div>

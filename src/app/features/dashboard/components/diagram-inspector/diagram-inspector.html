@@ -120,7 +120,7 @@
                       (click)="toggleTypeDropdown(table.name, col.name, $event)"
                       [attr.data-tt]="!isTypeDropdownOpen(table.name, col.name) ? col.type : null"
                       [attr.aria-label]="col.type">
-                      <span class="custom-type-text">{{ col.type }}</span>
+                      <span class="custom-type-text">{{ getBaseType(col.type) }}</span>
                       <svg class="type-chevron-icon" [class.open]="isTypeDropdownOpen(table.name, col.name)" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <polyline points="6 9 12 15 18 9"></polyline>
                       </svg>
@@ -129,10 +129,10 @@
                       <button type="button"
                         class="custom-type-item"
                         *ngFor="let t of dataTypes"
-                        [class.selected]="t.toLowerCase() === (col.type || '').toLowerCase()"
+                        [class.selected]="t.toLowerCase() === getBaseType(col.type).toLowerCase()"
                         (click)="selectFieldType(table, col, t, $event)">
                         <span class="type-item-label">{{ t }}</span>
-                        <span class="type-item-check" *ngIf="t.toLowerCase() === (col.type || '').toLowerCase()">✓</span>
+                        <span class="type-item-check" *ngIf="t.toLowerCase() === getBaseType(col.type).toLowerCase()">✓</span>
                       </button>
                     </div>
                   </div>

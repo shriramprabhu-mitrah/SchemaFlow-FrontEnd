@@ -34,10 +34,12 @@ export interface Column {
   increment: boolean;
   fk: boolean;
   originalName?: string;
+  originalType?: string;
   default: boolean;
   defaultVal?: string;
   check: boolean;
   checkVal?: string;
+  note?: string;
   fkTable?: string;
   fkCol?: string;
 }
@@ -135,108 +137,108 @@ export type SqlDialect = 'postgres' | 'mysql' | 'mssql';
 
 
 export const SAMPLE = `Table Department {
-  DepartmentId int [pk]
-  DepartmentName varchar
-  Location varchar
+  DepartmentId INT [pk]
+  DepartmentName VARCHAR
+  Location VARCHAR
 }
  
 Table Role {
-  RoleId int [pk]
-  RoleName varchar
+  RoleId INT [pk]
+  RoleName VARCHAR
 }
  
 Table Employee {
-  EmployeeId int [pk]
-  DepartmentId int
-  RoleId int
-  ManagerId int
-  FirstName varchar
-  LastName varchar
-  Email varchar
-  Phone varchar
-  HireDate date
-  Salary decimal
-  Status varchar
+  EmployeeId INT [pk]
+  DepartmentId INT
+  RoleId INT
+  ManagerId INT
+  FirstName VARCHAR
+  LastName VARCHAR
+  Email VARCHAR
+  Phone VARCHAR
+  HireDate DATE
+  Salary DECIMAL
+  Status VARCHAR
 }
  
 Table Client {
-  ClientId int [pk]
-  CompanyName varchar
-  ContactPerson varchar
-  Email varchar
-  Phone varchar
+  ClientId INT [pk]
+  CompanyName VARCHAR
+  ContactPerson VARCHAR
+  Email VARCHAR
+  Phone VARCHAR
 }
  
 Table Project {
-  ProjectId int [pk]
-  ClientId int
-  ProjectManagerId int
-  ProjectName varchar
-  StartDate date
-  EndDate date
-  Status varchar
+  ProjectId INT [pk]
+  ClientId INT
+  ProjectManagerId INT
+  ProjectName VARCHAR
+  StartDate DATE
+  EndDate DATE
+  Status VARCHAR
 }
  
 Table EmployeeProject {
-  EmployeeProjectId int [pk]
-  EmployeeId int
-  ProjectId int
-  AssignedDate date
-  AllocationPercentage int
+  EmployeeProjectId INT [pk]
+  EmployeeId INT
+  ProjectId INT
+  AssignedDate DATE
+  AllocationPercentage INT
 }
  
 Table Attendance {
-  AttendanceId int [pk]
-  EmployeeId int
-  AttendanceDate date
-  CheckIn time
-  CheckOut time
-  Status varchar
+  AttendanceId INT [pk]
+  EmployeeId INT
+  AttendanceDate DATE
+  CheckIn TIME
+  CheckOut TIME
+  Status VARCHAR
 }
  
 Table LeaveRequest {
-  LeaveRequestId int [pk]
-  EmployeeId int
-  LeaveType varchar
-  FromDate date
-  ToDate date
-  Reason varchar
-  ApprovalStatus varchar
+  LeaveRequestId INT [pk]
+  EmployeeId INT
+  LeaveType VARCHAR
+  FromDate DATE
+  ToDate DATE
+  Reason VARCHAR
+  ApprovalStatus VARCHAR
 }
  
 Table Timesheet {
-  TimesheetId int [pk]
-  EmployeeId int
-  ProjectId int
-  WorkDate date
-  HoursWorked decimal
+  TimesheetId INT [pk]
+  EmployeeId INT
+  ProjectId INT
+  WorkDate DATE
+  HoursWorked DECIMAL
 }
  
 Table Invoice {
-  InvoiceId int [pk]
-  ClientId int
-  ProjectId int
-  InvoiceDate date
-  DueDate date
-  TotalAmount decimal
-  Status varchar
+  InvoiceId INT [pk]
+  ClientId INT
+  ProjectId INT
+  InvoiceDate DATE
+  DueDate DATE
+  TotalAmount DECIMAL
+  Status VARCHAR
 }
  
 Table InvoiceItem {
-  InvoiceItemId int [pk]
-  InvoiceId int
-  Description varchar
-  Quantity int
-  UnitPrice decimal
-  Amount decimal
+  InvoiceItemId INT [pk]
+  InvoiceId INT
+  Description VARCHAR
+  Quantity INT
+  UnitPrice DECIMAL
+  Amount DECIMAL
 }
  
 Table Payment {
-  PaymentId int [pk]
-  InvoiceId int
-  PaymentDate date
-  Amount decimal
-  PaymentMethod varchar
+  PaymentId INT [pk]
+  InvoiceId INT
+  PaymentDate DATE
+  Amount DECIMAL
+  PaymentMethod VARCHAR
 }
  
 Ref: Employee.DepartmentId > Department.DepartmentId
@@ -603,8 +605,73 @@ export class DashboardService {
   readonly refDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
   readonly columnDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
 
+  areRefsEqual(r1: RefDef, r2: RefDef): boolean {
+    if (!r1 || !r2) return false;
+    const f1T = (r1.fromTable || '').toLowerCase();
+    const f1C = (r1.fromCol || '').toLowerCase();
+    const t1T = (r1.toTable || '').toLowerCase();
+    const t1C = (r1.toCol || '').toLowerCase();
+
+    const f2T = (r2.fromTable || '').toLowerCase();
+    const f2C = (r2.fromCol || '').toLowerCase();
+    const t2T = (r2.toTable || '').toLowerCase();
+    const t2C = (r2.toCol || '').toLowerCase();
+
+    const directMatch = f1T === f2T && f1C === f2C && t1T === t2T && t1C === t2C;
+    const reverseMatch = f1T === t2T && f1C === t2C && t1T === f2T && t1C === f2C;
+    return directMatch || reverseMatch;
+  }
+
+  setRefDiffStatus(map: Record<string, 'added' | 'modified' | 'deleted'>, ref: RefDef, status: 'added' | 'modified' | 'deleted'): void {
+    if (!ref) return;
+    const fT = (ref.fromTable || '').toLowerCase();
+    const fC = (ref.fromCol || '').toLowerCase();
+    const tT = (ref.toTable || '').toLowerCase();
+    const tC = (ref.toCol || '').toLowerCase();
+
+    // Store in all key variations (with > and with ->, forward and reverse, lower and exact case)
+    map[`${fT}.${fC}>${tT}.${tC}`] = status;
+    map[`${tT}.${tC}>${fT}.${fC}`] = status;
+    map[`${fT}.${fC}->${tT}.${tC}`] = status;
+    map[`${tT}.${tC}->${fT}.${fC}`] = status;
+
+    if (ref.fromTable && ref.toTable) {
+      map[`${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}`] = status;
+      map[`${ref.toTable}.${ref.toCol}>${ref.fromTable}.${ref.fromCol}`] = status;
+      map[`${ref.fromTable}.${ref.fromCol}->${ref.toTable}.${ref.toCol}`] = status;
+      map[`${ref.toTable}.${ref.toCol}->${ref.fromTable}.${ref.fromCol}`] = status;
+    }
+  }
+
+  getCommittedAiDiffCode(): string {
+    if (!this.aiDiffReviewActive()) {
+      return (this.code || '').trim();
+    }
+    const hunks = this.aiDiffHunks();
+    const anyAccepted = hunks.some(h => h.status === 'accepted');
+    if (!anyAccepted) {
+      return (this.aiDiffOriginalCode() || '').trim();
+    }
+    const lines = this.aiDiffLines();
+    const result: string[] = [];
+    for (const line of lines) {
+      if (line.type === 'context') {
+        result.push(line.text);
+      } else if (line.type === 'delete' && line.hunkId) {
+        // A deletion hunk was NOT accepted (pending), so keep original line in baseline
+        result.push(line.text);
+      }
+    }
+    return result.join('\n').replace(/\n+$/, '').trim();
+  }
+
   startAiDiffReview(originalCode: string, proposedCode: string): void {
-    const origNorm = (originalCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
+    // If a diff review was already active with unaccepted changes, ensure the baseline remains the committed code
+    const actualOriginal = this.aiDiffReviewActive()
+      ? this.getCommittedAiDiffCode()
+      : originalCode;
+
+    const origNorm = (actualOriginal || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
     const propNorm = (proposedCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/, '');
 
     if (origNorm === propNorm) {
@@ -702,11 +769,13 @@ export class DashboardService {
       const ot = oldTableMap.get(nt.name.toLowerCase());
       if (!ot) {
         tStatus[nt.name] = 'added';
+        tStatus[nt.name.toLowerCase()] = 'added';
       } else {
         const otCols = ot.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         const ntCols = nt.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         if (otCols !== ntCols) {
           tStatus[nt.name] = 'modified';
+          tStatus[nt.name.toLowerCase()] = 'modified';
         }
       }
     });
@@ -715,23 +784,22 @@ export class DashboardService {
     oldParsed.tables.forEach(ot => {
       if (!newTableMap.has(ot.name.toLowerCase())) {
         tStatus[ot.name] = 'deleted';
+        tStatus[ot.name.toLowerCase()] = 'deleted';
       }
     });
     this.tableDiffStatus.set(tStatus);
 
     const rStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
-    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
     newParsed.refs.forEach(nr => {
-      const key = `${nr.fromTable}.${nr.fromCol}>${nr.toTable}.${nr.toCol}`;
-      if (!oldRefKeys.has(key)) {
-        rStatus[key] = 'added';
+      const existsInOld = oldParsed.refs.some(or => this.areRefsEqual(or, nr));
+      if (!existsInOld) {
+        this.setRefDiffStatus(rStatus, nr, 'added');
       }
     });
-    const newRefKeys = new Set(newParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`));
     oldParsed.refs.forEach(or => {
-      const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
-      if (!newRefKeys.has(key)) {
-        rStatus[key] = 'deleted';
+      const existsInNew = newParsed.refs.some(nr => this.areRefsEqual(nr, or));
+      if (!existsInNew) {
+        this.setRefDiffStatus(rStatus, or, 'deleted');
       }
     });
     this.refDiffStatus.set(rStatus);
@@ -746,8 +814,10 @@ export class DashboardService {
           const colKey = `${nt.name}.${nc.name}`;
           if (!oc) {
             cStatus[colKey] = 'added';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'added';
           } else if (oc.type !== nc.type || oc.pk !== nc.pk || oc.fk !== nc.fk || oc.unique !== nc.unique) {
             cStatus[colKey] = 'modified';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'modified';
           }
         });
       }
@@ -830,11 +900,13 @@ export class DashboardService {
       const ot = oldTableMap.get(nameLower);
       if (!ot) {
         tStatus[nt.name] = 'added';
+        tStatus[nt.name.toLowerCase()] = 'added';
       } else {
         const otCols = ot.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         const ntCols = nt.columns.map(c => `${c.name}:${c.type}:${c.pk}:${c.fk}`).join('|');
         if (otCols !== ntCols) {
           tStatus[nt.name] = 'modified';
+          tStatus[nt.name.toLowerCase()] = 'modified';
         }
       }
     });
@@ -843,6 +915,7 @@ export class DashboardService {
       if (!currParsed.tables.some(ct => ct.name.toLowerCase() === nameLower)) {
         if (pendingTableNames.has(nameLower)) {
           tStatus[ot.name] = 'deleted';
+          tStatus[ot.name.toLowerCase()] = 'deleted';
         }
       }
     });
@@ -861,8 +934,10 @@ export class DashboardService {
           const colKey = `${nt.name}.${nc.name}`;
           if (!oc) {
             cStatus[colKey] = 'added';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'added';
           } else if (oc.type !== nc.type || oc.pk !== nc.pk || oc.fk !== nc.fk || oc.unique !== nc.unique) {
             cStatus[colKey] = 'modified';
+            cStatus[`${nt.name.toLowerCase()}.${nc.name.toLowerCase()}`] = 'modified';
           }
         });
       }
@@ -870,34 +945,82 @@ export class DashboardService {
     this.columnDiffStatus.set(cStatus);
 
     const pendingRefKeys = new Set<string>();
+    let currentPendingRefTable: string | null = null;
     for (const l of this.aiDiffLines()) {
-      if (!l.hunkId) continue;
       const trimmed = l.text.trim();
+      const tMatch = trimmed.match(/^Table\s+([A-Za-z0-9_.]+)/i);
+      if (tMatch) currentPendingRefTable = tMatch[1].toLowerCase();
+      if (trimmed.endsWith('}') && !trimmed.includes('{')) {
+        currentPendingRefTable = null;
+      }
+
+      if (!l.hunkId) continue;
       const match = trimmed.match(/^Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(?:<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
       if (match) {
-        pendingRefKeys.add(`${match[1].toLowerCase()}.${match[2].toLowerCase()}>${match[3].toLowerCase()}.${match[4].toLowerCase()}`);
-        pendingRefKeys.add(`${match[3].toLowerCase()}.${match[4].toLowerCase()}>${match[1].toLowerCase()}.${match[2].toLowerCase()}`);
+        const t1 = match[1].toLowerCase();
+        const c1 = match[2].toLowerCase();
+        const t2 = match[3].toLowerCase();
+        const c2 = match[4].toLowerCase();
+        pendingRefKeys.add(`${t1}.${c1}>${t2}.${c2}`);
+        pendingRefKeys.add(`${t2}.${c2}>${t1}.${c1}`);
+        pendingRefKeys.add(`${t1}.${c1}->${t2}.${c2}`);
+        pendingRefKeys.add(`${t2}.${c2}->${t1}.${c1}`);
+      } else if (currentPendingRefTable) {
+        const inlineMatch = trimmed.match(/ref:\s*(?:<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
+        if (inlineMatch) {
+          const colMatch = trimmed.match(/^(?:"([^"]+)"|'([^']+)'|`([^`]+)`|([A-Za-z0-9_]+))\s+/);
+          const colName = colMatch ? (colMatch[1] || colMatch[2] || colMatch[3] || colMatch[4]) : null;
+          if (colName) {
+            const t1 = currentPendingRefTable;
+            const c1 = colName.toLowerCase();
+            const t2 = inlineMatch[1].toLowerCase();
+            const c2 = inlineMatch[2].toLowerCase();
+            pendingRefKeys.add(`${t1}.${c1}>${t2}.${c2}`);
+            pendingRefKeys.add(`${t2}.${c2}>${t1}.${c1}`);
+            pendingRefKeys.add(`${t1}.${c1}->${t2}.${c2}`);
+            pendingRefKeys.add(`${t2}.${c2}->${t1}.${c1}`);
+          }
+        }
       }
     }
 
     const rStatus: Record<string, 'added' | 'modified' | 'deleted'> = {};
-    const oldRefKeys = new Set(oldParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase()));
     currParsed.refs.forEach(nr => {
-      const key = `${nr.fromTable}.${nr.fromCol}>${nr.toTable}.${nr.toCol}`;
-      const keyLower = key.toLowerCase();
-      if (!oldRefKeys.has(keyLower)) {
-        if (pendingRefKeys.has(keyLower)) {
-          rStatus[key] = 'added';
+      const isOld = oldParsed.refs.some(or => this.areRefsEqual(or, nr));
+      if (!isOld) {
+        const fT = (nr.fromTable || '').toLowerCase();
+        const fC = (nr.fromCol || '').toLowerCase();
+        const tT = (nr.toTable || '').toLowerCase();
+        const tC = (nr.toCol || '').toLowerCase();
+        if (
+          pendingRefKeys.has(`${fT}.${fC}>${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}>${fT}.${fC}`) ||
+          pendingRefKeys.has(`${fT}.${fC}->${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}->${fT}.${fC}`) ||
+          pendingTableNames.has(fT) ||
+          pendingTableNames.has(tT)
+        ) {
+          this.setRefDiffStatus(rStatus, nr, 'added');
         }
       }
     });
-    const currRefKeys = new Set(currParsed.refs.map(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase()));
+
     oldParsed.refs.forEach(or => {
-      const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`;
-      const keyLower = key.toLowerCase();
-      if (!currRefKeys.has(keyLower)) {
-        if (pendingRefKeys.has(keyLower)) {
-          rStatus[key] = 'deleted';
+      const isCurr = currParsed.refs.some(cr => this.areRefsEqual(cr, or));
+      if (!isCurr) {
+        const fT = (or.fromTable || '').toLowerCase();
+        const fC = (or.fromCol || '').toLowerCase();
+        const tT = (or.toTable || '').toLowerCase();
+        const tC = (or.toCol || '').toLowerCase();
+        if (
+          pendingRefKeys.has(`${fT}.${fC}>${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}>${fT}.${fC}`) ||
+          pendingRefKeys.has(`${fT}.${fC}->${tT}.${tC}`) ||
+          pendingRefKeys.has(`${tT}.${tC}->${fT}.${fC}`) ||
+          pendingTableNames.has(fT) ||
+          pendingTableNames.has(tT)
+        ) {
+          this.setRefDiffStatus(rStatus, or, 'deleted');
         }
       }
     });
@@ -997,6 +1120,11 @@ export class DashboardService {
         }
         this.showToast('Accepted changes saved!', 2500, 'success');
       } else {
+        if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
+          this.saveDiagram().subscribe({
+            error: () => { }
+          });
+        }
         this.showToast('AI changes rejected.', 2500);
       }
     } else {
@@ -1029,6 +1157,13 @@ export class DashboardService {
     this.showCanvasPlaceholder = !original.trim();
     this.closeAiDiffReview(false);
     this.requestCanvasFit();
+
+    if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
+      this.saveDiagram().subscribe({
+        error: () => { }
+      });
+    }
+
     this.showToast('AI changes rejected.', 2500);
   }
 
@@ -1073,7 +1208,13 @@ export class DashboardService {
           localStorage.setItem('dbml_code', orig);
         }
       }
+      if (this.diagramWorkspaceType() === 'Team' && this.socketService.isConnected) {
+        this.emitCollabChange();
+      }
     }
+
+    this.aiDiffOriginalCode.set('');
+    this.aiDiffProposedCode.set('');
 
     this.parseAndLayout();
     this.scheduleDraw();
@@ -1215,6 +1356,12 @@ export class DashboardService {
 
   openImportModal(dialect: string): void {
     this.openImportModal$.next(dialect);
+  }
+
+  openConnectionStringModal$ = new Subject<void>();
+
+  openConnectionStringModal(): void {
+    this.openConnectionStringModal$.next();
   }
 
   formatVersionDate(dateStr: string | Date): string {
@@ -1485,6 +1632,7 @@ export class DashboardService {
   forceRedraw$ = new Subject<void>();
   readonly splitViewRequested$ = new Subject<void>();
   readonly canvasFitRequested$ = new Subject<void>();
+  readonly diagramReset$ = new Subject<void>();
 
   // Collaboration State
   readonly activeRoomUsers = signal<any[]>([]);
@@ -2397,7 +2545,7 @@ export class DashboardService {
       localStorage.removeItem('drag position');
     }
     this.code = `Table Untitled {
-  id int [pk]
+  id INT [pk]
 }`;
     this.isDocUnlocked.set(false);
     this.showDocs = false;
@@ -2465,7 +2613,10 @@ export class DashboardService {
             colType = colType.slice(1, -1).trim();
           }
 
-          const cleanType = colType.replace(/\s*\([^)]*\)/g, '').trim();
+          let cleanType = colType.trim();
+          if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+            cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+          }
           const attrsLower = rawAttrs.toLowerCase();
 
           const defaultMatch = rawAttrs.match(/default:\s*('[^']*'|"[^"]*"|`[^`]*`|[^,\]]+)/i);
@@ -2496,25 +2647,64 @@ export class DashboardService {
             checkVal = val;
           }
 
+          const noteMatch = rawAttrs.match(/note:\s*('[^']*'|"[^"]*"|`[^`]*`)/i);
+          let noteVal: string | undefined = undefined;
+          if (noteMatch) {
+            let val = noteMatch[1].trim();
+            if ((val.startsWith("'") && val.endsWith("'")) ||
+              (val.startsWith('"') && val.endsWith('"')) ||
+              (val.startsWith('`') && val.endsWith('`'))) {
+              val = val.slice(1, -1);
+            }
+            noteVal = val;
+          }
+
+          const attrsNoStrings = rawAttrs.replace(/('[^']*'|"[^"]*"|`[^`]*`)/g, '').toLowerCase();
+
           cols.push({
             name: colName,
             type: cleanType,
-            pk: attrsLower.includes('pk') || attrsLower.includes('primary key'),
-            notNull: attrsLower.includes('not null'),
-            unique: attrsLower.includes('unique'),
-            increment: attrsLower.includes('increment'),
+            pk: attrsNoStrings.includes('pk') || attrsNoStrings.includes('primary key'),
+            notNull: attrsNoStrings.includes('not null'),
+            unique: attrsNoStrings.includes('unique'),
+            increment: attrsNoStrings.includes('increment'),
             fk: false,
             default: hasDefault,
             defaultVal,
             check: hasCheck,
-            checkVal
+            checkVal,
+            note: noteVal
           });
+
+          const inlineRefMatch = rawAttrs.match(/ref:\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
+          if (inlineRefMatch) {
+            let fromTable = name;
+            let fromCol = colName;
+            const relType = inlineRefMatch[1];
+            let toTable = inlineRefMatch[2];
+            let toCol = inlineRefMatch[3];
+            if (relType === '<') {
+              const tempTable = fromTable;
+              const tempCol = fromCol;
+              fromTable = toTable;
+              fromCol = toCol;
+              toTable = tempTable;
+              toCol = tempCol;
+            }
+            refs.push({
+              fromTable,
+              fromCol,
+              toTable,
+              toCol,
+              relType
+            });
+          }
         }
       });
       tables.push({ name, columns: cols });
     }
 
-    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/gi;
+   const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?/gi;
     while ((m = refRe.exec(text)) !== null) {
       const matchIndex = m.index;
       const lineNumber = text.substring(0, matchIndex).split('\n').length;
@@ -2867,10 +3057,6 @@ export class DashboardService {
       localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
     }
 
-    const prevNames = this.tables.map(t => t.name).sort().join(',');
-    const newNames = parsed.tables.map(t => t.name).sort().join(',');
-    const tablesChanged = prevNames !== newNames;
-
     this.tables = parsed.tables.map((t) => {
       const pos = this.tablePositions[t.name];
       const height = this.getTableHeight(t.columns);
@@ -2887,12 +3073,11 @@ export class DashboardService {
 
       t.columns.forEach((c) => {
         const visibleIndex = visibleColumns.findIndex(vc => vc.name === c.name);
-        if (visibleIndex !== -1) {
-          colY[c.name] = this.HEADER_H + visibleIndex * this.ROW_H + this.ROW_H / 2;
-        } else {
-          // Hidden fields point to the center of the "+ N hidden fields" footer
-          colY[c.name] = this.HEADER_H + visibleColumns.length * this.ROW_H + this.ROW_H / 2;
-        }
+        const yVal = visibleIndex !== -1
+          ? this.HEADER_H + visibleIndex * this.ROW_H + this.ROW_H / 2
+          : this.HEADER_H + visibleColumns.length * this.ROW_H + this.ROW_H / 2;
+        colY[c.name] = yVal;
+        colY[c.name.toLowerCase()] = yVal;
       });
       return {
         name: t.name,
@@ -2918,7 +3103,9 @@ export class DashboardService {
           const height = this.getTableHeight(ot.columns);
           const colY: Record<string, number> = {};
           ot.columns.forEach((c, idx) => {
-            colY[c.name] = this.HEADER_H + idx * this.ROW_H + this.ROW_H / 2;
+            const yVal = this.HEADER_H + idx * this.ROW_H + this.ROW_H / 2;
+            colY[c.name] = yVal;
+            colY[c.name.toLowerCase()] = yVal;
           });
           this.tables.push({
             name: ot.name,
@@ -3004,17 +3191,26 @@ export class DashboardService {
 
     if (this.aiDiffReviewActive()) {
       const origParsed = this.parseDBML(this.aiDiffOriginalCode());
-      const deletedRefKeys = new Set(
-        Object.entries(this.refDiffStatus())
-          .filter(([_, status]) => status === 'deleted')
-          .map(([k]) => k.toLowerCase())
-      );
+      const rStatus = this.refDiffStatus();
 
       origParsed.refs.forEach((or) => {
-        const key = `${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`.toLowerCase();
-        const fromExists = this.tables.some(t => t.name.toLowerCase() === or.fromTable.toLowerCase());
-        const toExists = this.tables.some(t => t.name.toLowerCase() === or.toTable.toLowerCase());
-        if (fromExists && toExists && deletedRefKeys.has(key) && !this.refs.some(r => `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`.toLowerCase() === key)) {
+        const fT = (or.fromTable || '').toLowerCase();
+        const fC = (or.fromCol || '').toLowerCase();
+        const tT = (or.toTable || '').toLowerCase();
+        const tC = (or.toCol || '').toLowerCase();
+
+        const isDeleted =
+          rStatus[`${fT}.${fC}>${tT}.${tC}`] === 'deleted' ||
+          rStatus[`${tT}.${tC}>${fT}.${fC}`] === 'deleted' ||
+          rStatus[`${fT}.${fC}->${tT}.${tC}`] === 'deleted' ||
+          rStatus[`${tT}.${tC}->${fT}.${fC}`] === 'deleted' ||
+          rStatus[`${or.fromTable}.${or.fromCol}>${or.toTable}.${or.toCol}`] === 'deleted' ||
+          rStatus[`${or.toTable}.${or.toCol}>${or.fromTable}.${or.fromCol}`] === 'deleted';
+
+        const fromExists = this.tables.some(t => t.name.toLowerCase() === fT);
+        const toExists = this.tables.some(t => t.name.toLowerCase() === tT);
+
+        if (fromExists && toExists && isDeleted && !this.refs.some(r => this.areRefsEqual(r, or))) {
           this.refs.push(or);
         }
       });
@@ -3025,9 +3221,6 @@ export class DashboardService {
 
     this.scheduleDraw();
 
-    if (tablesChanged) {
-      this.requestCanvasFit();
-    }
     this.updateEditorErrors();
     this.checkInvalidRefsTimeout();
   }
@@ -3250,7 +3443,13 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${newName} {\n${columns
-      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
+      .map((column) => {
+        let cleanType = column.type.trim().toUpperCase();
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+          cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+        }
+        return `  ${column.name} ${cleanType}${attributes(column)}`;
+      })
       .join('\n')}\n}`;
 
     // Replace the table block
@@ -3618,7 +3817,13 @@ export class DashboardService {
     };
 
     const tableBlock = `Table ${name} {\n${columns
-      .map((column) => `  ${column.name} ${column.type.replace(/\s*\([^)]*\)/g, '').trim()}${attributes(column)}`)
+      .map((column) => {
+        let cleanType = column.type.trim().toUpperCase();
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+          cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+        }
+        return `  ${column.name} ${cleanType}${attributes(column)}`;
+      })
       .join('\n')}\n}`;
 
     const newRefs: string[] = [];
@@ -3682,7 +3887,7 @@ export class DashboardService {
 
     const tableBlock =
       `\nTable ${tableName} {\n` +
-      `  id int [pk]\n` +
+      `  id INT [pk]\n` +
       `}\n`;
     this.code = this.code.trimEnd() + '\n' + tableBlock;
     this.updateGutter();
@@ -4333,6 +4538,8 @@ export class DashboardService {
   }
 
   private applyLoadedDiagram(response: any, id: number, fallbackWorkspace?: { id: number; name?: string } | null): void {
+    this.closeAiDiffReview(false);
+    this.diagramReset$.next();
     const diagram = response?.data?.diagram ?? response?.data ?? response?.diagram ?? response;
     const rawWsId = diagram?.workspaceid ?? diagram?.workspaceId ?? diagram?.workspace_id ?? diagram?.workspaceID
       ?? diagram?.workspace?.id ?? diagram?.workspace?.workspaceid
@@ -4949,6 +5156,9 @@ export class DashboardService {
   }
 
   clearDiagram(preserveDiagramId = false): void {
+    // 1. Immediately abort/close any active AI diff review and clear unaccepted proposed code!
+    this.closeAiDiffReview(false);
+
     for (const entry of this.invalidRefTimers.values()) {
       clearTimeout(entry.timer);
     }
@@ -4970,6 +5180,8 @@ export class DashboardService {
     this.tableColorsMap = {};
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.removeItem('table_colors_map');
+      localStorage.removeItem('active_diagram_code');
+      localStorage.removeItem('dbml_code');
     }
     this.diagramName = '';
     this.showDocs = false;
@@ -4977,6 +5189,7 @@ export class DashboardService {
     this.isDocUnlocked.set(false);
     this.showDiffChecker.set(false);
     this.showCanvasPlaceholder = false;
+    this.showCanvasPlaceholder = true;
     this.isAllFields = true;
     this.isKeyOnly = false;
     this.isColumnNameOnly = false;
@@ -5005,6 +5218,9 @@ export class DashboardService {
     this.updateGutter();
     this.scheduleDraw();
     this.updateOriginalState();
+
+    // 2. Notify listeners that a new/cleared diagram has been initialized
+    this.diagramReset$.next();
   }
 
   private zoomBy(factor: number): void {

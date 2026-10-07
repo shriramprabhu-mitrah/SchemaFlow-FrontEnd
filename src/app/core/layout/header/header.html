@@ -392,7 +392,7 @@
     <!-- Footer -->
     <div class="import-modal-footer">
       <app-button variant="none" customClass="import-btn-cancel" id="import-cancel-btn" (onClick)="closeImportModal()"
-        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql'))">Cancel</app-button>
+        [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql'))">Cancel</app-button>
       <app-button variant="none" customClass="import-btn-convert" id="import-convert-btn" (onClick)="submitImport()"
         [disabled]="importing || !importSqlText.trim() || !!importValidationError || importValidating">
         <span *ngIf="importing">
@@ -405,6 +405,248 @@
             <path d="M3.51 15a9 9 0 1 0 .49-3.29" />
           </svg>
           Convert to DBML
+        </span>
+      </app-button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ CONNECTION STRING IMPORT MODAL ============ -->
+<div class="import-modal-overlay" *ngIf="connStringModalOpen" (click)="closeConnectionStringModal()">
+  <div class="import-modal conn-string-modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="import-modal-header">
+      <div class="import-modal-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+        Connect to a Database
+      </div>
+      <button class="close-modal-btn" id="conn-string-modal-close-btn" (click)="closeConnectionStringModal()">&times;</button>
+    </div>
+
+    <!-- Body -->
+    <div class="import-modal-body">
+
+      <!-- Database Type Dropdown -->
+      <div class="modal-form-group">
+        <label class="import-modal-label" for="conn-string-db-type">Database Type</label>
+        <div class="select-wrapper">
+          <select id="conn-string-db-type" class="modal-select-field" [(ngModel)]="connStringDatabaseType" (change)="onDatabaseTypeChange()">
+            <option value="postgres">PostgreSQL</option>
+            <option value="mysql">MySQL</option>
+            <option value="mssql">SQL Server (MSSQL)</option>
+            <!-- <option value="sqlite">SQLite</option> -->
+          </select>
+          <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+      </div>
+
+      <!-- SQLITE FILE UPLOAD (DRAG & DROP) -->
+      <ng-container *ngIf="connStringDatabaseType === 'sqlite'">
+        <div class="modal-form-group" style="margin-top: 14px;">
+          <label class="import-modal-label">Upload SQLite File</label>
+          <div class="sqlite-dropzone"
+            [class.drag-over]="isSqliteDraggingOver"
+            [class.has-file]="!!selectedSqliteFile"
+            (dragover)="onSqliteDragOver($event)"
+            (dragleave)="onSqliteDragLeave($event)"
+            (drop)="onSqliteDrop($event)"
+            (click)="sqliteFileInput.click()">
+
+            <input #sqliteFileInput type="file" accept=".db,.sqlite,.sqlite3,.db3" style="display: none;" (change)="onSqliteFileSelected($event)" />
+
+            <!-- Empty State: Drag and drop folder / upload prompt -->
+            <div class="sqlite-dropzone-inner" *ngIf="!selectedSqliteFile">
+              <div class="sqlite-folder-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                  <polyline points="12 11 12 17"/>
+                  <polyline points="9 14 12 11 15 14"/>
+                </svg>
+              </div>
+              <div class="sqlite-dropzone-text">
+                <div class="sqlite-main-text">
+                  Drag and drop your SQLite file here, or <span class="sqlite-browse-btn">browse files</span>
+                </div>
+                <div class="sqlite-sub-text">Supported formats: .db, .sqlite, .sqlite3, .db3</div>
+              </div>
+            </div>
+
+            <!-- Selected File State -->
+            <div class="sqlite-selected-file" *ngIf="selectedSqliteFile" (click)="$event.stopPropagation()">
+              <div class="sqlite-file-info-left">
+                <div class="sqlite-file-icon-badge">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                  </svg>
+                </div>
+                <div class="sqlite-file-text-wrap">
+                  <div class="sqlite-file-name" [title]="selectedSqliteFile.name">{{ selectedSqliteFile.name }}</div>
+                  <div class="sqlite-file-meta">
+                    <span class="sqlite-file-size">{{ formatFileSize(selectedSqliteFile.size) }}</span>
+                    <span class="sqlite-file-ready">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Ready
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="sqlite-file-actions">
+                <button type="button" class="sqlite-replace-file-btn" (click)="sqliteFileInput.click()" title="Change file">
+                  Replace
+                </button>
+                <button type="button" class="sqlite-remove-file-btn" (click)="removeSqliteFile($event)" title="Remove file">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="connStringDatabaseType !== 'sqlite'">
+        <!-- Mode Selector Radio Segment (Host vs URL) -->
+        <div class="modal-form-group" style="margin-top: 14px;">
+          <label class="import-modal-label">Connect By</label>
+          <div class="connect-by-segment">
+            <label class="segment-option" [class.active]="connStringConnectMode === 'host'">
+              <input type="radio" name="connectByMode" value="host" [(ngModel)]="connStringConnectMode" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                <line x1="6" y1="6" x2="6.01" y2="6"/>
+                <line x1="6" y1="18" x2="6.01" y2="18"/>
+              </svg>
+              Host & Settings
+            </label>
+            <label class="segment-option" [class.active]="connStringConnectMode === 'url'">
+              <input type="radio" name="connectByMode" value="url" [(ngModel)]="connStringConnectMode" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              Connection URL
+            </label>
+          </div>
+        </div>
+
+        <!-- HOST FORM FIELDS -->
+        <ng-container *ngIf="connStringConnectMode === 'host'">
+          <div class="modal-form-row" style="margin-top: 14px;">
+            <!-- Host -->
+            <div class="modal-form-group flex-3">
+              <label class="import-modal-label" for="conn-host">Host</label>
+              <input type="text" id="conn-host" class="modal-input-field" placeholder="localhost" [(ngModel)]="connHost" spellcheck="false" autocomplete="off" />
+            </div>
+
+            <!-- Port -->
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-port">Port</label>
+              <input type="number" id="conn-port" class="modal-input-field" placeholder="5432" [(ngModel)]="connPort" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="modal-form-row" style="margin-top: 12px;">
+            <!-- Database -->
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-database">Database</label>
+              <input type="text" id="conn-database" class="modal-input-field" placeholder="my_database" [(ngModel)]="connDatabase" spellcheck="false" autocomplete="off" />
+            </div>
+
+            <!-- Schema (for Postgres) -->
+            <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres'">
+              <label class="import-modal-label" for="conn-schema">Schema</label>
+              <input type="text" id="conn-schema" class="modal-input-field" placeholder="public" [(ngModel)]="connSchema" spellcheck="false" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="modal-form-row" style="margin-top: 12px;">
+            <!-- Username -->
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-username">Username</label>
+              <input type="text" id="conn-username" class="modal-input-field" placeholder="postgres" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" />
+            </div>
+
+            <!-- Password -->
+            <div class="modal-form-group flex-1">
+              <label class="import-modal-label" for="conn-password">Password</label>
+              <div class="password-input-wrap">
+                <input [type]="showConnPassword ? 'text' : 'password'" id="conn-password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="off" />
+                <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
+                  <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generated String Preview Box -->
+          <div class="conn-preview-box" style="margin-top: 14px;">
+            <span class="preview-label">Generated Connection String:</span>
+            <code class="preview-code">{{ getGeneratedConnectionString() }}</code>
+          </div>
+        </ng-container>
+
+        <!-- URL FORM FIELD -->
+        <ng-container *ngIf="connStringConnectMode === 'url'">
+          <div class="modal-form-group" style="margin-top: 14px;">
+            <label class="import-modal-label" for="conn-string-input">Connection URL</label>
+            <div class="input-wrapper">
+              <textarea id="conn-string-input" class="modal-textarea-field" rows="3"
+                [placeholder]="connStringDatabaseType === 'mssql' ? 'Server=localhost,1433;Database=student_db;User Id=sa;Password=SqlServer@12345;Encrypt=false;TrustServerCertificate=true;' : (connStringDatabaseType === 'mysql' ? 'mysql://root:password@localhost:3306/dbname' : 'postgresql://postgres:password@localhost:5432/mailService?schemas=public')"
+                [(ngModel)]="connStringValue" spellcheck="false" autocomplete="off"></textarea>
+            </div>
+            <span class="field-hint" style="font-size: 11.5px; color: #8a99b5; margin-top: 5px; display: block;">
+              Paste connection URL or DBeaver URL (e.g. jdbc:postgresql://localhost:5432/postgres).
+            </span>
+          </div>
+        </ng-container>
+      </ng-container>
+
+      <!-- Error message -->
+      <div class="import-convert-error" *ngIf="connStringError" style="margin-top: 12px;">
+        {{ connStringError }}
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="import-modal-footer">
+      <app-button variant="none" customClass="import-btn-cancel" id="conn-string-cancel-btn" (onClick)="closeConnectionStringModal()"
+        [disabled]="connStringImporting">Cancel</app-button>
+      <app-button variant="none" customClass="import-btn-convert" id="conn-string-submit-btn" (onClick)="submitConnectionStringImport()"
+        [disabled]="isConnStringSubmitDisabled()">
+        <span *ngIf="connStringImporting">
+          <span class="spinner spinner-sm"></span> {{ connStringDatabaseType === 'sqlite' ? 'Generating...' : 'Connecting...' }}
+        </span>
+        <span *ngIf="!connStringImporting">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 1 0 .49-3.29" />
+          </svg>
+          Generate DBML
         </span>
       </app-button>
     </div>

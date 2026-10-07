@@ -537,16 +537,16 @@ Paste the following DBML code snippet into the left editor panel:
 \`\`\`dbml
 // Define Users Table
 Table users  {
-  id int [pk, increment]
-  username varchar [not null, unique]
+  id INT [pk, increment]
+  username VARCHAR [not null, unique]
 }
 
 // Define Orders Table
 Table orders {
-  id int [pk, increment]
-  user_id int [not null, ref: > users.id]
+  id INT [pk, increment]
+  user_id INT [not null, ref: > users.id]
   total_amount decimal(10,2) [not null, default: 0.00]
-  order_status varchar [default: 'pending']
+  order_status VARCHAR [default: 'pending']
   placed_at timestamp [default: \`now()\`]
 }
 
@@ -763,27 +763,27 @@ Below is a complete DBML schema definition:
 \`\`\`dbml
 // 1. Department Table
 Table Department {
-  DepartmentId int [pk, increment]
-  DepartmentName varchar [not null]
-  Location varchar
+  DepartmentId INT [pk, increment]
+  DepartmentName VARCHAR [not null]
+  Location VARCHAR
 }
 
 // 2. Employee Table
 Table Employee  {
-  EmployeeId int [pk, increment]
-  DepartmentId int [ref: > Department.DepartmentId]
-  FirstName varchar [not null]
-  LastName varchar [not null]
-  Email varchar [unique, not null]
+  EmployeeId INT [pk, increment]
+  DepartmentId INT [ref: > Department.DepartmentId]
+  FirstName VARCHAR [not null]
+  LastName VARCHAR [not null]
+  Email VARCHAR [unique, not null]
   HireDate date
   Salary decimal(10,2)
-  Status varchar [default: 'active']
+  Status VARCHAR [default: 'active']
 }
 
 // 3. Project Table
 Table Project  {
-  ProjectId int [pk, increment]
-  ProjectName varchar [not null]
+  ProjectId INT [pk, increment]
+  ProjectName VARCHAR [not null]
   StartDate date
   EndDate date
 }
@@ -793,14 +793,14 @@ Table Project  {
 
 | Attribute | Meaning | Example Syntax |
 | --- | --- | --- |
-| \`pk\` / \`primary key\` | Primary key designation | \`id int [pk]\` |
-| \`increment\` | Auto-incrementing sequence | \`id int [pk, increment]\` |
-| \`unique\` | Enforce unique constraint | \`email varchar [unique]\` |
-| \`not null\` | Disallow NULL values | \`name varchar [not null]\` |
+| \`pk\` / \`primary key\` | Primary key designation | \`id INT [pk]\` |
+| \`increment\` | Auto-incrementing sequence | \`id INT [pk, increment]\` |
+| \`unique\` | Enforce unique constraint | \`email VARCHAR [unique]\` |
+| \`not null\` | Disallow NULL values | \`name VARCHAR [not null]\` |
 | \`null\` | Explicitly allow NULL values | \`bio text [null]\` |
-| \`default: value\` | Default column value | \`status varchar [default: 'active']\` |
-| \`note: 'text'\` | Inline column documentation | \`code varchar [note: 'ISO currency code']\` |
-| \`ref: > target.col\` | Inline foreign key reference | \`dept_id int [ref: > departments.id]\` |
+| \`default: value\` | Default column value | \`status VARCHAR [default: 'active']\` |
+| \`note: 'text'\` | Inline column documentation | \`code VARCHAR [note: 'ISO currency code']\` |
+| \`ref: > target.col\` | Inline foreign key reference | \`dept_id INT [ref: > departments.id]\` |
 `,
         sortOrder: 1,
         status: 'published',
@@ -835,8 +835,8 @@ Inline references are defined directly inside column attribute brackets:
 
 \`\`\`dbml
 Table orders  {
-  id int [pk, increment]
-  user_id int [not null, ref: > users.id]
+  id INT [pk, increment]
+  user_id INT [not null, ref: > users.id]
   total decimal(10,2)
 }
 \`\`\`
@@ -860,25 +860,25 @@ Below is a complete multi-table blueprint demonstrating how tables connect toget
 \`\`\`dbml
 // 1. Primary Users Table
 Table users  {
-  id int [pk, increment]
-  username varchar [not null, unique]
-  email varchar [not null]
+  id INT [pk, increment]
+  username VARCHAR [not null, unique]
+  email VARCHAR [not null]
 }
 
 // 2. Orders Table Connected to Users
 Table orders {
-  id int [pk, increment]
-  user_id int [not null, ref: > users.id]
+  id INT [pk, increment]
+  user_id INT [not null, ref: > users.id]
   order_date timestamp [default: \`now()\`]
-  status varchar [default: 'pending']
+  status VARCHAR [default: 'pending']
 }
 
 // 3. Order Items Table Connected to Orders
 Table order_items {
-  id int [pk, increment]
-  order_id int [not null]
-  product_name varchar [not null]
-  quantity int [default: 1]
+  id INT [pk, increment]
+  order_id INT [not null]
+  product_name VARCHAR [not null]
+  quantity INT [default: 1]
   unit_price decimal(10,2) [not null]
 }
 
@@ -957,7 +957,7 @@ DB Nexus turns your DBML code definitions into an interactive, searchable **Data
 \`\`\`dbml
 Table payments {
   id uuid [pk]
-  amount_cents int [not null, note: 'Payment value stored in integer USD cents']
+  amount_cents INT [not null, note: 'Payment value stored in integer USD cents']
 
   Note: '''
   The payments table logs all incoming Stripe transactions.
@@ -1426,14 +1426,14 @@ For example, a schema may contain:
 
 \`\`\`dbml
 Table Users {
-    id int [pk]
-    username varchar
-    email varchar
+    id INT [pk]
+    username VARCHAR
+    email VARCHAR
 }
 
 Table Orders {
-    id int [pk]
-    user_id int
+    id INT [pk]
+    user_id INT
 }
 \`\`\`
 

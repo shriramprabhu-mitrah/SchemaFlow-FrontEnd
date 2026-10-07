@@ -53,6 +53,9 @@ export class AuthService {
         if (accountType) {
           this.setAccountType(accountType);
         }
+        if (data?.authProvider) {
+          this.setAuthProvider(data.authProvider);
+        }
         if (data?.organizationId) {
           this.setOrganizationId(data.organizationId);
         }
@@ -115,15 +118,20 @@ export class AuthService {
     }
   }
 
-  setUserProfilePicture(profilePicture: string): void {
-    if (isPlatformBrowser(this.platformId) && profilePicture) {
-      localStorage.setItem('user_profile_picture', profilePicture);
+  setUserProfilePicture(profilePicture: string | null | undefined): void {
+    if (isPlatformBrowser(this.platformId)) {
+      if (profilePicture && typeof profilePicture === 'string' && profilePicture.trim() !== '') {
+        localStorage.setItem('user_profile_picture', profilePicture);
+      } else {
+        localStorage.removeItem('user_profile_picture');
+      }
     }
   }
 
   getUserProfilePicture(): string | null {
     if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('user_profile_picture');
+      const pic = localStorage.getItem('user_profile_picture');
+      return pic && pic.trim() !== '' ? pic : null;
     }
     return null;
   }
@@ -273,6 +281,21 @@ export class AuthService {
     return this.getAccountType() === 'organization';
   }
 
+  // ── Auth Provider ──
+
+  setAuthProvider(isSso: boolean | string): void {
+    if (isPlatformBrowser(this.platformId) && isSso !== undefined && isSso !== null) {
+      localStorage.setItem('auth_provider', String(isSso === true || isSso === 'true'));
+    }
+  }
+
+  getAuthProvider(): boolean {
+    if (isPlatformBrowser(this.platformId)) {
+      return localStorage.getItem('auth_provider') === 'true';
+    }
+    return false;
+  }
+
   // Organization Owner role has been removed. Admins now have top-level access.
 
   setOrgRole(role: string): void {
@@ -373,6 +396,7 @@ export class AuthService {
 
       localStorage.removeItem('org_role');
       localStorage.removeItem('account_type');
+      localStorage.removeItem('auth_provider');
       localStorage.removeItem('dbml_code');
       localStorage.removeItem('active_diagram_code');
       localStorage.removeItem('active_diagram_name');

@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, catchError } from 'rxjs';
+import { Observable, of, catchError ,throwError} from 'rxjs';
 import { AppConfigService } from './app-config.service';
+
+import { AuthService } from './auth.service';
 
 export type SqlDialect = 'postgres' | 'mysql' | 'sqlserver' | 'oracle' | 'sqlite' | 'mongodb';
 
@@ -31,8 +33,9 @@ export class ImportService {
 
   constructor(
     private http: HttpClient,
-    private appConfig: AppConfigService
-  ) {}
+    private appConfig: AppConfigService,
+     private authService: AuthService  
+) {}
 
   /**
    * Validates schema script (SQL or NoSQL/MongoDB)
@@ -72,6 +75,45 @@ export class ImportService {
     }
 
     return this.http.post(url, body, { responseType: 'text' });
+  }
+
+   /**
+   * Generates DBML schema from database connection string
+   */
+  generateFromConnectionString(databaseType: string, connectionString: string): Observable<string> {
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml || 'http://localhost:4201/api/dbml/generate';
+    const token = this.authService ? this.authService.getToken() : null;
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const body = {
+      databaseType,
+      connectionString
+    };
+
+    return this.http.post(url, body, { headers, responseType: 'text' });
+  }
+
+  /**
+   * Generates DBML schema from SQLite database file (.db, .sqlite, .sqlite3, .db3)
+   */
+  generateFromSqlite(file: File): Observable<string> {
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbmlSqlite || 'http://localhost:4201/api/dbml/generate-sqlite';
+
+    const token = this.authService ? this.authService.getToken() : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    return this.http.post(url, formData, { headers, responseType: 'text' });
   }
 
   /**
@@ -190,9 +232,11 @@ export class ImportService {
         if (Array.isArray(col.fields)) {
           for (const field of col.fields) {
             const isPk = field.primary || field.name === '_id' || field.name === 'id';
-            let typeStr = (field.type || 'varchar').toLowerCase();
-            if (typeStr === 'string') typeStr = 'varchar';
-            else if (typeStr === 'number') typeStr = 'decimal';
+            let typeStr = field.type || 'varchar';
+            let typeStrLower = typeStr.toLowerCase();
+            let isUpper = typeStr === typeStr.toUpperCase();
+            if (typeStrLower === 'string') typeStr = isUpper ? 'VARCHAR' : 'varchar';
+            else if (typeStrLower === 'number') typeStr = isUpper ? 'DECIMAL' : 'decimal';
             const attrs: string[] = [];
             if (isPk) attrs.push('pk');
             if (field.required && !isPk) attrs.push('not null');

@@ -153,6 +153,7 @@
         }
 
         .custom-type-item {
+        text-transform: lowercase;
           color: #334155;
 
           &:hover {
@@ -770,6 +771,8 @@
       }
 
       .custom-type-text {
+        text-transform: lowercase;
+        text-transform: lowercase;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -816,6 +819,8 @@
       }
 
       .custom-type-item {
+        text-transform: lowercase;
+        text-transform: lowercase;
         display: flex;
         align-items: center;
         justify-content: space-between;

@@ -1,284 +1,331 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
-import { EntitlementService } from '../../../core/services/entitlement.service';
-import { DashboardService } from '../../../core/services/dashboard.service';
-import { SeoService } from '../../../core/services/seo.service';
-import { Icons } from '../../../core/component/icons/icons';
-
-import { ButtonComponent } from '../../../shared/button/button';
-
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
+ import { HttpClient } from '@angular/common/http';
+ import { CommonModule } from '@angular/common';
+ import { FormsModule } from '@angular/forms';
+ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+ import { AuthService } from '../../../core/services/auth.service';
+ import { EntitlementService } from '../../../core/services/entitlement.service';
+ import { DashboardService } from '../../../core/services/dashboard.service';
+ import { SeoService } from '../../../core/services/seo.service';
+ import { AppConfigService } from '../../../core/services/app-config.service';
+ import { Icons } from '../../../core/component/icons/icons';
+ import { ButtonComponent } from '../../../shared/button/button';
+import { config } from '../../../app.config.server';
+ 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Icons, ButtonComponent],
-  templateUrl: './login.html'
-})
-export class LoginComponent {
-  username = '';
-  password = '';
-  showPassword = false;
-  isLoading = false;
-  errorMessage = '';
-  infoMessage = '';
-  usernameError = '';
-  passwordError = '';
-
-  isForgotPasswordMode = false;
-  forgotPasswordEmail = '';
-  forgotPasswordEmailError = '';
-
+   selector: 'app-login',
+   standalone: true,
+   imports: [CommonModule, FormsModule, RouterModule, Icons, ButtonComponent],
+   templateUrl: './login.html'
+ })
+ export class LoginComponent implements OnInit {
+   username = '';
+   password = '';
+   showPassword = false;
+   isLoading = false;
+   errorMessage = '';
+   infoMessage = '';
+   usernameError = '';
+   passwordError = '';
+   isForgotPasswordMode = false;
+   forgotPasswordEmail = '';
+   forgotPasswordEmailError = '';
+ 
+  private get backendUrl(): string {
+    return this.appConfig.environment?.apiConfig?.baseUrl ?? '';
+  }
+ 
   constructor(
-    private auth: AuthService,
-    private router: Router,
-    private route: ActivatedRoute,
-    private svc: DashboardService,
-    private cdr: ChangeDetectorRef,
-    private entitlementService: EntitlementService,
-    private seoService: SeoService
-  ) {
-    // If already logged in, redirect directly according to user role
-    if (this.auth.isLoggedIn()) {
-      if (this.auth.isSuperAdmin()) {
-        this.router.navigate(['/admin']);
-      } else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
-        this.router.navigate(['/organization']);
-      } else {
-        this.router.navigate(['/dashboard']);
-      }
-      return;
-    }
-
-    this.seoService.updateTags({
-      title: 'Login - DBNexus',
-      description: 'Log in to your DBNexus account to access your database schemas, collaborate with your team, and manage your diagrams.',
-      url: 'https://dbnexus.up.railway.app/login'
-    });
-  }
-
+ 	private auth: AuthService,
+ 	private router: Router,
+ 	private route: ActivatedRoute,
+ 	private svc: DashboardService,
+ 	private cdr: ChangeDetectorRef,
+ 	private entitlementService: EntitlementService,
+ 	private seoService: SeoService,
+ 	private appConfig: AppConfigService,
+ 	private http: HttpClient
+   ) {
+ 	if (this.auth.isLoggedIn()) {
+   	if (this.auth.isSuperAdmin()) {
+     	this.router.navigate(['/admin']);
+   	} else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+     	this.router.navigate(['/organization']);
+   	} else {
+     	this.router.navigate(['/dashboard']);
+   	}
+   	return;
+ 	}
+ 
+	this.seoService.updateTags({
+   	title: 'Login - DBNexus',
+   	description: 'Log in to your DBNexus account to access your database schemas, collaborate with your team, and manage your diagrams.',
+   	url: 'https://dbnexus.up.railway.app/login'
+ 	});
+   }
+ 
+  ngOnInit(): void {
+ 	const params = this.route.snapshot.queryParams;
+ 
+	// Handle error redirect from Google / LinkedIn
+ 	if (params['error']) {
+   	const errorMsg = decodeURIComponent(params['error']);
+   	this.errorMessage = errorMsg;
+   	this.svc.showToast(errorMsg, 4000, 'error');
+ 
+  	// Clear the error query param from the URL
+   	this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+   	this.cdr.detectChanges();
+   	return;
+ 	}
+ 
+	// Handle successful token redirect from Google / LinkedIn
+ 	if (params['token']) {
+   	const token = params['token'];
+   	this.auth.setToken(token);
+ 
+  	if (params['email']) this.auth.setUserEmail(params['email']);
+   	if (params['profilePicture']) this.auth.setUserProfilePicture(params['profilePicture']);
+   	if (params['organizationId']) {
+     	const orgId = parseInt(params['organizationId'], 10);
+     	if (!isNaN(orgId)) this.auth.setOrganizationId(orgId);
+   	}
+   	if (params['isSuperAdmin'] !== undefined) this.auth.setSuperAdmin(params['isSuperAdmin'] === 'true');
+   	if (params['accountType']) this.auth.setAccountType(params['accountType']);
+   	if (params['authProvider']) this.auth.setAuthProvider(params['authProvider']);
+   	if (params['orgRole']) this.auth.setOrgRole(params['orgRole']);
+ 
+  	this.handlePostLoginNavigation();
+ 	}
+   }
+ 
+  signInWithGoogle(): void {
+ 	window.location.href = `${this.backendUrl}/api/auth/google`;
+   }
+ 
+  signInWithLinkedIn(): void {
+ 	window.location.href = `${this.backendUrl}/api/auth/linkedin`;
+   }
+ 
   togglePasswordVisibility(): void {
-    this.showPassword = !this.showPassword;
-  }
-
+ 	this.showPassword = !this.showPassword;
+   }
+ 
   preventWhitespace(event: KeyboardEvent): void {
-    if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
-      event.preventDefault();
-    }
-  }
-
+ 	if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
+   	event.preventDefault();
+ 	}
+   }
+ 
   onPasswordPaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    const text = event.clipboardData?.getData('text') || '';
-    const cleaned = text.replace(/\s/g, '');
-    const input = event.target as HTMLInputElement;
-    if (input) {
-      const start = input.selectionStart || 0;
-      const end = input.selectionEnd || 0;
-      const val = input.value || '';
-      const newVal = val.substring(0, start) + cleaned + val.substring(end);
-      input.value = newVal;
-      this.password = newVal;
-      input.setSelectionRange(start + cleaned.length, start + cleaned.length);
-    } else {
-      this.password = (this.password + cleaned).replace(/\s/g, '');
-    }
-    this.passwordError = '';
-  }
-
+ 	event.preventDefault();
+ 	const text = event.clipboardData?.getData('text') || '';
+ 	const cleaned = text.replace(/\s/g, '');
+ 	const input = event.target as HTMLInputElement;
+ 	if (input) {
+   	const start = input.selectionStart || 0;
+   	const end = input.selectionEnd || 0;
+   	const val = input.value || '';
+   	const newVal = val.substring(0, start) + cleaned + val.substring(end);
+   	input.value = newVal;
+   	this.password = newVal;
+   	input.setSelectionRange(start + cleaned.length, start + cleaned.length);
+ 	} else {
+   	this.password = (this.password + cleaned).replace(/\s/g, '');
+ 	}
+ 	this.passwordError = '';
+   }
+ 
   onPasswordInput(event?: Event): void {
-    const input = event?.target as HTMLInputElement;
-    const cleaned = (input ? input.value : this.password || '').replace(/\s/g, '');
-    this.password = cleaned;
-    if (input && input.value !== cleaned) {
-      input.value = cleaned;
-    }
-    this.passwordError = '';
-  }
-
+ 	const input = event?.target as HTMLInputElement;
+ 	const cleaned = (input ? input.value : this.password || '').replace(/\s/g, '');
+ 	this.password = cleaned;
+ 	if (input && input.value !== cleaned) {
+   	input.value = cleaned;
+ 	}
+ 	this.passwordError = '';
+   }
+ 
   toggleForgotPasswordMode(event?: Event): void {
-    if (event) event.preventDefault();
-    this.isForgotPasswordMode = !this.isForgotPasswordMode;
-    this.errorMessage = '';
-    this.infoMessage = '';
-    this.usernameError = '';
-    this.passwordError = '';
-    this.forgotPasswordEmail = '';
-    this.forgotPasswordEmailError = '';
-  }
-
+ 	if (event) event.preventDefault();
+ 	this.isForgotPasswordMode = !this.isForgotPasswordMode;
+ 	this.errorMessage = '';
+ 	this.infoMessage = '';
+ 	this.usernameError = '';
+ 	this.passwordError = '';
+ 	this.forgotPasswordEmail = '';
+ 	this.forgotPasswordEmailError = '';
+   }
+ 
   private getErrorMessage(err: any, fallback: string): string {
-    if (!err) return fallback;
-    if (err.error) {
-      if (typeof err.error === 'object') {
-        if (err.error.message) return err.error.message;
-        if (err.error.error) return err.error.error;
-        if (err.error.errors) {
-          if (Array.isArray(err.error.errors)) {
-            return err.error.errors.join(' ');
-          }
-          if (typeof err.error.errors === 'object') {
-            return Object.values(err.error.errors).flat().join(' ');
-          }
-        }
-      } else if (typeof err.error === 'string') {
-        try {
-          const parsed = JSON.parse(err.error);
-          return parsed.message || parsed.error || err.error;
-        } catch {
-          return err.error;
-        }
-      }
-    }
-    return err.message || fallback;
-  }
-
+ 	if (!err) return fallback;
+ 	if (err.error) {
+   	if (typeof err.error === 'object') {
+     	if (err.error.message) return err.error.message;
+     	if (err.error.error) return err.error.error;
+     	if (err.error.errors) {
+       	if (Array.isArray(err.error.errors)) {
+         	return err.error.errors.join(' ');
+       	}
+       	if (typeof err.error.errors === 'object') {
+         	return Object.values(err.error.errors).flat().join(' ');
+       	}
+     	}
+   	} else if (typeof err.error === 'string') {
+     	try {
+       	const parsed = JSON.parse(err.error);
+       	return parsed.message || parsed.error || err.error;
+     	} catch {
+       	return err.error;
+     	}
+   	}
+ 	}
+ 	return err.message || fallback;
+   }
+ 
   submitForgotPassword(event: Event): void {
-    event.preventDefault();
-    this.errorMessage = '';
-    this.forgotPasswordEmailError = '';
-    this.infoMessage = '';
-
-    const email = this.forgotPasswordEmail.trim();
-    if (!email) {
-      this.forgotPasswordEmailError = 'Please enter your email address.';
-      return;
-    }
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
-      this.forgotPasswordEmailError = 'Please enter a valid email address.';
-      return;
-    }
-
-    this.isLoading = true;
-
-    this.auth.forgotPassword(email).subscribe({
-      next: (res) => {
-        this.isLoading = false;
-        const msg = res?.message || 'A password reset link has been sent to your email address.';
-        this.infoMessage = msg;
-        this.isForgotPasswordMode = false;
-        this.forgotPasswordEmail = '';
-        this.svc.showToast(msg, 4000, 'success');
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.isLoading = false;
-        const errorMsg = this.getErrorMessage(err, 'Failed to send reset link. Please try again.');
-        this.forgotPasswordEmailError = errorMsg;
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
+ 	event.preventDefault();
+ 	this.errorMessage = '';
+ 	this.forgotPasswordEmailError = '';
+ 	this.infoMessage = '';
+ 
+	const email = this.forgotPasswordEmail.trim();
+ 	if (!email) {
+   	this.forgotPasswordEmailError = 'Please enter your email address.';
+   	return;
+ 	}
+ 	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ 	if (!emailPattern.test(email)) {
+   	this.forgotPasswordEmailError = 'Please enter a valid email address.';
+   	return;
+ 	}
+ 
+	this.isLoading = true;
+ 
+	this.auth.forgotPassword(email).subscribe({
+   	next: (res) => {
+     	this.isLoading = false;
+     	const msg = res?.message || 'A password reset link has been sent to your email address.';
+     	this.infoMessage = msg;
+     	this.isForgotPasswordMode = false;
+     	this.forgotPasswordEmail = '';
+     	this.svc.showToast(msg, 4000, 'success');
+     	this.cdr.detectChanges();
+   	},
+   	error: (err) => {
+     	this.isLoading = false;
+     	const errorMsg = this.getErrorMessage(err, 'Failed to send reset link. Please try again.');
+     	this.forgotPasswordEmailError = errorMsg;
+     	this.cdr.detectChanges();
+   	}
+ 	});
+   }
+ 
   private handlePostLoginNavigation(): void {
-    this.isLoading = false;
-    this.svc.showToast('Logged in successfully.', 3000, 'success');
-
-    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-    if (returnUrl) {
-      this.router.navigateByUrl(returnUrl);
-      return;
-    }
-
-    const pendingInviteUrl = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_url') : null;
-    const pendingInviteId = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_id') : null;
-
-    if (pendingInviteUrl) {
-      localStorage.removeItem('pending_accept_invitation_url');
-      localStorage.removeItem('pending_accept_invitation_id');
-      this.router.navigateByUrl(pendingInviteUrl);
-      return;
-    } else if (pendingInviteId) {
-      localStorage.removeItem('pending_accept_invitation_id');
-      this.router.navigate(['/invite-accept']);
-      return;
-    }
-
-    // Super admin redirect
-    if (this.auth.isSuperAdmin()) {
-      this.router.navigate(['/admin']);
-      return;
-    }
-
-    // Organization redirect
-    if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
-      this.router.navigate(['/organization']);
-      return;
-    }
-
-    const fromHome = this.route.snapshot.queryParams['fromHome'] === 'true';
-    if (fromHome) {
-      this.router.navigate(['/dashboard'], { queryParams: { sample: 'true' } });
-    } else {
-      this.router.navigate(['/dashboard']);
-    }
-  }
-
-
+ 	this.isLoading = false;
+ 	this.svc.showToast('Logged in successfully.', 3000, 'success');
+ 
+	const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+ 	if (returnUrl) {
+   	this.router.navigateByUrl(returnUrl);
+   	return;
+ 	}
+ 
+	const pendingInviteUrl = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_url') : null;
+ 	const pendingInviteId = typeof localStorage !== 'undefined' ? localStorage.getItem('pending_accept_invitation_id') : null;
+ 
+	if (pendingInviteUrl) {
+   	localStorage.removeItem('pending_accept_invitation_url');
+   	localStorage.removeItem('pending_accept_invitation_id');
+   	this.router.navigateByUrl(pendingInviteUrl);
+   	return;
+ 	} else if (pendingInviteId) {
+   	localStorage.removeItem('pending_accept_invitation_id');
+   	this.router.navigate(['/invite-accept']);
+   	return;
+ 	}
+ 
+	if (this.auth.isSuperAdmin()) {
+   	this.router.navigate(['/admin']);
+   	return;
+ 	}
+ 
+	if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+   	this.router.navigate(['/organization']);
+   	return;
+ 	}
+ 
+	const fromHome = this.route.snapshot.queryParams['fromHome'] === 'true';
+ 	if (fromHome) {
+   	this.router.navigate(['/dashboard'], { queryParams: { sample: 'true' } });
+ 	} else {
+   	this.router.navigate(['/dashboard']);
+ 	}
+   }
+ 
   onSubmit(): void {
-    this.errorMessage = '';
-    this.usernameError = '';
-    this.passwordError = '';
-    this.infoMessage = '';
+ 	this.errorMessage = '';
+ 	this.usernameError = '';
+ 	this.passwordError = '';
+ 	this.infoMessage = '';
+ 
+	const user = this.username.trim();
+ 	const pass = this.password;
+ 
+	let hasValidationError = false;
+ 	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ 	if (!user) {
+   	this.usernameError = 'Please enter your email.';
+   	hasValidationError = true;
+ 	} else if (!emailPattern.test(user)) {
+   	this.usernameError = 'Please enter a valid email address.';
+   	hasValidationError = true;
+ 	}
+ 	if (!pass) {
+   	this.passwordError = 'Please enter your password.';
+   	hasValidationError = true;
+ 	} else if (/\s/.test(pass)) {
+   	this.passwordError = 'Password cannot contain whitespace.';
+   	hasValidationError = true;
+ 	}
+ 
+	if (hasValidationError) {
+   	this.cdr.detectChanges();
+   	return;
+ 	}
+ 
+	this.isLoading = true;
+ 
+	const payload = {
+   	email: user,
+   	password: pass
+ 	};
+ 
+	this.auth.login(payload).subscribe({
+   	next: () => {
+     	this.handlePostLoginNavigation();
+   	},
+   	error: (err) => {
+     	try {
+       	this.isLoading = false;
+       	const errorMsg = this.getErrorMessage(err, 'Invalid username or password.');
+       	const errorMsgLower = errorMsg.toLowerCase();
+ 
+      	if (errorMsgLower.includes('email') || errorMsgLower.includes('username') || errorMsgLower.includes('user')) {
+         	this.usernameError = errorMsg;
+       	} else if (errorMsgLower.includes('password')) {
+         	this.passwordError = errorMsg;
+       	} else {
+         	this.errorMessage = errorMsg;
+       	}
+       	this.cdr.detectChanges();
+     	} catch (ex) {
+       	this.isLoading = false;
+       	this.errorMessage = 'Invalid username or password.';
+       	this.cdr.detectChanges();
+     	}
+   	}
+ 	});
+   }
+ }
 
-    const user = this.username.trim();
-    const pass = this.password;
-
-    let hasValidationError = false;
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!user) {
-      this.usernameError = 'Please enter your email.';
-      hasValidationError = true;
-    } else if (!emailPattern.test(user)) {
-      this.usernameError = 'Please enter a valid email address.';
-      hasValidationError = true;
-    }
-    if (!pass) {
-      this.passwordError = 'Please enter your password.';
-      hasValidationError = true;
-    } else if (/\s/.test(pass)) {
-      this.passwordError = 'Password cannot contain whitespace.';
-      hasValidationError = true;
-    }
-
-    if (hasValidationError) {
-      this.cdr.detectChanges();
-      return;
-    }
-
-    this.isLoading = true;
-
-    const payload = {
-      email: user, // Send as both username/email to match backend keys
-      password: pass
-    };
-
-    this.auth.login(payload).subscribe({
-      next: () => {
-        this.handlePostLoginNavigation();
-      },
-      error: (err) => {
-        try {
-          this.isLoading = false;
-          const errorMsg = this.getErrorMessage(err, 'Invalid username or password.');
-          const errorMsgLower = errorMsg.toLowerCase();
-
-          if (errorMsgLower.includes('email') || errorMsgLower.includes('username') || errorMsgLower.includes('user')) {
-            this.usernameError = errorMsg;
-          } else if (errorMsgLower.includes('password')) {
-            this.passwordError = errorMsg;
-          } else {
-            this.errorMessage = errorMsg;
-          }
-          this.cdr.detectChanges();
-        } catch (ex) {
-          this.isLoading = false;
-          this.errorMessage = 'Invalid username or password.';
-          this.cdr.detectChanges();
-        }
-      }
-    });
-  }
-}

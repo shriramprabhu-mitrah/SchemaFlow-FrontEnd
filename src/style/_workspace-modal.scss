@@ -759,7 +759,7 @@
                 transition: all 0.15s ease;
                 margin: 0 !important;
 
-                &:hover {
+                &:hover, &.menu-open {
                   color: #ffffff !important;
                   background: rgba(255, 255, 255, 0.1) !important;
                   opacity: 1;
@@ -1336,7 +1336,7 @@
 
               /* Floating Dropdown Popup Menu - Fixed to escape clipping */
               .permission-dropdown-menu {
-                position: absolute !important;
+                position: fixed !important;
                 margin-top: 4px;
                 right: 0;
                 width: 230px;
@@ -1544,7 +1544,7 @@
             cursor: default;
             transition: background 0.15s ease;
 
-            &:hover {
+            &:hover, &.row-menu-open {
               background: rgba(255, 255, 255, 0.04);
 
               .three-dots-btn {
@@ -1630,7 +1630,7 @@
                 opacity: 0.5;
                 transition: all 0.15s ease;
 
-                &:hover {
+                &:hover, &.menu-open {
                   color: #ffffff;
                   background: rgba(255, 255, 255, 0.1);
                   opacity: 1;
@@ -2127,7 +2127,7 @@ body.light-theme {
                 .three-dots-btn {
                   color: #64748b !important;
 
-                  &:hover {
+                  &:hover, &.menu-open {
                     color: #0f172a !important;
                     background: rgba(0, 0, 0, 0.06) !important;
                   }
@@ -2360,7 +2360,7 @@ body.light-theme {
 
           tbody {
             tr {
-              &:hover {
+              &:hover, &.row-menu-open {
                 background: #f8fafc;
               }
 
@@ -2396,7 +2396,7 @@ body.light-theme {
                 .three-dots-btn {
                   color: #64748b;
 
-                  &:hover {
+                  &:hover, &.menu-open {
                     color: #0f172a;
                     background: rgba(0, 0, 0, 0.06);
                   }
@@ -2513,13 +2513,13 @@ body.light-theme {
 }
 
 /* Make dropdowns in the last 2 rows open upwards to prevent expanding the scroll container */
-tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-dropdown {
+tr:nth-last-child(-n+4):not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)) .action-menu-dropdown {
   top: auto !important;
   bottom: calc(100% + 6px) !important;
 }
 
 /* Make dropdowns in the last 2 rows open upwards to prevent expanding the scroll container */
-.member-item-row:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .member-context-menu {
+.member-item-row:nth-last-child(-n+4):not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)) .member-context-menu {
   top: auto !important;
   bottom: calc(100% + 6px) !important;
 }
@@ -2737,7 +2737,7 @@ tr:nth-last-child(-n+2):not(:first-child):not(:nth-child(2)) .action-menu-dropdo
         /* Member Permission Dropdown Menu */
         .permission-dropdown-menu,
         .member-perm-menu {
-          position: absolute !important;
+          position: fixed !important;
           margin-top: 4px !important;
           margin-left: auto !important;
           right: 0 !important;
@@ -4053,7 +4053,7 @@ body.light-theme {
 
               .permission-dropdown-menu,
               .member-perm-menu {
-                position: absolute !important;
+                position: fixed !important;
                 top: calc(100% + 4px) !important;
                 right: 0 !important;
                 bottom: auto !important;
@@ -4526,4 +4526,138 @@ body.light-theme {
   margin-left: 6px;
   line-height: 1.4;
   letter-spacing: 0.02em;
+}
+/* Forcing inline styles for floating menus */
+.permission-dropdown-menu.floating-perm-menu {
+  position: fixed !important;
+  top: var(--menu-top) !important;
+  right: var(--menu-right) !important;
+  bottom: auto !important;
+  margin: 0 !important;
+}
+/* Global Floating Permission Dropdown Styles */
+.permission-dropdown-menu.floating-perm-menu {
+  position: fixed !important;
+  top: var(--menu-top) !important;
+  right: var(--menu-right) !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  z-index: 100000 !important;
+  width: 230px !important;
+  min-width: 230px !important;
+  background: #141c2e !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3) !important;
+  padding: 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  box-sizing: border-box !important;
+
+  .perm-option-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    padding: 5px 10px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 7px !important;
+    color: #e2e8f0 !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    &.selected {
+      background: rgba(56, 189, 248, 0.12) !important;
+      
+      .perm-option-title {
+        color: #38bdf8 !important;
+      }
+      
+      .perm-option-desc {
+        color: rgba(56, 189, 248, 0.8) !important;
+      }
+      
+      svg {
+        color: #38bdf8 !important;
+        fill: #38bdf8 !important;
+      }
+    }
+
+    .perm-option-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+
+      .perm-option-title {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: #ffffff !important;
+      }
+      
+      svg {
+        flex-shrink: 0 !important;
+      }
+    }
+
+    .perm-option-desc {
+      font-size: 11.5px !important;
+      color: #94a3b8 !important;
+      margin-top: 2px !important;
+      line-height: 1.3 !important;
+    }
+  }
+}
+
+/* Light Theme overrides for the global floating dropdown */
+body.light-theme {
+  .permission-dropdown-menu.floating-perm-menu {
+    background: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15) !important;
+
+    .perm-option-item {
+      color: #1e293b !important;
+
+      &:hover {
+        background: #f1f5f9 !important;
+      }
+
+      &.selected {
+        background: rgba(37, 99, 235, 0.08) !important;
+        border-color: rgba(37, 99, 235, 0.2) !important;
+        
+        .perm-option-title {
+          color: #2563eb !important;
+        }
+
+        .perm-option-desc {
+          color: rgba(37, 99, 235, 0.8) !important;
+        }
+
+        svg {
+          color: #2563eb !important;
+          fill: #2563eb !important;
+        }
+      }
+
+      .perm-option-header {
+        .perm-option-title {
+          color: #0f172a !important;
+        }
+      }
+
+      .perm-option-desc {
+        color: #64748b !important;
+      }
+    }
+  }
 }

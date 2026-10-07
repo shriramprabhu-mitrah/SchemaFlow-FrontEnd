@@ -85,12 +85,18 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   hoveredGroupColorIcon: string | null = null;
   hoveredGroupName: string | null = null;
   private groupColorIcons: { groupName: string; x: number; y: number }[] = [];
-  activeTooltip: { x: number; y: number; label: string } | null = null;
+  activeTooltip: { x: number; y: number; label: string; column?: any } | null = null;
   hoveredColumn: { tableName: string; columnName: string } | null = null;
   isMouseOverCanvas = false;
   private lastMouseWorldPoint: { x: number; y: number } | null = null;
   private drawingClean = false;
   private forceHighlightConnections = false;
+  private watermarkLogo: HTMLImageElement | null = null;
+  private exportingPdf = false;
+
+  private isCanvasLight(): boolean {
+    return this.exportingPdf || this.svc.theme() === 'light';
+  }
 
   private wheelListener!: (e: WheelEvent) => void;
   private scrollListener!: () => void;
@@ -500,13 +506,37 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ], { type: 'application/pdf' });
   }
 
-  exportAsPdf(): void {
+  async exportAsPdf(): Promise<void> {
     if (typeof window === 'undefined') return;
 
     this.exporting = true;
     this.drawingClean = true;
+    this.exportingPdf = true;
 
     try {
+      // Load watermark logo first
+      if (!this.watermarkLogo && typeof window !== 'undefined') {
+        this.watermarkLogo = await new Promise<HTMLImageElement | null>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            const fallback = new Image();
+            fallback.onload = () => resolve(fallback);
+            fallback.onerror = () => resolve(null);
+            fallback.src = 'assets/icons/db-diagram-logo.png';
+          };
+          img.src = 'assets/db-diagram-logo.png';
+        });
+      }
+      const logo = this.watermarkLogo;
+
+      // Ensure brand font is loaded if available
+      if (typeof document !== 'undefined' && document.fonts) {
+        try {
+          await document.fonts.load('800 46px "Plus Jakarta Sans"');
+        } catch (_) {}
+      }
+
       const geometry: Record<string, TableDef> = {};
       this.svc.tables.forEach((t) => (geometry[t.name] = t));
 
@@ -538,8 +568,84 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.svc.view.y = -minY;
       this.svc.view.scale = 1;
 
+      const drawWatermark = () => {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 0.05; // subtle, elegant brand watermark
+        const fontSize = 46;
+        ctx.font = `800 ${fontSize}px "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        const text = 'dbNexus';
+        const textMetrics = ctx.measureText(text);
+
+        // Crop source icon to remove transparent margins (192, 266, 627, 399) on 1024x665 image
+        const isStandardLogo = logo && logo.naturalWidth === 1024 && logo.naturalHeight === 665;
+        const sw = isStandardLogo ? 627 : (logo?.naturalWidth || 627);
+        const sh = isStandardLogo ? 399 : (logo?.naturalHeight || 399);
+        const sx = isStandardLogo ? 192 : 0;
+        const sy = isStandardLogo ? 266 : 0;
+
+        const iconH = Math.round(fontSize * 0.95);
+        const iconW = logo ? Math.round(iconH * (sw / sh)) : 0;
+        const gap = logo ? Math.round(fontSize * 0.16) : 0;
+
+        const watermarkWidth = iconW + gap + textMetrics.width;
+        const watermarkHeight = Math.max(iconH, fontSize);
+
+        // Keep wide spacing so watermark only appears centrally without overcrowding
+        const spacingX = Math.max(760, watermarkWidth * 2.8);
+        const spacingY = Math.max(220, watermarkHeight * 5.0);
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(-Math.PI / 6); // 30 degree tilt
+
+        const diag = Math.sqrt(canvas.width * canvas.width + canvas.height * canvas.height);
+
+        const cols = Math.ceil(diag / spacingX);
+        const rows = Math.ceil(diag / spacingY);
+
+        ctx.textBaseline = 'middle';
+
+        for (let i = -cols; i <= cols; i++) {
+          for (let j = -rows; j <= rows; j++) {
+            const cx = i * spacingX + (j % 2 === 0 ? 0 : spacingX / 2);
+            const cy = j * spacingY;
+
+            const startX = cx - watermarkWidth / 2;
+
+            if (logo && logo.naturalWidth > 0) {
+              ctx.drawImage(
+                logo,
+                sx,
+                sy,
+                sw,
+                sh,
+                startX,
+                cy - iconH / 2,
+                iconW,
+                iconH
+              );
+            }
+
+            const textX = startX + iconW + gap;
+            const grad = ctx.createLinearGradient(
+              textX,
+              cy - fontSize * 0.35,
+              textX + textMetrics.width,
+              cy + fontSize * 0.35
+            );
+            grad.addColorStop(0, '#3ec5c1');
+            grad.addColorStop(1, '#3b82f6');
+            ctx.fillStyle = grad;
+            ctx.fillText(text, textX, cy);
+          }
+        }
+
+        ctx.restore();
+      };
+
       // Draw Page 1 (Clean regular diagram)
       this.draw();
+      drawWatermark();
 
       // Get JPEG 1
       const jpeg1DataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -554,6 +660,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.drawingClean = true;
       this.forceHighlightConnections = true;
       this.draw();
+      drawWatermark();
 
       // Get JPEG 2
       const jpeg2DataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -568,6 +675,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const pdfBlob = this.create2PagePdfFromJpegs(width, height, jpeg1Bytes, jpeg2Bytes);
 
       // Restore
+      this.exportingPdf = false;
       canvas.width = oldW;
       canvas.height = oldH;
       canvas.style.width = oldStyleW;
@@ -589,6 +697,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } finally {
+      this.exportingPdf = false;
       this.exporting = false;
       this.drawingClean = false;
       this.forceHighlightConnections = false;
@@ -636,7 +745,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const trunkXByAnchor: Record<string, number> = {};
     this.svc.refs.forEach((ref, i) => {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) return;
-      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) return;
+      const fromGeom = geometry[ref.fromTable] || geometry[ref.fromTable?.toLowerCase()];
+      const toGeom = geometry[ref.toTable] || geometry[ref.toTable?.toLowerCase()];
+      if (this.svc.aiDiffReviewActive() && (!fromGeom || !toGeom)) return;
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
       if (!path) return;
 
@@ -1046,7 +1157,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const h = this.exporting ? canvas.height : canvas.clientHeight;
 
     ctx.clearRect(0, 0, w, h);
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     ctx.fillStyle = isLight ? '#f8fafc' : '#08101f';
     ctx.fillRect(0, 0, w, h);
 
@@ -1059,9 +1170,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.scale(this.svc.view.scale, this.svc.view.scale);
 
     const geometry: Record<string, TableDef> = {};
-    this.svc.tables.forEach((t) => (geometry[t.name] = t));
+    this.svc.tables.forEach((t) => {
+      geometry[t.name] = t;
+      geometry[t.name.toLowerCase()] = t;
+    });
 
     const toolbarsToDraw: { ref: RefDef; index: number; anchor: PathPoint }[] = [];
+    const focused = this.svc.activeFocusedTable;
+
+    if (focused) ctx.globalAlpha = 0.3;
     this.drawTableGroups(ctx, geometry);
     this.tableHeaderIcons = [];
 
@@ -1069,10 +1186,19 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.drawRefs(ctx, geometry, toolbarsToDraw);
     this.drawConnectionPreview(ctx, geometry);
+    if (focused) ctx.globalAlpha = 1.0;
 
     this.svc.tables.forEach((t) => {
       if (!this.svc.isTableHidden(t.name) && !this.isTableGroupCollapsed(t.name)) {
+        if (focused && t.name !== focused) {
+          ctx.globalAlpha = 0.3;
+        } else {
+          ctx.globalAlpha = 1.0;
+        }
         this.drawTable(ctx, t, highlightedColumns);
+        if (focused) {
+          ctx.globalAlpha = 1.0;
+        }
       }
     });
 
@@ -1082,9 +1208,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       // Render active tooltip at the absolute top layer
-      const tooltip = this.activeTooltip as { x: number; y: number; label: string } | null;
+      const tooltip = this.activeTooltip as { x: number; y: number; label: string; column?: any } | null;
       if (tooltip) {
-        this.drawIconTooltip(ctx, tooltip.x, tooltip.y, tooltip.label);
+        if (tooltip.column) {
+          this.drawColumnRichTooltip(ctx, tooltip.x, tooltip.y, tooltip.column);
+        } else {
+          this.drawIconTooltip(ctx, tooltip.x, tooltip.y, tooltip.label);
+        }
       }
     }
 
@@ -1163,7 +1293,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const startX = (((this.svc.view.x % spacing) + spacing) % spacing);
     const startY = (((this.svc.view.y % spacing) + spacing) % spacing);
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     ctx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.24)' : 'rgba(255, 255, 255, 0.24)';
 
     for (let x = startX; x < w; x += spacing) {
@@ -1262,7 +1392,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.entitlementService.canUseFeature('table_group')) return;
     if (!this.svc.groups || this.svc.groups.length === 0) return;
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
 
     this.svc.groups.forEach((g) => {
       const bounds = this.getGroupBounds(g, geometry);
@@ -1300,7 +1430,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const gColorY = y + headerH / 2;
       const isGroupColorHovered = this.hoveredGroupColorIcon === g.name;
 
-      if (!this.svc.isReadOnly && this.auth.isLoggedIn()) {
+      if (!this.svc.isReadOnly && !this.isSampleDiagram() && this.auth.isLoggedIn()) {
         this.drawSettingIcon(ctx, gColorX, gColorY, isGroupColorHovered);
         if (isGroupColorHovered) {
           this.activeTooltip = { x: gColorX, y: gColorY, label: 'Settings' };
@@ -1489,7 +1619,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private drawTable(ctx: CanvasRenderingContext2D, t: TableDef, highlightedColumns: Set<string>): void {
     const radius = 1;
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
 
     ctx.save();
     ctx.shadowColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.24)';
@@ -1518,7 +1648,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const isSettingsHovered = this.hoveredTableHeaderIcon?.tableName === t.name && this.hoveredTableHeaderIcon.type === 'settings';
 
-    if (!this.svc.isReadOnly && this.auth.isLoggedIn()) {
+    if (!this.svc.isReadOnly && !this.isSampleDiagram() && this.auth.isLoggedIn()) {
       // Draw Settings Icon
       this.drawSettingIcon(ctx, settingX, editY, isSettingsHovered);
 
@@ -1585,7 +1715,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Measure type width
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      let typeText = c.type || '';
+      let typeText = (c.type || '').toLowerCase();
       let typeWidth = ctx.measureText(typeText).width;
 
       const maxTypeWidth = Math.max(30, availableWidth * 0.6);
@@ -1597,8 +1727,14 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         typeWidth = ctx.measureText(typeText).width;
       }
 
+      let badgeExtraWidth = 0;
+      if (c.notNull) {
+        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        badgeExtraWidth += ctx.measureText('NN').width + 14; // badge width + margin
+      }
+
       // Max width available for column name
-      const maxNameWidth = Math.max(20, availableWidth - typeWidth - minGap);
+      const maxNameWidth = Math.max(20, availableWidth - typeWidth - badgeExtraWidth - minGap);
 
       let prefix = '';
       if (c.pk) prefix += '\u{1F511} ';
@@ -1620,46 +1756,66 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.textAlign = 'left';
       ctx.fillText(label, t.x + padding, textY);
 
-      if ((c.name !== displayColName) && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
-        this.activeTooltip = {
-          x: t.x + padding,
-          y: textY,
-          label: c.name
-        };
+      if (this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
+        if (c.defaultVal || c.note) {
+          this.activeTooltip = {
+            x: t.x + t.width,
+            y: textY,
+            label: '',
+            column: c
+          };
+        } else if (c.name !== displayColName) {
+          this.activeTooltip = {
+            x: t.x + padding,
+            y: textY,
+            label: c.name
+          };
+        }
       }
 
-      if (c.name.length > 15 && this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
-        this.activeTooltip = {
-          x: t.x + 12,
-          y: textY,
-          label: c.name
-        };
+      let currentRightX = t.x + t.width - 12;
+
+      let colDiff: 'added' | 'modified' | 'deleted' | null = null;
+      if (this.svc.aiDiffReviewActive()) {
+        colDiff = this.svc.columnDiffStatus()[`${t.name}.${c.name}`] ||
+          this.svc.columnDiffStatus()[`${t.name.toLowerCase()}.${c.name.toLowerCase()}`] ||
+          null;
+      }
+
+      if (colDiff) {
+        ctx.textAlign = 'right';
+        const badgeText = colDiff === 'added' ? ' [Added]' : ' [Modified]';
+        const badgeColor = colDiff === 'added' ? '#10b981' : '#f59e0b';
+        ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const badgeWidth = ctx.measureText(badgeText).width;
+        ctx.fillStyle = badgeColor;
+        ctx.fillText(badgeText, currentRightX, textY);
+        currentRightX -= badgeWidth + 3;
+      }
+
+      if (c.notNull) {
+        const nnText = 'NN';
+        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const tw = ctx.measureText(nnText).width;
+        const bw = tw + 8;
+        const bh = 16;
+        
+        ctx.fillStyle = isLight ? '#e2e8f0' : '#334155';
+        ctx.beginPath();
+        this.roundRectPath(ctx, currentRightX - bw, textY - bh / 2 + 1, bw, bh, 3);
+        ctx.fill();
+        
+        ctx.fillStyle = isLight ? '#475569' : '#cbd5e1';
+        ctx.textAlign = 'center';
+        ctx.fillText(nnText, currentRightX - bw / 2, textY + 1); 
+        
+        currentRightX -= bw + 6;
       }
 
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
       ctx.textAlign = 'right';
-
-      let colDiff: 'added' | 'modified' | 'deleted' | null = null;
-      if (this.svc.aiDiffReviewActive()) {
-        colDiff = this.svc.columnDiffStatus()[`${t.name}.${c.name}`] || null;
-      }
-
-      if (colDiff) {
-        const badgeText = colDiff === 'added' ? ' [Added]' : ' [Modified]';
-        const badgeColor = colDiff === 'added' ? '#10b981' : '#f59e0b';
-
-        ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        const badgeWidth = ctx.measureText(badgeText).width;
-        ctx.fillStyle = badgeColor;
-        ctx.fillText(badgeText, t.x + t.width - 12, textY);
-
-        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = isLight ? '#718096' : '#98a7c4';
-        ctx.fillText(c.type, t.x + t.width - 12 - badgeWidth - 3, textY);
-      } else {
-        ctx.fillText(c.type, t.x + t.width - 12, textY);
-      }
+      ctx.fillText(typeText, currentRightX, textY);
     });
 
     const hiddenCount = t.columns.length - visibleColumns.length;
@@ -1700,7 +1856,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // AI Diff Review: draw badge and dashed border
     if (this.svc.aiDiffReviewActive()) {
-      const diffStatus = this.svc.tableDiffStatus()[t.name];
+      const diffStatus = this.svc.tableDiffStatus()[t.name] || this.svc.tableDiffStatus()[t.name.toLowerCase()];
       if (diffStatus) {
         const badgeColor = diffStatus === 'added' ? '#10b981' : (diffStatus === 'modified' ? '#f59e0b' : '#ef4444');
         const badgeText = diffStatus === 'added' ? '[Added]' : (diffStatus === 'modified' ? '[Modified]' : '[Deleted]');
@@ -1738,7 +1894,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isTableHidden(ref.fromTable) || this.svc.isTableHidden(ref.toTable)) {
         return null;
       }
-      if (this.svc.aiDiffReviewActive() && (!geometry[ref.fromTable] || !geometry[ref.toTable])) {
+      const fromGeom = geometry[ref.fromTable] || geometry[ref.fromTable?.toLowerCase()];
+      const toGeom = geometry[ref.toTable] || geometry[ref.toTable?.toLowerCase()];
+      if (this.svc.aiDiffReviewActive() && (!fromGeom || !toGeom)) {
         return null;
       }
       const path = this.getConnectionPath(ref, geometry, trunkXByAnchor, i, anchorUsage);
@@ -1837,7 +1995,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const isInvalid = this.isRefInvalid(ref);
-      const isLight = this.svc.theme() === 'light';
+      const isLight = this.isCanvasLight();
       const defaultLineColor = isLight ? '#94a3b8' : '#70c8c3';
       const baseColor = isInvalid ? '#ef4444' : (ref.color || defaultLineColor);
       const activeColor = isInvalid ? '#f87171' : (ref.color || (isLight ? '#3b82f6' : '#70c8c3'));
@@ -1845,17 +2003,29 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       // AI Diff Review status for this relation
       let diffStatus: 'added' | 'modified' | 'deleted' | null = null;
       if (this.svc.aiDiffReviewActive()) {
-        const refKey = `${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}->${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}`;
-        const revKey = `${ref.toTable.toLowerCase()}.${ref.toCol.toLowerCase()}->${ref.fromTable.toLowerCase()}.${ref.fromCol.toLowerCase()}`;
-        const rDiff = this.svc.refDiffStatus()[refKey] || this.svc.refDiffStatus()[revKey];
-        const fromTDiff = this.svc.tableDiffStatus()[ref.fromTable];
-        const toTDiff = this.svc.tableDiffStatus()[ref.toTable];
+        const fromT = (ref.fromTable || '').toLowerCase();
+        const fromC = (ref.fromCol || '').toLowerCase();
+        const toT = (ref.toTable || '').toLowerCase();
+        const toC = (ref.toCol || '').toLowerCase();
+        const rDiffStatus = this.svc.refDiffStatus();
+        const rDiff =
+          rDiffStatus[`${fromT}.${fromC}>${toT}.${toC}`] ||
+          rDiffStatus[`${toT}.${toC}>${fromT}.${fromC}`] ||
+          rDiffStatus[`${fromT}.${fromC}->${toT}.${toC}`] ||
+          rDiffStatus[`${toT}.${toC}->${fromT}.${fromC}`] ||
+          rDiffStatus[`${ref.fromTable}.${ref.fromCol}>${ref.toTable}.${ref.toCol}`] ||
+          rDiffStatus[`${ref.toTable}.${ref.toCol}>${ref.fromTable}.${ref.fromCol}`] ||
+          rDiffStatus[`${ref.fromTable}.${ref.fromCol}->${ref.toTable}.${ref.toCol}`] ||
+          rDiffStatus[`${ref.toTable}.${ref.toCol}->${ref.fromTable}.${ref.fromCol}`];
 
-        if (rDiff === 'added' || fromTDiff === 'added' || toTDiff === 'added') {
+        const fromTDiff = this.svc.tableDiffStatus()[ref.fromTable] || this.svc.tableDiffStatus()[fromT];
+        const toTDiff = this.svc.tableDiffStatus()[ref.toTable] || this.svc.tableDiffStatus()[toT];
+
+        if (rDiff) {
+          diffStatus = rDiff;
+        } else if (fromTDiff === 'added' || toTDiff === 'added') {
           diffStatus = 'added';
-        } else if (rDiff === 'modified' || fromTDiff === 'modified' || toTDiff === 'modified') {
-          diffStatus = 'modified';
-        } else if (rDiff === 'deleted' || fromTDiff === 'deleted' || toTDiff === 'deleted') {
+        } else if (fromTDiff === 'deleted' || toTDiff === 'deleted') {
           diffStatus = 'deleted';
         }
       }
@@ -2150,7 +2320,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const resetPos = { x: anchor.x, y: baseY };
     const deletePos = { x: anchor.x + spacing, y: baseY };
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     const hasCustomPath = !!ref.waypoints;
 
     ctx.save();
@@ -2316,7 +2486,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private drawHandle(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, faint = false): void {
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
     ctx.beginPath();
     ctx.arc(x, y, faint ? 3 : 4, 0, Math.PI * 2);
     ctx.fillStyle = faint
@@ -2411,13 +2581,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     refIndex?: number,
     anchorUsage?: Record<string, number[]>
   ): PathPoint[] | null {
-    let a = geometry[ref.fromTable];
-    let b = geometry[ref.toTable];
+    let a = geometry[ref.fromTable] || geometry[ref.fromTable?.toLowerCase()];
+    let b = geometry[ref.toTable] || geometry[ref.toTable?.toLowerCase()];
     if (!a && !b) return null;
 
     if (a && !b) {
       const stubX = a.x + a.width + 130;
-      const stubY = a.y + (a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
+      const stubY = a.y + (a.colY[ref.fromCol] ?? a.colY[ref.fromCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
       b = {
         name: ref.toTable,
         columns: [],
@@ -2425,12 +2595,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         y: stubY - this.svc.HEADER_H / 2,
         width: 100,
         height: 36,
-        colY: { [ref.toCol]: this.svc.HEADER_H / 2 },
+        colY: { [ref.toCol]: this.svc.HEADER_H / 2, [ref.toCol?.toLowerCase()]: this.svc.HEADER_H / 2 },
         color: '#ef4444'
       };
     } else if (!a && b) {
       const stubX = b.x - 130;
-      const stubY = b.y + (b.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+      const stubY = b.y + (b.colY[ref.toCol] ?? b.colY[ref.toCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
       a = {
         name: ref.fromTable,
         columns: [],
@@ -2438,7 +2608,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         y: stubY - this.svc.HEADER_H / 2,
         width: 100,
         height: 36,
-        colY: { [ref.fromCol]: this.svc.HEADER_H / 2 },
+        colY: { [ref.fromCol]: this.svc.HEADER_H / 2, [ref.fromCol?.toLowerCase()]: this.svc.HEADER_H / 2 },
         color: '#ef4444'
       };
     }
@@ -2511,8 +2681,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     a = aGeom;
     b = bGeom;
 
-    let ay = a.y + (a.colY[ref.fromCol] ?? this.svc.HEADER_H / 2);
-    let by = b.y + (b.colY[ref.toCol] ?? this.svc.HEADER_H / 2);
+    let ay = a.y + (a.colY[ref.fromCol] ?? a.colY[ref.fromCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
+    let by = b.y + (b.colY[ref.toCol] ?? b.colY[ref.toCol?.toLowerCase()] ?? this.svc.HEADER_H / 2);
 
     if (refIndex !== undefined && anchorUsage) {
       ay += this.svc.anchorOffset(ref.fromTable, ref.fromCol, refIndex, anchorUsage);
@@ -2712,7 +2882,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ];
 
       ctx.save();
-      const isLight = this.svc.theme() === 'light';
+      const isLight = this.isCanvasLight();
       ctx.strokeStyle = isLight ? '#7c3aed' : '#03fff7';
       ctx.lineWidth = 1.5;
       ctx.lineCap = 'round';
@@ -2752,7 +2922,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ];
 
       ctx.save();
-      const isLight = this.svc.theme() === 'light';
+      const isLight = this.isCanvasLight();
       const defaultLineColor = isLight ? '#94a3b8' : '#70c8c3';
       const color = ref.color || defaultLineColor;
       ctx.strokeStyle = color;
@@ -2858,6 +3028,146 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     return lines.length > 0 ? lines : [text];
   }
 
+  private drawColumnRichTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, column: any): void {
+    const isLight = this.isCanvasLight();
+    const bg = isLight ? '#ffffff' : '#141d31';
+    const textMain = isLight ? '#1a202c' : '#f8fafc';
+    const textSub = isLight ? '#718096' : '#94a3b8';
+    const textHighlight = isLight ? '#d97706' : '#f59e0b'; // orange
+    const shadowColor = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.5)';
+    
+    const rawDef = column.defaultVal !== undefined && column.defaultVal !== null ? String(column.defaultVal) : '';
+    const defVal = rawDef.replace(/^'|'$/g, '');
+    const hasDefault = defVal !== '';
+    const hasNote = !!column.note;
+    
+    ctx.save();
+    
+    let prefix = '';
+    if (column.pk) prefix += '\u{1F511} ';
+    if (column.fk) prefix += '\u{1F517} ';
+    if (column.unique && !column.pk) prefix += '\u{1F4A0} ';
+    
+    // Header Line
+    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const line1Prefix = prefix + (column.name || '') + '   ';
+    const w1Prefix = ctx.measureText(line1Prefix).width;
+    ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const w1Suffix = ctx.measureText((column.type || '').toLowerCase()).width;
+    let maxW = w1Prefix + w1Suffix;
+    
+    // Default Line
+    let w2Prefix = 0, w2Suffix = 0;
+    if (hasDefault) {
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        w2Prefix = ctx.measureText('Default ').width;
+        ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        w2Suffix = ctx.measureText(defVal).width;
+        maxW = Math.max(maxW, w2Prefix + w2Suffix);
+    }
+    
+    // Note Lines
+    let noteLines: string[] = [];
+    if (hasNote) {
+        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        maxW = Math.max(maxW, ctx.measureText('Note').width);
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        noteLines = this.getWrappedTooltipLines(ctx, column.note, 260); // give it more room
+        for (const line of noteLines) {
+            maxW = Math.max(maxW, ctx.measureText(line).width);
+        }
+    }
+    
+    const paddingX = 14;
+    const paddingY = 12;
+    const boxW = maxW + paddingX * 2;
+    
+    // Calculate Box Height
+    let boxH = paddingY * 2 + 13; // Header line height ~13
+    if (hasDefault) {
+        boxH += 22; // Default line height
+    }
+    if (hasNote) {
+        boxH += 22; // 'Note' label line height
+        boxH += noteLines.length * 18; // Note text line height
+    }
+    
+    const boxX = x + 8; // 8px padding to the right
+    const boxY = y - boxH / 2; // vertically centered
+    
+    // Draw bubble
+    ctx.beginPath();
+    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 8); // more rounded
+    ctx.shadowColor = shadowColor;
+    ctx.shadowBlur = 16; // softer shadow
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = bg;
+    ctx.fill();
+    
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = isLight ? '#cbd5e1' : '#334155';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Draw arrow pointing left
+    ctx.beginPath();
+    ctx.moveTo(boxX, y - 6);
+    ctx.lineTo(boxX - 6, y);
+    ctx.lineTo(boxX, y + 6);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.stroke();
+    
+    // clean up overlapping border
+    ctx.beginPath();
+    ctx.moveTo(boxX + 1, y - 5);
+    ctx.lineTo(boxX + 1, y + 5);
+    ctx.strokeStyle = bg;
+    ctx.stroke();
+    
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    
+    const startX = boxX + paddingX;
+    
+    // Draw Header Line
+    let currY = boxY + paddingY + 6.5;
+    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = textMain;
+    ctx.fillText(line1Prefix, startX, currY);
+    ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = textSub;
+    ctx.fillText((column.type || '').toLowerCase(), startX + w1Prefix, currY);
+    
+    // Draw Default Line
+    if (hasDefault) {
+        currY += 22;
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = textSub;
+        ctx.fillText('Default ', startX, currY);
+        ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = textHighlight;
+        ctx.fillText(defVal, startX + w2Prefix, currY);
+    }
+    
+    // Draw Note
+    if (hasNote) {
+        currY += 22;
+        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = textSub; // Note label is gray and small
+        ctx.fillText('Note', startX, currY);
+        
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = textMain; // Note text is primary color and larger
+        for (const line of noteLines) {
+            currY += 18;
+            ctx.fillText(line, startX, currY);
+        }
+    }
+    
+    ctx.restore();
+  }
+
   private drawIconTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, label: string): void {
     if (!label) return;
 
@@ -2947,6 +3257,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.editingNoteBodyId !== null) {
       this.editingNoteBodyId = null;
     }
+
+
     if (this.editingNoteId !== null) {
       this.commitEditNoteName();
     }
@@ -3148,11 +3460,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const columnHit = this.findColumnAt(wp.x, wp.y);
-    if (columnHit && !this.svc.isReadOnly && !this.isSampleDiagram()) {
-      if (this.svc.aiDiffReviewActive()) {
-        this.svc.showAiDiffEditBlockedToast();
-        return;
-      }
+    if (columnHit && !this.svc.isReadOnly && !this.isSampleDiagram() && !this.svc.aiDiffReviewActive()) {
       this.connectionDraft = {
         fromTable: columnHit.table.name,
         fromColumn: columnHit.column.name,
@@ -3166,10 +3474,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const hit = this.findTableAt(wp.x, wp.y);
     if (hit) {
-      if (this.svc.aiDiffReviewActive()) {
-        this.svc.showAiDiffEditBlockedToast();
-        return;
-      }
       this.draggingTable = hit.name;
       this.dragTableStartPos = { x: hit.x, y: hit.y };
       this.dragOffset = { x: wp.x - hit.x, y: wp.y - hit.y };
@@ -3445,7 +3749,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
           : false;
         const column = this.contextMenu.column;
         const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-        const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+        const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
+        const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
+        const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
           (label === 'Edit Column' && column && (column.pk || column.fk)) ||
           (label === 'Edit Table' && isRestrictedTableGroup);
 
@@ -3467,26 +3773,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.svc.aiDiffReviewActive()) {
-      const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
-      const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
-      const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
-      const tableHit = this.findTableAt(wp.x, wp.y);
-      if (
-        endpointHit ||
-        this.hoveredIcon ||
-        this.hoveredTableHeaderIcon ||
-        this.hoveredGroupColorIcon ||
-        cornerHit ||
-        midpointHit ||
-        this.svc.hoveredConnectionIndex !== -1 ||
-        tableHit ||
-        this.hoveredGroupName
-      ) {
-        canvas.style.cursor = 'not-allowed';
-        return;
-      }
-    }
     if (this.draggingTable) {
       canvas.style.cursor = 'move';
       return;
@@ -3507,6 +3793,25 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.reconnectDraft) {
       canvas.style.cursor = 'cell';
       return;
+    }
+
+    if (this.svc.aiDiffReviewActive()) {
+      const endpointHit = this.findEndpointAt(wp.x, wp.y, geometry);
+      const cornerHit = this.findCornerAt(wp.x, wp.y, geometry);
+      const midpointHit = this.findMidpointAt(wp.x, wp.y, geometry);
+      if (
+        endpointHit ||
+        this.hoveredIcon ||
+        this.hoveredTableHeaderIcon ||
+        this.hoveredGroupColorIcon ||
+        cornerHit ||
+        midpointHit ||
+        this.svc.hoveredConnectionIndex !== -1 ||
+        this.hoveredGroupName
+      ) {
+        canvas.style.cursor = 'not-allowed';
+        return;
+      }
     }
 
     // 1.5 Hovering endpoints of connection line
@@ -3545,6 +3850,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     // 5. Hovering table
     const table = this.findTableAt(wp.x, wp.y);
     if (table) {
+      if (this.svc.aiDiffReviewActive()) {
+        canvas.style.cursor = 'move';
+        return;
+      }
       // Check if hovering table header draggable area
       const inHeader = wp.y >= table.y && wp.y <= table.y + this.svc.HEADER_H;
       if (inHeader) {
@@ -4400,6 +4709,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       columns: table.columns.map((column) => ({
         ...column,
         originalName: column.name,
+        originalType: column.type,
         type: (column.type || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
       })),
       error: '',
@@ -4609,6 +4919,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:mousedown', ['$event'])
   onDocumentMouseDown(event: MouseEvent): void {
+    if (this.svc.activeFocusedTable) {
+      const target = event.target as HTMLElement;
+      // We don't want to clear it if they are clicking the dropdown menu button that sets the focus
+      // But if they click anywhere else (sidebar, canvas, header, other tabs), it should clear.
+      // Wait, if they click the dropdown item to set focus, mousedown happens BEFORE click.
+      // If we clear it here, the click handler in diagram-inspector will set it right after! So it's safe to clear it.
+      this.svc.activeFocusedTable = null;
+      this.svc.forceRedraw$.next();
+    }
+
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (now - this.contextMenuOpenedAt < 250) {
       return;
@@ -4869,11 +5189,24 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    const columns = this.tableModal.columns.map((column, index) => ({
-      ...column,
-      name: names[index],
-      type: (column.type.trim() || 'varchar').replace(/\s*\([^)]*\)/g, '').trim()
-    }));
+    const columns = this.tableModal.columns.map((column, index) => {
+      let cleanType = (column.type || 'varchar').replace(/\s*\([^)]*\)/g, '').trim();
+      let finalType = cleanType;
+      
+      // If the base type is unchanged from what the diagram had, restore the original length if it existed.
+      if (column.originalType) {
+        const originalBaseType = column.originalType.replace(/\s*\([^)]*\)/g, '').trim();
+        if (cleanType === originalBaseType) {
+          finalType = column.originalType;
+        }
+      }
+
+      return {
+        ...column,
+        name: names[index],
+        type: finalType
+      };
+    });
 
     if (isNew) {
       this.svc.insertNewTableInCode(name, columns, this.pendingNewTablePosition.x, this.pendingNewTablePosition.y);
@@ -5191,7 +5524,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const h = items.length * this.menuItemHeight;
     const radius = 10;
 
-    const isLight = this.svc.theme() === 'light';
+    const isLight = this.isCanvasLight();
 
     ctx.save();
     ctx.shadowColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.35)';
@@ -5219,7 +5552,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+      const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
+      const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
+      const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
         (label === 'Edit Table' && isRestrictedTableGroup);
 
@@ -5381,7 +5716,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         : false;
       const column = this.contextMenu.column;
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
-      const isDisabled = ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+      const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
+      const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
+      const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
         (label === 'Edit Table' && isRestrictedTableGroup);
 

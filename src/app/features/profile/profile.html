@@ -28,63 +28,65 @@
         <div class="hero-grid-lines"></div>
       </div>
 
-      <div class="hero-content">
-        <!-- Avatar Wrapper (Editable via click or Upload button) -->
-        <div class="hero-avatar-area">
-          <div class="avatar-ring-wrap" (click)="fileInput.click()" title="Click to upload profile picture">
-            <div class="avatar-display">
-              <img *ngIf="previewUrl()" [src]="previewUrl()" alt="Profile Preview" class="avatar-img" />
-              <div *ngIf="!previewUrl()" class="avatar-initials">
-                {{ getInitials() }}
+      <div class="hero-content profile-hero-content">
+        <!-- Top Row: Avatar & Details -->
+        <div class="hero-main-row">
+          <div class="hero-avatar-area">
+            <div class="avatar-ring-wrap" (click)="fileInput.click()" title="Click to upload profile picture">
+              <div class="avatar-display">
+                <img *ngIf="previewUrl()" [src]="previewUrl()" alt="Profile Preview" class="avatar-img" />
+                <div *ngIf="!previewUrl()" class="avatar-initials">
+                  {{ getInitials() }}
+                </div>
+              </div>
+
+              <!-- Hover overlay button -->
+              <div class="avatar-overlay-badge" title="Change picture">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
               </div>
             </div>
 
-            <!-- Hover overlay button -->
-            <div class="avatar-overlay-badge" title="Change picture">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                <circle cx="12" cy="13" r="4"></circle>
-              </svg>
+            <input type="file" #fileInput (change)="onFileSelected($event)" class="sr-only"
+              accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" />
+          </div>
+
+          <!-- User Details (Name, Email, Badges) -->
+          <div class="hero-details">
+            <div class="hero-name-row">
+              <h1 class="hero-display-name">{{ displayName() || 'SchemaFlow User' }}</h1>
+            </div>
+
+            <p class="hero-email">{{ email() || 'Loading email...' }}</p>
+
+            <div class="hero-badges-row">
+              <span class="badge badge-role">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                {{ getRoleBadgeLabel() }}
+              </span>
+
+              <span class="badge badge-plan" title="View Plans & Pricing">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                  </polygon>
+                </svg>
+                {{ getPlanBadgeLabel() }} Plan
+              </span>
+
+              <span class="badge badge-account-type">
+                {{ (accountType() || 'Individual') | titlecase }} Account
+              </span>
             </div>
           </div>
-
-          <input type="file" #fileInput (change)="onFileSelected($event)" class="sr-only"
-            accept="image/png, image/jpeg, image/webp" />
         </div>
 
-        <!-- Identity Information -->
-        <div class="hero-details">
-          <div class="hero-name-row">
-            <h1 class="hero-display-name">{{ displayName() || 'SchemaFlow User' }}</h1>
-          </div>
-
-          <p class="hero-email">{{ email() || 'Loading email...' }}</p>
-
-          <div class="hero-badges-row">
-            <span class="badge badge-role">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-              {{ getRoleBadgeLabel() }}
-            </span>
-
-            <span class="badge badge-plan" title="View Plans & Pricing">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon
-                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
-              </svg>
-              {{ getPlanBadgeLabel() }} Plan
-            </span>
-
-            <span class="badge badge-account-type">
-              {{ (accountType() || 'Individual') | titlecase }} Account
-            </span>
-          </div>
-        </div>
-
-        <!-- Hero Actions (Avatar management) -->
+        <!-- Action Buttons (Positioned directly under avatar) -->
         <div class="hero-actions">
           <button class="btn-hero-action primary" (click)="fileInput.click()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -395,33 +397,6 @@
       </div>
     </div>
 
-    <!-- Floating Feedback Alert Banners -->
-    <div class="alert-toast success" *ngIf="showSuccessMessage()">
-      <div class="toast-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      </div>
-      <div class="toast-text">
-        <strong>Success</strong>
-        <span>Your profile has been saved successfully!</span>
-      </div>
-    </div>
-
-    <div class="alert-toast error" *ngIf="showErrorMessage()">
-      <div class="toast-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-      </div>
-      <div class="toast-text">
-        <strong>Error</strong>
-        <span>{{ errorMessage() }}</span>
-      </div>
-    </div>
 
   </div>
 
