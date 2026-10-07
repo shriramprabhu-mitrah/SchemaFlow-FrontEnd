@@ -143,6 +143,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     // Usage Limit Pop-up Card State (dbnexus AI default model)
     isUsagePopupOpen = signal<boolean>(false);
     usedTokens = signal<number>(0);
+
+    // Model Switch Disclaimer State
+    showModelDisclaimer = signal<boolean>(false);
+    private modelDisclaimerTimer: any = null;
     tokenLimit = signal<number>(50000);
     hasRemainingQuota = signal<boolean>(true);
 
@@ -242,6 +246,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         }
         if (this.diagramResetSub) {
             this.diagramResetSub.unsubscribe();
+        }
+        if (this.modelDisclaimerTimer) {
+            clearTimeout(this.modelDisclaimerTimer);
+            this.modelDisclaimerTimer = null;
         }
     }
 
@@ -895,13 +903,42 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         localStorage.setItem(`ai_key_${model.id}`, key);
     }
 
+    triggerModelDisclaimer(showToast = true): void {
+        this.showModelDisclaimer.set(true);
+        if (this.modelDisclaimerTimer) {
+            clearTimeout(this.modelDisclaimerTimer);
+        }
+        this.modelDisclaimerTimer = setTimeout(() => {
+            this.showModelDisclaimer.set(false);
+            this.modelDisclaimerTimer = null;
+        }, 8000);
+
+        if (showToast) {
+            this.svc.showToast('Warning: Changing the model may affect response accuracy and token consumption.', 4000, 'info');
+        }
+    }
+
+    dismissModelDisclaimer(): void {
+        if (this.modelDisclaimerTimer) {
+            clearTimeout(this.modelDisclaimerTimer);
+            this.modelDisclaimerTimer = null;
+        }
+        this.showModelDisclaimer.set(false);
+    }
+
     onModelSelect(model: AiChatModel, event?: Event): void {
         if (event) event.stopPropagation();
         this.isModelDropdownOpen.set(false);
 
+        const current = this.selectedModel();
+        const isDifferentModel = !!current && String(current.id) !== String(model.id);
+
         if (this.isNoApiKeyRequired(model)) {
             this.selectedModel.set(model);
             localStorage.setItem('ai_selected_model_id', String(model.id));
+            if (isDifferentModel) {
+                this.triggerModelDisclaimer();
+            }
             return;
         }
 
@@ -910,6 +947,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         } else {
             this.selectedModel.set(model);
             localStorage.setItem('ai_selected_model_id', String(model.id));
+            if (isDifferentModel) {
+                this.triggerModelDisclaimer();
+            }
         }
     }
 
@@ -1009,6 +1049,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 })
             );
 
+            const prev = this.selectedModel();
+            const isDifferentModel = !!prev && String(prev.id) !== String(model.id);
+
             this.storeApiKey(model, key);
             this.selectedModel.set(model);
             localStorage.setItem('ai_selected_model_id', String(model.id));
@@ -1016,6 +1059,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             const successMsg = res?.message || `API key configured for ${model.provider_name}`;
             this.svc.showToast(successMsg, 2500, 'success');
             this.closeApiKeyModal();
+
+            if (isDifferentModel) {
+                this.triggerModelDisclaimer(false);
+            }
         };
 
         const applyError = (err: any) => {
@@ -1116,6 +1163,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         }
         const text = this.promptText().trim();
         if (!text || this.isThinking()) return;
+        this.dismissModelDisclaimer();
         if (this.streamingTimer) {
             clearInterval(this.streamingTimer);
             this.streamingTimer = null;
@@ -1824,6 +1872,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     startNewChat(toastMessage: string = 'New chat session created'): void {
+        this.dismissModelDisclaimer();
         if (this.streamingTimer) {
             clearInterval(this.streamingTimer);
             this.streamingTimer = null;

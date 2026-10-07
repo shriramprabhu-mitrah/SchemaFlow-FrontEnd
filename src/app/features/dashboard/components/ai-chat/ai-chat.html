@@ -273,6 +273,32 @@
 
   <!-- Bottom Input Box -->
   <div class="ai-chat-footer">
+    <!-- Model Switch Disclaimer Banner -->
+    <div class="model-switch-disclaimer" *ngIf="showModelDisclaimer()">
+      <div class="disclaimer-left">
+        <div class="disclaimer-icon-wrap">
+          <svg class="disclaimer-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <div class="disclaimer-text-wrap">
+          <span class="disclaimer-badge">Warning</span>
+          <span class="disclaimer-text">Changing the model may affect response accuracy and token consumption.</span>
+        </div>
+      </div>
+      <button type="button" class="disclaimer-dismiss-btn" (click)="dismissModelDisclaimer()" aria-label="Dismiss warning"
+        title="Dismiss warning">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
     <div class="input-card-wrap">
       <textarea #promptTextarea class="ai-input-textarea" [(ngModel)]="promptText" (input)="autoExpandTextarea()"
         (keydown)="onKeyDown($event)" rows="1" placeholder="Ask me anything about your diagram..."></textarea>
@@ -340,6 +366,17 @@
                     </svg>
                   </button>
                 </div>
+              </div>
+
+              <!-- Dropdown Menu Disclaimer -->
+              <div class="model-menu-disclaimer">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span><strong class="disclaimer-strong">Warning:</strong> Changing models may affect response accuracy & token consumption.</span>
               </div>
             </div>
           </div>
