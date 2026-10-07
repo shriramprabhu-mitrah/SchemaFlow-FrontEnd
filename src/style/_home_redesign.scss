@@ -1301,6 +1301,8 @@
 .version-history-img,
 .share-panel-img,
 .team-workspace-img {
+  width: 100%;
+  display: block;
   object-fit: contain;
   background: transparent;
   min-height: unset;

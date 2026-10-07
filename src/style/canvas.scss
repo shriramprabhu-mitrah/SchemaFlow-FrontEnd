@@ -1017,7 +1017,7 @@ app-version-history {
 
 .type-dropdown input {
   padding-right: 26px !important;
-  text-transform: uppercase;
+  text-transform: lowercase;
 }
 
 .type-trigger-arrow {
@@ -1073,7 +1073,7 @@ app-version-history {
 
   .type-menu-label {
     color: inherit;
-    text-transform: uppercase;
+    text-transform: lowercase;
   }
 
   &:hover {

@@ -1715,7 +1715,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Measure type width
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      let typeText = (c.type || '').toUpperCase();
+      let typeText = (c.type || '').toLowerCase();
       let typeWidth = ctx.measureText(typeText).width;
 
       const maxTypeWidth = Math.max(30, availableWidth * 0.6);
@@ -3053,7 +3053,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const line1Prefix = prefix + (column.name || '') + '   ';
     const w1Prefix = ctx.measureText(line1Prefix).width;
     ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    const w1Suffix = ctx.measureText((column.type || '').toUpperCase()).width;
+    const w1Suffix = ctx.measureText((column.type || '').toLowerCase()).width;
     let maxW = w1Prefix + w1Suffix;
     
     // Default Line
@@ -3137,7 +3137,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.fillText(line1Prefix, startX, currY);
     ctx.font = '400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = textSub;
-    ctx.fillText((column.type || '').toUpperCase(), startX + w1Prefix, currY);
+    ctx.fillText((column.type || '').toLowerCase(), startX + w1Prefix, currY);
     
     // Draw Default Line
     if (hasDefault) {
