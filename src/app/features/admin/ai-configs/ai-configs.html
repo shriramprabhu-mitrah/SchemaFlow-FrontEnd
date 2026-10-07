@@ -3,10 +3,10 @@
     <div>
       <h1>AI Configurations</h1>
       <p class="text-muted" style="margin:4px 0 0">
-        {{ activeTab === 'providers' ? 'Configure AI model providers, endpoints, and status.' : 'Configure AI models, assigned providers, and availability.' }}
+        {{ activeTab === 'providers' ? 'Configure AI model providers, endpoints, and status.' : (activeTab === 'catalog' ? 'Configure AI models, assigned providers, and availability.' : 'Configure global AI gateway URL, free token limits, and default free tier model.') }}
       </p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" *ngIf="activeTab !== 'system'">
       <!-- Search Box with Search Icon -->
       <div class="search-box-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -48,13 +48,22 @@
       </span>
       <span>Models Catalog</span>
     </button>
+    <button class="ai-tab-btn" [class.active]="activeTab === 'system'" (click)="setTab('system')">
+      <span class="tab-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </span>
+      <span>System &amp; Free Tier</span>
+    </button>
   </div>
 
-  <div class="loading-state" *ngIf="loading">
+  <div class="loading-state" *ngIf="loading && activeTab !== 'system'">
     <div class="spinner"></div><span>Loading {{ activeTab === 'providers' ? 'AI configurations...' : 'models catalog...' }}</span>
   </div>
 
-  <div class="data-table-wrap" *ngIf="!loading">
+  <div class="data-table-wrap" *ngIf="!loading && activeTab !== 'system'">
     <!-- Tab 1: Model Providers Table -->
     <table class="data-table" *ngIf="activeTab === 'providers'">
       <thead>
@@ -244,6 +253,121 @@
         </div>
         <span class="limit-label">items per page</span>
       </div>
+    </div>
+  </div>
+
+  <!-- Tab 3: System & Free Tier Settings Card -->
+  <div class="system-settings-card" *ngIf="activeTab === 'system'">
+    <div class="settings-card-header">
+      <div class="settings-card-header-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </div>
+      <div>
+        <h2 class="settings-card-title">AI System &amp; Default Free Tier Settings</h2>
+        <p class="settings-card-subtitle">Manage global AI Gateway connection, default free tokens, and the free model assigned to users without redeploying.</p>
+      </div>
+    </div>
+
+    <div class="settings-card-body" *ngIf="!loadingSettings">
+      <!-- 1. AI Gateway Base URL -->
+      <div class="setting-item">
+        <label class="setting-label">
+          <span>AI Gateway URL</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="input-with-desc">
+          <input 
+            type="text" 
+            class="form-input" 
+            [(ngModel)]="systemSettings.ai_app_url" 
+            placeholder="http://192.168.1.201:8001"
+          />
+          <span class="setting-desc">External AI Gateway endpoint (AIAPP_URL) used for LLM generation and background token refresh.</span>
+        </div>
+      </div>
+
+      <!-- 2. Default Max Tokens -->
+      <div class="setting-item">
+        <label class="setting-label">
+          <span>Default Free Max Tokens</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="input-with-desc">
+          <input 
+            type="number" 
+            min="1" 
+            class="form-input" 
+            [(ngModel)]="systemSettings.max_tokens" 
+            placeholder="500000"
+          />
+          <span class="setting-desc">Initial monthly token balance (MAX_TOKENS) assigned to free tier accounts and new user registrations.</span>
+        </div>
+      </div>
+
+      <!-- 3. Free AI Model Selection -->
+      <div class="setting-item">
+        <label class="setting-label">
+          <span>Free AI Model</span>
+          <span class="required-star">*</span>
+        </label>
+        <div class="input-with-desc">
+          <div class="custom-select-container">
+            <button 
+              type="button" 
+              class="custom-select-btn" 
+              [class.open]="showFreeModelDropdown"
+              (click)="showFreeModelDropdown = !showFreeModelDropdown; $event.stopPropagation()"
+            >
+              <span>{{ selectedFreeModelLabel }}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="custom-select-menu" *ngIf="showFreeModelDropdown" (click)="$event.stopPropagation()">
+              <div 
+                class="custom-select-option" 
+                *ngFor="let m of dbNexusModels"
+                [class.active]="m.id === systemSettings.free_model_id"
+                (click)="selectFreeModel(m)"
+              >
+                {{ m.model_name }} ({{ m.provider_name || 'DBNexus AI' }})
+              </div>
+              <div class="custom-select-option" *ngIf="dbNexusModels.length === 0" style="opacity: 0.6; pointer-events: none;">
+                No DBNexus AI models found
+              </div>
+            </div>
+          </div>
+          <span class="setting-desc">Designated free model under DBNexus AI provider accessible by default without requiring an API key.</span>
+
+          <!-- Model & Provider Badge -->
+          <div class="selected-model-pill" *ngIf="systemSettings.model_name || systemSettings.provider_name">
+            <span class="pill-badge pill-model">
+              <strong>Model:</strong> {{ systemSettings.model_name || 'ID #' + systemSettings.free_model_id }}
+            </span>
+            <span class="pill-badge pill-provider">
+              <strong>Provider:</strong> {{ systemSettings.provider_name || 'Provider #' + systemSettings.provider_id }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="settings-actions">
+        <button class="btn-primary" [disabled]="isSavingSettings" (click)="saveSystemSettings()">
+          <span class="spinner-sm" *ngIf="isSavingSettings"></span>
+          <svg *ngIf="!isSavingSettings" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span>{{ isSavingSettings ? 'Saving...' : 'Save Changes' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="loading-state" *ngIf="loadingSettings" style="padding: 32px 0;">
+      <div class="spinner"></div><span>Loading system settings...</span>
     </div>
   </div>
 
