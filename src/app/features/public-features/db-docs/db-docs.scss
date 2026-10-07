@@ -1,0 +1,106 @@
+:host-context(html[data-theme="dark"]) {
+  .lc-hero-title,
+  .lc-section-title {
+    color: #f8fafc !important;
+  }
+  .lc-hero-subtitle,
+  .lc-section-subtitle {
+    color: #94a3b8 !important;
+  }
+  .lc-mockup-container {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5) !important;
+  }
+  .lc-mockup-header {
+    background: #0f172a !important;
+    border-bottom-color: #334155 !important;
+  }
+  .lc-mockup-title {
+    color: #94a3b8 !important;
+  }
+  .lc-db-option {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #94a3b8 !important;
+  }
+  .lc-db-option.lc-db-active {
+    background: rgba(59, 130, 246, 0.15) !important;
+    border-color: #3b82f6 !important;
+    color: #60a5fa !important;
+  }
+  .lc-mockup-field {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+  }
+  .lc-mockup-label {
+    background: #475569 !important;
+  }
+  .lc-mockup-value {
+    background: #334155 !important;
+  }
+  .lc-mockup-value-light {
+    background: #1e293b !important;
+  }
+  .lc-animation-img {
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+}
+
+.dbdocs-img-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.dbdocs-dark {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: 1;
+}
+
+.dbdocs-light {
+  position: relative !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 2;
+}
+
+:host-context(html[data-theme="dark"]) .dbdocs-dark,
+:host-context(body.dark-theme) .dbdocs-dark,
+:host-context(.dark-theme) .dbdocs-dark,
+html[data-theme="dark"] .dbdocs-dark,
+body.dark-theme .dbdocs-dark,
+.dark-theme .dbdocs-dark {
+  position: relative !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 2;
+}
+
+:host-context(html[data-theme="dark"]) .dbdocs-light,
+:host-context(body.dark-theme) .dbdocs-light,
+:host-context(.dark-theme) .dbdocs-light,
+html[data-theme="dark"] .dbdocs-light,
+body.dark-theme .dbdocs-light,
+.dark-theme .dbdocs-light {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: 1;
+}
+
+.dbdocs-img-wrapper object {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
