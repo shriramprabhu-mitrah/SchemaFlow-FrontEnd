@@ -2,6 +2,19 @@
  
 ---
 
+## [1.4.0] - 2026-10-08
+ 
+### Added
+- Single Sign-On (SSO)
+- Live Database Connection
+- MariaDB support
+ 
+### Changed
+- UI enhancements across navigation, workspace, and landing page
+ 
+### Fixed
+- General bug fixes and stability improvements
+
 ## [1.3.0] - 2026-10-01
  
 ### Added
