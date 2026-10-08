@@ -12,6 +12,8 @@
     "build": "ng build",
     "build:iis": "ng build --configuration iis && node scripts/prepare-iis-build.js iis",
     "build:iisdev": "ng build --configuration iisdev && node scripts/prepare-iis-build.js iisdev",
+    "build:dev": "ng build --configuration dev && node scripts/prepare-iis-build.js dev",
+    "start:dev": "ng serve --configuration dev --host 0.0.0.0",
     "postbuild": "node scripts/inject-env.js && node scripts/generate-startup.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
