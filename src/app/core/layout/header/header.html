@@ -690,6 +690,17 @@
 
     <!-- Footer -->
     <div class="import-modal-footer">
+      <div class="conn-test-row" *ngIf="connStringDatabaseType !== 'sqlite'">
+        <app-button
+          variant="none"
+          customClass="test-connection-btn"
+          id="test-connection-btn"
+          (onClick)="testConnection()"
+          [disabled]="isConnStringTestDisabled()">
+          <span *ngIf="connStringTesting" class="spinner spinner-sm"></span>
+          <span *ngIf="!connStringTesting">Test Connection</span>
+        </app-button>
+      </div>
       <app-button variant="none" customClass="import-btn-cancel" id="conn-string-cancel-btn" (onClick)="closeConnectionStringModal()"
         [disabled]="connStringImporting">Cancel</app-button>
       <app-button variant="none" customClass="import-btn-convert" id="conn-string-submit-btn" (onClick)="submitConnectionStringImport()"

@@ -71,30 +71,53 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
 }
 
 function parseUriConnectionString(value: string, defaultSchema = 'public'): ConnectionDetails | null {
-  const urlValue = value.replace(/^jdbc:/i, '');
-  const schemeMatch = urlValue.match(/^([a-z][a-z0-9+.-]*):\/\//i);
+  const urlValue = value.replace(/^jdbc:/i, '').trim();
+  const schemeMatch = urlValue.match(/^([a-z][a-z0-9+.-]*):\/\/(.*)$/i);
   if (!schemeMatch) return null;
 
-  let url: URL;
-  try {
-    url = new URL(urlValue);
-  } catch {
-    return null;
+  const scheme = schemeMatch[1].toLowerCase();
+  const authorityAndPath = schemeMatch[2];
+
+  const pathStart = authorityAndPath.search(/[/?#]/);
+  const authority = pathStart === -1 ? authorityAndPath : authorityAndPath.slice(0, pathStart);
+  const restPath = pathStart === -1 ? '' : authorityAndPath.slice(pathStart);
+
+  let username = '';
+  let password = '';
+  let hostPort = authority;
+
+  const lastAtIndex = authority.lastIndexOf('@');
+  if (lastAtIndex !== -1) {
+    const userInfo = authority.slice(0, lastAtIndex);
+    hostPort = authority.slice(lastAtIndex + 1);
+    const colonIndex = userInfo.indexOf(':');
+    if (colonIndex !== -1) {
+      username = decodeValue(userInfo.slice(0, colonIndex));
+      password = decodeValue(userInfo.slice(colonIndex + 1));
+    } else {
+      username = decodeValue(userInfo);
+    }
   }
 
-  const host = url.hostname;
-  const port = url.port ? Number(url.port) : (url.protocol === 'mysql:' || url.protocol === 'mariadb:' ? 3306 : url.protocol === 'oracle:' ? 1521 : 5432);
-  const pathParts = url.pathname.split('/').filter(Boolean);
-  const database = pathParts[0] ? decodeValue(pathParts[0]) : '';
+  const [host, portStr] = hostPort.split(':');
   if (!host) return null;
 
-  const username = url.username ? decodeValue(url.username) : '';
-  const password = url.password ? decodeValue(url.password) : '';
-  const schema = url.searchParams.get('schemas') || url.searchParams.get('schema') || defaultSchema;
+  const defaultPort = (scheme === 'mysql' || scheme === 'mariadb') ? 3306 : (scheme === 'oracle' ? 1521 : 5432);
+  const port = portStr ? parseInt(portStr, 10) : defaultPort;
+
+  const queryIndex = restPath.indexOf('?');
+  const pathPart = queryIndex === -1 ? restPath : restPath.slice(0, queryIndex);
+  const queryString = queryIndex === -1 ? '' : restPath.slice(queryIndex + 1);
+
+  const pathSegments = pathPart.split('/').filter(Boolean);
+  const database = pathSegments[0] ? decodeValue(pathSegments[0]) : '';
+
+  const searchParams = new URLSearchParams(queryString);
+  const schema = searchParams.get('schemas') || searchParams.get('schema') || defaultSchema;
 
   return {
     host,
-    port,
+    port: Number.isFinite(port) ? port : defaultPort,
     database,
     username,
     password,

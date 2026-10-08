@@ -25,7 +25,7 @@ export class ImportService {
   private readonly databaseTypeMap: Record<SqlDialect, string> = {
     postgres: 'Postgres',
     mysql: 'Mysql',
-    mariadb: 'MariaDB',
+    mariadb: 'mariabd',
     sqlserver: 'SqlServer',
     sqlite: 'Sqlite',
     oracle: 'Oracle',
@@ -91,12 +91,68 @@ export class ImportService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    const isMariaDb = databaseType.toLowerCase() === 'mariadb';
+    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isMariaDb ? 'mariadb' : databaseType);
+
     const body = {
-      databaseType: databaseType.toLowerCase() === 'oracle' ? 'Oracle' : databaseType,
+      databaseType: dbType,
       connectionString
     };
 
+    if (isMariaDb) {
+      return this.http.post(url, body, { headers, responseType: 'text' }).pipe(
+        catchError((primaryErr) => {
+          const fallbackBody = {
+            databaseType: 'mysql',
+            connectionString: connectionString.replace(/^mariadb:\/\//i, 'mysql://')
+          };
+          return this.http.post(url, fallbackBody, { headers, responseType: 'text' }).pipe(
+            catchError(() => throwError(() => primaryErr))
+          );
+        })
+      );
+    }
+
     return this.http.post(url, body, { headers, responseType: 'text' });
+  }
+
+  /**
+   * Tests whether the supplied database connection details are reachable.
+   */
+  testConnection(databaseType: string, connectionString: string): Observable<string> {
+    const token = this.authService ? this.authService.getToken() : null;
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const isMariaDb = databaseType.toLowerCase() === 'mariadb';
+    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isMariaDb ? 'mariadb' : databaseType);
+
+    const body = {
+      databaseType: dbType,
+      connectionString
+    };
+
+    const url = this.appConfig.environment?.importExportApiUrls?.testConnection;
+
+    if (isMariaDb) {
+      return this.http.post(url!, body, { headers, responseType: 'text' }).pipe(
+        catchError((primaryErr) => {
+          const fallbackBody = {
+            databaseType: 'mysql',
+            connectionString: connectionString.replace(/^mariadb:\/\//i, 'mysql://')
+          };
+          return this.http.post(url!, fallbackBody, { headers, responseType: 'text' }).pipe(
+            catchError(() => throwError(() => primaryErr))
+          );
+        })
+      );
+    }
+
+    return this.http.post(url!, body, { headers, responseType: 'text' });
   }
 
   /**

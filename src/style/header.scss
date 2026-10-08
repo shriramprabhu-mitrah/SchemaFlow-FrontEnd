@@ -2358,6 +2358,30 @@ canvas {
     .flex-3 { flex: 3; }
   }
 
+  .conn-test-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 4px;
+    margin-right:140px;
+  }
+
+  .test-connection-btn {
+    min-width: 140px;
+    height: 38px;
+    padding: 0 16px;
+    border: 1px solid rgba(62, 197, 193, 0.35);
+    background: #337ab7 !important;
+    color: #f8f7f7;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+
+    &:hover:not(.disabled) {
+      background: rgba(62, 197, 193, 0.18);
+      border-color: rgba(53, 99, 97, 0.6);
+    }
+  }
+
   .connect-by-segment {
     display: flex;
     gap: 10px;
