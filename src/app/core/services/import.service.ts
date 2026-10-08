@@ -92,7 +92,7 @@ export class ImportService {
     }
 
     const body = {
-      databaseType,
+      databaseType: databaseType.toLowerCase() === 'oracle' ? 'Oracle' : databaseType,
       connectionString
     };
 
