@@ -163,7 +163,7 @@
           </div>
           <div class="nav-links" *ngIf="isSectionExpanded(sec.id)">
             <a *ngFor="let page of getPagesForSection(sec.id)" class="nav-link-item"
-              [class.active]="currentPage?.id === page.id" (click)="selectDoc(page)">
+              [class.active]="isPageActive(page)" (click)="selectDoc(page)">
               {{ page.title }}
             </a>
           </div>

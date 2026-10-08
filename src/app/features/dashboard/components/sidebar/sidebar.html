@@ -268,7 +268,7 @@
     <!-- Connect Button (directly below Export) -->
     <div class="activity-nav-item connect-item tt-right"
       [class.active]="false"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['db_connect'])"
       (click)="openConnectionStringModal($event)"
       [attr.data-tt]="!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'DB connect')"
       aria-label="DB connect">

@@ -294,17 +294,33 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
     return list;
   }
 
+  isPageActive(page: DocPage): boolean {
+    if (!this.currentPage || !page) return false;
+    if (this.currentPage.slug && page.slug) {
+      return this.currentPage.slug === page.slug;
+    }
+    return this.currentPage.id === page.id;
+  }
+
   getPreviousPage(): DocPage | null {
     if (!this.currentPage) return null;
     const all = this.orderedPublishedPages;
-    const idx = all.findIndex(p => p.slug === this.currentPage!.slug || p.id === this.currentPage!.id);
+    const currentSlug = this.currentPage.slug;
+    let idx = all.findIndex(p => p.slug === currentSlug);
+    if (idx === -1) {
+      idx = all.findIndex(p => p.id === this.currentPage!.id);
+    }
     return idx > 0 ? all[idx - 1] : null;
   }
 
   getNextPage(): DocPage | null {
     if (!this.currentPage) return null;
     const all = this.orderedPublishedPages;
-    const idx = all.findIndex(p => p.slug === this.currentPage!.slug || p.id === this.currentPage!.id);
+    const currentSlug = this.currentPage.slug;
+    let idx = all.findIndex(p => p.slug === currentSlug);
+    if (idx === -1) {
+      idx = all.findIndex(p => p.id === this.currentPage!.id);
+    }
     return idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
   }
 
