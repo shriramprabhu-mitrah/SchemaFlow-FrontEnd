@@ -102,6 +102,7 @@ export class HeaderComponent implements OnInit {
   connStringValue = '';
 
   connStringImporting = false;
+  connStringTesting = false;
   connStringError: string | null = null;
 
   // Deletion warning alert modal state
@@ -907,6 +908,31 @@ openConnectionStringModal(): void {
       if (raw.toLowerCase().startsWith('jdbc:') && this.connStringDatabaseType !== 'oracle') {
         raw = raw.substring(5);
       }
+
+      // Normalize URL mode so unencoded special characters (like '@' in password) are safely percent-encoded
+      const details = parseConnectionDetails(raw, this.connStringDatabaseType);
+      if (details) {
+        if (this.connStringDatabaseType === 'mssql') {
+          const authPart = details.username ? `User Id=${details.username};Password=${details.password};` : '';
+          return `Server=${details.host},${details.port};Database=${details.database};${authPart}Encrypt=false;TrustServerCertificate=true;`;
+        }
+        if (this.connStringDatabaseType === 'oracle') {
+          const credentials = details.username ? `${encodeURIComponent(details.username)}/${encodeURIComponent(details.password)}@` : '';
+          return `jdbc:oracle:thin:${credentials}//${details.host}:${details.port}/${details.database}`;
+        }
+        const userPass = details.username
+          ? (details.password ? `${encodeURIComponent(details.username)}:${encodeURIComponent(details.password)}@` : `${encodeURIComponent(details.username)}@`)
+          : '';
+        if (this.connStringDatabaseType === 'postgres') {
+          return `postgresql://${userPass}${details.host}:${details.port}/${details.database}${details.schema ? `?schemas=${details.schema}` : ''}`;
+        } else if (this.connStringDatabaseType === 'mysql') {
+          return `mysql://${userPass}${details.host}:${details.port}/${details.database}`;
+        } else if (this.connStringDatabaseType === 'mariadb') {
+          const schemaQuery = details.schema ? `?schema=${encodeURIComponent(details.schema)}` : '';
+          return `mariadb://${userPass}${details.host}:${details.port}/${details.database}${schemaQuery}`;
+        }
+      }
+
       return raw;
     }
 
@@ -952,6 +978,54 @@ openConnectionStringModal(): void {
         || (!this.connUsername.trim() || !this.connPassword.trim());
     }
     return !this.connStringValue.trim() || !this.connDatabase.trim();
+  }
+
+  isConnStringTestDisabled(): boolean {
+    if (this.connStringTesting || this.connStringImporting) return true;
+    if (this.connStringDatabaseType === 'sqlite') {
+      return !this.selectedSqliteFile;
+    }
+    if (this.connStringConnectMode === 'host') {
+      return !this.connHost.trim()
+        || !this.connUsername.trim()
+        || !this.connPassword.trim();
+    }
+    return !this.connStringValue.trim();
+  }
+
+  testConnection(): void {
+    if (this.isConnStringTestDisabled()) {
+      return;
+    }
+
+    const connectionString = this.getGeneratedConnectionString();
+    if (!connectionString.trim()) {
+      this.connStringError = 'Please specify valid connection parameters.';
+      return;
+    }
+
+    this.connStringTesting = true;
+    this.connStringError = null;
+
+    this.importSvc.testConnection(this.connStringDatabaseType, connectionString).pipe(
+      finalize(() => {
+        this.connStringTesting = false;
+        this.cdr.markForCheck();
+      })
+    ).subscribe({
+      next: () => {
+        this.connStringTesting = false;
+        this.cdr.markForCheck();
+        this.svc.showToast('Database connection successful.', 2500, 'success');
+      },
+      error: (err: any) => {
+        this.connStringTesting = false;
+        this.cdr.markForCheck();
+        const message = err?.error?.message || err?.message || 'Database connection failed.';
+        this.connStringError = message;
+        this.svc.showToast('Database connection failed.', 4000, 'error');
+      }
+    });
   }
 
   submitConnectionStringImport(): void {
