@@ -238,4 +238,16 @@ export class AdminService {
       .replace('{id}', modelId.toString());
     return this.http.put(url, data, { withCredentials: true });
   }
+
+  // ── Global AI System Settings (Super Admin) ──
+  getAiSystemSettings(): Observable<any> {
+    const url = this.urls.aiSystemSettings || 'http://localhost:4007/api/ai/admin/system-settings';
+    return this.http.get(url, { withCredentials: true });
+  }
+
+  updateAiSystemSettings(data: { ai_app_url?: string; max_tokens?: number; free_model_id?: number }): Observable<any> {
+    const url = this.urls.aiSystemSettings || 'http://localhost:4007/api/ai/admin/system-settings';
+    return this.http.put(url, data, { withCredentials: true });
+  }
 }
+

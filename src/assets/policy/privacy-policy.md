@@ -2,9 +2,9 @@
 
 **Last Updated: September 11, 2026**
 
-DB Nexus ("we", "us", or "our") operates the DB Nexus website, application, and related services (the "Service"), a collaborative database schema design and documentation platform built around DBML.
+dbNexus ("we", "us", or "our") operates the dbNexus website, application, and related services (the "Service"), a collaborative database schema design and documentation platform built around DBML.
 
-This Privacy Policy explains how we collect, use, store, and protect information when you use the Service, and the choices available to you regarding that information. By using DB Nexus, you agree to the collection and use of information as described in this policy. Terms not defined here have the meanings given to them in our Terms of Service.
+This Privacy Policy explains how we collect, use, store, and protect information when you use the Service, and the choices available to you regarding that information. By using dbNexus, you agree to the collection and use of information as described in this policy. Terms not defined here have the meanings given to them in our Terms of Service.
 
 ## 1. Information We Collect
 
@@ -14,7 +14,7 @@ We collect different categories of information to operate, secure, and improve t
 
 Unless a diagram or workspace is explicitly shared privately, note that diagrams, DBML schemas, and documentation are only accessible to you and the collaborators you invite — private by default within your workspace.
 
-When you register for DB Nexus, we may collect:
+When you register for dbNexus, we may collect:
 
 - Email address
 - First and last name
@@ -66,7 +66,7 @@ We may share information with:
 
 - **Service providers** who help us operate the platform (e.g. cloud hosting, authentication, analytics, and payment processing), bound by confidentiality obligations and only permitted to use the data to perform services on our behalf.
 - **Collaborators** you explicitly invite into a workspace, according to the permissions you assign.
-- **Legal and safety purposes**, where we believe in good faith that disclosure is necessary to comply with a legal obligation, protect the rights or property of DB Nexus, investigate potential wrongdoing, protect user or public safety, or defend against legal liability.
+- **Legal and safety purposes**, where we believe in good faith that disclosure is necessary to comply with a legal obligation, protect the rights or property of dbNexus, investigate potential wrongdoing, protect user or public safety, or defend against legal liability.
 - **Business transfers**, in the event of a merger, acquisition, or sale of assets, subject to standard confidentiality protections.
 
 ## 4. International Data Transfers
@@ -87,7 +87,7 @@ We may retain limited information after deletion where reasonably necessary for 
 
 ## 7. Local Storage
 
-Certain editing features may temporarily store schema drafts or application state in your browser (local-first architecture) before syncing to DB Nexus cloud services. Local browser storage should not be relied upon as a permanent backup — we recommend exporting and backing up important schemas independently.
+Certain editing features may temporarily store schema drafts or application state in your browser (local-first architecture) before syncing to dbNexus cloud services. Local browser storage should not be relied upon as a permanent backup — we recommend exporting and backing up important schemas independently.
 
 ## 8. Third-Party Service Providers
 
@@ -106,17 +106,17 @@ The Service may contain links to third-party websites that are not operated by u
 
 ## 10. Children's Privacy
 
-DB Nexus is not directed at, and is not intended for use by, individuals under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child has provided us with personal information, please contact us so we can delete it.
+dbNexus is not directed at, and is not intended for use by, individuals under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child has provided us with personal information, please contact us so we can delete it.
 
 ## 11. Changes to This Privacy Policy
 
-We may update this Privacy Policy from time to time. Material changes will be communicated through the Service, by email, or by another appropriate method, and the "Last Updated" date above will be revised accordingly. Continued use of DB Nexus after changes take effect constitutes acceptance of the revised policy.
+We may update this Privacy Policy from time to time. Material changes will be communicated through the Service, by email, or by another appropriate method, and the "Last Updated" date above will be revised accordingly. Continued use of dbNexus after changes take effect constitutes acceptance of the revised policy.
 
 ## 12. Contact Us
 
-If you have questions about this Privacy Policy or how your information is handled, please contact us through the support channels listed on the DB Nexus website.
+If you have questions about this Privacy Policy or how your information is handled, please contact us through the support channels listed on the dbNexus website.
 
-**DB Nexus**
+**dbNexus**
 Database Schema Design & Collaboration Platform
 
-> This Privacy Policy is a product-policy draft for DB Nexus and should be reviewed and finalized by a qualified legal professional before being published as a binding legal document.
+> This Privacy Policy is a product-policy draft for dbNexus and should be reviewed and finalized by a qualified legal professional before being published as a binding legal document.

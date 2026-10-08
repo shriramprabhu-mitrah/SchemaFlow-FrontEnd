@@ -117,6 +117,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
         if (isSample) {
           this.isInitialLoad = false;
+          this.svc.closeAiChat();
           this.svc.clearDiagram(false);
           const sampleType = sampleParam === 'group' ? 'group' : 'normal';
           this.svc.code = this.svc.getSampleCode(sampleType);
@@ -176,7 +177,12 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
                         error: (err: any) => {
                           console.error('Failed to create initial diagram:', err);
                           if (err?.status === 403) {
-                            this.svc.showUpgradeModal('create_diagrams');
+                            const errorMsg = err?.error?.message?.toLowerCase() || '';
+                            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+                              this.svc.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+                            } else {
+                              this.svc.showUpgradeModal('create_diagrams');
+                            }
                           }
                         }
                       });

@@ -382,8 +382,11 @@
           </div>
 
           <button type="button" class="send-btn"
-            [disabled]="!promptText().trim() || isThinking() || (isNoApiKeyRequired(selectedModel()) && (!hasRemainingQuota() || (getMaxTokens() > 0 && usedTokens() >= getMaxTokens())))"
-            (click)="sendMessage()" aria-label="Send message">
+            [class.disabled]="isSendDisabled()"
+            [disabled]="isSendDisabled() && !svc.aiDiffReviewActive()"
+            [attr.aria-disabled]="isSendDisabled()"
+            [attr.title]="svc.aiDiffReviewActive() ? 'Please accept or reject the applied code before giving the next prompt' : undefined"
+            (click)="onSendClick()" aria-label="Send message">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
               stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="19" x2="12" y2="5"></line>

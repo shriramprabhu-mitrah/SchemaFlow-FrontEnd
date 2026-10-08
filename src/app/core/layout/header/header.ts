@@ -14,6 +14,7 @@ import { EntitlementService } from '../../../core/services/entitlement.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
+import { parseConnectionDetails } from '../../../dbconnect/connection-string.util';
 
 @Component({
   selector: 'app-header',
@@ -84,7 +85,7 @@ export class HeaderComponent implements OnInit {
   // Connection String import modal state
   connStringModalOpen = false;
   connStringConnectMode: 'host' | 'url' = 'host';
-  connStringDatabaseType: 'postgres' | 'mysql' | 'mssql' | 'sqlite' = 'postgres';
+  connStringDatabaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' = 'postgres';
   selectedSqliteFile: File | null = null;
   isSqliteDraggingOver = false;
 
@@ -257,6 +258,11 @@ export class HeaderComponent implements OnInit {
 
   createDiagram(): void {
     const isFreePlan = (this.auth.getCurrentPlanSlug() || 'free') === 'free';
+    if (!this.entitlementService.hasMemberAccess('create_diagrams')) {
+      this.svc.showToast('You do not have permission to create diagrams in this workspace.', 3000, 'error');
+      return;
+    }
+
     const diagramCount = this.svc.totalDiagrams() > 0 ? this.svc.totalDiagrams() : this.svc.diagrams().length;
     const isAtLimit = (isFreePlan && diagramCount >= 5) || !this.entitlementService.canUseFeature('create_diagrams');
 
@@ -304,7 +310,12 @@ export class HeaderComponent implements OnInit {
         error: (err: any) => {
           console.error('Failed to create diagram:', err);
           if (err?.status === 403) {
-            this.svc.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.svc.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.svc.showUpgradeModal('create_diagrams');
+            }
             return;
           }
           const msg = err?.error?.message || 'Failed to create diagram.';
@@ -712,9 +723,9 @@ export class HeaderComponent implements OnInit {
   }
 
 openConnectionStringModal(): void {
-    if (!this.entitlementService.canUseFeature('import_sql')) {
-      if (!this.entitlementService.orgHasFeature('import_sql')) {
-        this.svc.showUpgradeModal('import_sql');
+    if (!this.entitlementService.canUseFeature('db_connect')) {
+      if (!this.entitlementService.orgHasFeature('db_connect')) {
+        this.svc.showUpgradeModal('db_connect');
       }
       return;
     }
@@ -755,20 +766,76 @@ openConnectionStringModal(): void {
     }
   }
 
-  onDatabaseTypeChange(): void {
+  syncFromConnectionString(): void {
+    if (!this.connStringValue.trim()) {
+      return;
+    }
+    const details = parseConnectionDetails(
+      this.connStringValue,
+      this.connStringDatabaseType
+    );
+
+    if (!details) return;
+
+    this.connHost = details.host;
+    this.connPort = details.port;
+    this.connDatabase = details.database;
+    this.connUsername = details.username;
+    this.connPassword = details.password;
+    this.connSchema = details.schema;
+    this.connStringError = null;
+    this.cdr.markForCheck();
+  }
+
+  onConnStringInput(event: Event): void {
+    const input = event.target as HTMLTextAreaElement;
+    this.connStringValue = input.value;
+    this.syncFromConnectionString();
+  }
+
+  onConnectModeChange(mode?: 'host' | 'url'): void {
+    if (mode) {
+      this.connStringConnectMode = mode;
+    }
+    if (this.connStringConnectMode === 'url') {
+      if (!this.connStringValue.trim()) {
+        this.connStringValue = this.getGeneratedConnectionString();
+      }
+      this.syncFromConnectionString();
+    }
+    this.cdr.markForCheck();
+  }
+
+  onDatabaseTypeChange(event?: Event): void {
+    const selectedType = (event?.target as HTMLSelectElement | null)?.value;
+    if (selectedType) {
+      this.connStringDatabaseType = selectedType as 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle';
+    }
+
     this.connStringError = null;
     if (this.connStringDatabaseType === 'sqlite') {
       this.selectedSqliteFile = null;
       this.isSqliteDraggingOver = false;
     } else if (this.connStringDatabaseType === 'postgres') {
-      if (!this.connPort || this.connPort === 3306 || this.connPort === 1433) this.connPort = 5432;
-      if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa') this.connUsername = 'postgres';
+      if (!this.connPort || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 5432;
+      if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'postgres';
+      if (!this.connSchema) this.connSchema = 'public';
     } else if (this.connStringDatabaseType === 'mysql') {
-      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433) this.connPort = 3306;
-      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa') this.connUsername = 'root';
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
+    } else if (this.connStringDatabaseType === 'mariadb') {
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
+      if (this.connSchema === 'public') this.connSchema = '';
     } else if (this.connStringDatabaseType === 'mssql') {
-      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306) this.connPort = 1433;
-      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root') this.connUsername = 'sa';
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1521) this.connPort = 1433;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root' || this.connUsername === 'system') this.connUsername = 'sa';
+    } else if (this.connStringDatabaseType === 'oracle') {
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1433) this.connPort = 1521;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root' || this.connUsername === 'sa') this.connUsername = 'system';
+    }
+    if (this.connStringConnectMode === 'url' && this.connStringValue.trim()) {
+      this.syncFromConnectionString();
     }
     this.cdr.markForCheck();
   }
@@ -837,14 +904,14 @@ openConnectionStringModal(): void {
   getGeneratedConnectionString(): string {
     if (this.connStringConnectMode === 'url') {
       let raw = this.connStringValue.trim();
-      if (raw.toLowerCase().startsWith('jdbc:')) {
+      if (raw.toLowerCase().startsWith('jdbc:') && this.connStringDatabaseType !== 'oracle') {
         raw = raw.substring(5);
       }
       return raw;
     }
 
     const host = this.connHost.trim() || 'localhost';
-    const port = this.connPort || (this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' ? 3306 : 1433);
+    const port = this.connPort || (this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' || this.connStringDatabaseType === 'mariadb' ? 3306 : this.connStringDatabaseType === 'oracle' ? 1521 : 1433);
     const db = this.connDatabase.trim();
     const user = this.connUsername.trim();
     const pass = this.connPassword;
@@ -857,10 +924,18 @@ openConnectionStringModal(): void {
 
     const userPass = user ? (pass ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}@` : `${encodeURIComponent(user)}@`) : '';
 
+    if (this.connStringDatabaseType === 'oracle') {
+      const credentials = user ? `${encodeURIComponent(user)}/${encodeURIComponent(pass)}@` : '';
+      return `jdbc:oracle:thin:${credentials}//${host}:${port}/${db}`;
+    }
+
     if (this.connStringDatabaseType === 'postgres') {
       return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schemas=${schema}` : ''}`;
     } else if (this.connStringDatabaseType === 'mysql') {
       return `mysql://${userPass}${host}:${port}/${db}`;
+    } else if (this.connStringDatabaseType === 'mariadb') {
+      const schemaQuery = this.connSchema.trim() ? `?schema=${encodeURIComponent(this.connSchema.trim())}` : '';
+      return `mariadb://${userPass}${host}:${port}/${db}${schemaQuery}`;
     }
 
     return `postgresql://${userPass}${host}:${port}/${db}`;
@@ -872,9 +947,11 @@ openConnectionStringModal(): void {
       return !this.selectedSqliteFile;
     }
     if (this.connStringConnectMode === 'host') {
-      return !this.connHost.trim() || !this.connDatabase.trim();
+      return !this.connHost.trim()
+        || !this.connDatabase.trim()
+        || (!this.connUsername.trim() || !this.connPassword.trim());
     }
-    return !this.connStringValue.trim();
+    return !this.connStringValue.trim() || !this.connDatabase.trim();
   }
 
   submitConnectionStringImport(): void {
@@ -1330,7 +1407,12 @@ openConnectionStringModal(): void {
       },
       error: (err) => {
         if (err?.status === 403) {
-          this.svc.showUpgradeModal('create_diagrams');
+          const errorMsg = err?.error?.message?.toLowerCase() || '';
+          if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+            this.svc.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+          } else {
+            this.svc.showUpgradeModal('create_diagrams');
+          }
         } else {
           this.svc.showToast('Failed to save diagram before sharing.', 3000, 'error');
         }
@@ -1388,6 +1470,7 @@ openConnectionStringModal(): void {
     }
     this.runWithUnsavedChangesCheck(() => {
 
+      this.svc.closeAiChat();
       this.svc.closeAiDiffReview(false);
       this.svc.requestSplitView();
       this.svc.clearDiagram(true);
@@ -1405,3 +1488,4 @@ openConnectionStringModal(): void {
   }
 
 }
+

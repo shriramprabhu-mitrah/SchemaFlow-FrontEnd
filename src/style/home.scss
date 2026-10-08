@@ -2066,7 +2066,7 @@ body.light-theme {
   }
 }
 
-.dark-theme .nav-item-dropdown {
+html[data-theme="dark"] .nav-item-dropdown {
   .dropdown-menu {
     background: #1f2937;
     border-color: #374151;
@@ -2104,7 +2104,7 @@ body.light-theme {
   width: 100%;
   display: flex;
   justify-content: center;
-  padding: 60px 24px;
+  padding: 45px 24px;
   overflow: hidden;
   text-align: center;
 }
@@ -2385,7 +2385,7 @@ html.light-theme .feature-info-image p { color: #6b7280; }
 }
 
 .how-it-works-section {
-  padding: 80px 24px;
+  padding: 20px 24px;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
@@ -2402,7 +2402,7 @@ html.light-theme .feature-info-image p { color: #6b7280; }
 
 .how-it-works-content {
   flex: 1;
-  min-width: 300px;
+  min-width: 200px;
 }
 
 .how-it-works-title {
@@ -2464,7 +2464,7 @@ html.light-theme .feature-info-image p { color: #6b7280; }
 
 .how-it-works-ide {
   flex: 1;
-  min-width: 300px;
+  min-width: 200px;
   background: #ffffff;
   border-radius: 12px;
   padding: 24px;
@@ -2503,7 +2503,7 @@ html.light-theme .feature-info-image p { color: #6b7280; }
 }
 
 .interactive-dict-section {
-  padding: 100px 24px;
+  padding: 50px 24px;
   background: #ffffff;
 }
 .interactive-dict-section h2 {
@@ -2547,7 +2547,7 @@ html.light-theme .feature-info-image p { color: #6b7280; }
 }
 .highlight-content {
   flex: 1;
-  min-width: 300px;
+  min-width: 200px;
 }
 .highlight-content h3 {
   color: #1e3a8a;
@@ -2579,7 +2579,7 @@ html.light-theme .feature-info-image p { color: #6b7280; }
 }
 
 /* Dark Theme Overrides for Public Feature Pages */
-html[data-theme="dark"] {
+html[data-theme="dark"], body.dark-theme, .dark-theme {
 
   .live-ui-mockup {
     background: #1e293b !important;
