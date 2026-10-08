@@ -45,7 +45,8 @@
     "import": "http://192.168.1.201:3001/api/import",
     "export": "http://192.168.1.201:3001/api/export/{id}",
     "generateDbml": "http://192.168.1.201:3001/api/dbml/generate",
-    "generateDbmlSqlite": "http://192.168.1.201:3001/api/dbml/generate-form-sqllite"
+    "generateDbmlSqlite": "http://192.168.1.201:3001/api/dbml/generate-form-sqllite",
+    "testConnection": "http://192.168.1.201:3001/api/db/test-connection"
 
   },
   "pricingApiUrls": {
