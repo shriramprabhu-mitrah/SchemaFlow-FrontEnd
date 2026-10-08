@@ -216,8 +216,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 48px;
-  flex-wrap: wrap;
+  gap: 32px;
+  flex-wrap: nowrap;
   padding: 0 24px;
 
   @media (max-width: 768px) {
@@ -253,6 +253,7 @@
   font-weight: 700;
   color: #1e293b;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 
   html[data-theme="dark"] &,
   body.dark-theme &,
@@ -268,8 +269,8 @@
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
-  padding: 80px 24px;
-  margin-bottom: 80px;
+  padding: 35px 24px;
+  margin-bottom: 40px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -319,7 +320,6 @@
   border: 1px solid #e2e8f0;
   padding: 40px 32px;
   border-radius: 20px;
-  text-align: left !important;
 }
 
 .icon-primary-solid {
@@ -359,7 +359,7 @@
 .zigzag-features-section {
   max-width: 1200px;
   margin: 0 auto 100px;
-  padding: 0 24px;
+  padding: 35px 24px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1755,16 +1755,10 @@ html[data-theme="dark"] {
   }
 
   .hero-title-mega {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  text-align: left !important;
     color: #f3f4f6;
   }
 
   .hero-subtitle {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  text-align: left !important;
     color: #9ca3af;
   }
 
@@ -1868,13 +1862,9 @@ html[data-theme="dark"] {
   display: flex;
   flex-direction: column;
   align-items: flex-start !important;
-  text-align: left !important;
 }
 
 .hero-title-mega {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  text-align: left !important;
   font-size: clamp(42px, 5vw, 64px);
   font-weight: 800;
   color: #0f172a;
@@ -1895,9 +1885,6 @@ html[data-theme="dark"] {
 }
 
 .hero-subtitle {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  text-align: left !important;
   font-size: clamp(18px, 2.5vw, 22px);
   color: #475569;
   line-height: 1.6;
@@ -2024,9 +2011,6 @@ html[data-theme="dark"] .hero-animation-wrapper {
 
 @media (max-width: 768px) {
   .hero-title-mega {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  text-align: left !important;
     font-size: 42px;
   }
 
