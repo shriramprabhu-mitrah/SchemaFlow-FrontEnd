@@ -1,9 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { DocPage, DocRevision, DocSection, DocStatus } from '../models/cms-docs.model';
 
-const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v45_sections';
-const STORAGE_KEY_PAGES = 'dbnexus_cms_v45_pages';
-const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v45_revisions';
+const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v46_sections';
+const STORAGE_KEY_PAGES = 'dbnexus_cms_v46_pages';
+const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v46_revisions';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +27,7 @@ export class CmsDocsService {
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('dbnexus_cms_') || key.startsWith('msdb_cms_')) && !key.startsWith('dbnexus_cms_v45_')) {
+        if (key && (key.startsWith('dbnexus_cms_') || key.startsWith('msdb_cms_')) && !key.startsWith('dbnexus_cms_v46_')) {
           keysToRemove.push(key);
         }
       }
