@@ -137,9 +137,6 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     return `M ${startX} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${endX} ${y2}`;
   }
 
-  private prevContainerWidth: number = 0;
-  private prevContainerHeight: number = 0;
-
   @HostListener('window:resize')
   onResize() {
     if (!isPlatformBrowser(this.platformId)) return;
@@ -159,18 +156,6 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
       
       const effectiveWidth = this.cachedContainerRect.width / zoomFactor;
       const effectiveHeight = this.cachedContainerRect.height / zoomFactor;
-
-      if (!this.prevContainerWidth || !this.prevContainerHeight) {
-        this.prevContainerWidth = effectiveWidth;
-        this.prevContainerHeight = effectiveHeight;
-        return;
-      }
-
-      const widthRatio = effectiveWidth / this.prevContainerWidth;
-      const heightRatio = effectiveHeight / this.prevContainerHeight;
-
-      this.prevContainerWidth = effectiveWidth;
-      this.prevContainerHeight = effectiveHeight;
       
       const tableWidth = 200;
       const tableHeight = 135;
@@ -180,16 +165,11 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
 
       let changed = false;
       this.tables.forEach(table => {
-        // Apply proportional mapping
-        table.x = table.x * widthRatio;
-        table.y = table.y * heightRatio;
-        
         // Bounds checking
-        if (table.x > maxX) { table.x = maxX; }
-        if (table.y > maxY) { table.y = maxY; }
-        if (table.x < 0) { table.x = 0; }
-        if (table.y < 0) { table.y = 0; }
-        changed = true;
+        if (table.x > maxX) { table.x = maxX; changed = true; }
+        if (table.y > maxY) { table.y = maxY; changed = true; }
+        if (table.x < 0) { table.x = 0; changed = true; }
+        if (table.y < 0) { table.y = 0; changed = true; }
       });
 
       if (changed) {
@@ -417,21 +397,6 @@ Table projects {
     if (isPlatformBrowser(this.platformId)) {
       document.addEventListener('mousemove', this.boundMouseMove);
       document.addEventListener('mouseup', this.boundMouseUp);
-      
-      // Initialize previous dimensions for proportional mapping
-      setTimeout(() => {
-        const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
-        if (container) {
-          const rect = container.getBoundingClientRect();
-          let zoomFactor = 1;
-          const computedZoom = window.getComputedStyle(container).zoom;
-          if (computedZoom && computedZoom !== 'normal') {
-            zoomFactor = parseFloat(computedZoom) || 1;
-          }
-          this.prevContainerWidth = rect.width / zoomFactor;
-          this.prevContainerHeight = rect.height / zoomFactor;
-        }
-      });
     }
   }
 
