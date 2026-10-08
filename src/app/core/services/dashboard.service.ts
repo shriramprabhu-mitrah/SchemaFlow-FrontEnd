@@ -133,112 +133,112 @@ export interface PaginatedResult<T> {
 
 export type Tool = 'select' | 'pan';
 export type ContextMenuTarget = '' | 'column' | 'table' | 'connection' | 'empty' | 'tableHeader' | 'groupHeader';
-export type SqlDialect = 'postgres' | 'mysql' | 'mssql';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'mssql';
 
 
 export const SAMPLE = `Table Department {
-  DepartmentId INT [pk]
-  DepartmentName VARCHAR
-  Location VARCHAR
+  DepartmentId int [pk]
+  DepartmentName varchar
+  Location varchar
 }
  
 Table Role {
-  RoleId INT [pk]
-  RoleName VARCHAR
+  RoleId int [pk]
+  RoleName varchar
 }
  
 Table Employee {
-  EmployeeId INT [pk]
-  DepartmentId INT
-  RoleId INT
-  ManagerId INT
-  FirstName VARCHAR
-  LastName VARCHAR
-  Email VARCHAR
-  Phone VARCHAR
-  HireDate DATE
-  Salary DECIMAL
-  Status VARCHAR
+  EmployeeId int [pk]
+  DepartmentId int
+  RoleId int
+  ManagerId int
+  FirstName varchar
+  LastName varchar
+  Email varchar
+  Phone varchar
+  HireDate date
+  Salary decimal
+  Status varchar
 }
  
 Table Client {
-  ClientId INT [pk]
-  CompanyName VARCHAR
-  ContactPerson VARCHAR
-  Email VARCHAR
-  Phone VARCHAR
+  ClientId int [pk]
+  CompanyName varchar
+  ContactPerson varchar
+  Email varchar
+  Phone varchar
 }
  
 Table Project {
-  ProjectId INT [pk]
-  ClientId INT
-  ProjectManagerId INT
-  ProjectName VARCHAR
-  StartDate DATE
-  EndDate DATE
-  Status VARCHAR
+  ProjectId int [pk]
+  ClientId int
+  ProjectManagerId int
+  ProjectName varchar
+  StartDate date
+  EndDate date
+  Status varchar
 }
  
 Table EmployeeProject {
-  EmployeeProjectId INT [pk]
-  EmployeeId INT
-  ProjectId INT
-  AssignedDate DATE
-  AllocationPercentage INT
+  EmployeeProjectId int [pk]
+  EmployeeId int
+  ProjectId int
+  AssignedDate date
+  AllocationPercentage int
 }
  
 Table Attendance {
-  AttendanceId INT [pk]
-  EmployeeId INT
-  AttendanceDate DATE
-  CheckIn TIME
-  CheckOut TIME
-  Status VARCHAR
+  AttendanceId int [pk]
+  EmployeeId int
+  AttendanceDate date
+  CheckIn time
+  CheckOut time
+  Status varchar
 }
  
 Table LeaveRequest {
-  LeaveRequestId INT [pk]
-  EmployeeId INT
-  LeaveType VARCHAR
-  FromDate DATE
-  ToDate DATE
-  Reason VARCHAR
-  ApprovalStatus VARCHAR
+  LeaveRequestId int [pk]
+  EmployeeId int
+  LeaveType varchar
+  FromDate date
+  ToDate date
+  Reason varchar
+  ApprovalStatus varchar
 }
  
 Table Timesheet {
-  TimesheetId INT [pk]
-  EmployeeId INT
-  ProjectId INT
-  WorkDate DATE
-  HoursWorked DECIMAL
+  TimesheetId int [pk]
+  EmployeeId int
+  ProjectId int
+  WorkDate date
+  HoursWorked decimal
 }
  
 Table Invoice {
-  InvoiceId INT [pk]
-  ClientId INT
-  ProjectId INT
-  InvoiceDate DATE
-  DueDate DATE
-  TotalAmount DECIMAL
-  Status VARCHAR
+  InvoiceId int [pk]
+  ClientId int
+  ProjectId int
+  InvoiceDate date
+  DueDate date
+  TotalAmount decimal
+  Status varchar
 }
  
 Table InvoiceItem {
-  InvoiceItemId INT [pk]
-  InvoiceId INT
-  Description VARCHAR
-  Quantity INT
-  UnitPrice DECIMAL
-  Amount DECIMAL
+  InvoiceItemId int [pk]
+  InvoiceId int
+  Description varchar
+  Quantity int
+  UnitPrice decimal
+  Amount decimal
 }
  
 Table Payment {
-  PaymentId INT [pk]
-  InvoiceId INT
-  PaymentDate DATE
-  Amount DECIMAL
-  PaymentMethod VARCHAR
+  PaymentId int [pk]
+  InvoiceId int
+  PaymentDate date
+  Amount decimal
+  PaymentMethod varchar
 }
  
 Ref: Employee.DepartmentId > Department.DepartmentId
@@ -599,6 +599,10 @@ export class DashboardService {
   readonly activeDiffHunkIndex = signal<number>(0);
   readonly currentActiveHunkId = signal<number | null>(null);
   readonly pendingAiDiffHunks = computed(() => this.aiDiffHunks().filter(h => h.status === 'pending'));
+  readonly activeAiDiffMeta = signal<{ chat_history_id?: number; session_id?: number } | null>(null);
+  readonly latestAiChatMessageId = signal<number | null>(null);
+  readonly latestAiChatSessionId = signal<number | null>(null);
+  readonly aiDiffReviewClosed = new Subject<boolean>();
 
   // Canvas visual diff status (tables and relations)
   readonly tableDiffStatus = signal<Record<string, 'added' | 'modified' | 'deleted'>>({});
@@ -665,7 +669,13 @@ export class DashboardService {
     return result.join('\n').replace(/\n+$/, '').trim();
   }
 
-  startAiDiffReview(originalCode: string, proposedCode: string): void {
+  startAiDiffReview(originalCode: string, proposedCode: string, meta?: { chat_history_id?: number; session_id?: number }): void {
+    const resolvedMeta = {
+      chat_history_id: meta?.chat_history_id ?? this.latestAiChatMessageId() ?? undefined,
+      session_id: meta?.session_id ?? this.latestAiChatSessionId() ?? undefined
+    };
+    this.activeAiDiffMeta.set(resolvedMeta);
+
     // If a diff review was already active with unaccepted changes, ensure the baseline remains the committed code
     const actualOriginal = this.aiDiffReviewActive()
       ? this.getCommittedAiDiffCode()
@@ -1059,6 +1069,7 @@ export class DashboardService {
 
     const pending = hunks.filter(h => h.status === 'pending');
     if (pending.length === 0) {
+      this.recordAiChatHistoryApplied(true);
       this.closeAiDiffReview(true);
       if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
         this.saveDiagram().subscribe({
@@ -1111,6 +1122,7 @@ export class DashboardService {
         const original = this.aiDiffOriginalCode();
         this.code = original;
       }
+      this.recordAiChatHistoryApplied(anyAccepted);
       this.closeAiDiffReview(anyAccepted);
       if (anyAccepted) {
         if (this.canSaveDiagram(false) && this.validateDiagramName(false)) {
@@ -1135,7 +1147,58 @@ export class DashboardService {
     }
   }
 
+  recordAiChatHistoryApplied(isApplied: boolean): void {
+    const meta = this.activeAiDiffMeta();
+    const chatHistoryId = meta?.chat_history_id ?? this.latestAiChatMessageId();
+    const sessionId = meta?.session_id ?? this.latestAiChatSessionId();
+
+    // Immediately clear meta to avoid duplicate triggers for this diff session
+    this.activeAiDiffMeta.set(null);
+
+    if (!chatHistoryId) {
+      console.warn('Cannot record AI chat history applied: chat_history_id (messageId) is not available.');
+      return;
+    }
+
+    const userId = this.auth.getUserId();
+    const payload: {
+      chat_history_id: number;
+      session_id: number | null;
+      user_id: number | null;
+      is_applied: boolean;
+    } = {
+      chat_history_id: Number(chatHistoryId),
+      session_id: sessionId !== null && sessionId !== undefined ? Number(sessionId) : null,
+      user_id: userId !== null && userId !== undefined ? Number(userId) : null,
+      is_applied: Boolean(isApplied)
+    };
+
+    const url = (this.appConfig.environment as any)?.aiChatHistoryApplied ||
+      (this.appConfig.environment?.adminApiUrls as any)?.aiChatHistoryApplied ||
+      (this.appConfig.environment?.aiChat ? `${this.appConfig.environment.aiChat.replace(/\/+$/, '')}/history/applied` : '') ||
+      (this.appConfig.environment?.adminApiUrls?.aiChat ? `${this.appConfig.environment.adminApiUrls.aiChat.replace(/\/+$/, '')}/history/applied` : '') ||
+      (this.appConfig.environment?.apiConfig?.baseUrl ? `${this.appConfig.environment.apiConfig.baseUrl.replace(/\/+$/, '')}/api/ai/chat/history/applied` : '/api/ai/chat/history/applied');
+
+    const token = this.auth.getToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    this.http.put<any>(url, payload, { headers, withCredentials: true }).subscribe({
+      next: (res) => {
+        // AI chat history applied status recorded successfully
+      },
+      error: (err) => {
+        console.warn('Failed to record AI chat history applied status:', err);
+      }
+    });
+  }
+
   acceptAllAiDiff(): void {
+    this.recordAiChatHistoryApplied(true);
     const proposed = (this.aiDiffProposedCode() || '').replace(/\n+$/, '');
     this.code = proposed;
     this.showCanvasPlaceholder = !proposed.trim();
@@ -1152,6 +1215,7 @@ export class DashboardService {
   }
 
   rejectAllAiDiff(): void {
+    this.recordAiChatHistoryApplied(false);
     const original = this.aiDiffOriginalCode();
     this.code = original;
     this.showCanvasPlaceholder = !original.trim();
@@ -1182,6 +1246,10 @@ export class DashboardService {
   }
 
   closeAiDiffReview(anyAccepted = false): void {
+    if (this.activeAiDiffMeta()) {
+      this.recordAiChatHistoryApplied(anyAccepted);
+    }
+    this.aiDiffReviewClosed.next(anyAccepted);
     this.aiDiffReviewActive.set(false);
     this.tableDiffStatus.set({});
     this.refDiffStatus.set({});
@@ -1293,9 +1361,24 @@ export class DashboardService {
 
   set diagramName(value: string) {
     this.diagramNameSignal.set(value);
+    if (value === 'Sample Diagram' && this.showAiChat()) {
+      this.closeAiChat();
+    }
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('active_diagram_name', value);
     }
+  }
+
+  isSampleDiagram(): boolean {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('sample') && !params.get('id')) {
+          return true;
+        }
+      } catch (e) { }
+    }
+    return this.diagramNameSignal() === 'Sample Diagram';
   }
 
   unlockDocs(id: number): Observable<any> {
@@ -1416,6 +1499,10 @@ export class DashboardService {
   workspacesFetched = false;
 
   toggleAiChat(force?: boolean): void {
+    if (this.isSampleDiagram()) {
+      this.closeAiChat();
+      return;
+    }
     const next = force !== undefined ? force : !this.showAiChat();
     this.showAiChat.set(next);
     if (next) {
@@ -1784,6 +1871,10 @@ export class DashboardService {
     this.entitlementService.entitlements$.subscribe(() => {
       this.parseAndLayout();
     });
+
+    if (!this.auth.getUserId() && this.auth.isLoggedIn()) {
+      this.auth.getUserDetails().subscribe({ error: () => {} });
+    }
 
     // Subscribe to local code changes for instant real-time collab emission
     this.code$.pipe(debounceTime(300)).subscribe(() => {
@@ -2545,7 +2636,7 @@ export class DashboardService {
       localStorage.removeItem('drag position');
     }
     this.code = `Table Untitled {
-  id INT [pk]
+  id int [pk]
 }`;
     this.isDocUnlocked.set(false);
     this.showDocs = false;
@@ -2932,7 +3023,21 @@ export class DashboardService {
       };
     }) : [];
 
-    const totalTables = parsed.tables.length;
+    let deletedTablesForDiff: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
+    if (this.aiDiffReviewActive()) {
+      const origParsed = this.parseDBML(this.aiDiffOriginalCode());
+      const deletedTableNames = Object.entries(this.tableDiffStatus())
+        .filter(([_, status]) => status === 'deleted')
+        .map(([name]) => name.toLowerCase());
+
+      deletedTablesForDiff = origParsed.tables.filter(ot =>
+        deletedTableNames.includes(ot.name.toLowerCase()) &&
+        !parsed.tables.some(t => t.name.toLowerCase() === ot.name.toLowerCase())
+      );
+    }
+
+    const allCanvasTables = [...parsed.tables, ...deletedTablesForDiff];
+    const totalTables = allCanvasTables.length;
     const numGroupCols = groups.length * 2;
     let perRow = 3;
     if (totalTables > 12) {
@@ -2945,9 +3050,31 @@ export class DashboardService {
       perRow = Math.max(perRow, numGroupCols + 2);
     }
 
-    const colHeights = Array.from({ length: perRow }, () => 60);
     const horizGap = 150;
     const vertGap = 100;
+
+    // Accommodate any existing positions that might already be in higher columns
+    allCanvasTables.forEach(t => {
+      const pos = this.tablePositions[t.name];
+      if (pos) {
+        const col = Math.round((pos.x - 60) / (this.CARD_W + horizGap));
+        if (col >= 0) {
+          perRow = Math.max(perRow, col + 1);
+        }
+      }
+    });
+
+    const colHeights = Array.from({ length: perRow }, () => 60);
+
+    // Register all tables that ALREADY have positions first so heights/columns are occupied
+    allCanvasTables.forEach(t => {
+      const pos = this.tablePositions[t.name];
+      if (pos) {
+        const height = this.getTableHeight(t.columns);
+        const col = Math.min(perRow - 1, Math.max(0, Math.round((pos.x - 60) / (this.CARD_W + horizGap))));
+        colHeights[col] = Math.max(colHeights[col], pos.y + height + vertGap);
+      }
+    });
 
     parsed.tables.forEach((t) => {
       const height = this.getTableHeight(t.columns);
@@ -2971,10 +3098,25 @@ export class DashboardService {
         const y = colHeights[col];
         this.tablePositions[t.name] = { x, y };
         colHeights[col] += height + vertGap;
-      } else {
-        const pos = this.tablePositions[t.name];
-        const col = Math.min(perRow - 1, Math.max(0, Math.round((pos.x - 60) / (this.CARD_W + horizGap))));
-        colHeights[col] = Math.max(colHeights[col], pos.y + height + vertGap);
+      }
+    });
+
+    deletedTablesForDiff.forEach((ot) => {
+      const height = this.getTableHeight(ot.columns);
+      const width = this.CARD_W;
+      ot.width = width;
+      ot.height = height;
+      if (!this.tablePositions[ot.name]) {
+        let minCol = numGroupCols;
+        for (let c = numGroupCols; c < perRow; c++) {
+          if (colHeights[c] < colHeights[minCol]) {
+            minCol = c;
+          }
+        }
+        const x = 60 + minCol * (this.CARD_W + horizGap);
+        const y = colHeights[minCol];
+        this.tablePositions[ot.name] = { x, y };
+        colHeights[minCol] += height + vertGap;
       }
     });
 
@@ -3092,13 +3234,8 @@ export class DashboardService {
     });
 
     if (this.aiDiffReviewActive()) {
-      const origParsed = this.parseDBML(this.aiDiffOriginalCode());
-      const deletedTableNames = Object.entries(this.tableDiffStatus())
-        .filter(([_, status]) => status === 'deleted')
-        .map(([name]) => name.toLowerCase());
-
-      origParsed.tables.forEach(ot => {
-        if (deletedTableNames.includes(ot.name.toLowerCase()) && !this.tables.some(t => t.name.toLowerCase() === ot.name.toLowerCase())) {
+      deletedTablesForDiff.forEach(ot => {
+        if (!this.tables.some(t => t.name.toLowerCase() === ot.name.toLowerCase())) {
           const pos = this.tablePositions[ot.name] || { x: 60, y: 60 };
           const height = this.getTableHeight(ot.columns);
           const colY: Record<string, number> = {};
@@ -3120,6 +3257,8 @@ export class DashboardService {
         }
       });
     }
+
+    this.resolveTableOverlaps(groupBoxes, perRow);
 
     const prevByKey = new Map(
       this.refs.map((r) => [
@@ -3223,6 +3362,154 @@ export class DashboardService {
 
     this.updateEditorErrors();
     this.checkInvalidRefsTimeout();
+  }
+
+  private resolveTableOverlaps(
+    groupBoxes: { left: number; right: number; top: number; bottom: number }[] = [],
+    perRow = 3
+  ): void {
+    if (!this.tables || this.tables.length <= 1) return;
+
+    const minGapX = 40;
+    const minGapY = 40;
+    const horizGap = 150;
+    const vertGap = 100;
+    const colStep = this.CARD_W + horizGap;
+
+    const diffStatus = this.tableDiffStatus();
+
+    const boxesOverlap = (
+      x1: number, y1: number, w1: number, h1: number,
+      x2: number, y2: number, w2: number, h2: number
+    ): boolean => {
+      return (
+        x1 < x2 + w2 + minGapX &&
+        x1 + w1 + minGapX > x2 &&
+        y1 < y2 + h2 + minGapY &&
+        y1 + h1 + minGapY > y2
+      );
+    };
+
+    const overlapsGroup = (
+      tName: string,
+      x: number, y: number, w: number, h: number
+    ): boolean => {
+      const isMember = this.groups.some(g => g.tables.includes(tName));
+      if (isMember) return false;
+      return groupBoxes.some(b =>
+        x < b.right + 20 && x + w + 20 > b.left &&
+        y < b.bottom + 20 && y + h + 20 > b.top
+      );
+    };
+
+    const shouldMoveSecond = (t1: TableDef, t2: TableDef): boolean => {
+      const s1 = diffStatus[t1.name] || diffStatus[t1.name.toLowerCase()];
+      const s2 = diffStatus[t2.name] || diffStatus[t2.name.toLowerCase()];
+
+      if (s1 === 'added' && s2 !== 'added') return false;
+      if (s2 === 'added' && s1 !== 'added') return true;
+
+      const t1InGroup = this.groups.some(g => g.tables.includes(t1.name));
+      const t2InGroup = this.groups.some(g => g.tables.includes(t2.name));
+      if (t1InGroup && !t2InGroup) return true;
+      if (!t1InGroup && t2InGroup) return false;
+
+      return true;
+    };
+
+    let hasCollisions = true;
+    let iteration = 0;
+    const maxIterations = 35;
+
+    while (hasCollisions && iteration < maxIterations) {
+      hasCollisions = false;
+      iteration++;
+
+      for (let i = 0; i < this.tables.length; i++) {
+        for (let j = i + 1; j < this.tables.length; j++) {
+          const t1 = this.tables[i];
+          const t2 = this.tables[j];
+
+          const t1W = t1.width || this.CARD_W;
+          const t1H = t1.height || this.getTableHeight(t1.columns);
+          const t2W = t2.width || this.CARD_W;
+          const t2H = t2.height || this.getTableHeight(t2.columns);
+
+          if (boxesOverlap(t1.x, t1.y, t1W, t1H, t2.x, t2.y, t2W, t2H)) {
+            hasCollisions = true;
+            const moveT2 = shouldMoveSecond(t1, t2);
+            const toMove = moveT2 ? t2 : t1;
+            const stationary = moveT2 ? t1 : t2;
+            const moveW = toMove.width || this.CARD_W;
+            const moveH = toMove.height || this.getTableHeight(toMove.columns);
+
+            const otherTables = this.tables.filter(t => t.name.toLowerCase() !== toMove.name.toLowerCase());
+
+            let bestX = toMove.x;
+            let bestY = toMove.y;
+            let bestScore = Infinity;
+            let found = false;
+
+            const maxColToSearch = Math.max(perRow + 2, 8);
+            for (let c = 0; c <= maxColToSearch; c++) {
+              const candX = 60 + c * colStep;
+              const candYs: number[] = [60];
+
+              otherTables.forEach(ot => {
+                const otW = ot.width || this.CARD_W;
+                const otH = ot.height || this.getTableHeight(ot.columns);
+                if (candX < ot.x + otW + minGapX && candX + moveW + minGapX > ot.x) {
+                  candYs.push(ot.y + otH + vertGap);
+                }
+              });
+
+              candYs.sort((a, b) => a - b);
+
+              for (const candY of candYs) {
+                const collidesWithOther = otherTables.some(ot => {
+                  const otW = ot.width || this.CARD_W;
+                  const otH = ot.height || this.getTableHeight(ot.columns);
+                  return boxesOverlap(candX, candY, moveW, moveH, ot.x, ot.y, otW, otH);
+                });
+
+                if (!collidesWithOther && !overlapsGroup(toMove.name, candX, candY, moveW, moveH)) {
+                  const score = (c >= perRow ? (c - perRow + 1) * 300 : 0) + c * 50 + candY;
+                  if (score < bestScore) {
+                    bestScore = score;
+                    bestX = candX;
+                    bestY = candY;
+                    found = true;
+                  }
+                }
+              }
+            }
+
+            if (!found) {
+              let maxBottom = 60;
+              otherTables.forEach(ot => {
+                const otH = ot.height || this.getTableHeight(ot.columns);
+                if (ot.y + otH > maxBottom) maxBottom = ot.y + otH;
+              });
+              bestX = toMove.x;
+              bestY = maxBottom + vertGap;
+            }
+
+            toMove.x = bestX;
+            toMove.y = bestY;
+            this.tablePositions[toMove.name] = { x: bestX, y: bestY };
+            if (this.tablePositions[toMove.name.toLowerCase()]) {
+              this.tablePositions[toMove.name.toLowerCase()] = { x: bestX, y: bestY };
+            }
+            break;
+          }
+        }
+        if (hasCollisions) break;
+      }
+    }
+
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('drag position', this.deterministicStringify(this.tablePositions));
+    }
   }
 
   /* ============ ACTIONS ============ */
@@ -3444,7 +3731,7 @@ export class DashboardService {
 
     const tableBlock = `Table ${newName} {\n${columns
       .map((column) => {
-        let cleanType = column.type.trim().toUpperCase();
+        let cleanType = column.type.trim().toLowerCase();
         if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
@@ -3818,7 +4105,7 @@ export class DashboardService {
 
     const tableBlock = `Table ${name} {\n${columns
       .map((column) => {
-        let cleanType = column.type.trim().toUpperCase();
+        let cleanType = column.type.trim().toLowerCase();
         if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
@@ -3887,7 +4174,7 @@ export class DashboardService {
 
     const tableBlock =
       `\nTable ${tableName} {\n` +
-      `  id INT [pk]\n` +
+      `  id int [pk]\n` +
       `}\n`;
     this.code = this.code.trimEnd() + '\n' + tableBlock;
     this.updateGutter();
@@ -4836,7 +5123,12 @@ export class DashboardService {
         },
         error: (err) => {
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
           }
         }
       })
@@ -4879,7 +5171,12 @@ export class DashboardService {
         },
         error: (err) => {
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
           }
         }
       })
@@ -4950,8 +5247,13 @@ export class DashboardService {
           error: (err) => {
             this.saveErrorOccurred = true;
             if (err?.status === 403) {
-              this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
             } else {
+              this.showUpgradeModal('create_diagrams');
+            }
+          } else {
               const message = err?.error?.message || err?.message || 'Failed to update diagram';
               this.showToast(message, 5000, 'error');
               this.dbmlValidationError = message;
@@ -5012,7 +5314,12 @@ export class DashboardService {
         error: (err) => {
           this.saveErrorOccurred = true;
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
           } else {
             const message = err?.error?.message || err?.message || 'Failed to save diagram';
             this.showToast(message, 5000, 'error');
@@ -5351,6 +5658,17 @@ export class DashboardService {
       decimal: 'DECIMAL(10,2)',
       date: 'DATE'
     },
+    mariadb: {
+      int: 'INT',
+      varchar: 'VARCHAR(255)',
+      text: 'TEXT',
+      datetime: 'DATETIME',
+      boolean: 'TINYINT(1)',
+      bool: 'TINYINT(1)',
+      float: 'FLOAT',
+      decimal: 'DECIMAL(10,2)',
+      date: 'DATE'
+    },
     mssql: {
       int: 'INT',
       varchar: 'VARCHAR(255)',
@@ -5380,7 +5698,7 @@ export class DashboardService {
   }
 
   private quoteIdent(dialect: SqlDialect, name: string): string {
-    if (dialect === 'mysql') return `\`${name}\``;
+    if (dialect === 'mysql' || dialect === 'mariadb') return `\`${name}\``;
     if (dialect === 'mssql') return `[${name}]`;
     return `"${name}"`;
   }
@@ -5399,7 +5717,7 @@ export class DashboardService {
         if (c.pk && c.increment) {
           if (dialect === 'postgres') {
             line = `  ${this.quoteIdent(dialect, c.name)} SERIAL`;
-          } else if (dialect === 'mysql') {
+          } else if (dialect === 'mysql' || dialect === 'mariadb') {
             line += ' AUTO_INCREMENT';
           } else if (dialect === 'mssql') {
             line += ' IDENTITY(1,1)';
@@ -5556,7 +5874,12 @@ export class DashboardService {
         },
         error: (err) => {
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
             this.unsavedModalVisible.set(false);
             return;
           }

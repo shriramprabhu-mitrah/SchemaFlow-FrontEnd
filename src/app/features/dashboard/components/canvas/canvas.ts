@@ -270,7 +270,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
   isSampleDiagram(): boolean {
-    return this.svc.diagramName === 'Sample Diagram';
+    return this.svc.isSampleDiagram();
   }
 
   get isReadOnly(): boolean {

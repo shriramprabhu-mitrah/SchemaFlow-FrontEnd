@@ -12,7 +12,8 @@ import { Footer } from '../../../shared/components/footer/footer';
   selector: 'app-db-docs',
   standalone: true,
   imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer],
-  templateUrl: './db-docs.html'
+  templateUrl: './db-docs.html',
+  styleUrls: ['./db-docs.scss']
 })
 export class DbDocsComponent implements OnInit {
 
@@ -50,6 +51,15 @@ export class DbDocsComponent implements OnInit {
     if (typeof window !== 'undefined') {
       this.isLoggedIn = this.auth.isLoggedIn();
     }
+  }
+
+  
+  isMobileFeaturesDropdownOpen = false;
+
+  toggleMobileFeaturesDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.isMobileFeaturesDropdownOpen = !this.isMobileFeaturesDropdownOpen;
   }
 
   toggleMobileMenu(): void {

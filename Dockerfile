@@ -11,8 +11,8 @@ RUN npm ci
 # Copy the rest of the application
 COPY . .
 
-# Build the Angular application
-RUN npm run build
+ARG BUILD_CONFIG=production
+RUN npm run build -- --configuration ${BUILD_CONFIG}
 
 # We inject API_URL at runtime so the exact same image can be promoted across environments
 RUN echo "API_URL will be injected at runtime before starting the server"

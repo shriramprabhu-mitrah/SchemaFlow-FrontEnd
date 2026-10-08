@@ -499,6 +499,41 @@ body.light-theme {
     }
   }
 
+  .conn-top-slot {
+    .conn-preview-box {
+      background: #f8fafc !important;
+      border-color: rgba(0, 0, 0, 0.1) !important;
+
+      .preview-code {
+        color: #2563eb !important;
+      }
+    }
+
+    .modal-textarea-field {
+      background: #f8fafc !important;
+      border-color: rgba(0, 0, 0, 0.15) !important;
+      color: #0f172a !important;
+
+      &::placeholder {
+        color: rgba(15, 23, 42, 0.4) !important;
+      }
+    }
+  }
+
+  .connection-risk-card {
+    background: #fffbeb !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    color: #92400e !important;
+
+    p {
+      color: #92400e !important;
+    }
+
+    .connection-risk-icon {
+      color: #d97706 !important;
+    }
+  }
+
   .import-modal-footer {
     border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
   }
@@ -537,10 +572,22 @@ body.light-theme {
     border: 1px solid rgba(245, 158, 11, 0.15) !important;
   }
 
+  .mariadb-badge {
+    background: rgba(192, 118, 90, 0.08) !important;
+    color: #b96f53 !important;
+    border: 1px solid rgba(192, 118, 90, 0.15) !important;
+  }
+
   .sqlserver-badge {
     background: rgba(239, 68, 68, 0.08) !important;
     color: #dc2626 !important;
     border: 1px solid rgba(239, 68, 68, 0.15) !important;
+  }
+
+  .oracle-badge {
+    background: rgba(234, 27, 34, 0.08) !important;
+    color: #d71920 !important;
+    border: 1px solid rgba(234, 27, 34, 0.15) !important;
   }
 
   .mongodb-badge {
@@ -1313,6 +1360,11 @@ app-docs {
         color: #f4983a;
       }
 
+      .mariadb-icon {
+        background: transparent;
+        color: #c0765a;
+      }
+
       .mssql-icon {
         background: transparent;
         color: #e86060;
@@ -1884,6 +1936,9 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
   animation: fadeOverlay 0.2s ease;
 }
 
@@ -1900,6 +1955,8 @@ canvas {
 .import-modal {
   width: 800px;
   max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 32px);
+  margin: auto;
   background: linear-gradient(160deg, #141d31 0%, #0e1726 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 18px;
@@ -1965,10 +2022,22 @@ canvas {
   border: 1px solid rgba(244, 152, 58, 0.25);
 }
 
+.mariadb-badge {
+  background: rgba(192, 118, 90, 0.15);
+  color: #c0765a;
+  border: 1px solid rgba(192, 118, 90, 0.25);
+}
+
 .sqlserver-badge {
   background: rgba(232, 96, 96, 0.15);
   color: #e86060;
   border: 1px solid rgba(232, 96, 96, 0.25);
+}
+
+.oracle-badge {
+  background: rgba(234, 27, 34, 0.15);
+  color: #ea1b22;
+  border: 1px solid rgba(234, 27, 34, 0.25);
 }
 
 .mongodb-badge {
@@ -2001,6 +2070,7 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
 }
 
 .import-modal-label {
@@ -2236,6 +2306,41 @@ canvas {
 .conn-string-modal {
   width: 580px;
   max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+
+  .import-modal-body {
+    min-height: 520px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+  }
+
+  .connection-risk-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.1);
+    color: #fde68a;
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #fde68a;
+    }
+  }
+
+  .connection-risk-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #fbbf24;
+  }
 
   .modal-form-group {
     display: flex;
@@ -2391,20 +2496,99 @@ canvas {
     }
   }
 
+  .conn-top-slot {
+    min-height: 76px;
+    max-height: 76px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 6px;
+
+    .import-modal-label {
+      flex-shrink: 0;
+      margin: 0;
+    }
+
+    .conn-preview-box,
+    .input-wrapper {
+      height: 52px;
+      min-height: 75px;
+      max-height: 75px;
+      box-sizing: border-box;
+      margin: 0 !important;
+    }
+
+    .conn-preview-box {
+      background: rgba(8, 14, 26, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 9px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      overflow-y: auto;
+      overflow-x: hidden;
+
+      .preview-code {
+        font-family: 'Fira Code', 'Courier New', Courier, monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        color: #3ec5c1;
+        word-break: break-all;
+        width: 100%;
+      }
+    }
+
+    .input-wrapper {
+      width: 100%;
+      display: flex;
+
+      .modal-textarea-field {
+        width: 100%;
+        height: 75px;
+        min-height: 75px;
+        max-height: 75px;
+        background: rgba(8, 14, 26, 0.9);
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        border-radius: 9px;
+        padding: 8px 12px;
+        color: #e6eef9;
+        font-family: 'Fira Code', 'Courier New', Courier, monospace;
+        font-size: 12px;
+        line-height: 1.45;
+        outline: none;
+        resize: none;
+        box-sizing: border-box;
+        overflow-y: auto;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+        &:focus {
+          border-color: #3ec5c1;
+          box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.15);
+        }
+
+        &::placeholder {
+          color: rgba(152, 167, 196, 0.4);
+        }
+      }
+    }
+  }
+
   .modal-textarea-field {
     width: 100%;
-    min-height: 95px;
+    min-height: 52px;
+    height: 52px;
     background: rgba(8, 14, 26, 0.9);
     border: 1.5px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 12px 14px;
+    border-radius: 9px;
+    padding: 8px 12px;
     color: #e6eef9;
     font-family: 'Fira Code', 'Courier New', Courier, monospace;
-    font-size: 13px;
-    line-height: 1.55;
+    font-size: 12px;
+    line-height: 1.45;
     outline: none;
-    resize: vertical;
+    resize: none;
     box-sizing: border-box;
+    overflow-y: auto;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
     &:focus {
@@ -2421,10 +2605,14 @@ canvas {
     background: rgba(8, 14, 26, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 9px;
-    padding: 10px 12px;
+    padding: 8px 12px;
+    height: 52px;
+    min-height: 52px;
+    box-sizing: border-box;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
 
     .preview-label {
       font-size: 11px;
@@ -2436,9 +2624,11 @@ canvas {
 
     .preview-code {
       font-family: 'Fira Code', 'Courier New', Courier, monospace;
-      font-size: 11.5px;
+      font-size: 12px;
+      line-height: 1.45;
       color: #3ec5c1;
       word-break: break-all;
+      width: 100%;
     }
   }
 }

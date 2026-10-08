@@ -45,6 +45,15 @@ export class PricingComponent implements OnInit {
   isLoggedIn = false;
   isMobileMenuOpen = false;
 
+  
+  isMobileFeaturesDropdownOpen = false;
+
+  toggleMobileFeaturesDropdown(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.isMobileFeaturesDropdownOpen = !this.isMobileFeaturesDropdownOpen;
+  }
+
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
@@ -475,15 +484,11 @@ export class PricingComponent implements OnInit {
   }
 
   getVisibleEntitlements(plan: any): any[] {
-    const cardFeatures = this.getCardFeatures(plan);
-    if (this.isPlanExpanded(plan)) {
-      return cardFeatures;
-    }
-    return cardFeatures.slice(0, 6);
+    return this.getCardFeatures(plan);
   }
 
   hasMoreFeatures(plan: any): boolean {
-    return this.getCardFeatures(plan).length > 6;
+    return false;
   }
 
   getFeatureValue(plan: any, featureKey: string): string {

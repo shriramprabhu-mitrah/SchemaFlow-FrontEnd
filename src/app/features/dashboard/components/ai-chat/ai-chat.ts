@@ -24,6 +24,7 @@ export interface ChatMessage {
     displayText?: string;
     displayCodeSnippet?: string;
     historyId?: number;
+    sessionId?: number;
 }
 
 export interface AiChatModel {
@@ -64,6 +65,9 @@ export interface AiHistoryItem {
     updated_by?: number | null;
     updated_at?: string;
     summarize?: string;
+    is_applied?: boolean;
+    isApplied?: boolean;
+    applied?: boolean;
 }
 
 export interface PromptCard {
@@ -116,6 +120,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     private streamCompleteTimer: any = null;
     private applySnippetTimer: any = null;
     private diagramResetSub?: Subscription;
+    private diffClosedSub?: Subscription;
 
     availableModels = signal<AiChatModel[]>([{ ...DEFAULT_DBNEXUS_MODEL }]);
     selectedModel = signal<AiChatModel | null>({ ...DEFAULT_DBNEXUS_MODEL });
@@ -210,10 +215,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     private shouldScrollToBottom = false;
 
     ngOnInit(): void {
-        if (!this.entitlementService.canUseFeature('ai_chat')) {
+        if (!this.entitlementService.canUseFeature('ai_chat') || this.svc.isSampleDiagram()) {
             this.close.emit();
             this.svc.closeAiChat();
-            if (!this.entitlementService.orgHasFeature('ai_chat')) {
+            if (!this.svc.isSampleDiagram() && !this.entitlementService.orgHasFeature('ai_chat')) {
                 this.svc.showUpgradeModal('ai_chat');
             }
             return;
@@ -227,6 +232,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.loadLatestSessionAndHistory();
         this.diagramResetSub = this.svc.diagramReset$.subscribe(() => {
             this.onDiagramReset();
+        });
+        this.diffClosedSub = this.svc.aiDiffReviewClosed.subscribe((accepted) => {
+            if (!accepted) {
+                this.messages.update(msgs => msgs.map(m => m.applied ? { ...m, applied: false } : m));
+            }
         });
     }
 
@@ -246,6 +256,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         }
         if (this.diagramResetSub) {
             this.diagramResetSub.unsubscribe();
+        }
+        if (this.diffClosedSub) {
+            this.diffClosedSub.unsubscribe();
         }
         if (this.modelDisclaimerTimer) {
             clearTimeout(this.modelDisclaimerTimer);
@@ -457,6 +470,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                         chatMessages.push({
                             id: `hist-user-${item.id}`,
                             historyId: item.id,
+                            sessionId: item.session_id ? Number(item.session_id) : (this.currentSessionId() ?? undefined),
                             sender: 'user',
                             text: item.user_query,
                             timestamp: item.created_at ? new Date(item.created_at) : new Date()
@@ -470,13 +484,15 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                         chatMessages.push({
                             id: `hist-asst-${item.id}`,
                             historyId: item.id,
+                            sessionId: item.session_id ? Number(item.session_id) : (this.currentSessionId() ?? undefined),
                             sender: 'assistant',
                             text: parsed.displayText,
                             codeSnippet: validSnippet,
                             modelName: sessionContext?.model_name || this.selectedModel()?.model_name,
                             providerName: sessionContext?.provider_name || this.selectedModel()?.provider_name,
                             summarize: item.summarize || undefined,
-                            timestamp: item.updated_at ? new Date(item.updated_at) : (item.created_at ? new Date(item.created_at) : new Date())
+                            timestamp: item.updated_at ? new Date(item.updated_at) : (item.created_at ? new Date(item.created_at) : new Date()),
+                            applied: item.is_applied === true || item.isApplied === true || item.applied === true
                         });
                     }
                 });
@@ -575,6 +591,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                         olderMessages.push({
                             id: `hist-user-${item.id}`,
                             historyId: item.id,
+                            sessionId: item.session_id ? Number(item.session_id) : (this.currentSessionId() ?? undefined),
                             sender: 'user',
                             text: item.user_query,
                             timestamp: item.created_at ? new Date(item.created_at) : new Date()
@@ -588,13 +605,15 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                         olderMessages.push({
                             id: `hist-asst-${item.id}`,
                             historyId: item.id,
+                            sessionId: item.session_id ? Number(item.session_id) : (this.currentSessionId() ?? undefined),
                             sender: 'assistant',
                             text: parsed.displayText,
                             codeSnippet: validSnippet,
                             modelName: sessionContext?.model_name || this.selectedModel()?.model_name,
                             providerName: sessionContext?.provider_name || this.selectedModel()?.provider_name,
                             summarize: item.summarize || undefined,
-                            timestamp: item.updated_at ? new Date(item.updated_at) : (item.created_at ? new Date(item.created_at) : new Date())
+                            timestamp: item.updated_at ? new Date(item.updated_at) : (item.created_at ? new Date(item.created_at) : new Date()),
+                            applied: item.is_applied === true || item.isApplied === true || item.applied === true
                         });
                     }
                 });
@@ -913,9 +932,9 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.modelDisclaimerTimer = null;
         }, 8000);
 
-        if (showToast) {
-            this.svc.showToast('Warning: Changing the model may affect response accuracy and token consumption.', 4000, 'info');
-        }
+        // if (showToast) {
+        //     this.svc.showToast('Warning: Changing the model may affect response accuracy and token consumption.', 4000, 'info');
+        // }
     }
 
     dismissModelDisclaimer(): void {
@@ -1112,6 +1131,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     selectCard(card: PromptCard): void {
+        if (this.svc.aiDiffReviewActive()) {
+            this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+            return;
+        }
         this.promptText.set(card.prompt);
         this.sendMessage();
     }
@@ -1150,11 +1173,37 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     onKeyDown(event: KeyboardEvent): void {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
+            if (this.svc.aiDiffReviewActive()) {
+                this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+                return;
+            }
             this.sendMessage();
         }
     }
 
+    onSendClick(): void {
+        if (this.svc.aiDiffReviewActive()) {
+            this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+            return;
+        }
+        if (this.isSendDisabled()) {
+            return;
+        }
+        this.sendMessage();
+    }
+
+    isSendDisabled(): boolean {
+        return !this.promptText().trim() ||
+            this.isThinking() ||
+            this.svc.aiDiffReviewActive() ||
+            (this.isNoApiKeyRequired(this.selectedModel()) && (!this.hasRemainingQuota() || (this.getMaxTokens() > 0 && this.usedTokens() >= this.getMaxTokens())));
+    }
+
     sendMessage(): void {
+        if (this.svc.aiDiffReviewActive()) {
+            this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+            return;
+        }
         if (!this.entitlementService.canUseFeature('ai_chat')) {
             if (!this.entitlementService.orgHasFeature('ai_chat')) {
                 this.svc.showUpgradeModal('ai_chat');
@@ -1361,10 +1410,14 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             const data = res.data;
 
             if (data.sessionId !== undefined && data.sessionId !== null) {
-                this.currentSessionId.set(data.sessionId);
+                this.currentSessionId.set(Number(data.sessionId));
+                this.svc.latestAiChatSessionId.set(Number(data.sessionId));
             }
             if (data.sessionName) {
                 this.sessionTitle.set(data.sessionName);
+            }
+            if (data.messageId) {
+                this.svc.latestAiChatMessageId.set(Number(data.messageId));
             }
 
             // Extract display explanation or answer
@@ -1421,15 +1474,19 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             const trimmedDbml = dbmlQuery ? dbmlQuery.trim() : undefined;
             const hasSnippet = !!trimmedDbml;
             const histId = data.messageId ? Number(data.messageId) : undefined;
+            const sessId = (data.sessionId !== undefined && data.sessionId !== null)
+                ? Number(data.sessionId)
+                : (this.currentSessionId() ?? undefined);
 
-            // Associate the user's preceding message with this historyId
+            // Associate the user's preceding message with this historyId and sessionId
             if (histId) {
-                this.messages.update(prev => prev.map(m => m.id === userMsg.id ? { ...m, historyId: histId } : m));
+                this.messages.update(prev => prev.map(m => m.id === userMsg.id ? { ...m, historyId: histId, sessionId: sessId } : m));
             }
 
             const assistantMsg: ChatMessage = {
                 id: 'msg-' + (data.messageId || Date.now()),
                 historyId: histId,
+                sessionId: sessId,
                 sender: 'assistant',
                 text: displayText,
                 codeSnippet: trimmedDbml,
@@ -2146,7 +2203,20 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
                 // If changes are proposed, initiate AI Diff Review with Accept and Reject options
                 if (normCurrent !== normProposed) {
-                    this.svc.startAiDiffReview(normCurrent, normProposed);
+                    let histId = msg.historyId;
+                    if (!histId && msg.id.startsWith('hist-')) {
+                        const parsed = parseInt(msg.id.replace(/^hist-(?:user|asst)-/, ''), 10);
+                        if (!isNaN(parsed)) histId = parsed;
+                    }
+                    if (!histId) {
+                        histId = this.svc.latestAiChatMessageId() ?? undefined;
+                    }
+                    const sessId = msg.sessionId ?? this.currentSessionId() ?? this.svc.latestAiChatSessionId() ?? undefined;
+
+                    this.svc.startAiDiffReview(normCurrent, normProposed, {
+                        chat_history_id: histId,
+                        session_id: sessId
+                    });
                     msg.applied = true;
                     this.messages.update(msgs =>
                         msgs.map(m => m.id === msg.id ? { ...m, applied: true } : (m.applied ? { ...m, applied: false } : m))

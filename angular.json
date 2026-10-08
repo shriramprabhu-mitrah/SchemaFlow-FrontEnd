@@ -99,6 +99,18 @@
               ],
               "outputHashing": "all"
             },
+            "dev": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environment/environment.ts",
+                  "with": "src/environment/environment.dev.ts"
+                }
+              ],
+              "optimization": false,
+              "sourceMap": true,
+              "extractLicenses": false,
+              "outputHashing": "all"
+            },
             "iisdev": {
               "fileReplacements": [
                 {
@@ -127,6 +139,9 @@
             },
             "development": {
               "buildTarget": "db-diagram:build:development"
+            },
+            "dev": {
+              "buildTarget": "db-diagram:build:dev"
             }
           },
           "options": {

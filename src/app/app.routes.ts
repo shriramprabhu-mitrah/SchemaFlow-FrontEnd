@@ -124,7 +124,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/public-features/db-docs/db-docs').then(m => m.DbDocsComponent)
   },
   {
-    path: 'features/live-connection',
+    path: 'features/db-connect',
     title: 'Live DB Connection - DBNexus',
     loadComponent: () => import('./features/public-features/live-connection/live-connection').then(m => m.LiveConnectionComponent)
   },

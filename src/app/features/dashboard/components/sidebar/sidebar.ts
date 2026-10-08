@@ -108,7 +108,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   isSampleDiagram(): boolean {
-    return this.svc.diagramName === 'Sample Diagram';
+    return this.svc.isSampleDiagram();
   }
 
   isDiagramEmpty(): boolean {
@@ -123,10 +123,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
     return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
   }
 
-  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai'): boolean {
+  showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai' | 'connect'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     if (this.auth.getCurrentPlanStatus() === 'expired') return true;
     switch (item) {
+      case 'connect':
+        return !this.entitlementService.orgHasFeature('db_connect');
       case 'import':
         return !this.entitlementService.orgHasFeature('import_sql');
       case 'export':
@@ -209,9 +211,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
       return;
     }
-    if (!this.entitlementService.canUseFeature('import_sql')) {
-      if (!this.entitlementService.orgHasFeature('import_sql')) {
-        this.svc.showUpgradeModal('import_sql');
+    if (!this.entitlementService.canUseFeature('db_connect')) {
+      if (!this.entitlementService.orgHasFeature('db_connect')) {
+        this.svc.showUpgradeModal('db_connect');
       }
       return;
     }
@@ -386,11 +388,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.entitlementService.canUseFeature('version_history')) {
+      const status = this.auth.getCurrentPlanStatus();
+      if (status !== 'cancelled') {
       if (!this.entitlementService.orgHasFeature('version_history')) {
         this.svc.showUpgradeModal('version_history');
       }
       return;
     }
+  }
     this.svc.showVersionHistory.set(!this.svc.showVersionHistory());
     this.cdr.markForCheck();
   }
@@ -462,6 +467,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      if (this.isSampleDiagram()) {
+        this.svc.showToast('DBNexus AI is disabled for sample diagrams.', 3000, 'info');
+      }
       return;
     }
     if (!this.entitlementService.canUseFeature('ai_chat')) {

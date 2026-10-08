@@ -45,6 +45,18 @@
           
         </button>
 
+        <button class="flyout-item" (click)="openImportDialect('mariadb', $event)"
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.canUseFeature('import_sql')">
+          <span class="db-icon mariadb-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm4 0h-2v-4h2v4zm-2-8a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 13 9zm-4 0a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 9 9z" />
+            </svg>
+          </span>
+          <span class="item-name">MariaDB</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('import_sql')" name="premium-crown"
+            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button>
+
         <button class="flyout-item" (click)="openImportDialect('sqlserver', $event)"
           [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon mssql-icon">
@@ -55,6 +67,12 @@
           <span class="item-name">SQL Server</span>
           
         </button>
+
+        <!-- <button class="flyout-item" (click)="openImportDialect('oracle', $event)"
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
+          <span class="db-icon oracle-icon"><app-icons name="oracle" size="14" color="#EA1B22"></app-icons></span>
+          <span class="item-name">Oracle</span>
+        </button> -->
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="import-sqlite-btn"
@@ -80,22 +98,8 @@
             </svg>
           </span>
           <span class="item-name">MongoDB (NoSQL)</span>
-          
         </button>
-        <div class="flyout-divider"></div>
-
-        <!-- Connection String -->
-        <button class="flyout-item" id="import-connstring-btn"
-          (click)="openConnectionStringModal($event)"
-          [disabled]="importing || (entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql'))">
-          <span class="db-icon conn-string-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
-          </span>
-          <span class="item-name">Connection String</span>
-        </button>
+      
       </div>
     </div>
     
@@ -196,6 +200,18 @@
           
         </button>
 
+        <button class="flyout-item" (click)="exportSQL('mariadb', $event)"
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || (entitlementService.orgHasFeature('export_sql') && !entitlementService.canUseFeature('export_sql'))">
+          <span class="db-icon mariadb-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm4 0h-2v-4h2v4zm-2-8a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 13 9zm-4 0a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 9 9z" />
+            </svg>
+          </span>
+          <span class="item-name">MariaDB</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown"
+            size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button>
+
         <button class="flyout-item" (click)="exportSQL('sqlserver', $event)"
           [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon mssql-icon">
@@ -207,6 +223,13 @@
           <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
           
         </button>
+
+        <!-- <button class="flyout-item" (click)="exportSQL('oracle', $event)"
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
+          <span class="db-icon oracle-icon"><app-icons name="oracle" size="14" color="#EA1B22"></app-icons></span>
+          <span class="item-name">Oracle</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button> -->
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="export-sqlite-btn"
@@ -240,6 +263,24 @@
           <span class="spinner"></span> Converting...
         </div>
       </div>
+    </div>
+
+    <!-- Connect Button (directly below Export) -->
+    <div class="activity-nav-item connect-item tt-right"
+      [class.active]="false"
+      [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      (click)="openConnectionStringModal($event)"
+      [attr.data-tt]="!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'DB connect')"
+      aria-label="DB connect">
+      <div class="sidebar-crown-badge" *ngIf="showCrown('connect')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
+      <div class="nav-icon-box">
+        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      </div>
+      <span class="nav-label">DB connect</span>
     </div>
 
     <!-- Share Button -->
