@@ -34,7 +34,7 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     {
       id: 'departments',
       name: 'departments',
-      x: 100,
+      x: 30,
       y: 120,
       zIndex: 2,
       fields: [
@@ -46,7 +46,7 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     {
       id: 'employees',
       name: 'employees',
-      x: 450,
+      x: 300,
       y: 50,
       zIndex: 2,
       fields: [
@@ -59,7 +59,7 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     {
       id: 'projects',
       name: 'projects',
-      x: 450,
+      x: 300,
       y: 250,
       zIndex: 2,
       fields: [
@@ -135,6 +135,67 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     }
 
     return `M ${startX} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${endX} ${y2}`;
+  }
+
+  private prevContainerWidth: number = 0;
+  private prevContainerHeight: number = 0;
+
+  @HostListener('window:resize')
+  onResize() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    
+    // Defer to let layout update and CSS zoom take effect
+    setTimeout(() => {
+      const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
+      if (!container) return;
+      
+      this.cachedContainerRect = container.getBoundingClientRect();
+      
+      let zoomFactor = 1;
+      const computedZoom = window.getComputedStyle(container).zoom;
+      if (computedZoom && computedZoom !== 'normal') {
+        zoomFactor = parseFloat(computedZoom) || 1;
+      }
+      
+      const effectiveWidth = this.cachedContainerRect.width / zoomFactor;
+      const effectiveHeight = this.cachedContainerRect.height / zoomFactor;
+
+      if (!this.prevContainerWidth || !this.prevContainerHeight) {
+        this.prevContainerWidth = effectiveWidth;
+        this.prevContainerHeight = effectiveHeight;
+        return;
+      }
+
+      const widthRatio = effectiveWidth / this.prevContainerWidth;
+      const heightRatio = effectiveHeight / this.prevContainerHeight;
+
+      this.prevContainerWidth = effectiveWidth;
+      this.prevContainerHeight = effectiveHeight;
+      
+      const tableWidth = 200;
+      const tableHeight = 135;
+      
+      const maxX = Math.max(300, effectiveWidth - tableWidth);
+      const maxY = Math.max(200, effectiveHeight - tableHeight);
+
+      let changed = false;
+      this.tables.forEach(table => {
+        // Apply proportional mapping
+        table.x = table.x * widthRatio;
+        table.y = table.y * heightRatio;
+        
+        // Bounds checking
+        if (table.x > maxX) { table.x = maxX; }
+        if (table.y > maxY) { table.y = maxY; }
+        if (table.x < 0) { table.x = 0; }
+        if (table.y < 0) { table.y = 0; }
+        changed = true;
+      });
+
+      if (changed) {
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   getLabelPos(rel: any): {x: number, y: number} {
@@ -356,6 +417,21 @@ Table projects {
     if (isPlatformBrowser(this.platformId)) {
       document.addEventListener('mousemove', this.boundMouseMove);
       document.addEventListener('mouseup', this.boundMouseUp);
+      
+      // Initialize previous dimensions for proportional mapping
+      setTimeout(() => {
+        const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          let zoomFactor = 1;
+          const computedZoom = window.getComputedStyle(container).zoom;
+          if (computedZoom && computedZoom !== 'normal') {
+            zoomFactor = parseFloat(computedZoom) || 1;
+          }
+          this.prevContainerWidth = rect.width / zoomFactor;
+          this.prevContainerHeight = rect.height / zoomFactor;
+        }
+      });
     }
   }
 
@@ -381,7 +457,16 @@ Table projects {
     }
 
     const target = (event.currentTarget as HTMLElement).closest('.ip-table-node') as HTMLElement;
-    if (target) {
+    if (target && container) {
+      const rect = target.getBoundingClientRect();
+      let zoomFactor = 1;
+      const computedZoom = window.getComputedStyle(container).zoom;
+      if (computedZoom && computedZoom !== 'normal') {
+        zoomFactor = parseFloat(computedZoom) || 1;
+      }
+      this.dragOffsetX = (event.clientX - rect.left) / zoomFactor;
+      this.dragOffsetY = (event.clientY - rect.top) / zoomFactor;
+    } else if (target) {
       const rect = target.getBoundingClientRect();
       this.dragOffsetX = event.clientX - rect.left;
       this.dragOffsetY = event.clientY - rect.top;
@@ -394,20 +479,32 @@ Table projects {
   onMouseMove(event: MouseEvent) {
     if (!this.draggingTable || !isPlatformBrowser(this.platformId)) return;
 
+    const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
+    if (!container) return;
+
     if (!this.cachedContainerRect) {
-      const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
-      if (!container) return;
       this.cachedContainerRect = container.getBoundingClientRect();
     }
 
-    let newX = event.clientX - this.cachedContainerRect.left - this.dragOffsetX;
-    let newY = event.clientY - this.cachedContainerRect.top - this.dragOffsetY;
+    let zoomFactor = 1;
+    const computedZoom = window.getComputedStyle(container).zoom;
+    if (computedZoom && computedZoom !== 'normal') {
+      zoomFactor = parseFloat(computedZoom) || 1;
+    }
+
+    let unzoomedClientX = event.clientX / zoomFactor;
+    let unzoomedClientY = event.clientY / zoomFactor;
+    let unzoomedLeft = this.cachedContainerRect.left / zoomFactor;
+    let unzoomedTop = this.cachedContainerRect.top / zoomFactor;
+
+    let newX = unzoomedClientX - unzoomedLeft - this.dragOffsetX;
+    let newY = unzoomedClientY - unzoomedTop - this.dragOffsetY;
 
     // Actual table dimensions
     const tableWidth = 200;
     const tableHeight = 135;
-    const maxX = Math.max(0, this.cachedContainerRect.width - tableWidth);
-    const maxY = Math.max(0, this.cachedContainerRect.height - tableHeight);
+    const maxX = Math.max(300, (this.cachedContainerRect.width / zoomFactor) - tableWidth);
+    const maxY = Math.max(200, (this.cachedContainerRect.height / zoomFactor) - tableHeight);
 
     if (newX < 0) newX = 0;
     if (newY < 0) newY = 0;
