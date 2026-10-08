@@ -562,13 +562,13 @@ body.light-theme .interactive-preview-wrapper,
   }
   
   .ip-canvas-container {
-    overflow: auto;
-    touch-action: pan-x pan-y;
+    overflow: hidden !important;
+    zoom: 0.6;
   }
   
   .ip-canvas-grid, .ip-canvas-container > svg {
-    min-width: 750px;
-    min-height: 400px;
+    min-width: 100%;
+    min-height: 100%;
   }
 
   .ip-code-content {
@@ -586,6 +586,10 @@ body.light-theme .interactive-preview-wrapper,
 @media (max-width: 576px) {
   .ip-content-container {
     height: 320px;
+  }
+  
+  .ip-canvas-container {
+    zoom: 0.45;
   }
   
   .ip-diff-container {

@@ -1647,8 +1647,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       error: (err) => {
         console.error('Failed to create diagram in workspace:', err);
         if (err?.status === 403) {
-          this.onCloseModal();
-          this.svc.showUpgradeModal('create_diagrams');
+          const errorMsg = err?.error?.message?.toLowerCase() || '';
+          if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+            this.svc.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+          } else {
+            this.onCloseModal();
+            this.svc.showUpgradeModal('create_diagrams');
+          }
           return;
         }
         this.svc.showToast('Failed to create diagram. Please try again.', 3000, 'error');

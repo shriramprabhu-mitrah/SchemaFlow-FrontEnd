@@ -5123,7 +5123,12 @@ export class DashboardService {
         },
         error: (err) => {
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
           }
         }
       })
@@ -5166,7 +5171,12 @@ export class DashboardService {
         },
         error: (err) => {
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
           }
         }
       })
@@ -5237,8 +5247,13 @@ export class DashboardService {
           error: (err) => {
             this.saveErrorOccurred = true;
             if (err?.status === 403) {
-              this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
             } else {
+              this.showUpgradeModal('create_diagrams');
+            }
+          } else {
               const message = err?.error?.message || err?.message || 'Failed to update diagram';
               this.showToast(message, 5000, 'error');
               this.dbmlValidationError = message;
@@ -5299,7 +5314,12 @@ export class DashboardService {
         error: (err) => {
           this.saveErrorOccurred = true;
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
           } else {
             const message = err?.error?.message || err?.message || 'Failed to save diagram';
             this.showToast(message, 5000, 'error');
@@ -5854,7 +5874,12 @@ export class DashboardService {
         },
         error: (err) => {
           if (err?.status === 403) {
-            this.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.showUpgradeModal('create_diagrams');
+            }
             this.unsavedModalVisible.set(false);
             return;
           }

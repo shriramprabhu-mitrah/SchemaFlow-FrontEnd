@@ -258,6 +258,11 @@ export class HeaderComponent implements OnInit {
 
   createDiagram(): void {
     const isFreePlan = (this.auth.getCurrentPlanSlug() || 'free') === 'free';
+    if (!this.entitlementService.hasMemberAccess('create_diagrams')) {
+      this.svc.showToast('You do not have permission to create diagrams in this workspace.', 3000, 'error');
+      return;
+    }
+
     const diagramCount = this.svc.totalDiagrams() > 0 ? this.svc.totalDiagrams() : this.svc.diagrams().length;
     const isAtLimit = (isFreePlan && diagramCount >= 5) || !this.entitlementService.canUseFeature('create_diagrams');
 
@@ -305,7 +310,12 @@ export class HeaderComponent implements OnInit {
         error: (err: any) => {
           console.error('Failed to create diagram:', err);
           if (err?.status === 403) {
-            this.svc.showUpgradeModal('create_diagrams');
+            const errorMsg = err?.error?.message?.toLowerCase() || '';
+            if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+              this.svc.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+            } else {
+              this.svc.showUpgradeModal('create_diagrams');
+            }
             return;
           }
           const msg = err?.error?.message || 'Failed to create diagram.';
@@ -1397,7 +1407,12 @@ openConnectionStringModal(): void {
       },
       error: (err) => {
         if (err?.status === 403) {
-          this.svc.showUpgradeModal('create_diagrams');
+          const errorMsg = err?.error?.message?.toLowerCase() || '';
+          if (errorMsg.includes('authorized') || errorMsg.includes('permission') || errorMsg.includes('viewers')) {
+            this.svc.showToast(err?.error?.message || 'Permission denied.', 3000, 'error');
+          } else {
+            this.svc.showUpgradeModal('create_diagrams');
+          }
         } else {
           this.svc.showToast('Failed to save diagram before sharing.', 3000, 'error');
         }
