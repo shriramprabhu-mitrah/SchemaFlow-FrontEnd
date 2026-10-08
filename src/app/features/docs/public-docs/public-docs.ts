@@ -187,7 +187,7 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
 
     this.currentPage = target;
     if (target) {
-      this.titleService.setTitle(`${target.title} - Documentation - DBNexus`);
+      this.titleService.setTitle(`${target.title} - Documentation - dbNexus`);
     }
     if (target && target.sectionId) {
       this.collapsedSections.delete(target.sectionId);
@@ -279,17 +279,32 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
     }
   }
 
+  get orderedPublishedPages(): DocPage[] {
+    const list: DocPage[] = [];
+    const sortedSections = [...this.sections].sort((a, b) => a.sortOrder - b.sortOrder);
+    for (const sec of sortedSections) {
+      list.push(...this.getPagesForSection(sec.id));
+    }
+    const includedSlugs = new Set(list.map(p => p.slug || p.id));
+    for (const p of this.publishedPages) {
+      if (!includedSlugs.has(p.slug || p.id)) {
+        list.push(p);
+      }
+    }
+    return list;
+  }
+
   getPreviousPage(): DocPage | null {
     if (!this.currentPage) return null;
-    const all = this.publishedPages;
-    const idx = all.findIndex(p => p.id === this.currentPage!.id);
+    const all = this.orderedPublishedPages;
+    const idx = all.findIndex(p => p.slug === this.currentPage!.slug || p.id === this.currentPage!.id);
     return idx > 0 ? all[idx - 1] : null;
   }
 
   getNextPage(): DocPage | null {
     if (!this.currentPage) return null;
-    const all = this.publishedPages;
-    const idx = all.findIndex(p => p.id === this.currentPage!.id);
+    const all = this.orderedPublishedPages;
+    const idx = all.findIndex(p => p.slug === this.currentPage!.slug || p.id === this.currentPage!.id);
     return idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
   }
 
