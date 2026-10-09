@@ -109,6 +109,8 @@
     "aiSessions": "API_URL/api/ai/sessions",
     "aiSessionHistory": "API_URL/api/ai/sessions/{sessionId}/history",
     "deleteSessionHistory": "API_URL/api/ai/sessions/:sessionId/history",
-    "aiModelConfig": "API_URL/api/ai/models/:modelId/config"
+    "aiModelConfig": "API_URL/api/ai/models/:modelId/config",
+    "aiSystemSettings": "API_URL/api/ai/admin/system-settings"
   }
+ 
 }
