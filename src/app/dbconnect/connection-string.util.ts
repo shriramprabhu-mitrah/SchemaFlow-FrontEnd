@@ -37,7 +37,7 @@ function parseSqlServerConnectionString(value: string): ConnectionDetails | null
     database,
     username,
     password,
-    schema: 'public'
+    schema: ''
   };
 }
 
@@ -54,7 +54,7 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
       database: decodeValue(groups['database']),
       username,
       password: decodeValue(groups['password'] ?? ''),
-      schema: username || 'public'
+      schema: username || ''
     };
   }
 
@@ -62,7 +62,7 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
     const details = parseUriConnectionString(value);
     if (details) {
       details.port = details.port || 1521;
-      details.schema = details.username || 'public';
+      details.schema = details.username || '';
     }
     return details;
   }
@@ -70,7 +70,7 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
   return null;
 }
 
-function parseUriConnectionString(value: string, defaultSchema = 'public'): ConnectionDetails | null {
+function parseUriConnectionString(value: string, defaultSchema = ''): ConnectionDetails | null {
   const urlValue = value.replace(/^jdbc:/i, '').trim();
   const schemeMatch = urlValue.match(/^([a-z][a-z0-9+.-]*):\/\/(.*)$/i);
   if (!schemeMatch) return null;
@@ -125,11 +125,135 @@ function parseUriConnectionString(value: string, defaultSchema = 'public'): Conn
   };
 }
 
+export const DB_TYPE_LABELS: Record<string, string> = {
+  postgres: 'PostgreSQL',
+  mysql: 'MySQL',
+  mariadb: 'MariaDB',
+  mssql: 'SQL Server (MSSQL)',
+  oracle: 'Oracle',
+  sqlite: 'SQLite'
+};
+
+export function detectUrlSchemeInfo(value: string): {
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'other' | null;
+  displayScheme: string | null;
+} {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { detectedType: null, displayScheme: null };
+  }
+
+  // Check SQL Server ADO.NET / key-value format (Server=... or Data Source=...)
+  if (/(?:^|;)\s*(?:Server|Data Source|ServerName|DataSource)\s*=/i.test(trimmed)) {
+    return { detectedType: 'mssql', displayScheme: 'SQL Server' };
+  }
+
+  // Check Oracle JDBC thin URL (jdbc:oracle:thin:...)
+  if (/^jdbc:oracle:/i.test(trimmed)) {
+    return { detectedType: 'oracle', displayScheme: 'Oracle' };
+  }
+
+  // Check generic URI scheme: scheme://... (with optional jdbc: prefix)
+  const normalized = trimmed.replace(/^jdbc:/i, '');
+  const match = normalized.match(/^([a-z][a-z0-9+.-]*):\/\//i);
+  if (!match) {
+    return { detectedType: null, displayScheme: null };
+  }
+
+  const scheme = match[1].toLowerCase();
+
+  if (scheme === 'databasetype') {
+    return { detectedType: null, displayScheme: null };
+  }
+
+  if (scheme === 'postgresql' || scheme === 'postgres') {
+    return { detectedType: 'postgres', displayScheme: 'PostgreSQL' };
+  }
+
+  if (scheme === 'mysql') {
+    return { detectedType: 'mysql', displayScheme: 'MySQL' };
+  }
+
+  if (scheme === 'mariadb') {
+    return { detectedType: 'mariadb', displayScheme: 'MariaDB' };
+  }
+
+  if (scheme === 'mssql' || scheme === 'sqlserver') {
+    return { detectedType: 'mssql', displayScheme: 'SQL Server' };
+  }
+
+  if (scheme === 'oracle') {
+    return { detectedType: 'oracle', displayScheme: 'Oracle' };
+  }
+
+  return { detectedType: 'other', displayScheme: scheme.toUpperCase() };
+}
+
+export function isSchemeCompatibleWithDatabaseType(
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'other' | null,
+  selectedType: string
+): boolean {
+  if (!detectedType) {
+    return true;
+  }
+
+  if (selectedType === 'postgres') {
+    return detectedType === 'postgres';
+  }
+
+  if (selectedType === 'mysql') {
+    return detectedType === 'mysql';
+  }
+
+  if (selectedType === 'mariadb') {
+    return detectedType === 'mariadb' || detectedType === 'mysql';
+  }
+
+  if (selectedType === 'mssql') {
+    return detectedType === 'mssql';
+  }
+
+  if (selectedType === 'oracle') {
+    return detectedType === 'oracle';
+  }
+
+  return false;
+}
+
+export function getConnectionUrlMismatchError(
+  value: string,
+  selectedType: string
+): string | null {
+  const { detectedType, displayScheme } = detectUrlSchemeInfo(value);
+  if (!detectedType) return null;
+
+  if (!isSchemeCompatibleWithDatabaseType(detectedType, selectedType)) {
+    const selectedLabel = DB_TYPE_LABELS[selectedType] || selectedType;
+    if (displayScheme) {
+      return `The connection URL scheme (${displayScheme}) does not match the selected database type (${selectedLabel}).`;
+    }
+    return `The connection URL does not match the selected database type (${selectedLabel}).`;
+  }
+
+  return null;
+}
+
 export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle'): ConnectionDetails | null {
   const raw = value.trim();
   if (!raw || databaseType === 'sqlite') return null;
 
   if (databaseType === 'mssql' || raw.toLowerCase().startsWith('server=') || raw.toLowerCase().startsWith('data source=')) {
+    if (raw.toLowerCase().startsWith('server=') || raw.toLowerCase().startsWith('data source=')) {
+      return parseSqlServerConnectionString(raw);
+    }
+    const uriMatch = raw.replace(/^jdbc:/i, '').toLowerCase();
+    if (uriMatch.startsWith('mssql://') || uriMatch.startsWith('sqlserver://') || uriMatch.startsWith('databasetype://')) {
+      const details = parseUriConnectionString(raw, '');
+      if (details) {
+        details.port = details.port || 1433;
+      }
+      return details;
+    }
     return parseSqlServerConnectionString(raw);
   }
 
@@ -139,18 +263,18 @@ export function parseConnectionDetails(value: string, databaseType: 'postgres' |
 
   const uriValue = raw.replace(/^jdbc:/i, '');
   if (databaseType === 'postgres') {
-    if (!uriValue.toLowerCase().startsWith('postgresql://') && !uriValue.toLowerCase().startsWith('postgres://')) {
+    if (!uriValue.toLowerCase().startsWith('postgresql://') && !uriValue.toLowerCase().startsWith('postgres://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
       return null;
     }
   } else if (databaseType === 'mysql') {
-    if (!uriValue.toLowerCase().startsWith('mysql://')) {
+    if (!uriValue.toLowerCase().startsWith('mysql://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
       return null;
     }
   } else if (databaseType === 'mariadb') {
-    if (!uriValue.toLowerCase().startsWith('mariadb://') && !uriValue.toLowerCase().startsWith('mysql://')) {
+    if (!uriValue.toLowerCase().startsWith('mariadb://') && !uriValue.toLowerCase().startsWith('mysql://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
       return null;
     }
   }
 
-  return parseUriConnectionString(raw, databaseType === 'mariadb' ? '' : 'public');
+  return parseUriConnectionString(raw, '');
 }

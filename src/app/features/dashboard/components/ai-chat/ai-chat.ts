@@ -34,6 +34,8 @@ export interface AiChatModel {
     provider_name: string;
     base_url?: string;
     max_tokens?: number | null;
+    remaining_tokens?: number | null;
+    used_tokens?: number | null;
     api_key?: string | null;
     has_api_key?: boolean;
 }
@@ -84,6 +86,9 @@ export const DEFAULT_DBNEXUS_MODEL: AiChatModel = {
     provider_id: 7,
     model_name: 'dbnexus-1.0',
     provider_name: 'dbnexus AI',
+    max_tokens: 50000,
+    remaining_tokens: 50000,
+    used_tokens: 0,
     has_api_key: false
 };
 
@@ -148,6 +153,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     // Usage Limit Pop-up Card State (dbnexus AI default model)
     isUsagePopupOpen = signal<boolean>(false);
     usedTokens = signal<number>(0);
+    showUsageLimit = signal<boolean>(true);
 
     // Model Switch Disclaimer State
     showModelDisclaimer = signal<boolean>(false);
@@ -823,10 +829,12 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             const matched = models.find(m => Number(m.id) === Number(modelId));
             if (matched && this.hasUserApiKey(matched)) {
                 this.selectedModel.set(matched);
+                this.showUsageLimit.set(this.isNoApiKeyRequired(matched));
                 localStorage.setItem('ai_selected_model_id', String(matched.id));
             } else {
                 const modelToSelect = this.getAutoSelectedModel(models);
                 this.selectedModel.set(modelToSelect);
+                this.showUsageLimit.set(this.isNoApiKeyRequired(modelToSelect));
                 localStorage.setItem('ai_selected_model_id', String(modelToSelect.id));
             }
             this.pendingModelIdFromSession = null;
@@ -844,6 +852,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             const defaultModel: AiChatModel = { ...DEFAULT_DBNEXUS_MODEL };
             this.availableModels.set([defaultModel]);
             this.selectedModel.set(defaultModel);
+            this.showUsageLimit.set(true);
             return;
         }
 
@@ -858,13 +867,38 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                     data = [{ ...DEFAULT_DBNEXUS_MODEL }, ...data];
                 }
 
-                // Restore any locally stored API keys if not returned by server
+                // Restore any locally stored API keys if not returned by server, and extract initial max_tokens/remaining_tokens
                 data.forEach(m => {
                     if (this.isNoApiKeyRequired(m)) {
-                        if (m.max_tokens && typeof m.max_tokens === 'number' && m.max_tokens > 0) {
-                            this.tokenLimit.set(m.max_tokens);
+                        const rawMax = m.max_tokens ?? (m as any).maxTokens ?? (m as any).token_limit ?? (m as any).tokenLimit ?? (m as any).limit ?? res?.max_tokens ?? res?.maxTokens ?? res?.token_limit;
+                        const rawRemaining = m.remaining_tokens ?? (m as any).remainingTokens ?? (m as any).tokens_remaining ?? (m as any).tokensRemaining ?? (m as any).remaining ?? res?.remaining_tokens ?? res?.remainingTokens;
+                        const rawUsed = m.used_tokens ?? (m as any).usedTokens ?? (m as any).tokens_used ?? (m as any).tokensUsed ?? (m as any).usage ?? res?.used_tokens ?? res?.usedTokens ?? res?.usage;
+
+                        const maxTokens = (rawMax !== undefined && rawMax !== null && !isNaN(Number(rawMax)) && Number(rawMax) > 0)
+                            ? Number(rawMax)
+                            : (this.tokenLimit() || 50000);
+
+                        m.max_tokens = maxTokens;
+                        this.tokenLimit.set(maxTokens);
+
+                        if (rawRemaining !== undefined && rawRemaining !== null && !isNaN(Number(rawRemaining))) {
+                            const rem = Number(rawRemaining);
+                            m.remaining_tokens = rem;
+                            const used = Math.max(0, maxTokens - rem);
+                            m.used_tokens = used;
+                            this.updateUsedTokens(used);
+                            this.hasRemainingQuota.set(rem > 0);
+                            this.showUsageLimit.set(true);
+                        } else if (rawUsed !== undefined && rawUsed !== null && !isNaN(Number(rawUsed))) {
+                            const used = Number(rawUsed);
+                            m.used_tokens = used;
+                            m.remaining_tokens = Math.max(0, maxTokens - used);
+                            this.updateUsedTokens(used);
+                            this.hasRemainingQuota.set(used < maxTokens);
+                            this.showUsageLimit.set(true);
+                        } else {
+                            this.showUsageLimit.set(true);
                         }
-                        this.updateUsageFromApiResponse(m);
                         return;
                     }
                     if (m.api_key === null) {
@@ -888,6 +922,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 // If user has no API key for any model, select dbnexus AI as default.
                 const modelToSelect = this.getAutoSelectedModel(data, this.pendingModelIdFromSession);
                 this.selectedModel.set(modelToSelect);
+                this.showUsageLimit.set(this.isNoApiKeyRequired(modelToSelect));
                 localStorage.setItem('ai_selected_model_id', String(modelToSelect.id));
                 this.pendingModelIdFromSession = null;
             },
@@ -897,6 +932,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 const defaultModel: AiChatModel = { ...DEFAULT_DBNEXUS_MODEL };
                 this.availableModels.set([defaultModel]);
                 this.selectedModel.set(defaultModel);
+                this.showUsageLimit.set(true);
             }
         });
     }
@@ -954,6 +990,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
         if (this.isNoApiKeyRequired(model)) {
             this.selectedModel.set(model);
+            this.showUsageLimit.set(true);
             localStorage.setItem('ai_selected_model_id', String(model.id));
             if (isDifferentModel) {
                 this.triggerModelDisclaimer();
@@ -965,6 +1002,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.openApiKeyModal(model);
         } else {
             this.selectedModel.set(model);
+            this.showUsageLimit.set(false);
             localStorage.setItem('ai_selected_model_id', String(model.id));
             if (isDifferentModel) {
                 this.triggerModelDisclaimer();
@@ -1023,6 +1061,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         if (!this.hasValidApiKey(current)) {
             const bestModel = this.getAutoSelectedModel(this.availableModels());
             this.selectedModel.set(bestModel);
+            this.showUsageLimit.set(this.isNoApiKeyRequired(bestModel));
             localStorage.setItem('ai_selected_model_id', String(bestModel.id));
         }
     }
@@ -1073,6 +1112,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
             this.storeApiKey(model, key);
             this.selectedModel.set(model);
+            this.showUsageLimit.set(this.isNoApiKeyRequired(model));
             localStorage.setItem('ai_selected_model_id', String(model.id));
 
             const successMsg = res?.message || `API key configured for ${model.provider_name}`;
@@ -1605,22 +1645,26 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         }
 
         const payloadData = data?.data;
+        const innerData = payloadData?.data;
 
-        // 1. Update Limit from response if provided (e.g. data.limit = 50000)
+        // 1. Extract Limit from response if provided (e.g. data.limit = 50000)
         const responseLimit =
             data?.limit ??
             payloadData?.limit ??
+            innerData?.limit ??
             errorObj?.limit ??
-            (typeof data?.error === 'object' ? data?.error?.limit : undefined);
+            data?.max_tokens ??
+            payloadData?.max_tokens ??
+            innerData?.max_tokens ??
+            data?.token_limit ??
+            payloadData?.token_limit ??
+            innerData?.token_limit ??
+            data?.maxTokens ??
+            payloadData?.maxTokens ??
+            innerData?.maxTokens ??
+            (typeof data?.error === 'object' ? (data?.error?.limit ?? data?.error?.max_tokens ?? data?.error?.token_limit) : undefined);
 
-        if (responseLimit !== undefined && responseLimit !== null && !isNaN(Number(responseLimit))) {
-            const limitNum = Number(responseLimit);
-            if (limitNum > 0) {
-                this.tokenLimit.set(limitNum);
-            }
-        }
-
-        // 2. Update Usage from response (e.g. data.usage = 53576)
+        // 2. Extract Usage from response (e.g. data.usage = 53576)
         const responseUsage =
             data?.usage ??
             data?.used_tokens ??
@@ -1630,6 +1674,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             payloadData?.used_tokens ??
             payloadData?.tokens_used ??
             payloadData?.usedTokens ??
+            innerData?.usage ??
+            innerData?.used_tokens ??
+            innerData?.tokens_used ??
+            innerData?.usedTokens ??
             errorObj?.usage ??
             errorObj?.used_tokens ??
             errorObj?.tokens_used ??
@@ -1638,29 +1686,62 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 ? (data?.error?.usage ?? data?.error?.used_tokens ?? data?.error?.tokens_used ?? data?.error?.usedTokens)
                 : undefined);
 
-        if (responseUsage !== undefined && responseUsage !== null && !isNaN(Number(responseUsage))) {
+        const hasLimit = responseLimit !== undefined && responseLimit !== null && !isNaN(Number(responseLimit)) && Number(responseLimit) > 0;
+        const hasUsage = responseUsage !== undefined && responseUsage !== null && !isNaN(Number(responseUsage));
+
+        const responseRemaining =
+            data?.remaining_tokens ??
+            data?.remainingTokens ??
+            data?.tokens_remaining ??
+            data?.tokensRemaining ??
+            payloadData?.remaining_tokens ??
+            payloadData?.remainingTokens ??
+            payloadData?.tokens_remaining ??
+            payloadData?.tokensRemaining ??
+            innerData?.remaining_tokens ??
+            innerData?.remainingTokens ??
+            innerData?.tokens_remaining ??
+            innerData?.tokensRemaining ??
+            errorObj?.remaining_tokens ??
+            errorObj?.remainingTokens ??
+            errorObj?.tokens_remaining ??
+            errorObj?.tokensRemaining;
+
+        const hasRemaining = responseRemaining !== undefined && responseRemaining !== null && !isNaN(Number(responseRemaining));
+
+        // For the default model, update usage and limit from chat response if present
+        if (hasLimit && hasUsage) {
+            this.tokenLimit.set(Number(responseLimit));
             this.updateUsedTokens(Number(responseUsage));
-        } else {
-            const rawTokens =
-                data?.total_tokens ??
-                data?.tokens ??
-                payloadData?.total_tokens ??
-                payloadData?.tokens;
-            if (rawTokens !== undefined && rawTokens !== null && !isNaN(Number(rawTokens))) {
-                this.updateUsedTokens(this.usedTokens() + Number(rawTokens));
-            }
+            this.showUsageLimit.set(true);
+        } else if (hasLimit && hasRemaining) {
+            const lim = Number(responseLimit);
+            const rem = Number(responseRemaining);
+            this.tokenLimit.set(lim);
+            this.updateUsedTokens(Math.max(0, lim - rem));
+            this.hasRemainingQuota.set(rem > 0);
+            this.showUsageLimit.set(true);
+        } else if (hasUsage) {
+            this.updateUsedTokens(Number(responseUsage));
+            this.showUsageLimit.set(true);
+        } else if (hasLimit) {
+            this.tokenLimit.set(Number(responseLimit));
+            this.showUsageLimit.set(true);
+        } else if (this.isNoApiKeyRequired(this.selectedModel())) {
+            this.showUsageLimit.set(true);
         }
 
         // 3. Update Remaining Quota boolean flag if provided (e.g. data.hasRemainingQuota = false)
         const remainingQuota =
             data?.hasRemainingQuota ??
             payloadData?.hasRemainingQuota ??
+            innerData?.hasRemainingQuota ??
             errorObj?.hasRemainingQuota ??
             (typeof data?.error === 'object' ? data?.error?.hasRemainingQuota : undefined);
 
         if (remainingQuota !== undefined && remainingQuota !== null) {
             this.hasRemainingQuota.set(Boolean(remainingQuota));
-        } else if (this.getMaxTokens() > 0 && this.usedTokens() >= this.getMaxTokens()) {
+        } else if (hasLimit && hasUsage && Number(responseUsage) >= Number(responseLimit)) {
             this.hasRemainingQuota.set(false);
         }
     }
@@ -1945,6 +2026,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.selectedModel.set(currentModel);
             localStorage.setItem('ai_selected_model_id', String(currentModel.id));
         }
+        this.showUsageLimit.set(this.isNoApiKeyRequired(currentModel));
         const url = this.appConfig.environment?.adminApiUrls?.aiSessions ||
             this.appConfig.environment?.aiSessions;
 
