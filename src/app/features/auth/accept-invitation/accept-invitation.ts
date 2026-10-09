@@ -118,13 +118,11 @@ export class AcceptInvitationComponent implements OnInit {
             this.cdr.markForCheck();
 
             // Auto-redirect if not logged in or mismatched
-            if (!this.auth.isLoggedIn() || this.emailMismatch || this.noInvitation || this.alreadyMember) {
+            if (!this.auth.isLoggedIn()) {
               this.savePendingInvitation();
-              if (!this.auth.isLoggedIn()) {
-                this.loginRequired = true;
-              }
-              this.cdr.markForCheck();
+              this.loginRequired = true;
             }
+            this.cdr.markForCheck();
           },
           error: (err) => {
             this.isChecking = false;
@@ -141,13 +139,11 @@ export class AcceptInvitationComponent implements OnInit {
         }
 
         // Workspace flow: auto-redirect if not logged in
-        if (!this.auth.isLoggedIn() || this.emailMismatch) {
+        if (!this.auth.isLoggedIn()) {
           this.savePendingInvitation();
-          if (!this.auth.isLoggedIn()) {
-            this.loginRequired = true;
-          }
-          this.cdr.markForCheck();
+          this.loginRequired = true;
         }
+        this.cdr.markForCheck();
       }
     };
 
@@ -269,6 +265,13 @@ export class AcceptInvitationComponent implements OnInit {
   }
 
   onDecline(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('pending_accept_invitation_id');
+      localStorage.removeItem('pending_accept_invitation_url');
+      localStorage.removeItem('pending_accept_invitation_type');
+      localStorage.removeItem('pending_accept_invitation_token');
+      localStorage.removeItem('pending_invite_email');
+    }
     this.router.navigate(['/dashboard']);
   }
 }

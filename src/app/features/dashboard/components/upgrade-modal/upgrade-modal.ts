@@ -492,15 +492,11 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   getVisibleEntitlements(plan: any): any[] {
-    const cardFeatures = this.getCardFeatures(plan);
-    if (this.isPlanExpanded(plan)) {
-      return cardFeatures;
-    }
-    return cardFeatures.slice(0, 6);
+    return this.getCardFeatures(plan);
   }
 
   hasMoreFeatures(plan: any): boolean {
-    return this.getCardFeatures(plan).length > 6;
+    return false;
   }
 
   getTrialDays(plan?: any): number {
