@@ -941,7 +941,7 @@ openConnectionStringModal(): void {
           ? (details.password ? `${encodeURIComponent(details.username)}:${encodeURIComponent(details.password)}@` : `${encodeURIComponent(details.username)}@`)
           : '';
         if (this.connStringDatabaseType === 'postgres') {
-          return `postgresql://${userPass}${details.host}:${details.port}/${details.database}${details.schema ? `?schemas=${details.schema}` : ''}`;
+          return `postgresql://${userPass}${details.host}:${details.port}/${details.database}${details.schema ? `?schema=${details.schema}` : ''}`;
         } else if (this.connStringDatabaseType === 'mysql') {
           return `mysql://${userPass}${details.host}:${details.port}/${details.database}`;
         } else if (this.connStringDatabaseType === 'mariadb') {
@@ -973,7 +973,7 @@ openConnectionStringModal(): void {
     }
 
     if (this.connStringDatabaseType === 'postgres') {
-      return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schemas=${schema}` : ''}`;
+      return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schema=${schema}` : ''}`;
     } else if (this.connStringDatabaseType === 'mysql') {
       return `mysql://${userPass}${host}:${port}/${db}`;
     } else if (this.connStringDatabaseType === 'mariadb') {
