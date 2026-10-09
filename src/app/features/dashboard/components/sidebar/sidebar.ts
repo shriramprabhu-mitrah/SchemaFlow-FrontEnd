@@ -205,6 +205,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
 
   openConnectionStringModal(e?: Event): void {
+    if (this.isMemberRestricted(['db_connect'])) return;
+
     if (e) e.stopPropagation();
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
@@ -213,10 +215,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.entitlementService.canUseFeature('db_connect')) {
-      if (!this.entitlementService.orgHasFeature('db_connect')) {
-        this.svc.showUpgradeModal('db_connect');
+      const status = this.auth.getCurrentPlanStatus();
+      if (status !== 'cancelled') {
+        if (!this.entitlementService.orgHasFeature('db_connect')) {
+          this.svc.showUpgradeModal('db_connect');
+        }
+        return;
       }
-      return;
     }
     this.svc.openConnectionStringModal();
     this.cdr.markForCheck();

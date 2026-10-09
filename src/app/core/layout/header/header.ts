@@ -264,6 +264,20 @@ export class HeaderComponent implements OnInit {
       return;
     }
 
+    const isTeam = (this.svc.diagramWorkspaceType() || '').toLowerCase() === 'team';
+    const activeWsId = isTeam ? this.svc.activeWorkspaceId() : null;
+    
+    if (isTeam && activeWsId) {
+      const ws = this.svc.workspaces().find(w => w.id === activeWsId);
+      if (ws) {
+        const perm = (ws.permission || '').toLowerCase();
+        if (perm === 'viewer' || perm === 'can view' || (perm && !perm.includes('owner') && !perm.includes('edit') && !perm.includes('invite'))) {
+          this.svc.showToast('You do not have permission to create diagrams in this workspace.', 3000, 'error');
+          return;
+        }
+      }
+    }
+
     const diagramCount = this.svc.totalDiagrams() > 0 ? this.svc.totalDiagrams() : this.svc.diagrams().length;
     const isAtLimit = (isFreePlan && diagramCount >= 5) || !this.entitlementService.canUseFeature('create_diagrams');
 
