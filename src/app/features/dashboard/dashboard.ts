@@ -77,6 +77,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('pending_accept_invitation_id');
+      localStorage.removeItem('pending_accept_invitation_url');
+      localStorage.removeItem('pending_accept_invitation_type');
+      localStorage.removeItem('pending_accept_invitation_token');
+      localStorage.removeItem('pending_invite_email');
+    }
+
     this.trialExpiredSubscription = this.svc.socketService.onTrialExpired().subscribe(() => {
       this.svc.isSubscriptionExpired.set(true);
       // Clear collaboration indicators immediately

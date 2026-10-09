@@ -517,10 +517,13 @@ export class HeaderComponent implements OnInit {
 
   toggleVersionHistory(): void {
     if (!this.entitlementService.canUseFeature('version_history')) {
-      if (!this.entitlementService.orgHasFeature('version_history')) {
-        this.svc.showUpgradeModal('version_history');
+      const status = this.auth.getCurrentPlanStatus();
+      if (status !== 'cancelled') {
+        if (!this.entitlementService.orgHasFeature('version_history')) {
+          this.svc.showUpgradeModal('version_history');
+        }
+        return;
       }
-      return;
     }
     this.svc.showVersionHistory.set(!this.svc.showVersionHistory());
   }

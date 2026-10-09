@@ -158,6 +158,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   isMemberRestricted(featureKeys: string[]): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    if (this.auth.getCurrentPlanStatus() === 'cancelled') return false;
     // If the feature is not there in memberFeatureAccess just disable the button in ui
     return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k));
   }
