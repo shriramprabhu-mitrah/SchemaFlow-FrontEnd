@@ -1008,6 +1008,7 @@
     }
 
     .input-card-wrap {
+      position: relative;
       display: flex;
       flex-direction: column;
       background: #0f172a;
@@ -1072,11 +1073,14 @@
       }
 
       .input-footer-row {
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 6px;
         margin-top: 6px;
         padding-top: 4px;
+        min-width: 0;
 
         .input-hint-text {
           font-size: 10px;
@@ -1084,16 +1088,19 @@
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          min-width: 0;
+          flex: 1 1 auto;
         }
 
         .footer-actions-right {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           flex-shrink: 0;
+          min-width: 0;
 
           .model-dropdown-container {
-            position: relative;
+            position: static;
             display: inline-flex;
             align-items: center;
 
@@ -1111,12 +1118,15 @@
               cursor: pointer;
               transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
               user-select: none;
+              max-width: 160px;
+              min-width: 0;
 
               .model-current-name {
-                max-width: 120px;
+                max-width: 110px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                min-width: 0;
               }
 
               .model-chevron-icon {
@@ -1143,10 +1153,11 @@
 
             .model-dropdown-menu {
               position: absolute;
-              bottom: calc(100% + 8px);
-              right: -34px;
-              width: 340px;
-              max-width: min(360px, calc(100vw - 24px));
+              bottom: calc(100% + 6px);
+              right: 0;
+              left: auto;
+              width: 360px;
+              max-width: 100%;
               background: #0b1324;
               border: 1px solid rgba(255, 255, 255, 0.12);
               border-radius: 12px;
@@ -1155,6 +1166,7 @@
               z-index: 100;
               animation: modelMenuFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
               backdrop-filter: blur(12px);
+              box-sizing: border-box;
 
               .model-menu-header {
                 font-size: 9.5px;
@@ -1171,7 +1183,7 @@
                 display: flex;
                 flex-direction: column;
                 gap: 2px;
-                max-height: 250px;
+                max-height: min(250px, calc(100vh - 280px));
                 overflow-y: auto;
                 overflow-x: hidden;
                 scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
@@ -1204,17 +1216,19 @@
                 display: flex;
                 align-items: center;
                 gap: 4px;
+                width: 100%;
+                min-width: 0;
               }
 
               .model-menu-item {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 8px;
-                flex: 1;
+                gap: 6px;
+                flex: 1 1 auto;
                 width: auto;
                 min-width: 0;
-                padding: 6px 8px;
+                padding: 5px 8px;
                 border-radius: 7px;
                 background: transparent;
                 border: none;
@@ -1226,23 +1240,26 @@
                 .model-item-info {
                   display: flex;
                   align-items: center;
-                  gap: 5px;
-                  flex: 1;
+                  gap: 4px;
+                  flex: 1 1 auto;
                   min-width: 0;
+                  overflow: hidden;
 
                   .model-item-name {
-                    font-size: 11.5px;
+                    font-size: 11px;
                     font-weight: 600;
                     color: #f1f5f9;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
+                    min-width: 0;
+                    flex: 0 1 auto;
                   }
 
                   .model-item-free-tag {
-                    font-size: 8.5px;
+                    font-size: 8px;
                     font-weight: 700;
-                    padding: 1px 5px;
+                    padding: 1px 4px;
                     border-radius: 3px;
                     background: rgba(16, 185, 129, 0.16);
                     color: #10b981;
@@ -1254,9 +1271,9 @@
                   }
 
                   .model-item-tag {
-                    font-size: 8.5px;
+                    font-size: 8px;
                     font-weight: 700;
-                    padding: 1px 4.5px;
+                    padding: 1px 4px;
                     border-radius: 3px;
                     background: rgba(62, 197, 193, 0.12);
                     color: #3ec5c1;
@@ -1270,13 +1287,13 @@
                 .model-item-status {
                   display: flex;
                   align-items: center;
-                  gap: 5px;
+                  gap: 4px;
                   flex-shrink: 0;
 
                   .model-key-badge {
                     font-size: 8px;
                     font-weight: 600;
-                    padding: 1.5px 5px;
+                    padding: 1.5px 4.5px;
                     border-radius: 4px;
                     background: rgba(245, 158, 11, 0.14);
                     color: #fbbf24;
@@ -1284,6 +1301,7 @@
                     white-space: nowrap;
                     cursor: pointer;
                     transition: all 0.15s ease;
+                    flex-shrink: 0;
 
                     &:hover {
                       filter: brightness(1.15);
@@ -1296,7 +1314,6 @@
                       border-color: rgba(16, 185, 129, 0.28);
                     }
                   }
-
                 }
 
                 &:hover {
@@ -1316,16 +1333,17 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                flex: 0 0 28px;
-                width: 28px;
-                height: 28px;
+                flex: 0 0 24px;
+                width: 24px;
+                height: 24px;
                 padding: 0;
                 border: 1px solid transparent;
-                border-radius: 6px;
+                border-radius: 5px;
                 background: transparent;
                 color: #94a3b8;
                 cursor: pointer;
                 transition: all 0.15s ease;
+                flex-shrink: 0;
 
                 &:hover,
                 &:focus-visible {
@@ -1338,7 +1356,7 @@
 
               .model-menu-disclaimer {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 gap: 6px;
                 padding: 6px 8px;
                 margin-top: 4px;
@@ -1348,10 +1366,18 @@
                 font-size: 10px;
                 color: #fde68a;
                 line-height: 1.35;
+                box-sizing: border-box;
 
                 svg {
                   color: #fbbf24;
                   flex-shrink: 0;
+                  margin-top: 2px;
+                }
+
+                span {
+                  flex: 1;
+                  min-width: 0;
+                  word-break: break-word;
                 }
 
                 .disclaimer-strong {

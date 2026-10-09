@@ -3,30 +3,30 @@
   height: 100%;
   flex-shrink: 0;
   transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
+ 
   &.collapsed {
-    width: 0 !important;
-    min-width: 0 !important;
-    max-width: 0 !important;
-    overflow: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-
-    .activity-sidebar {
-      width: 0 !important;
-      min-width: 0 !important;
-      max-width: 0 !important;
-      overflow: hidden !important;
-      border: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
+	width: 0 !important;
+	min-width: 0 !important;
+	max-width: 0 !important;
+	overflow: hidden !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: none !important;
+ 
+	.activity-sidebar {
+  	width: 0 !important;
+  	min-width: 0 !important;
+  	max-width: 0 !important;
+  	overflow: hidden !important;
+  	border: none !important;
+  	padding: 0 !important;
+  	margin: 0 !important;
+	}
   }
 }
-
+ 
 .activity-sidebar {
   display: flex;
   flex-direction: column;
@@ -43,28 +43,37 @@
   position: relative;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
-
-.activity-top-group,
+ 
+.activity-top-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 4px;
+}
+ 
 .activity-bottom-group {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  gap: 6px;
+  gap: 4px;
+  margin-top: auto;
+  flex-shrink: 0;
 }
-
+ 
 .activity-spacer {
-  flex: 1;
-  min-height: 16px;
+  flex: 1 1 auto;
+  min-height: 6px;
 }
-
+ 
 .activity-divider {
   width: 32px;
   height: 1px;
   background: rgba(255, 255, 255, 0.1);
   margin: 4px 0;
 }
-
+ 
 /* Nav Item (Icon over text) */
 .activity-nav-item {
   display: flex;
@@ -79,119 +88,119 @@
   position: relative;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   .sidebar-crown-badge {
-    position: absolute;
-    top: 1px;
-    right: 1px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    line-height: 1;
-    z-index: 2;
+	position: absolute;
+	top: 1px;
+	right: 1px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	line-height: 1;
+	z-index: 2;
   }
-
+ 
   .nav-icon-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    position: relative;
-
-    .nav-icon {
-      stroke-width: 2.2;
-      transition: transform 0.15s ease, stroke 0.15s ease;
-    }
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	position: relative;
+ 
+	.nav-icon {
+  	stroke-width: 2.2;
+  	transition: transform 0.15s ease, stroke 0.15s ease;
+	}
   }
   .nav-label {
-    font-size: 10.5px;
-    font-weight: 500;
-    line-height: 1.2;
-    margin-top: 3px;
-    text-align: center;
-    white-space: nowrap;
-    transition: color 0.15s ease;
+	font-size: 10.5px;
+	font-weight: 500;
+	line-height: 1.2;
+	margin-top: 2px;
+	text-align: center;
+	white-space: nowrap;
+	transition: color 0.15s ease;
   }
-
+ 
   &.connect-item .nav-label {
-    font-size: 10.5px;
-    letter-spacing: -0.2px;
-    text-wrap: auto;
+	font-size: 10.5px;
+	letter-spacing: -0.2px;
+	text-wrap: auto;
   }
-
-    &:hover {
-    z-index: 1000;
-    color: #3ec5c1;
-    background: rgba(255, 255, 255, 0.08);
-
-    .nav-icon {
-      stroke: #3ec5c1;
-      color: #3ec5c1;
-      transform: translateY(-1px);
-    }
-    .nav-label {
-      color: #3ec5c1;
-    }
+ 
+	&:hover {
+	z-index: 1000;
+	color: #3ec5c1;
+	background: rgba(255, 255, 255, 0.08);
+ 
+	.nav-icon {
+  	stroke: #3ec5c1;
+  	color: #3ec5c1;
+  	transform: translateY(-1px);
+	}
+	.nav-label {
+  	color: #3ec5c1;
+	}
   }
-
+ 
   /* Active / selected state matching select tool button */
   &.active {
-    background: rgba(62, 197, 193, 0.15);
-    color: #3ec5c1;
-
-    .nav-icon {
-      stroke: #3ec5c1;
-      color: #3ec5c1;
-    }
-    .nav-label {
-      color: #3ec5c1;
-      font-weight: 600;
-    }
-
-      &:hover {
-    z-index: 1000;
-      background: rgba(62, 197, 193, 0.22);
-      color: #3ec5c1;
-
-      .nav-icon {
-        stroke: #3ec5c1;
-        color: #3ec5c1;
-      }
-      .nav-label {
-        color: #3ec5c1;
-      }
-    }
+	background: rgba(62, 197, 193, 0.15);
+	color: #3ec5c1;
+ 
+	.nav-icon {
+  	stroke: #3ec5c1;
+  	color: #3ec5c1;
+	}
+	.nav-label {
+  	color: #3ec5c1;
+  	font-weight: 600;
+	}
+ 
+  	&:hover {
+	z-index: 1000;
+  	background: rgba(62, 197, 193, 0.22);
+  	color: #3ec5c1;
+ 
+  	.nav-icon {
+    	stroke: #3ec5c1;
+    	color: #3ec5c1;
+  	}
+  	.nav-label {
+    	color: #3ec5c1;
+  	}
+	}
   }
   /* Disabled state when unauthenticated or restricted */
   &.disabled {
-    opacity: 0.38;
-    cursor: not-allowed;
-
-      &:hover {
-    z-index: 1000;
-      background: transparent !important;
-      color: #cfd3d8 !important;
-
-      .nav-icon {
-        stroke: #cfd3d8 !important;
-        color: #cfd3d8 !important;
-        transform: none !important;
-      }
-      .nav-label {
-        color: #cfd3d8 !important;
-      }
-    }
+	opacity: 0.38;
+	cursor: not-allowed;
+ 
+  	&:hover {
+	z-index: 1000;
+  	background: transparent !important;
+  	color: #cfd3d8 !important;
+ 
+  	.nav-icon {
+    	stroke: #cfd3d8 !important;
+    	color: #cfd3d8 !important;
+    	transform: none !important;
+  	}
+  	.nav-label {
+    	color: #cfd3d8 !important;
+  	}
+	}
   }
-
+ 
   &.docs-item .nav-label,
   &.logout-item .nav-label,
   &.login-item .nav-label {
-    font-size: 10.5px;
-    letter-spacing: -0.2px;
-    text-wrap: auto;
+	font-size: 10.5px;
+	letter-spacing: -0.2px;
+	text-wrap: auto;
   }
 }
-
+ 
 /* Flyout Menus */
 .sidebar-flyout-menu {
   position: absolute;
@@ -209,233 +218,425 @@
   gap: 2px;
   animation: flyoutSlideIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
-
+ 
   .flyout-header {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: #64748b;
-    padding: 6px 10px 4px;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.6px;
+	color: #64748b;
+	padding: 6px 10px 4px;
   }
-
+ 
   .flyout-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin: 4px 0;
+	height: 1px;
+	background: rgba(255, 255, 255, 0.08);
+	margin: 4px 0;
   }
-
+ 
   .flyout-item {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 7px 10px;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    color: #cbd5e1;
-    font-size: 12.5px;
-    font-weight: 500;
-    cursor: pointer;
-    gap: 8px;
-    transition: all 0.12s ease;
-    text-align: left;
-    box-sizing: border-box;
-
-    &:hover:not([disabled]) {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-    }
-
-    &[disabled] {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .db-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-
-      &.postgres-icon {
-        color: #336791;
-      }
-      &.mysql-icon {
-        color: #00758f;
-      }
-      &.mariadb-icon {
-        color: #c0765a;
-      }
-      &.mssql-icon {
-        color: #cc292b;
-      }
-      &.oracle-icon {
-        color: #ea1b22;
-      }
-      &.sqlite-icon {
-        color: #0284c7;
-      }
-      &.pdf-icon {
-        color: #ef4444;
-      }
-       &.conn-string-icon {
-        color: #8b5cf6;
-      }
-      &.png-icon {
-        color: #10b981;
-      }
-      &.svg-icon {
-        color: #f59e0b;
-      }
-      &.mongodb-icon {
-        color: #10aa50;
-      }
-    }
-
-    .item-name {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+	display: flex;
+	align-items: center;
+	width: 100%;
+	padding: 7px 10px;
+	border-radius: 6px;
+	border: none;
+	background: transparent;
+	color: #cbd5e1;
+	font-size: 12.5px;
+	font-weight: 500;
+	cursor: pointer;
+	gap: 8px;
+	transition: all 0.12s ease;
+	text-align: left;
+	box-sizing: border-box;
+ 
+	&:hover:not([disabled]) {
+  	background: rgba(255, 255, 255, 0.08);
+  	color: #ffffff;
+	}
+ 
+	&[disabled] {
+  	opacity: 0.5;
+  	cursor: not-allowed;
+	}
+ 
+	.db-icon {
+  	display: flex;
+  	align-items: center;
+  	justify-content: center;
+  	width: 18px;
+  	height: 18px;
+  	flex-shrink: 0;
+ 
+  	&.postgres-icon {
+    	color: #336791;
+  	}
+  	&.mysql-icon {
+    	color: #00758f;
+  	}
+  	&.mariadb-icon {
+    	color: #c0765a;
+  	}
+  	&.mssql-icon {
+    	color: #cc292b;
+  	}
+  	&.oracle-icon {
+    	color: #ea1b22;
+  	}
+  	&.sqlite-icon {
+    	color: #0284c7;
+  	}
+  	&.pdf-icon {
+    	color: #ef4444;
+  	}
+   	&.conn-string-icon {
+    	color: #8b5cf6;
+  	}
+  	&.png-icon {
+    	color: #10b981;
+  	}
+  	&.svg-icon {
+    	color: #f59e0b;
+  	}
+  	&.mongodb-icon {
+    	color: #10aa50;
+  	}
+	}
+ 
+	.item-name {
+  	flex: 1;
+  	white-space: nowrap;
+  	overflow: hidden;
+  	text-overflow: ellipsis;
+	}
   }
-
+ 
   .flyout-status {
-    padding: 8px 10px;
-    font-size: 12px;
-    color: #3ec5c1;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+	padding: 8px 10px;
+	font-size: 12px;
+	color: #3ec5c1;
+	display: flex;
+	align-items: center;
+	gap: 6px;
   }
 }
-
+ 
 @keyframes flyoutSlideIn {
   from {
-    opacity: 0;
-    transform: translateX(-4px);
+	opacity: 0;
+	transform: translateX(-4px);
   }
   to {
-    opacity: 1;
-    transform: translateX(0);
+	opacity: 1;
+	transform: translateX(0);
   }
 }
-
+ 
 /* ============ LIGHT THEME OVERRIDES ============ */
 :host-context(body.light-theme) .activity-sidebar,
 .activity-sidebar.light {
   background: #ffffff;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
-
+ 
   .activity-divider {
-    background: rgba(0, 0, 0, 0.08);
+	background: rgba(0, 0, 0, 0.08);
   }
-
+ 
   .activity-nav-item {
-    color: #64748b;
-
-    .nav-icon {
-      stroke: #64748b;
-      color: #64748b;
-    }
-    .nav-label {
-      color: #64748b;
-    }
-
-      &:hover {
-    z-index: 1000;
-      color: #0f172a;
-      background: rgba(0, 0, 0, 0.05);
-
-      .nav-icon {
-        stroke: #0f172a;
-        color: #0f172a;
-      }
-      .nav-label {
-        color: #0f172a;
-      }
-    }
-
-    &.active {
-      background: rgba(51, 122, 183, 0.1);
-      color: #337ab7;
-
-      .nav-icon {
-        stroke: #337ab7;
-        color: #337ab7;
-      }
-      .nav-label {
-        color: #337ab7;
-      }
-
-        &:hover {
-    z-index: 1000;
-        background: rgba(51, 122, 183, 0.14);
-        color: #337ab7;
-
-        .nav-icon {
-          stroke: #337ab7;
-          color: #337ab7;
-        }
-        .nav-label {
-          color: #337ab7;
-        }
-      }
-    }
-
-    &.disabled {
-      opacity: 0.38;
-      cursor: not-allowed;
-
-        &:hover {
-    z-index: 1000;
-        background: transparent !important;
-        color: #64748b !important;
-
-        .nav-icon {
-          stroke: #64748b !important;
-          color: #64748b !important;
-          transform: none !important;
-        }
-        .nav-label {
-          color: #64748b !important;
-        }
-      }
-    }
+	color: #64748b;
+ 
+	.nav-icon {
+  	stroke: #64748b;
+  	color: #64748b;
+	}
+	.nav-label {
+  	color: #64748b;
+	}
+ 
+  	&:hover {
+	z-index: 1000;
+  	color: #0f172a;
+  	background: rgba(0, 0, 0, 0.05);
+ 
+  	.nav-icon {
+    	stroke: #0f172a;
+    	color: #0f172a;
+  	}
+  	.nav-label {
+    	color: #0f172a;
+  	}
+	}
+ 
+	&.active {
+  	background: rgba(51, 122, 183, 0.1);
+  	color: #337ab7;
+ 
+  	.nav-icon {
+    	stroke: #337ab7;
+    	color: #337ab7;
+  	}
+  	.nav-label {
+    	color: #337ab7;
+  	}
+ 
+    	&:hover {
+	z-index: 1000;
+    	background: rgba(51, 122, 183, 0.14);
+    	color: #337ab7;
+ 
+    	.nav-icon {
+      	stroke: #337ab7;
+      	color: #337ab7;
+    	}
+    	.nav-label {
+      	color: #337ab7;
+    	}
+  	}
+	}
+ 
+	&.disabled {
+  	opacity: 0.38;
+  	cursor: not-allowed;
+ 
+    	&:hover {
+	z-index: 1000;
+    	background: transparent !important;
+    	color: #64748b !important;
+ 
+    	.nav-icon {
+      	stroke: #64748b !important;
+      	color: #64748b !important;
+      	transform: none !important;
+    	}
+    	.nav-label {
+      	color: #64748b !important;
+    	}
+  	}
+	}
   }
-
+ 
   .sidebar-flyout-menu {
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
-
-    .flyout-header {
-      color: #94a3b8;
-    }
-
-    .flyout-divider {
-      background: rgba(0, 0, 0, 0.06);
-    }
-
-    .flyout-item {
-      color: #334155;
-
-      &:hover:not([disabled]) {
-        background: rgba(0, 0, 0, 0.04);
-        color: #0f172a;
-      }
-
-      &[disabled] {
-        opacity: 0.45;
-      }
-    }
-
-    .flyout-status {
-      color: #2563eb;
-    }
+	background: #ffffff;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+ 
+	.flyout-header {
+  	color: #94a3b8;
+	}
+ 
+	.flyout-divider {
+  	background: rgba(0, 0, 0, 0.06);
+	}
+ 
+	.flyout-item {
+  	color: #334155;
+ 
+  	&:hover:not([disabled]) {
+    	background: rgba(0, 0, 0, 0.04);
+    	color: #0f172a;
+  	}
+ 
+  	&[disabled] {
+    	opacity: 0.45;
+  	}
+	}
+ 
+	.flyout-status {
+  	color: #2563eb;
+	}
   }
 }
-
+ 
+/* ============ RESPONSIVE LAPTOP VIEWPORT OPTIMIZATIONS ============ */
+ 
+/* Laptop screens (<= 860px viewport height, or standard laptop dimensions) */
+@media (max-height: 860px), (max-width: 1400px) and (max-height: 920px) {
+  .activity-sidebar {
+	padding: 6px 0;
+  }
+ 
+  .activity-top-group,
+  .activity-bottom-group {
+	gap: 3px;
+  }
+ 
+  .activity-spacer {
+	min-height: 4px;
+  }
+ 
+  .activity-nav-item {
+	width: 48px;
+	padding: 3.5px 2px;
+ 
+	.sidebar-crown-badge {
+  	top: 0;
+  	right: 0;
+  	transform: scale(0.9);
+	}
+ 
+	.nav-icon-box {
+  	width: 24px;
+  	height: 24px;
+ 
+  	.nav-icon {
+    	width: 18px;
+    	height: 18px;
+  	}
+	}
+ 
+	.nav-label,
+	&.connect-item .nav-label,
+	&.docs-item .nav-label,
+	&.logout-item .nav-label,
+	&.login-item .nav-label {
+  	font-size: 10px;
+  	margin-top: 1.5px;
+  	line-height: 1.1;
+	}
+  }
+}
+ 
+/* Compact laptop screens / scaled viewports (<= 720px viewport height) */
+@media (max-height: 720px) {
+  .activity-sidebar {
+	padding: 4px 0;
+  }
+ 
+  .activity-top-group,
+  .activity-bottom-group {
+	gap: 2px;
+  }
+ 
+  .activity-spacer {
+	min-height: 3px;
+  }
+ 
+  .activity-nav-item {
+	width: 46px;
+	padding: 2.5px 1px;
+ 
+	.sidebar-crown-badge {
+  	top: -1px;
+  	right: -1px;
+  	transform: scale(0.85);
+	}
+ 
+	.nav-icon-box {
+  	width: 22px;
+  	height: 22px;
+ 
+  	.nav-icon {
+    	width: 16px;
+    	height: 16px;
+  	}
+	}
+ 
+	.nav-label,
+	&.connect-item .nav-label,
+	&.docs-item .nav-label,
+	&.logout-item .nav-label,
+	&.login-item .nav-label {
+  	font-size: 9px;
+  	margin-top: 1px;
+  	line-height: 1.05;
+  	letter-spacing: -0.2px;
+	}
+  }
+ 
+  .sidebar-flyout-menu {
+	padding: 4px;
+ 
+	.flyout-header {
+  	padding: 4px 8px 3px;
+  	font-size: 9.5px;
+	}
+ 
+	.flyout-item {
+  	padding: 5px 8px;
+  	font-size: 11.5px;
+  	gap: 6px;
+ 
+  	.db-icon {
+    	width: 16px;
+    	height: 16px;
+    	svg {
+      	width: 13px;
+      	height: 13px;
+    	}
+  	}
+	}
+  }
+}
+ 
+/* Ultra-compact / short laptop viewports (<= 600px viewport height) */
+@media (max-height: 600px) {
+  .activity-sidebar {
+	padding: 2px 0;
+  }
+ 
+  .activity-top-group,
+  .activity-bottom-group {
+	gap: 1px;
+  }
+ 
+  .activity-spacer {
+	min-height: 2px;
+  }
+ 
+  .activity-nav-item {
+	width: 44px;
+	padding: 1.5px 1px;
+ 
+	.sidebar-crown-badge {
+  	top: -2px;
+  	right: -2px;
+  	transform: scale(0.75);
+	}
+ 
+	.nav-icon-box {
+  	width: 19px;
+  	height: 19px;
+ 
+  	.nav-icon {
+    	width: 15px;
+    	height: 15px;
+  	}
+	}
+ 
+	.nav-label,
+	&.connect-item .nav-label,
+	&.docs-item .nav-label,
+	&.logout-item .nav-label,
+	&.login-item .nav-label {
+  	font-size: 8px;
+  	margin-top: 1px;
+  	line-height: 1;
+  	letter-spacing: -0.3px;
+	}
+  }
+ 
+  .sidebar-flyout-menu {
+	padding: 3px;
+ 
+	.flyout-header {
+  	padding: 3px 6px 2px;
+  	font-size: 9px;
+	}
+ 
+	.flyout-item {
+  	padding: 4px 6px;
+  	font-size: 11px;
+  	gap: 5px;
+ 
+  	.db-icon {
+    	width: 14px;
+    	height: 14px;
+    	svg {
+      	width: 12px;
+      	height: 12px;
+    	}
+  	}
+	}
+  }
+}
