@@ -14,7 +14,7 @@ import { EntitlementService } from '../../../core/services/entitlement.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
-import { parseConnectionDetails } from '../../../dbconnect/connection-string.util';
+import { parseConnectionDetails, getConnectionUrlMismatchError } from '../../../dbconnect/connection-string.util';
 
 @Component({
   selector: 'app-header',
@@ -95,11 +95,19 @@ export class HeaderComponent implements OnInit {
   connDatabase = '';
   connUsername = 'postgres';
   connPassword = '';
-  connSchema = 'public';
+  connSchema = '';
   showConnPassword = false;
 
   // URL mode field
   connStringValue = '';
+  connStringUrlMismatchError: string | null = null;
+  dbTypeDropdownOpen = false;
+  dbTypeOptions: Array<{ value: 'postgres' | 'mysql' | 'mariadb' | 'mssql'; label: string }> = [
+    { value: 'postgres', label: 'PostgreSQL' },
+    { value: 'mysql', label: 'MySQL' },
+    { value: 'mariadb', label: 'MariaDB' },
+    { value: 'mssql', label: 'SQL Server (MSSQL)' }
+  ];
 
   connStringImporting = false;
   connStringTesting = false;
@@ -583,6 +591,11 @@ export class HeaderComponent implements OnInit {
       this.profileMenuOpen = false;
       this.cdr.markForCheck();
     }
+
+    if (this.dbTypeDropdownOpen && !target.closest('#conn-db-type-custom-select')) {
+      this.dbTypeDropdownOpen = false;
+      this.cdr.markForCheck();
+    }
   }
 
   // ============ EXPORT ============
@@ -756,9 +769,11 @@ openConnectionStringModal(): void {
     this.connDatabase = '';
     this.connUsername = 'postgres';
     this.connPassword = '';
-    this.connSchema = 'public';
+    this.connSchema = '';
     this.showConnPassword = false;
     this.connStringValue = '';
+    this.connStringUrlMismatchError = null;
+    this.dbTypeDropdownOpen = false;
     this.selectedSqliteFile = null;
     this.isSqliteDraggingOver = false;
     this.connStringImporting = false;
@@ -769,6 +784,8 @@ openConnectionStringModal(): void {
   closeConnectionStringModal(): void {
     this.connStringModalOpen = false;
     this.connStringValue = '';
+    this.connStringUrlMismatchError = null;
+    this.dbTypeDropdownOpen = false;
     this.selectedSqliteFile = null;
     this.isSqliteDraggingOver = false;
     this.connStringImporting = false;
@@ -786,8 +803,21 @@ openConnectionStringModal(): void {
 
   syncFromConnectionString(): void {
     if (!this.connStringValue.trim()) {
+      this.connStringUrlMismatchError = null;
       return;
     }
+
+    this.connStringUrlMismatchError = getConnectionUrlMismatchError(
+      this.connStringValue,
+      this.connStringDatabaseType
+    );
+
+    if (this.connStringUrlMismatchError) {
+      this.connDatabase = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
     const details = parseConnectionDetails(
       this.connStringValue,
       this.connStringDatabaseType
@@ -820,8 +850,36 @@ openConnectionStringModal(): void {
         this.connStringValue = this.getGeneratedConnectionString();
       }
       this.syncFromConnectionString();
+    } else {
+      this.connStringUrlMismatchError = null;
     }
     this.cdr.markForCheck();
+  }
+
+  getSelectedDatabaseTypeLabel(): string {
+    const found = this.dbTypeOptions.find(opt => opt.value === this.connStringDatabaseType);
+    return found ? found.label : (this.connStringDatabaseType === 'oracle' ? 'Oracle' : (this.connStringDatabaseType === 'sqlite' ? 'SQLite' : 'PostgreSQL'));
+  }
+
+  toggleDbTypeDropdown(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.dbTypeDropdownOpen = !this.dbTypeDropdownOpen;
+    this.cdr.markForCheck();
+  }
+
+  selectDatabaseType(type: 'postgres' | 'mysql' | 'mariadb' | 'mssql', event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.dbTypeDropdownOpen = false;
+    if (this.connStringDatabaseType === type) {
+      this.cdr.markForCheck();
+      return;
+    }
+    this.connStringDatabaseType = type;
+    this.onDatabaseTypeChange();
   }
 
   onDatabaseTypeChange(event?: Event): void {
@@ -837,14 +895,12 @@ openConnectionStringModal(): void {
     } else if (this.connStringDatabaseType === 'postgres') {
       if (!this.connPort || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 5432;
       if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'postgres';
-      if (!this.connSchema) this.connSchema = 'public';
     } else if (this.connStringDatabaseType === 'mysql') {
       if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
     } else if (this.connStringDatabaseType === 'mariadb') {
       if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
-      if (this.connSchema === 'public') this.connSchema = '';
     } else if (this.connStringDatabaseType === 'mssql') {
       if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1521) this.connPort = 1433;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root' || this.connUsername === 'system') this.connUsername = 'sa';
@@ -854,6 +910,8 @@ openConnectionStringModal(): void {
     }
     if (this.connStringConnectMode === 'url' && this.connStringValue.trim()) {
       this.syncFromConnectionString();
+    } else {
+      this.connStringUrlMismatchError = null;
     }
     this.cdr.markForCheck();
   }
@@ -958,7 +1016,7 @@ openConnectionStringModal(): void {
     const db = this.connDatabase.trim();
     const user = this.connUsername.trim();
     const pass = this.connPassword;
-    const schema = this.connSchema.trim() || 'public';
+    const schema = this.connSchema.trim();
 
     if (this.connStringDatabaseType === 'mssql') {
       const authPart = user ? `User Id=${user};Password=${pass};` : '';
@@ -973,11 +1031,11 @@ openConnectionStringModal(): void {
     }
 
     if (this.connStringDatabaseType === 'postgres') {
-      return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schema=${schema}` : ''}`;
+      return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schema=${encodeURIComponent(schema)}` : ''}`;
     } else if (this.connStringDatabaseType === 'mysql') {
       return `mysql://${userPass}${host}:${port}/${db}`;
     } else if (this.connStringDatabaseType === 'mariadb') {
-      const schemaQuery = this.connSchema.trim() ? `?schema=${encodeURIComponent(this.connSchema.trim())}` : '';
+      const schemaQuery = schema ? `?schema=${encodeURIComponent(schema)}` : '';
       return `mariadb://${userPass}${host}:${port}/${db}${schemaQuery}`;
     }
 
@@ -991,9 +1049,12 @@ openConnectionStringModal(): void {
     }
     if (this.connStringConnectMode === 'host') {
       return !this.connHost.trim()
+        || !this.connPort
         || !this.connDatabase.trim()
-        || (!this.connUsername.trim() || !this.connPassword.trim());
+        || !this.connUsername.trim()
+        || !this.connPassword.trim();
     }
+    if (this.connStringUrlMismatchError) return true;
     return !this.connStringValue.trim() || !this.connDatabase.trim();
   }
 
@@ -1004,9 +1065,12 @@ openConnectionStringModal(): void {
     }
     if (this.connStringConnectMode === 'host') {
       return !this.connHost.trim()
+        || !this.connPort
+        || !this.connDatabase.trim()
         || !this.connUsername.trim()
         || !this.connPassword.trim();
     }
+    if (this.connStringUrlMismatchError) return true;
     return !this.connStringValue.trim();
   }
 
@@ -1141,6 +1205,7 @@ openConnectionStringModal(): void {
           this.cdr.markForCheck();
           return;
         }
+        this.svc.applySchemaColors(dbml, true);
         this.svc.forceSetCode(dbml);
         this.svc.showToast('Schema generated and imported successfully.', 2500, 'success');
         this.closeConnectionStringModal();
@@ -1309,6 +1374,7 @@ openConnectionStringModal(): void {
             this.cdr.markForCheck();
             return;
           }
+          this.svc.applySchemaColors(dbml, true);
           this.svc.forceSetCode(dbml);
           this.svc.showToast('Schema imported successfully.', 2500, 'success');
           this.closeImportModal();

@@ -102,7 +102,7 @@
     "aiModels": "http://localhost:4000/api/ai/admin/models",
     "aiModelManage": "http://localhost:4000/api/ai/models",
     "aiModelById": "http://localhost:4000/api/ai/models/{id}",
-    "aiChatModels": "http://localhost:4000/api/ai/models/",
+    "aiChatModels": "http://localhost:4000/api/ai/models",
     "aiChat": "http://localhost:4000/api/ai/chat",
     "aiChatHistoryById": "http://localhost:4000/api/ai/chat/history/{id}",
     "aiChatHistoryApplied": "http://localhost:4000/api/ai/chat/history/applied",

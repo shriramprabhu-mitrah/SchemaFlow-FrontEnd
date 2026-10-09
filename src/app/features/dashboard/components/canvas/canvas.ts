@@ -3751,7 +3751,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
         const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
         const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
-        const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+        const isDisabled = missingColor || missingGroup || (label === 'Delete Table' && isTableInGroup) ||
           (label === 'Edit Column' && column && (column.pk || column.fk)) ||
           (label === 'Edit Table' && isRestrictedTableGroup);
 
@@ -5554,7 +5554,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
       const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
       const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
-      const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+      const isDisabled = missingColor || missingGroup || (label === 'Delete Table' && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
         (label === 'Edit Table' && isRestrictedTableGroup);
 
@@ -5718,7 +5718,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const isRestrictedTableGroup = isTableInGroup && (!this.entitlementService.canUseFeature('table_group') || !this.entitlementService.orgHasFeature('table_group'));
       const missingColor = label === 'Change Color' && !this.entitlementService.canUseFeature('table_color_and_connection_color');
       const missingGroup = (label === 'Edit Group' || label === 'Delete Group') && !this.entitlementService.canUseFeature('table_group');
-      const isDisabled = missingColor || missingGroup || ((label === 'Change Color' || label === 'Delete Table') && isTableInGroup) ||
+      const isDisabled = missingColor || missingGroup || (label === 'Delete Table' && isTableInGroup) ||
         (label === 'Edit Column' && column && (column.pk || column.fk)) ||
         (label === 'Edit Table' && isRestrictedTableGroup);
 

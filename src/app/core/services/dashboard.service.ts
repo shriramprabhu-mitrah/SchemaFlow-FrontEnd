@@ -1672,6 +1672,23 @@ export class DashboardService {
   refColors: Record<string, string> = {};
   groupColors: Record<string, string> = {};
   tableColorsMap: Record<string, string> = {};
+  readonly SCHEMA_COLORS: string[] = [
+    '#2563eb', // Royal Blue
+    '#059669', // Emerald Green
+    '#7c3aed', // Purple
+    '#b45309', // Amber / Gold
+    '#db2777', // Rose / Pink
+    '#0891b2', // Cyan
+    '#c2410c', // Orange
+    '#4f46e5', // Indigo
+    '#0d9488', // Dark Teal
+    '#dc2626', // Red
+    '#4d7c0f', // Lime
+    '#9333ea', // Violet
+    '#0369a1', // Sky Blue
+    '#a21caf', // Fuchsia
+    '#475569'  // Slate
+  ];
 
   isAllFields = true;
   isKeyOnly = false;
@@ -2650,8 +2667,8 @@ export class DashboardService {
 
   /* ============ DBML PARSER ============ */
 
-  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
-    const tables: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
+  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
+    const tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string }[] = [];
     const refs: RefDef[] = [];
     const groups: { name: string; color: string; tables: string[] }[] = [];
 
@@ -2663,11 +2680,23 @@ export class DashboardService {
       .replace(/^(\s*)ref(\s*:)/gim, '$1Ref$2')
       .replace(/^(\s*)note(\s)/gim, '$1Note$2');
 
-    const tableRe = /Table\s+([A-Za-z0-9_.]+)\s*\{([\s\S]*?)\}/gi;
+    const tableRe = /Table\s+([^{\r\n]+?)\s*\{([\s\S]*?)\}/gi;
     let m: RegExpExecArray | null;
     const seenTables = new Set<string>();
     while ((m = tableRe.exec(text)) !== null) {
-      const name = m[1];
+      const header = m[1].trim();
+      let rawAttrs = '';
+      let namePart = header;
+      const bracketMatch = header.match(/^(.*?)\s*\[(.*?)\]\s*$/);
+      if (bracketMatch) {
+        namePart = bracketMatch[1].trim();
+        rawAttrs = bracketMatch[2].trim();
+      }
+      namePart = namePart.replace(/\s+as\s+[A-Za-z0-9_]+/i, '').trim();
+      const name = namePart.replace(/["'`]/g, '');
+      const colorMatch = rawAttrs.match(/(?:headercolor|color):\s*([#A-Za-z0-9]+)/i);
+      const headerColor = colorMatch ? colorMatch[1] : undefined;
+
       const nameLower = name.toLowerCase();
       if (seenTables.has(nameLower)) {
         continue;
@@ -2792,7 +2821,7 @@ export class DashboardService {
           }
         }
       });
-      tables.push({ name, columns: cols });
+      tables.push({ name, columns: cols, color: headerColor });
     }
 
    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?/gi;
@@ -3023,6 +3052,20 @@ export class DashboardService {
       };
     }) : [];
 
+    // Build schema colors map so tables of each schema are visually differentiated
+    const schemaToColor = new Map<string, string>();
+    let schemaColorIdx = 0;
+    parsed.tables.forEach(t => {
+      const schema = this.extractTableSchema(t.name);
+      if (schema) {
+        const lower = schema.toLowerCase();
+        if (!schemaToColor.has(lower)) {
+          schemaToColor.set(lower, this.getSchemaColor(schemaColorIdx));
+          schemaColorIdx++;
+        }
+      }
+    });
+
     let deletedTablesForDiff: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
     if (this.aiDiffReviewActive()) {
       const origParsed = this.parseDBML(this.aiDiffOriginalCode());
@@ -3221,6 +3264,14 @@ export class DashboardService {
         colY[c.name] = yVal;
         colY[c.name.toLowerCase()] = yVal;
       });
+      const schema = this.extractTableSchema(t.name);
+      const schemaColor = schema ? schemaToColor.get(schema.toLowerCase()) : undefined;
+      const userCustomColor = t.color || this.getTableCustomColor(t.name);
+      const finalColor = userCustomColor || tableColors.get(t.name) || schemaColor;
+      if (t.color) {
+        this.tableColorsMap[t.name] = t.color;
+      }
+
       return {
         name: t.name,
         columns: t.columns,
@@ -3229,7 +3280,7 @@ export class DashboardService {
         width: this.getTableWidth(t.name, t.columns),
         height,
         colY,
-        color: tableColors.get(t.name) || this.tableColorsMap[t.name]
+        color: finalColor
       };
     });
 
@@ -3516,7 +3567,7 @@ export class DashboardService {
 
   addColumnInCode(tableName: string): void {
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const re = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?)(\\r?\\n?\\s*\\})`, 'i');
+    const re = new RegExp(`(Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?)(\\r?\\n?\\s*\\})`, 'i');
     if (!re.test(this.code)) return;
 
     // Generate a unique column name
@@ -3536,7 +3587,7 @@ export class DashboardService {
 
   renameColumnInCode(tableName: string, oldColName: string, newColName: string): void {
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const tableRe = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
+    const tableRe = new RegExp(`(Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
     const match = this.code.match(tableRe);
     if (!match) return;
 
@@ -3547,12 +3598,12 @@ export class DashboardService {
 
   deleteColumnInCode(tableName: string, colName: string): void {
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const tableRe = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
+    const tableRe = new RegExp(`(Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
     const match = this.code.match(tableRe);
     if (!match) return;
 
     // Get only the inner block contents of the Table block
-    const bodyRe = new RegExp(`^Table\\s+${escName}\\s*\\{([\\s\\S]*?)\\}\\s*$`, 'i');
+    const bodyRe = new RegExp(`^Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{([\\s\\S]*?)\\}\\s*$`, 'i');
     const bodyMatch = match[0].match(bodyRe);
     if (!bodyMatch) return;
 
@@ -3628,7 +3679,7 @@ export class DashboardService {
 
   deleteTableInCode(tableName: string): void {
     const safeName = tableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeName}(?:["'])?\\s*\\{[\\s\\S]*?\\}\\n?`, 'gi');
+    const tableRe = new RegExp(`Table\\s+(?:["'\`]?${safeName}["'\`]?|${safeName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\}\\n?`, 'gi');
     this.code = this.code.replace(tableRe, '');
 
     this.code = this.code
@@ -3649,7 +3700,7 @@ export class DashboardService {
 
   updateTableInCode(oldName: string, newName: string, columns: Column[]): void {
     const safeOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeOldName}(?:["'])?\\s*\\{[\\s\\S]*?\\}`, 'gi');
+    const tableRe = new RegExp(`Table\\s+(?:["'\`]?${safeOldName}["'\`]?|${safeOldName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\}`, 'gi');
     if (!tableRe.test(this.code)) return;
 
     // Parse existing references BEFORE changing code
@@ -3729,7 +3780,9 @@ export class DashboardService {
       return values.length ? ` [${values.join(', ')}]` : '';
     };
 
-    const tableBlock = `Table ${newName} {\n${columns
+    const color = this.tableColorsMap[newName] || this.tableColorsMap[oldName];
+    const colorAttr = color ? ` [headercolor: ${color}] ` : ' ';
+    const tableBlock = `Table ${newName}${colorAttr}{\n${columns
       .map((column) => {
         let cleanType = column.type.trim().toLowerCase();
         if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
@@ -4041,15 +4094,56 @@ export class DashboardService {
     this.parseAndLayout();
   }
 
+  getTableCustomColor(tableName: string): string | undefined {
+    if (!tableName) return undefined;
+    if (this.tableColorsMap[tableName]) {
+      return this.tableColorsMap[tableName];
+    }
+    const lower = tableName.toLowerCase();
+    for (const [key, val] of Object.entries(this.tableColorsMap)) {
+      if (key.toLowerCase() === lower) {
+        return val;
+      }
+    }
+    return undefined;
+  }
+
+  updateTableHeaderColorInCode(tableName: string, color: string): void {
+    if (!this.code) return;
+    const safeName = tableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const tableRe = new RegExp(`(Table\\s+(?:["'\`]?${safeName}["'\`]?|${safeName}))(\\s*(?:\\[([^\\]]*)\\])?)(\\s*\\{)`, 'i');
+    const match = this.code.match(tableRe);
+    if (!match) return;
+
+    const prefix = match[1];
+    const existingAttrs = match[3] || '';
+    const suffix = match[4];
+
+    let newAttrs = '';
+    if (existingAttrs) {
+      if (/(?:headercolor|color):\s*[^,\]]+/i.test(existingAttrs)) {
+        newAttrs = existingAttrs.replace(/(?:headercolor|color):\s*[^,\]]+/i, `headercolor: ${color}`);
+      } else {
+        newAttrs = `${existingAttrs.trim()}, headercolor: ${color}`;
+      }
+    } else {
+      newAttrs = `headercolor: ${color}`;
+    }
+
+    this.code = this.code.replace(tableRe, `${prefix} [${newAttrs}]${suffix}`);
+  }
+
   setTableColor(tableName: string, color: string): void {
     this.tableColorsMap[tableName] = color;
+    const t = this.tables.find(tbl => tbl.name.toLowerCase() === tableName.toLowerCase() || tbl.name === tableName);
+    if (t) {
+      this.tableColorsMap[t.name] = color;
+      t.color = color;
+    }
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
     }
-    const t = this.tables.find(tbl => tbl.name === tableName);
-    if (t) {
-      t.color = color;
-    }
+    this.updateTableHeaderColorInCode(tableName, color);
     this.scheduleDraw();
   }
 
@@ -4061,6 +4155,94 @@ export class DashboardService {
 
     this.parseAndLayout();
     this.scheduleDraw();
+  }
+
+  /**
+   * Extracts schema name from a qualified table name (e.g. "differnt_schema.categories" -> "differnt_schema").
+   */
+  extractTableSchema(fullName: string): string | null {
+    if (!fullName) return null;
+    const trimmed = fullName.trim();
+    const dotIndex = trimmed.indexOf('.');
+    if (dotIndex <= 0 || dotIndex >= trimmed.length - 1) return null;
+
+    const rawSchema = trimmed.substring(0, dotIndex).trim();
+    const cleanSchema = rawSchema.replace(/^["'`\[]+|["'`\]]+$/g, '').trim();
+    return cleanSchema || null;
+  }
+
+  /**
+   * Converts HSL color values to a standard 6-digit hex string (#rrggbb).
+   */
+  private hslToHex(h: number, s: number, l: number): string {
+    l /= 100;
+    const a = (s * Math.min(l, 1 - l)) / 100;
+    const f = (n: number) => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
+  /**
+   * Returns a schema color. For the first 15 schemas, uses the curated high-contrast palette.
+   * For schema 16 and beyond, dynamically calculates a unique color using the golden angle
+   * distribution with optimal lightness and saturation for contrast against white header text.
+   */
+  getSchemaColor(index: number): string {
+    if (index < this.SCHEMA_COLORS.length) {
+      return this.SCHEMA_COLORS[index];
+    }
+    const extraIndex = index - this.SCHEMA_COLORS.length;
+    const hue = Math.round((extraIndex * 137.508) % 360);
+    const lightness = 38 + ((extraIndex % 3) * 4);
+    return this.hslToHex(hue, 65, lightness);
+  }
+
+  /**
+   * Assigns distinct colors to tables grouped by their schema so tables from different schemas are differentiated.
+   */
+  applySchemaColors(code: string, resetExisting: boolean = true): void {
+    if (!code) return;
+    const parsed = this.parseDBML(code);
+    if (!parsed || !parsed.tables || parsed.tables.length === 0) return;
+
+    if (resetExisting) {
+      this.tableColorsMap = {};
+    }
+
+    const uniqueSchemas: string[] = [];
+    parsed.tables.forEach(t => {
+      const schema = this.extractTableSchema(t.name);
+      if (schema) {
+        const lower = schema.toLowerCase();
+        if (!uniqueSchemas.includes(lower)) {
+          uniqueSchemas.push(lower);
+        }
+      }
+    });
+
+    if (uniqueSchemas.length === 0) return;
+
+    const schemaColorMap = new Map<string, string>();
+    uniqueSchemas.forEach((schema, idx) => {
+      schemaColorMap.set(schema, this.getSchemaColor(idx));
+    });
+
+    parsed.tables.forEach(t => {
+      const schema = this.extractTableSchema(t.name);
+      if (schema) {
+        const color = schemaColorMap.get(schema.toLowerCase());
+        if (color) {
+          this.tableColorsMap[t.name] = color;
+        }
+      }
+    });
+
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
   }
 
   generateNextTableName(): string {

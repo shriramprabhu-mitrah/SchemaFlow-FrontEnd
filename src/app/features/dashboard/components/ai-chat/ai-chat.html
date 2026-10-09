@@ -397,15 +397,14 @@
       </div>
     </div>
 
-    <!-- Usage Limit Row (Displayed only when dbnexus AI default model is selected) -->
-    <div class="ai-usage-limit-container" *ngIf="isNoApiKeyRequired(selectedModel())">
+    <!-- Usage Limit Row (Displayed only when dbnexus AI default model is selected and chat response contains usage and limit) -->
+    <div class="ai-usage-limit-container" *ngIf="isNoApiKeyRequired(selectedModel()) && showUsageLimit()">
       <!-- Pop-up Card when clicked -->
       <div class="ai-usage-popup-card" *ngIf="isUsagePopupOpen()" (click)="$event.stopPropagation()">
         <div class="usage-popup-header">
-          <span class="usage-popup-title">Used: {{ formatNumber(usedTokens()) }} / {{ formatNumber(getMaxTokens()) }}
-            tokens</span>
+          <span class="usage-popup-title">Used: {{ getUsagePercentage() }}%</span>
           <span class="usage-info-icon"
-            [attr.title]="'Monthly token usage limit for ' + (selectedModel()?.model_name || 'dbnexus AI')">
+            [attr.title]="'Monthly usage limit for ' + (selectedModel()?.model_name || 'dbnexus AI')">
             <!-- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>

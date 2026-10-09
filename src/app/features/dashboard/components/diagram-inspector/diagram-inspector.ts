@@ -121,8 +121,12 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
   }
 
   getTableColor(table: TableDef, index: number): string {
-    if (this.svc.tableColorsMap && this.svc.tableColorsMap[table.name]) {
-      return this.svc.tableColorsMap[table.name];
+    if (table.color) {
+      return table.color;
+    }
+    const custom = this.svc.getTableCustomColor?.(table.name);
+    if (custom) {
+      return custom;
     }
     return this.stripeColors[index % this.stripeColors.length];
   }
