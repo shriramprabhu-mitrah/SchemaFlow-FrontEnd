@@ -5,7 +5,7 @@ import { AppConfigService } from './app-config.service';
 
 import { AuthService } from './auth.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'sqlite' | 'mongodb';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'snowflake' | 'sqlite' | 'mongodb';
 
 export interface ImportRequest {
   databaseType: string;
@@ -29,6 +29,7 @@ export class ImportService {
     sqlserver: 'SqlServer',
     sqlite: 'Sqlite',
     oracle: 'Oracle',
+    snowflake: 'Snowflake',
     mongodb: 'MongoDB'
   };
 

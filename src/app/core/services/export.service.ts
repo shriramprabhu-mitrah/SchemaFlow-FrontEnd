@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'sqlite' | 'oracle' | 'mongodb';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'sqlite' | 'oracle' | 'snowflake' | 'mongodb';
 
 export interface ExportRequest {
   databaseType: string;
@@ -22,6 +22,7 @@ export class ExportService {
     sqlserver: 'SqlServer',
     sqlite: 'Sqlite',
     oracle: 'Oracle',
+    snowflake: 'Snowflake',
     mongodb: 'MongoDB'
   };
 

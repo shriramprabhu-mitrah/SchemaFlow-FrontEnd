@@ -321,9 +321,9 @@
         </svg>
         Import from
         <span class="dialect-badge"
-          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'mariadb' ? 'mariadb-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : importDialect === 'mongodb' ? 'mongodb-badge' : importDialect === 'oracle' ? 'oracle-badge' : 'sqlserver-badge'">
+          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'mariadb' ? 'mariadb-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : importDialect === 'mongodb' ? 'mongodb-badge' : importDialect === 'oracle' ? 'oracle-badge' : importDialect === 'snowflake' ? 'snowflake-badge' : 'sqlserver-badge'">
           {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect === 'mariadb' ? 'MariaDB' : importDialect ===
-          'sqlite' ? 'SQLite' : importDialect === 'mongodb' ? 'MongoDB (NoSQL)' : importDialect === 'oracle' ? 'Oracle' : 'SQL Server' }}
+          'sqlite' ? 'SQLite' : importDialect === 'mongodb' ? 'MongoDB (NoSQL)' : importDialect === 'oracle' ? 'Oracle' : importDialect === 'snowflake' ? 'Snowflake' : 'SQL Server' }}
         </span>
       </div>
       <button class="close-modal-btn" id="import-modal-close-btn" (click)="closeImportModal()">&times;</button>

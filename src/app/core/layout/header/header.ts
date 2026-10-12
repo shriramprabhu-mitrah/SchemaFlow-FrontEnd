@@ -351,8 +351,6 @@ export class HeaderComponent implements OnInit {
   selectDiagramById(id: number, onRevert?: () => void): void {
     if (!id) return;
 
-
-
     this.runWithUnsavedChangesCheck(() => {
       this.svc.requestSplitView();
       this.svc.loadDiagram(id).subscribe({
