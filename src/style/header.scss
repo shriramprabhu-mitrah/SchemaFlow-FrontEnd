@@ -3889,6 +3889,46 @@ body.light-theme {
       font-size: 12px !important;
     }
   }
+
+  /* Connect to Database Modal Mobile Responsiveness */
+  .conn-string-modal {
+    width: 100% !important;
+    max-width: calc(100vw - 20px) !important;
+
+    .import-modal-body {
+      min-height: 0 !important;
+      max-height: calc(100vh - 140px) !important;
+    }
+
+    .import-modal-footer {
+      flex-wrap: wrap !important;
+      gap: 10px !important;
+      padding: 12px 16px !important;
+
+      .conn-test-row {
+        width: 100% !important;
+        margin-right: 0 !important;
+
+        .test-connection-btn {
+          width: 100% !important;
+          min-width: 0 !important;
+        }
+      }
+
+      .import-btn-cancel {
+        flex: 1 !important;
+        min-width: 0 !important;
+        padding: 0 12px !important;
+      }
+
+      .import-btn-convert {
+        flex: 1.4 !important;
+        min-width: 0 !important;
+        padding: 0 14px !important;
+        white-space: nowrap !important;
+      }
+    }
+  }
 }
 
 

@@ -25,7 +25,7 @@ export class ImportService {
   private readonly databaseTypeMap: Record<SqlDialect, string> = {
     postgres: 'Postgres',
     mysql: 'Mysql',
-    mariadb: 'mariabd',
+    mariadb: 'MariaDB',
     sqlserver: 'SqlServer',
     sqlite: 'Sqlite',
     oracle: 'Oracle',

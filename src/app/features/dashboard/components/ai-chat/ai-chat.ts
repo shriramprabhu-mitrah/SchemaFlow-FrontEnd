@@ -866,11 +866,12 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 const data: AiChatModel[] = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
 
                 // Restore any locally stored API keys if not returned by server, and extract initial max_tokens/remaining_tokens
-                // Note: In this models API, max_tokens represents the limit and remaining_tokens represents the tokens used (usage).
+                // Note: In this models API, max_tokens represents the limit and remaining_tokens represents the remaining tokens available.
                 data.forEach(m => {
                     if (this.isNoApiKeyRequired(m)) {
-                        const rawLimit = m.max_tokens ?? (m as any).maxTokens ?? (m as any).token_limit ?? (m as any).tokenLimit ?? (m as any).limit ?? res?.max_tokens ?? res?.maxTokens ?? res?.token_limit;
-                        const rawUsage = m.remaining_tokens ?? (m as any).remainingTokens ?? m.used_tokens ?? (m as any).usedTokens ?? (m as any).tokens_used ?? (m as any).tokensUsed ?? (m as any).usage ?? res?.remaining_tokens ?? res?.remainingTokens ?? res?.used_tokens ?? res?.usage;
+                        const rawLimit = m.max_tokens ?? (m as any).max_token ?? (m as any).maxTokens ?? (m as any).maxToken ?? (m as any).token_limit ?? (m as any).tokenLimit ?? (m as any).limit ?? res?.max_tokens ?? res?.max_token ?? res?.maxTokens ?? res?.token_limit;
+                        const rawRemaining = m.remaining_tokens ?? (m as any).remaining_token ?? (m as any).remainingTokens ?? (m as any).remainingToken ?? res?.remaining_tokens ?? res?.remaining_token ?? res?.remainingTokens;
+                        const rawUsed = m.used_tokens ?? (m as any).used_token ?? (m as any).usedTokens ?? (m as any).tokens_used ?? (m as any).tokensUsed ?? (m as any).usage ?? res?.used_tokens ?? res?.usage;
 
                         const maxTokens = (rawLimit !== undefined && rawLimit !== null && !isNaN(Number(rawLimit)) && Number(rawLimit) > 0)
                             ? Number(rawLimit)
@@ -881,21 +882,45 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                             this.tokenLimit.set(maxTokens);
                         }
 
-                        let used = (rawUsage !== undefined && rawUsage !== null && !isNaN(Number(rawUsage)))
-                            ? Math.max(0, Number(rawUsage))
-                            : 0;
+                        const hasRemainingVal = rawRemaining !== undefined && rawRemaining !== null && !isNaN(Number(rawRemaining));
+                        const remainingTokens = hasRemainingVal ? Number(rawRemaining) : null;
+
+                        let used = 0;
+                        if (hasRemainingVal && maxTokens > 0) {
+                            // remaining_tokens represents remaining tokens, so used = max_tokens - remaining_tokens
+                            const rem = Number(rawRemaining);
+                            if (rem <= 0) {
+                                used = maxTokens;
+                                this.hasRemainingQuota.set(false);
+                            } else if (rem >= maxTokens) {
+                                used = 0;
+                                this.hasRemainingQuota.set(true);
+                            } else {
+                                used = maxTokens - rem;
+                                this.hasRemainingQuota.set(true);
+                            }
+                        } else if (rawUsed !== undefined && rawUsed !== null && !isNaN(Number(rawUsed))) {
+                            used = Math.max(0, Number(rawUsed));
+                            if (maxTokens > 0 && used >= maxTokens) {
+                                used = maxTokens;
+                                this.hasRemainingQuota.set(false);
+                            } else {
+                                this.hasRemainingQuota.set(true);
+                            }
+                        } else {
+                            this.hasRemainingQuota.set(true);
+                        }
 
                         // If used tokens is greater than or equal to limit tokens, cap to limit as 100%
                         if (maxTokens > 0 && used >= maxTokens) {
                             used = maxTokens;
                             this.hasRemainingQuota.set(false);
-                        } else {
-                            this.hasRemainingQuota.set(true);
                         }
 
-                        m.remaining_tokens = rawUsage !== undefined ? Number(rawUsage) : 0;
+                        m.remaining_tokens = remainingTokens !== null ? Math.max(0, remainingTokens) : (maxTokens > 0 ? Math.max(0, maxTokens - used) : 0);
                         m.used_tokens = used;
                         this.updateUsedTokens(used);
+                        this.showUsageLimit.set(true);
                         return;
                     }
                     if (m.api_key === null) {
@@ -1723,7 +1748,15 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         const hasRemaining = responseRemaining !== undefined && responseRemaining !== null && !isNaN(Number(responseRemaining));
 
         const limit = hasLimit ? Number(responseLimit) : this.getMaxTokens();
-        let finalUsage: number | undefined = hasUsage ? Number(responseUsage) : (hasRemaining ? Number(responseRemaining) : undefined);
+        let finalUsage: number | undefined;
+        if (hasUsage) {
+            finalUsage = Number(responseUsage);
+        } else if (hasRemaining && limit > 0) {
+            const rem = Number(responseRemaining);
+            finalUsage = rem <= 0 ? limit : Math.max(0, limit - rem);
+        } else if (hasRemaining) {
+            finalUsage = Math.max(0, Number(responseRemaining));
+        }
 
         if (hasLimit) {
             this.tokenLimit.set(limit);
