@@ -571,59 +571,128 @@
             </div>
           </div>
 
-          <div class="modal-form-row" style="margin-top: 14px;">
-            <!-- Host -->
-            <div class="modal-form-group flex-3">
-              <label class="import-modal-label" for="conn-host">Host <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-              <input type="text" id="conn-host" class="modal-input-field" placeholder="localhost" [(ngModel)]="connHost" spellcheck="false" autocomplete="off" />
-            </div>
+          <!-- SNOWFLAKE HOST FIELDS -->
+          <ng-container *ngIf="connStringDatabaseType === 'snowflake'">
+            <!-- Line 1: 3 fields (Account, Username, Password) -->
+            <div class="modal-form-row" style="margin-top: 14px;">
+              <!-- Account -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-sf-account">Account <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <input type="text" id="conn-sf-account" class="modal-input-field" placeholder="your_server_name" [(ngModel)]="connAccount" spellcheck="false" autocomplete="off" />
+              </div>
 
-            <!-- Port -->
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-port">Port <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-              <input type="number" id="conn-port" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? '1521' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? '3306' : (connStringDatabaseType === 'mssql' ? '1433' : '5432'))" [(ngModel)]="connPort" autocomplete="off" />
-            </div>
-          </div>
+              <!-- Username -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-sf-username">Username <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <input type="text" id="conn-sf-username" name="db_sf_username" class="modal-input-field" placeholder="your_username" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" data-lpignore="true" />
+              </div>
 
-          <div class="modal-form-row" style="margin-top: 12px;">
-            <!-- Database -->
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-database">Database <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-              <input type="text" id="conn-database" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'FREEPDB1' : 'my_database'" [(ngModel)]="connDatabase" spellcheck="false" autocomplete="off" />
-            </div>
-
-            <!-- Schema (for Postgres) -->
-            <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb'">
-              <label class="import-modal-label" for="conn-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
-              <input type="text" id="conn-schema" class="modal-input-field" [placeholder]="connStringDatabaseType === 'postgres' ? 'e.g. public (optional)' : 'Optional schema'" [(ngModel)]="connSchema" spellcheck="false" autocomplete="off" />
-            </div>
-          </div>
-
-          <div class="modal-form-row" style="margin-top: 12px;">
-            <!-- Username -->
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-username">Username <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-              <input type="text" id="conn-username" name="db_host_username" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'system' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? 'root' : (connStringDatabaseType === 'mssql' ? 'sa' : 'postgres'))" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" data-lpignore="true" />
-            </div>
-
-            <!-- Password -->
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-password">Password <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-              <div class="password-input-wrap">
-                <input [type]="showConnPassword ? 'text' : 'password'" id="conn-password" name="db_host_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
-                <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
-                  <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                  </svg>
-                </button>
+              <!-- Password -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-sf-password">Password <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <div class="password-input-wrap">
+                  <input [type]="showConnPassword ? 'text' : 'password'" id="conn-sf-password" name="db_sf_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
+                  <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
+                    <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+
+            <!-- Line 2: 2 fields (Database, Schema) -->
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <!-- Database -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-sf-database">Database <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-sf-database" class="modal-input-field" placeholder="your_database_name" [(ngModel)]="connDatabase" spellcheck="false" autocomplete="off" />
+              </div>
+
+              <!-- Schema -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-sf-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-sf-schema" class="modal-input-field" placeholder="your_schema_names" [(ngModel)]="connSchema" spellcheck="false" autocomplete="off" />
+              </div>
+            </div>
+
+            <!-- Line 3: 2 fields (Warehouse, Role) -->
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <!-- Warehouse -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-sf-warehouse">Warehouse <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-sf-warehouse" class="modal-input-field" placeholder="your_warehouse_name" [(ngModel)]="connWarehouse" spellcheck="false" autocomplete="off" />
+              </div>
+
+              <!-- Role -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-sf-role">Role <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-sf-role" class="modal-input-field" placeholder="your_role_name" [(ngModel)]="connRole" spellcheck="false" autocomplete="off" />
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- DEFAULT / OTHER DATABASES HOST FIELDS -->
+          <ng-container *ngIf="connStringDatabaseType !== 'snowflake'">
+            <div class="modal-form-row" style="margin-top: 14px;">
+              <!-- Host -->
+              <div class="modal-form-group flex-3">
+                <label class="import-modal-label" for="conn-host">Host <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <input type="text" id="conn-host" class="modal-input-field" placeholder="localhost" [(ngModel)]="connHost" spellcheck="false" autocomplete="off" />
+              </div>
+
+              <!-- Port -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-port">Port <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <input type="number" id="conn-port" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? '1521' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? '3306' : (connStringDatabaseType === 'mssql' ? '1433' : '5432'))" [(ngModel)]="connPort" autocomplete="off" />
+              </div>
+            </div>
+
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <!-- Database -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-database">Database <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <input type="text" id="conn-database" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'FREEPDB1' : 'my_database'" [(ngModel)]="connDatabase" spellcheck="false" autocomplete="off" />
+              </div>
+
+              <!-- Schema (for Postgres) -->
+              <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb'">
+                <label class="import-modal-label" for="conn-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-schema" class="modal-input-field" [placeholder]="connStringDatabaseType === 'postgres' ? 'e.g. public (optional)' : 'Optional schema'" [(ngModel)]="connSchema" spellcheck="false" autocomplete="off" />
+              </div>
+            </div>
+
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <!-- Username -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-username">Username <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <input type="text" id="conn-username" name="db_host_username" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'system' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? 'root' : (connStringDatabaseType === 'mssql' ? 'sa' : 'postgres'))" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" data-lpignore="true" />
+              </div>
+
+              <!-- Password -->
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-password">Password <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
+                <div class="password-input-wrap">
+                  <input [type]="showConnPassword ? 'text' : 'password'" id="conn-password" name="db_host_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
+                  <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
+                    <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
 
         <!-- URL FORM FIELD -->
@@ -633,55 +702,113 @@
             <div class="input-wrapper">
               <textarea id="conn-string-input" class="modal-textarea-field" rows="2"
                 [class.input-error]="!!connStringUrlMismatchError"
-                [placeholder]="connStringDatabaseType === 'mssql' ? 'Server=host,port;Database=database;User Id=username;Password=password;Encrypt=false;TrustServerCertificate=true;' : (connStringDatabaseType === 'mysql' ? 'mysql://username:password@host:port/database' : (connStringDatabaseType === 'mariadb' ? 'mariadb://username:password@host:port/database' : (connStringDatabaseType === 'oracle' ? 'jdbc:oracle:thin:username/password@//host:port/database' : 'postgresql://username:password@host:port/database?schema=schema_1')))"
+                [placeholder]="getConnStringPlaceholder()"
                 [(ngModel)]="connStringValue" (input)="onConnStringInput($event)" spellcheck="false" autocomplete="off"></textarea>
             </div>
           </div>
 
-          <div class="modal-form-row" style="margin-top: 14px;">
-            <div class="modal-form-group flex-3">
-              <label class="import-modal-label" for="conn-url-host">Host</label>
-              <input type="text" id="conn-url-host" class="modal-input-field" placeholder="host" [(ngModel)]="connHost" readonly spellcheck="false" autocomplete="off" />
-            </div>
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-url-port">Port</label>
-              <input type="text" id="conn-url-port" class="modal-input-field" placeholder="port" [(ngModel)]="connPort" readonly autocomplete="off" />
-            </div>
-          </div>
-
-          <div class="modal-form-row" style="margin-top: 12px;">
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-url-database">Database</label>
-              <input type="text" id="conn-url-database" class="modal-input-field" placeholder="database" [(ngModel)]="connDatabase" readonly spellcheck="false" autocomplete="off" />
-            </div>
-            <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb'">
-              <label class="import-modal-label" for="conn-url-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
-              <input type="text" id="conn-url-schema" class="modal-input-field" placeholder="schema (optional)" [(ngModel)]="connSchema" readonly spellcheck="false" autocomplete="off" />
-            </div>
-          </div>
-
-          <div class="modal-form-row" style="margin-top: 12px;">
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-url-username">Username</label>
-              <input type="text" id="conn-url-username" name="db_url_username" class="modal-input-field" placeholder="username" [(ngModel)]="connUsername" readonly spellcheck="false" autocomplete="off" data-lpignore="true" />
-            </div>
-            <div class="modal-form-group flex-1">
-              <label class="import-modal-label" for="conn-url-password">Password</label>
-              <div class="password-input-wrap">
-                <input [type]="showConnPassword ? 'text' : 'password'" id="conn-url-password" name="db_url_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" readonly (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
-                <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
-                  <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                </button>
+          <!-- SNOWFLAKE URL FIELDS (READONLY) -->
+          <ng-container *ngIf="connStringDatabaseType === 'snowflake'">
+            <!-- Line 1: 3 fields (Account, Username, Password) -->
+            <div class="modal-form-row" style="margin-top: 14px;">
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-sf-account">Account</label>
+                <input type="text" id="conn-url-sf-account" class="modal-input-field" placeholder="your_server_name" [(ngModel)]="connAccount" readonly spellcheck="false" autocomplete="off" />
+              </div>
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-sf-username">Username</label>
+                <input type="text" id="conn-url-sf-username" name="db_url_sf_username" class="modal-input-field" placeholder="your_username" [(ngModel)]="connUsername" readonly spellcheck="false" autocomplete="off" data-lpignore="true" />
+              </div>
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-sf-password">Password</label>
+                <div class="password-input-wrap">
+                  <input [type]="showConnPassword ? 'text' : 'password'" id="conn-url-sf-password" name="db_url_sf_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" readonly (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
+                  <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
+                    <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+
+            <!-- Line 2: 2 fields (Database, Schema) -->
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-sf-database">Database</label>
+                <input type="text" id="conn-url-sf-database" class="modal-input-field" placeholder="your_database_name" [(ngModel)]="connDatabase" readonly spellcheck="false" autocomplete="off" />
+              </div>
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-sf-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-url-sf-schema" class="modal-input-field" placeholder="your_schema_names" [(ngModel)]="connSchema" readonly spellcheck="false" autocomplete="off" />
+              </div>
+            </div>
+
+            <!-- Line 3: 2 fields (Warehouse, Role) -->
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-sf-warehouse">Warehouse <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-url-sf-warehouse" class="modal-input-field" placeholder="your_warehouse_name" [(ngModel)]="connWarehouse" readonly spellcheck="false" autocomplete="off" />
+              </div>
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-sf-role">Role <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-url-sf-role" class="modal-input-field" placeholder="your_role_name" [(ngModel)]="connRole" readonly spellcheck="false" autocomplete="off" />
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- DEFAULT / OTHER DATABASES URL FIELDS (READONLY) -->
+          <ng-container *ngIf="connStringDatabaseType !== 'snowflake'">
+            <div class="modal-form-row" style="margin-top: 14px;">
+              <div class="modal-form-group flex-3">
+                <label class="import-modal-label" for="conn-url-host">Host</label>
+                <input type="text" id="conn-url-host" class="modal-input-field" placeholder="host" [(ngModel)]="connHost" readonly spellcheck="false" autocomplete="off" />
+              </div>
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-port">Port</label>
+                <input type="text" id="conn-url-port" class="modal-input-field" placeholder="port" [(ngModel)]="connPort" readonly autocomplete="off" />
+              </div>
+            </div>
+
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-database">Database</label>
+                <input type="text" id="conn-url-database" class="modal-input-field" placeholder="database" [(ngModel)]="connDatabase" readonly spellcheck="false" autocomplete="off" />
+              </div>
+              <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb'">
+                <label class="import-modal-label" for="conn-url-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
+                <input type="text" id="conn-url-schema" class="modal-input-field" placeholder="schema (optional)" [(ngModel)]="connSchema" readonly spellcheck="false" autocomplete="off" />
+              </div>
+            </div>
+
+            <div class="modal-form-row" style="margin-top: 12px;">
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-username">Username</label>
+                <input type="text" id="conn-url-username" name="db_url_username" class="modal-input-field" placeholder="username" [(ngModel)]="connUsername" readonly spellcheck="false" autocomplete="off" data-lpignore="true" />
+              </div>
+              <div class="modal-form-group flex-1">
+                <label class="import-modal-label" for="conn-url-password">Password</label>
+                <div class="password-input-wrap">
+                  <input [type]="showConnPassword ? 'text' : 'password'" id="conn-url-password" name="db_url_password" class="modal-input-field" placeholder="••••••••" [(ngModel)]="connPassword" readonly (keydown.space)="$event.preventDefault()" (input)="onConnPasswordInput($event)" autocomplete="new-password" data-lpignore="true" />
+                  <button type="button" class="toggle-pwd-btn" (click)="showConnPassword = !showConnPassword">
+                    <svg *ngIf="!showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg *ngIf="showConnPassword" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
       </ng-container>
 

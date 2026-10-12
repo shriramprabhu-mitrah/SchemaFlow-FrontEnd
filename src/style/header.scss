@@ -3910,6 +3910,17 @@ body.light-theme {
     .import-modal-body {
       min-height: 0 !important;
       max-height: calc(100vh - 140px) !important;
+
+      .modal-form-row {
+        @media (max-width: 540px) {
+          flex-direction: column !important;
+          gap: 10px !important;
+
+          .modal-form-group {
+            width: 100% !important;
+          }
+        }
+      }
     }
 
     .import-modal-footer {

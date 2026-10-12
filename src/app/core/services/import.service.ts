@@ -93,11 +93,25 @@ export class ImportService {
     }
 
     const isMariaDb = databaseType.toLowerCase() === 'mariadb';
-    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isMariaDb ? 'mariadb' : databaseType);
+    const isSnowflake = databaseType.toLowerCase() === 'snowflake';
+    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType));
+
+    let finalConnectionString = connectionString;
+    if (isSnowflake) {
+      let cleaned = connectionString.trim();
+      if (/^snowflake\s*['"]/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s*['"]/i, '').replace(/['"]\s*$/, '').trim();
+      } else if (/^snowflake\s+/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s+/i, '').trim();
+      } else if (/^['"].*['"]$/.test(cleaned)) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      finalConnectionString = cleaned;
+    }
 
     const body = {
       databaseType: dbType,
-      connectionString
+      connectionString: finalConnectionString
     };
 
     if (isMariaDb) {
@@ -130,11 +144,25 @@ export class ImportService {
     }
 
     const isMariaDb = databaseType.toLowerCase() === 'mariadb';
-    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isMariaDb ? 'mariadb' : databaseType);
+    const isSnowflake = databaseType.toLowerCase() === 'snowflake';
+    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType));
+
+    let finalConnectionString = connectionString;
+    if (isSnowflake) {
+      let cleaned = connectionString.trim();
+      if (/^snowflake\s*['"]/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s*['"]/i, '').replace(/['"]\s*$/, '').trim();
+      } else if (/^snowflake\s+/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s+/i, '').trim();
+      } else if (/^['"].*['"]$/.test(cleaned)) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      finalConnectionString = cleaned;
+    }
 
     const body = {
       databaseType: dbType,
-      connectionString
+      connectionString: finalConnectionString
     };
 
     const url = this.appConfig.environment?.importExportApiUrls?.testConnection;
