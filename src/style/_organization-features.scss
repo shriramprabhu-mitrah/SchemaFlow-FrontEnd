@@ -44,6 +44,10 @@
   cursor: default;
 }
 
+.sort-icon.desc svg {
+  transform: rotate(180deg);
+}
+
 .user-cell-wrap {
   display: flex;
   align-items: center;
