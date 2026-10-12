@@ -127,33 +127,24 @@
               <th>
                 <span class="sort-header-clickable" (click)="sortBy('feature_name')">
                   <span>Feature</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'feature_name'">
+                  <span class="sort-icon" [class.active]="sortColumn === 'feature_name'" [class.desc]="sortColumn === 'feature_name' && !sortAsc">
                     <app-icons name="sort" size="14"></app-icons>
                   </span>
                 </span>
               </th>
               <th>
-                <span class="sort-header-clickable" (click)="sortBy('enabled')">
+                <span class="sort-header-clickable sort-header-default">
                   <span>Status</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'enabled'">
-                    <app-icons name="sort" size="14"></app-icons>
-                  </span>
                 </span>
               </th>
               <th>
-                <span class="sort-header-clickable" (click)="sortBy('effective_limit')">
+                <span class="sort-header-clickable sort-header-default">
                   <span>Limit</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'effective_limit'">
-                    <app-icons name="sort" size="14"></app-icons>
-                  </span>
                 </span>
               </th>
               <th>
-                <span class="sort-header-clickable" (click)="sortBy('used')">
+                <span class="sort-header-clickable sort-header-default">
                   <span>Used</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'used'">
-                    <app-icons name="sort" size="14"></app-icons>
-                  </span>
                 </span>
               </th>
             </tr>
@@ -166,7 +157,7 @@
                   ?
                   'Enabled' : 'Disabled' }}</span></td>
               <td>{{ e.effective_limit === -1 ? '∞' : (e.effective_limit || '—') }}</td>
-              <td><span class="info-value">{{ e.used ?? '—' }}</span></td>
+              <td><span class="info-value">{{ e.used ? e.used : '—' }}</span></td>
             </tr>
             <tr *ngIf="entitlements.length === 0">
               <td colspan="5" class="empty-table-cell">No matching feature entitlements found.</td>
