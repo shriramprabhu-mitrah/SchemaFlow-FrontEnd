@@ -8,7 +8,7 @@
   },
   "authApiUrls": {
     "login": "http://localhost:4000/api/auth/login",
-    "register": "http://localhost:4000/api/auth/signup",
+    "register": "http://localhost:4000/api/auth/register",
     "forgetPassword": "http://localhost:4000/api/auth/forget-password",
     "resetPassword": "http://localhost:4000/api/auth/reset-password",
     "refreshToken": "http://localhost:4000/api/auth/refreshToken",

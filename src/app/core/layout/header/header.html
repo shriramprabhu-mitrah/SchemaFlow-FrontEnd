@@ -633,7 +633,7 @@
             <div class="input-wrapper">
               <textarea id="conn-string-input" class="modal-textarea-field" rows="2"
                 [class.input-error]="!!connStringUrlMismatchError"
-                [placeholder]="connStringDatabaseType === 'mssql' ? 'Server=localhost,1433;Database=student_db;User Id=sa;Password=SqlServer@12345;Encrypt=false;TrustServerCertificate=true;' : (connStringDatabaseType === 'mysql' ? 'mysql://root:password@localhost:3306/dbname' : (connStringDatabaseType === 'mariadb' ? 'mariadb://root:password@localhost:3306/dbname' : (connStringDatabaseType === 'oracle' ? 'jdbc:oracle:thin:system/password@//localhost:1521/FREEPDB1' : 'databasetype://username:password@host/database?schema=schema_1')))"
+                [placeholder]="connStringDatabaseType === 'mssql' ? 'Server=host,port;Database=database;User Id=username;Password=password;Encrypt=false;TrustServerCertificate=true;' : (connStringDatabaseType === 'mysql' ? 'mysql://username:password@host:port/database' : (connStringDatabaseType === 'mariadb' ? 'mariadb://username:password@host:port/database' : (connStringDatabaseType === 'oracle' ? 'jdbc:oracle:thin:username/password@//host:port/database' : 'postgresql://username:password@host:port/database?schema=schema_1')))"
                 [(ngModel)]="connStringValue" (input)="onConnStringInput($event)" spellcheck="false" autocomplete="off"></textarea>
             </div>
           </div>
@@ -641,29 +641,29 @@
           <div class="modal-form-row" style="margin-top: 14px;">
             <div class="modal-form-group flex-3">
               <label class="import-modal-label" for="conn-url-host">Host</label>
-              <input type="text" id="conn-url-host" class="modal-input-field" placeholder="localhost" [(ngModel)]="connHost" readonly spellcheck="false" autocomplete="off" />
+              <input type="text" id="conn-url-host" class="modal-input-field" placeholder="host" [(ngModel)]="connHost" readonly spellcheck="false" autocomplete="off" />
             </div>
             <div class="modal-form-group flex-1">
               <label class="import-modal-label" for="conn-url-port">Port</label>
-              <input type="number" id="conn-url-port" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? '1521' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? '3306' : (connStringDatabaseType === 'mssql' ? '1433' : '5432'))" [(ngModel)]="connPort" readonly autocomplete="off" />
+              <input type="text" id="conn-url-port" class="modal-input-field" placeholder="port" [(ngModel)]="connPort" readonly autocomplete="off" />
             </div>
           </div>
 
           <div class="modal-form-row" style="margin-top: 12px;">
             <div class="modal-form-group flex-1">
               <label class="import-modal-label" for="conn-url-database">Database</label>
-              <input type="text" id="conn-url-database" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'FREEPDB1' : 'my_database'" [(ngModel)]="connDatabase" readonly spellcheck="false" autocomplete="off" />
+              <input type="text" id="conn-url-database" class="modal-input-field" placeholder="database" [(ngModel)]="connDatabase" readonly spellcheck="false" autocomplete="off" />
             </div>
             <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb'">
               <label class="import-modal-label" for="conn-url-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
-              <input type="text" id="conn-url-schema" class="modal-input-field" [placeholder]="connStringDatabaseType === 'postgres' ? 'e.g. public (optional)' : 'Optional schema'" [(ngModel)]="connSchema" readonly spellcheck="false" autocomplete="off" />
+              <input type="text" id="conn-url-schema" class="modal-input-field" placeholder="schema (optional)" [(ngModel)]="connSchema" readonly spellcheck="false" autocomplete="off" />
             </div>
           </div>
 
           <div class="modal-form-row" style="margin-top: 12px;">
             <div class="modal-form-group flex-1">
               <label class="import-modal-label" for="conn-url-username">Username</label>
-              <input type="text" id="conn-url-username" name="db_url_username" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'system' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? 'root' : (connStringDatabaseType === 'mssql' ? 'sa' : 'postgres'))" [(ngModel)]="connUsername" readonly spellcheck="false" autocomplete="off" data-lpignore="true" />
+              <input type="text" id="conn-url-username" name="db_url_username" class="modal-input-field" placeholder="username" [(ngModel)]="connUsername" readonly spellcheck="false" autocomplete="off" data-lpignore="true" />
             </div>
             <div class="modal-form-group flex-1">
               <label class="import-modal-label" for="conn-url-password">Password</label>
