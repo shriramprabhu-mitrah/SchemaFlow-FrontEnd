@@ -1074,6 +1074,49 @@ openConnectionStringModal(): void {
     return !this.connStringValue.trim();
   }
 
+  private extractErrorMessage(err: any, fallbackMessage: string = 'Operation failed.'): string {
+    if (!err) return fallbackMessage;
+
+    let errorPayload = err.error ?? err;
+    if (typeof errorPayload === 'string') {
+      try {
+        errorPayload = JSON.parse(errorPayload);
+      } catch {
+        if (typeof errorPayload === 'string' && errorPayload.trim() && !errorPayload.trim().startsWith('<')) {
+          return errorPayload.trim();
+        }
+      }
+    }
+
+    if (errorPayload && typeof errorPayload === 'object') {
+      if (errorPayload.message) {
+        return Array.isArray(errorPayload.message) ? errorPayload.message.join(', ') : String(errorPayload.message).trim();
+      }
+      if (errorPayload.error) {
+        if (typeof errorPayload.error === 'string') {
+          return errorPayload.error.trim();
+        }
+        if (typeof errorPayload.error === 'object') {
+          if (errorPayload.error.message) {
+            return Array.isArray(errorPayload.error.message) ? errorPayload.error.message.join(', ') : String(errorPayload.error.message).trim();
+          }
+          if (errorPayload.error.details) {
+            return String(errorPayload.error.details).trim();
+          }
+        }
+      }
+      if (errorPayload.details) {
+        return String(errorPayload.details).trim();
+      }
+    }
+
+    if (err.message && typeof err.message === 'string' && !err.message.startsWith('Http failure response')) {
+      return err.message;
+    }
+
+    return fallbackMessage;
+  }
+
   testConnection(): void {
     if (this.isConnStringTestDisabled()) {
       return;
@@ -1102,9 +1145,13 @@ openConnectionStringModal(): void {
       error: (err: any) => {
         this.connStringTesting = false;
         this.cdr.markForCheck();
-        const message = err?.error?.message || err?.message || 'Database connection failed.';
+        let message = this.extractErrorMessage(err, 'Database connection failed.');
+        if (message.toLowerCase().includes('authentication failed') || message.toLowerCase().includes('password authentication failed')) {
+          message = 'Database Authentication Failed: Incorrect database username or password.';
+        } else if (err?.status === 503) {
+          message = 'Service Unavailable (503): Backend failed to reach the target database. Check host and port.';
+        }
         this.connStringError = message;
-        this.svc.showToast('Database connection failed.', 4000, 'error');
       }
     });
   }
@@ -1150,25 +1197,7 @@ openConnectionStringModal(): void {
         },
         error: (err: any) => {
           console.error('SQLite import failed:', err);
-          let errorMessage = 'Failed to generate DBML from SQLite file.';
-
-          if (err?.error) {
-            try {
-              const parsed = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-              if (parsed?.message) {
-                errorMessage = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
-              } else if (parsed?.error) {
-                errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
-              }
-            } catch {
-              if (typeof err.error === 'string' && err.error.trim()) {
-                errorMessage = err.error.length > 250 ? err.error.substring(0, 250) + '...' : err.error;
-              }
-            }
-          } else if (err?.message) {
-            errorMessage = err.message;
-          }
-
+          const errorMessage = this.extractErrorMessage(err, 'Failed to generate DBML from SQLite file.');
           this.connStringError = errorMessage;
           this.cdr.markForCheck();
         }
@@ -1213,24 +1242,7 @@ openConnectionStringModal(): void {
       },
       error: (err: any) => {
         console.error('Connection string import failed:', err);
-        let errorMessage = 'Failed to generate DBML from connection string.';
-
-        if (err?.error) {
-          try {
-            const parsed = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-            if (parsed?.message) {
-              errorMessage = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
-            } else if (parsed?.error) {
-              errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
-            }
-          } catch {
-            if (typeof err.error === 'string' && err.error.trim()) {
-              errorMessage = err.error.length > 250 ? err.error.substring(0, 250) + '...' : err.error;
-            }
-          }
-        } else if (err?.message) {
-          errorMessage = err.message;
-        }
+        let errorMessage = this.extractErrorMessage(err, 'Failed to generate DBML from connection string.');
 
         if (errorMessage.toLowerCase().includes('authentication failed') || errorMessage.toLowerCase().includes('password authentication failed')) {
           errorMessage = 'Database Authentication Failed: Incorrect database username or password in connection string.';
