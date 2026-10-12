@@ -110,5 +110,14 @@
     "aiSessionHistory": "http://localhost:4007/api/ai/sessions/{sessionId}/history",
     "deleteSessionHistory": "http://localhost:4007/api/ai/sessions/:sessionId/history",
     "aiModelConfig": "http://localhost:4007/api/ai/models/:modelId/config"
+  },
+  "chatbotApiUrls": {
+    "session": "http://192.168.1.201:3001/api/chatbot/sessions",
+    "categories": "http://192.168.1.201:3001/api/chatbot/categories",
+    "categoryNodes": "http://192.168.1.201:3001/api/chatbot/categories/{id}/nodes",
+    "nodeById": "http://192.168.1.201:3001/api/chatbot/nodes/{id}",
+    "search": "http://192.168.1.201:3001/api/chatbot/search",
+    "interaction": "http://192.168.1.201:3001/api/chatbot/interactions",
+    "escalate": "http://192.168.1.201:3001/api/chatbot/escalate"
   }
 }
