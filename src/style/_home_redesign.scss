@@ -178,6 +178,8 @@
   padding: 32px 0;
   background: transparent !important;
   border: none !important;
+  overflow: hidden;
+  width: 100%;
 
   html[data-theme="dark"] &,
   body.dark-theme &,
@@ -188,8 +190,10 @@
 }
 
 .db-marquee-container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
+  overflow: hidden;
 }
 
 .db-marquee-header {
@@ -212,17 +216,47 @@
   }
 }
 
-.db-static-row {
+.db-marquee-track-wrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 32px;
-  flex-wrap: nowrap;
-  padding: 0 24px;
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+}
 
-  @media (max-width: 768px) {
-    gap: 24px;
-    flex-direction: column;
+.db-marquee-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  animation: dbMarqueeScroll 28s linear infinite;
+  will-change: transform;
+
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+
+.db-marquee-group {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  padding: 0 18px;
+  flex-shrink: 0;
+}
+
+@keyframes dbMarqueeScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .db-marquee-track {
+    animation: none;
   }
 }
 
@@ -230,12 +264,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 6px 12px;
   transition: transform 0.2s ease;
   user-select: none;
+  cursor: pointer;
 
   app-icons {
     display: flex;
