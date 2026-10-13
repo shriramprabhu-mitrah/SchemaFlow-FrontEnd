@@ -43,7 +43,14 @@ export class PricingComponent implements OnInit {
   }
 
 
-  isLoggedIn = false;
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
+
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
   isMobileMenuOpen = false;
 
   
@@ -129,7 +136,6 @@ export class PricingComponent implements OnInit {
     });
 
     if (typeof window !== 'undefined') {
-      this.isLoggedIn = this.auth.isLoggedIn();
       // Account type loaded check
       if (this.isLoggedIn) {
         const accountType = this.auth.getAccountType();
@@ -263,8 +269,8 @@ export class PricingComponent implements OnInit {
   logout(): void {
     this.signOutService.prompt(() => {
       this.auth.logout();
-      this.isLoggedIn = false;
       this.svc.showToast('Logged out successfully.', 2500, 'success');
+      this.cdr.detectChanges();
     });
   }
 

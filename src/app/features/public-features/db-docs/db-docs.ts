@@ -1,5 +1,5 @@
 
-import { Component, OnInit, HostListener, inject } from '@angular/core';
+import { Component, OnInit, HostListener, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -38,8 +38,15 @@ export class DbDocsComponent implements OnInit {
     }
   }
 
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
 
-  isLoggedIn = false;
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
+
   isMobileMenuOpen = false;
 
   constructor(
@@ -49,9 +56,6 @@ export class DbDocsComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined') {
-      this.isLoggedIn = this.auth.isLoggedIn();
-    }
   }
 
   
@@ -76,12 +80,13 @@ export class DbDocsComponent implements OnInit {
   }
 
   private signOutService = inject(SignOutService);
+  private cdr = inject(ChangeDetectorRef);
 
   logout(): void {
     this.signOutService.prompt(() => {
       this.auth.logout();
-      this.isLoggedIn = false;
       this.svc.showToast('Logged out successfully.', 2500, 'success');
+      this.cdr.detectChanges();
     });
   }
 }
