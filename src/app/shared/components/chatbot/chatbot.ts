@@ -1,9 +1,12 @@
-import { Component, OnInit, inject, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, NgZone, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
 import { ChatbotService, ChatbotCategory, ChatbotNode } from '../../../core/services/chatbot.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
 
 export interface ChatMessage {
   sender: 'bot' | 'user';
@@ -20,12 +23,64 @@ export interface ChatMessage {
   templateUrl: './chatbot.html',
   styleUrl: './chatbot.scss'
 })
-export class ChatbotComponent implements OnInit {
+export class ChatbotComponent implements OnInit, OnDestroy {
   private readonly chatbotService = inject(ChatbotService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly dashboardSvc = inject(DashboardService, { optional: true });
+  private readonly themeSub = new Subscription();
+
+  constructor() {
+    if (this.dashboardSvc) {
+      effect(() => {
+        // Automatically re-evaluate when dashboard theme signal changes
+        this.dashboardSvc?.theme();
+        this.cdr.markForCheck();
+      });
+    }
+  }
+
+  isLightTheme(): boolean {
+    if (typeof document !== 'undefined') {
+      // 1. Explicit dark theme indicators on DOM take absolute precedence
+      if (
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark-theme') ||
+        document.documentElement.classList.contains('dark-theme')
+      ) {
+        return false;
+      }
+
+      // 2. Explicit light theme indicators on DOM
+      if (
+        document.body.classList.contains('light-theme') ||
+        document.documentElement.classList.contains('light-theme') ||
+        document.documentElement.getAttribute('data-theme') === 'light'
+      ) {
+        return true;
+      }
+    }
+
+    // 3. Check localStorage saved theme directly
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') return false;
+        if (saved === 'light') return true;
+      } catch (_) {}
+    }
+
+    // 4. Fallback to DashboardService theme signal
+    if (this.dashboardSvc) {
+      return this.dashboardSvc.theme() === 'light';
+    }
+
+    // 5. Default in SchemaFlow is dark
+    return false;
+  }
 
   isOpen = false;
   isLoading = false;
@@ -66,6 +121,18 @@ export class ChatbotComponent implements OnInit {
       this.isLoggedIn = this.auth.isLoggedIn();
       this.prefillUser();
     }
+    if (this.dashboardSvc) {
+      this.themeSub.add(
+        this.dashboardSvc.forceRedraw$.subscribe(() => {
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+        })
+      );
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.themeSub.unsubscribe();
   }
 
   private prefillUser(): void {
@@ -170,6 +237,36 @@ export class ChatbotComponent implements OnInit {
     });
   }
 
+  private isDbConnectOption(opt: any): boolean {
+    if (!opt) return false;
+    if (opt.action === 'db_connect' || opt.action === 'open_db_connect') return true;
+    if (opt.url === '/features/db-connect') return true;
+    if (typeof opt.label === 'string' && /test connection|connect to database/i.test(opt.label)) return true;
+    return false;
+  }
+
+  openDbConnectModal(): void {
+    if (this.router.url.includes('/dashboard')) {
+      this.dashboardSvc?.openConnectionStringModal();
+    } else {
+      if (this.dashboardSvc) {
+        this.dashboardSvc.pendingOpenConnectionStringModal = true;
+      }
+      this.router.navigate(['/dashboard']).then(() => {
+        setTimeout(() => {
+          if (this.dashboardSvc?.pendingOpenConnectionStringModal) {
+            this.dashboardSvc.pendingOpenConnectionStringModal = false;
+            this.dashboardSvc.openConnectionStringModal();
+          }
+        }, 150);
+      });
+    }
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      this.isOpen = false;
+    }
+    this.cdr.detectChanges();
+  }
+
   handleOptionClick(opt: any): void {
     if (opt.nextNodeId) {
       this.selectNode(opt.nextNodeId);
@@ -177,6 +274,8 @@ export class ChatbotComponent implements OnInit {
       this.openEscalateForm(this.currentNode?.title);
     } else if (opt.action === 'show_categories') {
       this.goToMainMenu();
+    } else if (this.isDbConnectOption(opt)) {
+      this.openDbConnectModal();
     } else if (opt.action === 'link' && opt.url) {
       this.navigateToActionUrl(opt.url);
     }
@@ -184,6 +283,10 @@ export class ChatbotComponent implements OnInit {
 
   navigateToActionUrl(url?: string | null): void {
     if (!url) return;
+    if (url === '/features/db-connect') {
+      this.openDbConnectModal();
+      return;
+    }
     if (url.startsWith('http')) {
       window.open(url, '_blank');
     } else {
@@ -347,5 +450,52 @@ export class ChatbotComponent implements OnInit {
         });
       }
     });
+  }
+
+  formatContent(content?: string | null): SafeHtml {
+    if (!content) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(this.parseMarkdown(content));
+  }
+
+  private parseMarkdown(content: string): string {
+    if (!content) return '';
+
+    let res = content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    // Convert list bullets at line start: "* " or "- "
+    res = res.replace(/^(\s*)[*-]\s+/gm, '$1• ');
+
+    // Links: [text](url)
+    res = res.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/gi, 
+      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    // Inline code: `code`
+    res = res.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+    // Triple asterisks: ***text***
+    res = res.replace(/\*{3}([^*\n]+?)\*{3}/g, '<strong><em>$1</em></strong>');
+
+    // Standard Bold: **text** or __text__
+    res = res.replace(/(\*\*|__)([^*\n_]+?)\1/g, '<strong>$2</strong>');
+
+    // Mismatched / loose asterisks for bold, e.g. *Check Popup Blockers**: or **Check Popup Blockers*:
+    res = res.replace(/\*(?!\s)([^*\n]+?)\*\*(?=:|\s|$|[.,!?])/g, '<strong>$1</strong>');
+    res = res.replace(/\*\*(?!\s)([^*\n]+?)\*(?=:|\s|$|[.,!?])/g, '<strong>$1</strong>');
+
+    // Single-asterisk section titles before colon: *Check Popup Blockers*: or 1. *Title*:
+    res = res.replace(/(^|[\n\r]|•|\d+\.)\s*\*([^*\n:]+?)\*:/g, '$1 <strong>$2</strong>:');
+
+    // Italic: *text* or _text_
+    res = res.replace(/(?:\*(?!\s)([^*\n]+?)\*|_(?!\s)([^*\n_]+?)_)/g, (m, p1, p2) => '<em>' + (p1 || p2) + '</em>');
+
+    // Strikethrough: ~~text~~
+    res = res.replace(/~~([^~\n]+?)~~/g, '<del>$1</del>');
+
+    return res;
   }
 }

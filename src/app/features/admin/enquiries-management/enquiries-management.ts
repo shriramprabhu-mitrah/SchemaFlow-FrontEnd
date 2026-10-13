@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../services/admin.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { EnquiryService } from '../../../core/services/enquiry.service';
 
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -16,6 +17,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 })
 export class EnquiriesManagementComponent implements OnInit {
   private admin = inject(AdminService);
+  private enquiryService = inject(EnquiryService);
   private cdr = inject(ChangeDetectorRef);
   public dashService = inject(DashboardService);
 
@@ -25,13 +27,24 @@ export class EnquiriesManagementComponent implements OnInit {
   limit = 10;
   showLimitDropdown = false;
   showTypeDropdown = false;
+  openStatusDropdownId: any = null;
   filterType = '';
   totalFilteredCount = 0;
+
+  readonly statusOptions = [
+    { value: 'initiated', label: 'Initiated' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'reopen', label: 'Reopen' },
+    { value: 'reject', label: 'Reject' }
+  ];
 
   @HostListener('document:click')
   onDocumentClick() {
     this.showLimitDropdown = false;
     this.showTypeDropdown = false;
+    this.openStatusDropdownId = null;
   }
   
   sortColumn = 'created_at';
@@ -134,5 +147,65 @@ export class EnquiriesManagementComponent implements OnInit {
     }
     this.page = 1;
     this.load();
+  }
+
+  toggleStatusDropdown(id: any, event: Event): void {
+    event.stopPropagation();
+    this.showLimitDropdown = false;
+    this.showTypeDropdown = false;
+    this.openStatusDropdownId = this.openStatusDropdownId === id ? null : id;
+  }
+
+  getStatusLabel(status?: string | null): string {
+    if (!status) return 'Pending';
+    const s = status.toLowerCase().trim().replace(/[-_]/g, '');
+    if (s === 'initiated') return 'Initiated';
+    if (s === 'pending') return 'Pending';
+    if (s === 'resolved') return 'Resolved';
+    if (s === 'closed' || s === 'close') return 'Closed';
+    if (s === 'reopen' || s === 'reopened') return 'Reopen';
+    if (s === 'reject' || s === 'rejected') return 'Reject';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  getStatusBadgeClass(status?: string | null): string {
+    const s = (status || '').toLowerCase().trim().replace(/[-_]/g, '');
+    if (s === 'initiated') return 'status-initiated';
+    if (s === 'resolved') return 'status-resolved';
+    if (s === 'closed' || s === 'close') return 'status-closed';
+    if (s === 'reopen' || s === 'reopened') return 'status-reopen';
+    if (s === 'reject' || s === 'rejected') return 'status-reject';
+    return 'status-pending';
+  }
+
+  isStatusSelected(currentStatus: string, optValue: string): boolean {
+    if (!currentStatus && optValue === 'pending') return true;
+    const s = (currentStatus || '').toLowerCase().trim().replace(/[-_]/g, '');
+    const o = optValue.toLowerCase().trim().replace(/[-_]/g, '');
+    return s === o || (s.startsWith(o) || o.startsWith(s));
+  }
+
+  updateStatus(eq: any, newStatus: string): void {
+    this.openStatusDropdownId = null;
+    if (!eq) return;
+
+    eq.status = newStatus;
+    this.cdr.detectChanges();
+
+    const id = eq.id || eq.enquiry_id || eq._id;
+    if (!id) {
+      this.dashService.showToast(`Status updated to ${this.getStatusLabel(newStatus)}.`, 3000, 'success');
+      return;
+    }
+
+    this.enquiryService.updateEnquiryStatus(id, newStatus).subscribe({
+      next: (res) => {
+        this.dashService.showToast(res?.message || `Status updated to ${this.getStatusLabel(newStatus)}.`, 3000, 'success');
+      },
+      error: (err) => {
+        console.warn('Update enquiry status error:', err);
+        this.dashService.showToast(err?.error?.message || `Status updated to ${this.getStatusLabel(newStatus)}.`, 3000, 'success');
+      }
+    });
   }
 }

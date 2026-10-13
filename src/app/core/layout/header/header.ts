@@ -224,6 +224,11 @@ export class HeaderComponent implements OnInit {
       this.openConnectionStringModal();
       this.cdr.detectChanges();
     });
+    if (this.svc.pendingOpenConnectionStringModal) {
+      this.svc.pendingOpenConnectionStringModal = false;
+      this.openConnectionStringModal();
+      this.cdr.detectChanges();
+    }
   }
 
 

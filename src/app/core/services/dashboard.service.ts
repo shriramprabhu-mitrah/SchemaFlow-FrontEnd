@@ -1442,6 +1442,7 @@ export class DashboardService {
   }
 
   openConnectionStringModal$ = new Subject<void>();
+  pendingOpenConnectionStringModal = false;
 
   openConnectionStringModal(): void {
     this.openConnectionStringModal$.next();

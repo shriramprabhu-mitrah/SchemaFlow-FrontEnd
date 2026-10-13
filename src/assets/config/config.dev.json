@@ -120,5 +120,11 @@
     "search": "API_URL/api/chatbot/search",
     "interaction": "API_URL/api/chatbot/interactions",
     "escalate": "API_URL/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "API_URL/api/enquiry",
+    "myEnquiries": "API_URL/api/enquiry/my-enquiries",
+    "updateEnquiry": "API_URL/api/enquiry/{id}",
+    "enquiryById": "API_URL/api/enquiry/{id}"
   }
 }

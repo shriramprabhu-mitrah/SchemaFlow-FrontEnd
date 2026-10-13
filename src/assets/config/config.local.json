@@ -125,5 +125,11 @@
     "search": "http://localhost:4000/api/chatbot/search",
     "interaction": "http://localhost:4000/api/chatbot/interactions",
     "escalate": "http://localhost:4000/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "http://localhost:4000/api/enquiry",
+    "myEnquiries": "http://localhost:4000/api/enquiry/my-enquiries",
+    "updateEnquiry": "http://localhost:4000/api/enquiry/{id}",
+     "enquiryById": "http://localhost:4000/api/enquiry/{id}"
   }
 }

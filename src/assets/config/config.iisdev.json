@@ -119,5 +119,11 @@
     "search": "http://192.168.1.201:3001/api/chatbot/search",
     "interaction": "http://192.168.1.201:3001/api/chatbot/interactions",
     "escalate": "http://192.168.1.201:3001/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "http://192.168.1.201:3001/api/enquiry",
+    "myEnquiries": "http://192.168.1.201:3001/api/enquiry/my-enquiries",
+    "updateEnquiry": "http://192.168.1.201:3001/api/enquiry/{id}",
+     "enquiryById": "http://192.168.1.201:3001/api/enquiry/{id}"
   }
 }
