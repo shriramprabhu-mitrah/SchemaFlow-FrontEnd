@@ -31,7 +31,7 @@
     <div class="spinner"></div><span>Loading enquiries...</span>
   </div>
 
-  <div class="data-table-wrap" *ngIf="!loading">
+  <div class="data-table-wrap" [class.has-open-dropdown]="openStatusDropdownId !== null" *ngIf="!loading">
     <table class="data-table">
       <thead>
         <tr>
@@ -88,7 +88,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let eq of displayEnquiries; let i = index">
+        <tr *ngFor="let eq of displayEnquiries; let i = index" [class.has-open-dropdown]="openStatusDropdownId === (eq.id || i)">
           <td>{{ paginationStartIndex + i }}</td>
           <td><strong class="user-name-text">{{ eq.first_name }} {{ eq.last_name }}</strong></td>
           <td><span class="user-email-text">{{ eq.company_email }}</span></td>
@@ -112,25 +112,44 @@
             <span *ngIf="!eq.enquiry_type" class="text-muted">N/A</span>
           </td>
           <td>
-            <div class="custom-status-dropdown-container dropdown-container-rel">
-              <button type="button" class="custom-status-dropdown-trigger enquiry-status-trigger"
-                [ngClass]="getStatusBadgeClass(eq.status)"
-                (click)="toggleStatusDropdown(eq.id || i, $event)">
-                <span>{{ getStatusLabel(eq.status) }}</span>
-                <app-icons name="chevron-down" size="12"></app-icons>
-              </button>
-              <div class="custom-status-dropdown-menu enquiry-status-menu"
-                *ngIf="openStatusDropdownId === (eq.id || i)"
-                (click)="$event.stopPropagation()">
-                <button type="button" class="custom-status-dropdown-option"
-                  *ngFor="let opt of statusOptions"
-                  [class.selected]="isStatusSelected(eq.status, opt.value)"
-                  (click)="updateStatus(eq, opt.value)">
-                  <span class="status-option-dot" [ngClass]="opt.value"></span>
-                  <span>{{ opt.label }}</span>
+            <ng-container *ngIf="isSupportEnquiry(eq); else nonSupportStatus">
+              <div class="custom-status-dropdown-container dropdown-container-rel"
+                [class.open]="!isClosed(eq) && openStatusDropdownId === (eq.id || i)">
+
+                <!-- If Closed: Not editable (Static badge, disabled, centered, no chevron) -->
+                <button *ngIf="isClosed(eq)" type="button"
+                  class="custom-status-dropdown-trigger enquiry-status-trigger status-closed disabled"
+                  disabled
+                  title="Closed enquiries cannot be edited">
+                  <span>{{ getStatusLabel(eq.status) }}</span>
                 </button>
+
+                <!-- If Not Closed: Interactive dropdown trigger with chevron -->
+                <button *ngIf="!isClosed(eq)" type="button"
+                  class="custom-status-dropdown-trigger enquiry-status-trigger"
+                  [ngClass]="getStatusBadgeClass(eq.status)"
+                  (click)="toggleStatusDropdown(eq.id || i, $event, i, eq)">
+                  <span>{{ getStatusLabel(eq.status) }}</span>
+                  <app-icons name="chevron-down" size="12"></app-icons>
+                </button>
+
+                <div class="custom-status-dropdown-menu enquiry-status-menu"
+                  [class.dropdown-up]="openStatusDropdownUpward"
+                  *ngIf="!isClosed(eq) && openStatusDropdownId === (eq.id || i)"
+                  (click)="$event.stopPropagation()">
+                  <button type="button" class="custom-status-dropdown-option"
+                    *ngFor="let opt of statusOptions"
+                    [class.selected]="isStatusSelected(eq.status, opt.value)"
+                    (click)="updateStatus(eq, opt.value)">
+                    <span class="status-option-dot" [ngClass]="opt.value"></span>
+                    <span>{{ opt.label }}</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            </ng-container>
+            <ng-template #nonSupportStatus>
+              <span class="text-muted">-</span>
+            </ng-template>
           </td>
           <td><span class="text-muted">{{ eq.created_at | date:'mediumDate' }}</span></td>
           <td>

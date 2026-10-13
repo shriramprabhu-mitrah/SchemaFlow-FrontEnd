@@ -1469,6 +1469,17 @@
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.06);
 
+    &.has-open-dropdown,
+    &:has(.open) {
+      overflow: visible !important;
+    }
+
+    .data-table tr.has-open-dropdown,
+    .data-table tr:has(.open) {
+      position: relative;
+      z-index: 1000 !important;
+    }
+
     .data-table {
       width: 100%;
       border-collapse: collapse;
@@ -1609,10 +1620,19 @@
           border-color: rgba(245, 158, 11, 0.35);
         }
 
-        &.status-close {
+        &.status-close,
+        &.status-closed {
           background-color: rgba(16, 185, 129, 0.14);
           color: #34d399;
           border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        &:disabled,
+        &.disabled {
+          justify-content: center !important;
+          cursor: not-allowed !important;
+          opacity: 0.85 !important;
+          filter: none !important;
         }
       }
     }
@@ -1632,6 +1652,22 @@
       &.dropdown-menu-end {
         left: auto;
         right: 0;
+      }
+
+      &.dropdown-up {
+        top: auto !important;
+        bottom: calc(100% + 4px) !important;
+      }
+
+      .status-option-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-right: 8px;
+
+        &.reopen { background-color: #fbbf24; }
+        &.closed { background-color: #10b981; }
       }
 
       .custom-status-dropdown-option {
@@ -2267,10 +2303,19 @@ html.light-theme {
             border-color: rgba(245, 158, 11, 0.4);
           }
 
-          &.status-close {
+          &.status-close,
+          &.status-closed {
             background-color: rgba(16, 185, 129, 0.15);
             color: #047857;
             border-color: rgba(16, 185, 129, 0.4);
+          }
+
+          &:disabled,
+          &.disabled {
+            justify-content: center !important;
+            cursor: not-allowed !important;
+            opacity: 0.85 !important;
+            filter: none !important;
           }
         }
       }
@@ -2309,6 +2354,11 @@ html.light-theme {
 
     .enquiries-table-wrap {
       border-color: #e2e8f0;
+
+      &.has-open-dropdown,
+      &:has(.open) {
+        overflow: visible !important;
+      }
 
       .data-table {
         th {

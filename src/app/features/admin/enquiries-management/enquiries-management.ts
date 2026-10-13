@@ -36,15 +36,18 @@ export class EnquiriesManagementComponent implements OnInit {
     { value: 'pending', label: 'Pending' },
     { value: 'resolved', label: 'Resolved' },
     { value: 'closed', label: 'Closed' },
-    { value: 'reopen', label: 'Reopen' },
+    { value: 'reopen', label: 'Re-open' },
     { value: 'reject', label: 'Reject' }
   ];
+
+  openStatusDropdownUpward = false;
 
   @HostListener('document:click')
   onDocumentClick() {
     this.showLimitDropdown = false;
     this.showTypeDropdown = false;
     this.openStatusDropdownId = null;
+    this.openStatusDropdownUpward = false;
   }
   
   sortColumn = 'created_at';
@@ -149,11 +152,58 @@ export class EnquiriesManagementComponent implements OnInit {
     this.load();
   }
 
-  toggleStatusDropdown(id: any, event: Event): void {
+  isSupportEnquiry(eq: any): boolean {
+    if (!eq) return false;
+    const type = (eq.enquiry_type || eq.type || '').toString().toLowerCase().trim();
+    return type === 'support';
+  }
+
+  isClosed(eq: any): boolean {
+    if (!eq) return false;
+    const s = (eq.status || '').toLowerCase().trim().replace(/[-_]/g, '');
+    return s === 'closed' || s === 'close';
+  }
+
+  toggleStatusDropdown(id: any, event: Event, index?: number, eq?: any): void {
     event.stopPropagation();
+    if (eq && this.isClosed(eq)) {
+      return;
+    }
     this.showLimitDropdown = false;
     this.showTypeDropdown = false;
-    this.openStatusDropdownId = this.openStatusDropdownId === id ? null : id;
+
+    if (this.openStatusDropdownId === id) {
+      this.openStatusDropdownId = null;
+      this.openStatusDropdownUpward = false;
+      return;
+    }
+
+    this.openStatusDropdownId = id;
+
+    // A dropdown needs ~220px of height.
+    // It should ONLY open upward if there are at least 5 rows above it inside the table (index >= 5).
+    // For rows 0-4 (the top rows), opening upward will always collide with the table header
+    // and clip the top options (e.g. "Initiated"). Rows 0-4 must always open downward.
+    const hasEnoughRowsAbove = index !== undefined && index >= 5;
+    if (!hasEnoughRowsAbove) {
+      this.openStatusDropdownUpward = false;
+      return;
+    }
+
+    // For rows with sufficient rows above (index >= 5), open upward if near table bottom or viewport bottom
+    const total = this.displayEnquiries.length;
+    const isNearTableBottom = index >= total - 4;
+
+    const target = event.currentTarget as HTMLElement;
+    let isNearViewportBottom = false;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      isNearViewportBottom = spaceBelow < 220 && spaceAbove >= 250;
+    }
+
+    this.openStatusDropdownUpward = isNearTableBottom || isNearViewportBottom;
   }
 
   getStatusLabel(status?: string | null): string {
@@ -187,7 +237,7 @@ export class EnquiriesManagementComponent implements OnInit {
 
   updateStatus(eq: any, newStatus: string): void {
     this.openStatusDropdownId = null;
-    if (!eq) return;
+    if (!eq || this.isClosed(eq)) return;
 
     eq.status = newStatus;
     this.cdr.detectChanges();

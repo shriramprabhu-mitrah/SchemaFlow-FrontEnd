@@ -138,7 +138,7 @@
           <span>Preferences & Theme</span>
         </button>
 
-        <button class="tab-btn" [class.active]="activeTab() === 'enquiries'" (click)="setTab('enquiries')">
+        <button *ngIf="!isSuperAdmin()" class="tab-btn" [class.active]="activeTab() === 'enquiries'" (click)="setTab('enquiries')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
@@ -405,8 +405,8 @@
       </div>
     </div>
 
-    <!-- TAB 4: My Enquiries -->
-    <div class="tab-panel" *ngIf="activeTab() === 'enquiries'">
+    <!-- TAB 4: My Enquiries (Hidden for Super Admin) -->
+    <div class="tab-panel" *ngIf="!isSuperAdmin() && activeTab() === 'enquiries'">
       <div class="settings-card enquiries-card">
         <div class="card-header">
           <div class="card-title-group">
@@ -423,7 +423,7 @@
               </button>
               <div class="custom-status-dropdown-menu" *ngIf="showStatusFilterDropdown()" (click)="$event.stopPropagation()">
                 <button type="button" class="custom-status-dropdown-option" [class.selected]="enquiryStatusFilter() === ''" (click)="selectStatusFilter('')">All Statuses</button>
-                <button type="button" class="custom-status-dropdown-option" [class.selected]="enquiryStatusFilter() === 're-open'" (click)="selectStatusFilter('re-open')">Re-open</button>
+                <button type="button" class="custom-status-dropdown-option" [class.selected]="enquiryStatusFilter() === 'reopen'" (click)="selectStatusFilter('reopen')">Re-open</button>
                 <button type="button" class="custom-status-dropdown-option" [class.selected]="enquiryStatusFilter() === 'close'" (click)="selectStatusFilter('close')">Close</button>
               </div>
             </div>
@@ -489,7 +489,9 @@
           </div>
 
           <!-- Table of Enquiries -->
-          <div *ngIf="!isLoadingEnquiries() && !enquiriesError() && filteredEnquiries().length > 0" class="data-table-wrap enquiries-table-wrap">
+          <div *ngIf="!isLoadingEnquiries() && !enquiriesError() && filteredEnquiries().length > 0"
+               class="data-table-wrap enquiries-table-wrap"
+               [class.has-open-dropdown]="openRowDropdownId() !== null">
             <table class="data-table">
               <thead>
                 <tr>
@@ -501,7 +503,8 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let eq of filteredEnquiries(); let i = index">
+                <tr *ngFor="let eq of filteredEnquiries(); let i = index"
+                    [class.has-open-dropdown]="openRowDropdownId() === (eq.id || i)">
                   <td>{{ i + 1 }}</td>
                   <td>
                     <span class="badge" [ngClass]="{
@@ -524,26 +527,40 @@
                     </span>
                   </td>
                   <td style="text-align: right;">
-                    <div class="custom-status-dropdown-container dropdown-container-rel row-status-wrap">
-                      <button type="button" class="custom-status-dropdown-trigger row-status-trigger"
-                              [class.status-re-open]="isReOpen(eq.status)"
-                              [class.status-close]="isClosed(eq.status)"
-                              (click)="toggleRowDropdown(eq.id || i, $event)">
-                        <span>{{ isClosed(eq.status) ? 'Close' : 'Re-open' }}</span>
+                    <div class="custom-status-dropdown-container dropdown-container-rel row-status-wrap"
+                         [class.open]="!isClosed(eq.status) && openRowDropdownId() === (eq.id || i)">
+
+                      <!-- If Closed: Not editable (Static badge, disabled, no chevron) -->
+                      <button *ngIf="isClosed(eq.status)" type="button"
+                              class="custom-status-dropdown-trigger row-status-trigger status-close status-closed disabled"
+                              disabled
+                              title="Closed enquiries cannot be edited">
+                        <span>Close</span>
+                      </button>
+
+                      <!-- If Not Closed: Interactive dropdown trigger with chevron -->
+                      <button *ngIf="!isClosed(eq.status)" type="button"
+                              class="custom-status-dropdown-trigger row-status-trigger status-reopen"
+                              (click)="toggleRowDropdown(eq.id || i, $event, eq, i)">
+                        <span>Re-open</span>
                         <app-icons name="chevron-down" size="13"></app-icons>
                       </button>
+
                       <div class="custom-status-dropdown-menu dropdown-menu-end"
-                           *ngIf="openRowDropdownId() === (eq.id || i)"
+                           [class.dropdown-up]="openRowDropdownUpward()"
+                           *ngIf="!isClosed(eq.status) && openRowDropdownId() === (eq.id || i)"
                            (click)="$event.stopPropagation()">
                         <button type="button" class="custom-status-dropdown-option"
                                 [class.selected]="isReOpen(eq.status)"
-                                (click)="onRowStatusSelect(eq, 're-open')">
-                          Re-open
+                                (click)="onRowStatusSelect(eq, 'reopen')">
+                          <span class="status-option-dot reopen"></span>
+                          <span>Re-open</span>
                         </button>
                         <button type="button" class="custom-status-dropdown-option"
                                 [class.selected]="isClosed(eq.status)"
-                                (click)="onRowStatusSelect(eq, 'close')">
-                          Close
+                                (click)="onRowStatusSelect(eq, 'closed')">
+                          <span class="status-option-dot closed"></span>
+                          <span>Close</span>
                         </button>
                       </div>
                     </div>

@@ -128,7 +128,25 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         })
       );
+      this.themeSub.add(
+        this.dashboardSvc.closeChatbot$.subscribe(() => {
+          if (this.isOpen) {
+            this.isOpen = false;
+            this.cdr.markForCheck();
+            this.cdr.detectChanges();
+          }
+        })
+      );
     }
+    this.themeSub.add(
+      this.chatbotService.closeChat$.subscribe(() => {
+        if (this.isOpen) {
+          this.isOpen = false;
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+        }
+      })
+    );
   }
 
   ngOnDestroy(): void {
@@ -146,9 +164,19 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   toggleChat(): void {
     this.isOpen = !this.isOpen;
-    if (this.isOpen && this.categories.length === 0) {
-      this.initializeChatbot();
+    if (this.isOpen) {
+      this.chatbotService.closeHeaderMenus();
+      this.dashboardSvc?.closeHeaderMenus();
+      if (this.categories.length === 0) {
+        this.initializeChatbot();
+      }
     }
+    this.cdr.detectChanges();
+  }
+
+  closeChat(): void {
+    this.isOpen = false;
+    this.cdr.markForCheck();
     this.cdr.detectChanges();
   }
 
@@ -268,16 +296,22 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   }
 
   handleOptionClick(opt: any): void {
-    if (opt.nextNodeId) {
-      this.selectNode(opt.nextNodeId);
-    } else if (opt.action === 'escalate') {
+    if (!opt) return;
+
+    const targetUrl = opt.url || opt.action_url || (typeof opt.action === 'string' && opt.action.startsWith('/') ? opt.action : null);
+
+    if (opt.action === 'escalate') {
       this.openEscalateForm(this.currentNode?.title);
     } else if (opt.action === 'show_categories') {
       this.goToMainMenu();
     } else if (this.isDbConnectOption(opt)) {
       this.openDbConnectModal();
-    } else if (opt.action === 'link' && opt.url) {
-      this.navigateToActionUrl(opt.url);
+    } else if ((opt.action === 'link' || opt.action === 'navigate') && targetUrl) {
+      this.navigateToActionUrl(targetUrl);
+    } else if (opt.nextNodeId) {
+      this.selectNode(opt.nextNodeId);
+    } else if (targetUrl) {
+      this.navigateToActionUrl(targetUrl);
     }
   }
 
@@ -289,13 +323,42 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     }
     if (url.startsWith('http')) {
       window.open(url, '_blank');
-    } else {
-      this.router.navigateByUrl(url);
-      if (typeof window !== 'undefined' && window.innerWidth < 640) {
-        this.isOpen = false;
+      return;
+    }
+
+    let target = url;
+
+    // Detect if this action is for password reset / forgot password
+    const isPasswordContext =
+      this.currentNode?.title?.toLowerCase().includes('password') ||
+      this.currentNode?.title?.toLowerCase().includes('reset') ||
+      this.currentNode?.content?.toLowerCase().includes('reset password') ||
+      target.toLowerCase().includes('reset') ||
+      target.toLowerCase().includes('forgot');
+
+    if ((target === '/login' || target.startsWith('/login')) && !target.includes('forgot') && !target.includes('mode=')) {
+      if (isPasswordContext) {
+        target = target.includes('?') ? `${target}&forgot=true` : `${target}?forgot=true`;
+      } else if (this.isLoggedIn) {
+        // If a logged-in user clicks a direct login link, log out first so login page is displayed
+        this.auth.logout();
       }
     }
+
+    // Always close chatbot window when navigating to an application page
+    this.isOpen = false;
+
+    this.router.navigateByUrl(target);
     this.cdr.detectChanges();
+  }
+
+  getActionBtnLabel(node?: ChatbotNode | null): string {
+    const title = node?.title?.toLowerCase() || '';
+    const url = node?.action_url?.toLowerCase() || '';
+    if (title.includes('password') || title.includes('reset') || url.includes('login')) {
+      return 'Go to Login & Reset Password ↗';
+    }
+    return 'Open in App ↗';
   }
 
   goBack(): void {

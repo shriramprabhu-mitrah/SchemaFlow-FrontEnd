@@ -68,6 +68,7 @@ export class ProfileComponent {
   enquiryStatusFilter = signal<string>('');
   showStatusFilterDropdown = signal<boolean>(false);
   openRowDropdownId = signal<any>(null);
+  openRowDropdownUpward = signal<boolean>(false);
 
   filteredEnquiries = computed(() => {
     const term = this.enquirySearch().toLowerCase().trim();
@@ -128,6 +129,9 @@ export class ProfileComponent {
       this.accountType.set(this.auth.getAccountType() || 'Individual');
       this.orgRole.set(this.auth.getOrgRole() || 'Member');
       this.isSuperAdmin.set(this.auth.isSuperAdmin());
+      if (this.isSuperAdmin() && this.activeTab() === 'enquiries') {
+        this.activeTab.set('general');
+      }
 
       const savedPic = this.auth.getUserProfilePicture();
       if (savedPic) {
@@ -386,13 +390,18 @@ export class ProfileComponent {
   }
 
   setTab(tab: ProfileTab): void {
+    if (this.isSuperAdmin() && tab === 'enquiries') {
+      this.activeTab.set('general');
+      return;
+    }
     this.activeTab.set(tab);
-    if (tab === 'enquiries') {
+    if (tab === 'enquiries' && !this.isSuperAdmin()) {
       this.fetchMyEnquiries();
     }
   }
 
   fetchMyEnquiries(): void {
+    if (this.isSuperAdmin()) return;
     this.isLoadingEnquiries.set(true);
     this.enquiriesError.set(null);
     this.enquiryService.getMyEnquiries().subscribe({
@@ -414,38 +423,40 @@ export class ProfileComponent {
 
   getEnquiryStatusValue(status?: string | null): string {
     const s = (status || '').toLowerCase().trim();
-    if (s === 'close' || s === 'closed' || s === 'resolved') {
-      return 'close';
+    if (s === 'closed' || s === 'close' || s === 'resolved') {
+      return 'closed';
     }
-    return 're-open';
+    return 'reopen';
   }
 
   isReOpen(status?: string | null): boolean {
-    return this.getEnquiryStatusValue(status) === 're-open';
+    return this.getEnquiryStatusValue(status) === 'reopen';
   }
 
   isClosed(status?: string | null): boolean {
-    return this.getEnquiryStatusValue(status) === 'close';
+    return this.getEnquiryStatusValue(status) === 'closed';
   }
 
   onEnquiryStatusChange(eq: any, newStatus: string): void {
-    if (!eq) return;
-    eq.status = newStatus;
+    if (!eq || this.isClosed(eq.status)) return;
+    const payloadStatus = (newStatus === 'close' || newStatus === 'closed') ? 'closed' : 'reopen';
+    eq.status = payloadStatus;
     this.cdr.detectChanges();
 
     const id = eq.id || eq.enquiry_id || eq._id;
+    const displayStatusLabel = payloadStatus === 'closed' ? 'Close' : 'Re-open';
     if (id) {
-      this.enquiryService.updateEnquiryStatus(id, newStatus).subscribe({
+      this.enquiryService.updateEnquiryStatus(id, payloadStatus).subscribe({
         next: () => {
-          this.dashService.showToast(`Status updated to ${newStatus === 'close' ? 'Close' : 'Re-open'}.`, 3000, 'success');
+          this.dashService.showToast(`Status updated to ${displayStatusLabel}.`, 3000, 'success');
         },
         error: (err) => {
           console.warn('Update enquiry status error:', err);
-          this.dashService.showToast(`Status updated to ${newStatus === 'close' ? 'Close' : 'Re-open'}.`, 3000, 'success');
+          this.dashService.showToast(`Status updated to ${displayStatusLabel}.`, 3000, 'success');
         }
       });
     } else {
-      this.dashService.showToast(`Status updated to ${newStatus === 'close' ? 'Close' : 'Re-open'}.`, 3000, 'success');
+      this.dashService.showToast(`Status updated to ${displayStatusLabel}.`, 3000, 'success');
     }
   }
 
@@ -453,11 +464,13 @@ export class ProfileComponent {
   onDocumentClick(): void {
     this.showStatusFilterDropdown.set(false);
     this.openRowDropdownId.set(null);
+    this.openRowDropdownUpward.set(false);
   }
 
   toggleStatusFilterDropdown(event: Event): void {
     event.stopPropagation();
     this.openRowDropdownId.set(null);
+    this.openRowDropdownUpward.set(false);
     this.showStatusFilterDropdown.set(!this.showStatusFilterDropdown());
   }
 
@@ -468,19 +481,43 @@ export class ProfileComponent {
 
   getStatusFilterLabel(): string {
     const filter = this.enquiryStatusFilter();
-    if (filter === 're-open') return 'Re-open';
-    if (filter === 'close') return 'Close';
+    if (filter === 'reopen') return 'Re-open';
+    if (filter === 'closed') return 'Close';
     return 'All Statuses';
   }
 
-  toggleRowDropdown(id: any, event: Event): void {
+  toggleRowDropdown(id: any, event: Event, eq?: any, index?: number): void {
     event.stopPropagation();
+    if (eq && this.isClosed(eq.status)) return;
     this.showStatusFilterDropdown.set(false);
-    this.openRowDropdownId.set(this.openRowDropdownId() === id ? null : id);
+
+    if (this.openRowDropdownId() === id) {
+      this.openRowDropdownId.set(null);
+      this.openRowDropdownUpward.set(false);
+      return;
+    }
+
+    this.openRowDropdownId.set(id);
+
+    const total = this.filteredEnquiries().length;
+    const hasEnoughSpaceAbove = index !== undefined && index >= 1;
+    const isNearBottom = index !== undefined && index >= total - 2;
+
+    const target = event.currentTarget as HTMLElement;
+    let isNearViewportBottom = false;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      isNearViewportBottom = spaceBelow < 120;
+    }
+
+    this.openRowDropdownUpward.set(hasEnoughSpaceAbove && (isNearBottom || isNearViewportBottom));
   }
 
   onRowStatusSelect(eq: any, newStatus: string): void {
     this.openRowDropdownId.set(null);
+    this.openRowDropdownUpward.set(false);
+    if (eq && this.isClosed(eq.status)) return;
     this.onEnquiryStatusChange(eq, newStatus);
   }
 

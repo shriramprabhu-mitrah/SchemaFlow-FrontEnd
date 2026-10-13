@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
 export interface ChatbotCategory {
@@ -55,6 +55,17 @@ export class ChatbotService {
   private sessionId: string | null = null;
   private readonly GUEST_TOKEN_KEY = 'dbnexus_chat_guest_token';
   private readonly SESSION_ID_KEY = 'dbnexus_chat_session_id';
+
+  readonly closeChat$ = new Subject<void>();
+  readonly closeHeaderMenus$ = new Subject<void>();
+
+  closeChat(): void {
+    this.closeChat$.next();
+  }
+
+  closeHeaderMenus(): void {
+    this.closeHeaderMenus$.next();
+  }
 
   private get endpoints() {
     return this.appConfig.environment?.chatbotApiUrls || {};

@@ -53,7 +53,7 @@
           </svg>
         </button>
         <!-- Close Button -->
-        <button class="header-btn close-btn" (click)="toggleChat()" title="Close chat">
+        <button class="header-btn close-btn" (click)="closeChat()" title="Close chat">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -162,7 +162,7 @@
           @if (currentNode.action_url) {
             <div class="action-btn-row">
               <button class="primary-action-btn" (click)="navigateToActionUrl(currentNode.action_url)">
-                Open in App ↗
+                {{ getActionBtnLabel(currentNode) }}
               </button>
             </div>
           }
@@ -249,26 +249,36 @@
 
       <!-- VIEW 5: Escalation Form (Contact Support Ticket) -->
       @if (!isLoading && currentView === 'escalate') {
-        <div class="sub-header-nav">
-          <button class="nav-back-btn" (click)="goBack()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            Back
-          </button>
-          <button class="nav-home-btn" (click)="goToMainMenu()">
-            🏠 Main Menu
-          </button>
-        </div>
+        @if (!ticketSubmittedSuccess) {
+          <div class="sub-header-nav">
+            <button class="nav-back-btn" (click)="goBack()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Back
+            </button>
+            <button class="nav-home-btn" (click)="goToMainMenu()">
+              🏠 Main Menu
+            </button>
+          </div>
+        }
 
         @if (ticketSubmittedSuccess) {
           <div class="ticket-success-box">
-            <div class="success-icon">✓</div>
+            <div class="success-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
             <h3>Support Ticket Created!</h3>
             @if (ticketId) {
               <p class="ticket-ref">Ticket Ref: <strong>#{{ ticketId }}</strong></p>
             }
             <p>Our team has received your request and will reply directly to <strong>{{ enquiryForm.companyEmail }}</strong> within 24 hours.</p>
-            <button class="primary-action-btn" (click)="goToMainMenu()">
-              Back to Help Topics
+            <button type="button" class="primary-action-btn ticket-back-btn" (click)="goToMainMenu()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span>Back to Help Topics</span>
             </button>
           </div>
         } @else {
