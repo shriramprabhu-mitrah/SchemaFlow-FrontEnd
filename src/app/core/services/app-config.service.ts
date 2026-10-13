@@ -41,12 +41,17 @@ export class AppConfigService {
 
   loadConfiguration(): Promise<void> {
     const url = `assets/config/config.${environment.name}.json`;
-    return lastValueFrom(this.http.get(url)).then((configData: any) => {
-      this.environment = configData;
-      if (this.environment?.configuration) {
-      }
-      this.injectPreconnectHints(configData);
-    });
+    return lastValueFrom(this.http.get(url))
+      .then((configData: any) => {
+        this.environment = configData;
+        if (this.environment?.configuration) {
+        }
+        this.injectPreconnectHints(configData);
+      })
+      .catch((err: any) => {
+        console.warn(`[AppConfigService] Could not load ${url}:`, err?.message || err);
+        this.environment = this.environment || {};
+      });
   }
 
   private injectPreconnectHints(config: any): void {

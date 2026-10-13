@@ -1407,6 +1407,16 @@ export class DashboardService {
   selectedVersion = signal<any>(null);
   revertRequested$ = new Subject<void>();
   closeVersionHistory$ = new Subject<void>();
+  readonly closeChatbot$ = new Subject<void>();
+  readonly closeHeaderMenus$ = new Subject<void>();
+
+  closeChatbot(): void {
+    this.closeChatbot$.next();
+  }
+
+  closeHeaderMenus(): void {
+    this.closeHeaderMenus$.next();
+  }
 
   showUpgradeModal$ = new Subject<string>();
 
@@ -1414,12 +1424,14 @@ export class DashboardService {
     if (this.auth.isSuperAdmin()) {
       return;
     }
+    this.closeChatbot();
     this.showUpgradeModal$.next(featureKey);
   }
 
   openShareModal$ = new Subject<void>();
 
   openShareModal(): void {
+    this.closeChatbot();
     if (this.editorErrors().length > 0 || this.getValidationErrors().length > 0 || this.dbmlValidationError != null) {
       this.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
       return;
@@ -1438,12 +1450,15 @@ export class DashboardService {
   openImportModal$ = new Subject<string>();
 
   openImportModal(dialect: string): void {
+    this.closeChatbot();
     this.openImportModal$.next(dialect);
   }
 
   openConnectionStringModal$ = new Subject<void>();
+  pendingOpenConnectionStringModal = false;
 
   openConnectionStringModal(): void {
+    this.closeChatbot();
     this.openConnectionStringModal$.next();
   }
 
