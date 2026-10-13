@@ -747,6 +747,12 @@ body.light-theme {
     border: 1px solid rgba(234, 27, 34, 0.15) !important;
   }
 
+  .snowflake-badge {
+    background: rgba(41, 181, 232, 0.08) !important;
+    color: #0284c7 !important;
+    border: 1px solid rgba(41, 181, 232, 0.2) !important;
+  }
+
   .mongodb-badge {
     background: rgba(16, 185, 129, 0.08) !important;
     color: #059669 !important;
@@ -2195,6 +2201,12 @@ canvas {
   background: rgba(234, 27, 34, 0.15);
   color: #ea1b22;
   border: 1px solid rgba(234, 27, 34, 0.25);
+}
+
+.snowflake-badge {
+  background: rgba(41, 181, 232, 0.15);
+  color: #29b5e8;
+  border: 1px solid rgba(41, 181, 232, 0.25);
 }
 
 .mongodb-badge {
@@ -3898,6 +3910,17 @@ body.light-theme {
     .import-modal-body {
       min-height: 0 !important;
       max-height: calc(100vh - 140px) !important;
+
+      .modal-form-row {
+        @media (max-width: 540px) {
+          flex-direction: column !important;
+          gap: 10px !important;
+
+          .modal-form-group {
+            width: 100% !important;
+          }
+        }
+      }
     }
 
     .import-modal-footer {

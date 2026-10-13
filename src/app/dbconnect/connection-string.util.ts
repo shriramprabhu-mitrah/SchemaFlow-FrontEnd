@@ -5,6 +5,9 @@ export interface ConnectionDetails {
   username: string;
   password: string;
   schema: string;
+  account?: string;
+  warehouse?: string;
+  role?: string;
 }
 
 const SQL_SERVER_KEY_PATTERN = /(?:^|;)(?:Server|Data Source|ServerName|DataSource)\s*=\s*([^;]+)(?=;|$)/i;
@@ -125,22 +128,93 @@ function parseUriConnectionString(value: string, defaultSchema = ''): Connection
   };
 }
 
+function parseSnowflakeConnectionString(value: string): ConnectionDetails | null {
+  let cleaned = value.trim();
+  if (/^snowflake\s*['"]/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^snowflake\s*['"]/i, '').replace(/['"]\s*$/, '').trim();
+  } else if (/^snowflake\s+/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^snowflake\s+/i, '').trim();
+  } else if (/^['"].*['"]$/.test(cleaned)) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+
+  if (cleaned.toLowerCase().startsWith('snowflake://')) {
+    const details = parseUriConnectionString(cleaned, '');
+    if (details) {
+      let warehouse = '';
+      let role = '';
+      try {
+        const urlObj = new URL(cleaned);
+        warehouse = urlObj.searchParams.get('warehouse') || '';
+        role = urlObj.searchParams.get('role') || '';
+      } catch {
+        // ignore
+      }
+      return {
+        ...details,
+        account: details.host,
+        warehouse,
+        role
+      };
+    }
+  }
+
+  const extract = (pattern: RegExp): string => {
+    const match = cleaned.match(pattern);
+    return match ? match[1].trim() : '';
+  };
+
+  const account = extract(/(?:^|;)\s*(?:SERVER|ACCOUNT|HOST)\s*=\s*([^;]+)/i);
+  const username = extract(/(?:^|;)\s*(?:UID|USER|USERNAME|USER_ID)\s*=\s*([^;]+)/i);
+  const password = extract(/(?:^|;)\s*(?:PWD|PASSWORD)\s*=\s*([^;]+)/i);
+  const database = extract(/(?:^|;)\s*(?:DATABASE|DB)\s*=\s*([^;]+)/i);
+  const warehouse = extract(/(?:^|;)\s*WAREHOUSE\s*=\s*([^;]+)/i);
+  const role = extract(/(?:^|;)\s*ROLE\s*=\s*([^;]+)/i);
+  const schema = extract(/(?:^|;)\s*(?:SCHEMAS|SCHEMA)\s*=\s*([^;]+)/i);
+
+  if (!account && !username && !password && !database && !warehouse && !role) {
+    return null;
+  }
+
+  return {
+    host: account,
+    port: 0,
+    database,
+    username,
+    password,
+    schema,
+    account,
+    warehouse,
+    role
+  };
+}
+
 export const DB_TYPE_LABELS: Record<string, string> = {
   postgres: 'PostgreSQL',
   mysql: 'MySQL',
   mariadb: 'MariaDB',
   mssql: 'SQL Server (MSSQL)',
   oracle: 'Oracle',
+  snowflake: 'Snowflake',
   sqlite: 'SQLite'
 };
 
 export function detectUrlSchemeInfo(value: string): {
-  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'other' | null;
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'other' | null;
   displayScheme: string | null;
 } {
   const trimmed = value.trim();
   if (!trimmed) {
     return { detectedType: null, displayScheme: null };
+  }
+
+  // Check Snowflake key-value or wrapper format (snowflake '...', snowflake://, or UID=/PWD=/WAREHOUSE=/ROLE=)
+  if (
+    /^snowflake\b/i.test(trimmed) ||
+    /(?:^|;)\s*(?:WAREHOUSE|ROLE)\s*=/i.test(trimmed) ||
+    (/(?:^|;)\s*(?:SERVER|ACCOUNT)\s*=/i.test(trimmed) && /(?:^|;)\s*(?:UID|PWD)\s*=/i.test(trimmed))
+  ) {
+    return { detectedType: 'snowflake', displayScheme: 'Snowflake' };
   }
 
   // Check SQL Server ADO.NET / key-value format (Server=... or Data Source=...)
@@ -164,6 +238,10 @@ export function detectUrlSchemeInfo(value: string): {
 
   if (scheme === 'databasetype') {
     return { detectedType: null, displayScheme: null };
+  }
+
+  if (scheme === 'snowflake') {
+    return { detectedType: 'snowflake', displayScheme: 'Snowflake' };
   }
 
   if (scheme === 'postgresql' || scheme === 'postgres') {
@@ -190,11 +268,15 @@ export function detectUrlSchemeInfo(value: string): {
 }
 
 export function isSchemeCompatibleWithDatabaseType(
-  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'other' | null,
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'other' | null,
   selectedType: string
 ): boolean {
   if (!detectedType) {
     return true;
+  }
+
+  if (selectedType === 'snowflake') {
+    return detectedType === 'snowflake';
   }
 
   if (selectedType === 'postgres') {
@@ -238,9 +320,13 @@ export function getConnectionUrlMismatchError(
   return null;
 }
 
-export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle'): ConnectionDetails | null {
+export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake'): ConnectionDetails | null {
   const raw = value.trim();
   if (!raw || databaseType === 'sqlite') return null;
+
+  if (databaseType === 'snowflake') {
+    return parseSnowflakeConnectionString(raw);
+  }
 
   if (databaseType === 'mssql' || raw.toLowerCase().startsWith('server=') || raw.toLowerCase().startsWith('data source=')) {
     if (raw.toLowerCase().startsWith('server=') || raw.toLowerCase().startsWith('data source=')) {

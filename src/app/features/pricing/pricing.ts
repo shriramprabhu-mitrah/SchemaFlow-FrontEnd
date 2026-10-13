@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { SignOutService } from '../../core/services/sign-out.service';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { Icons } from '../../core/component/icons/icons';
 import { ButtonComponent } from '../../shared/button/button';
@@ -257,10 +258,14 @@ export class PricingComponent implements OnInit {
     }
   }
 
+  private signOutService = inject(SignOutService);
+
   logout(): void {
-    this.auth.logout();
-    this.isLoggedIn = false;
-    this.svc.showToast('Logged out successfully.', 2500, 'success');
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.isLoggedIn = false;
+      this.svc.showToast('Logged out successfully.', 2500, 'success');
+    });
   }
 
   toggleBilling(annual: boolean): void {

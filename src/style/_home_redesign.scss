@@ -280,6 +280,12 @@
     justify-content: center;
   }
 
+  img {
+    display: block;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
   &:hover {
     transform: translateY(-2px);
   }

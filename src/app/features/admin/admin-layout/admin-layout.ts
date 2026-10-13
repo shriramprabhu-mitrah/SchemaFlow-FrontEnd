@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { SignOutService } from '../../../core/services/sign-out.service';
 import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
@@ -15,6 +16,7 @@ export class AdminLayoutComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
   public dashService = inject(DashboardService);
+  private signOutService = inject(SignOutService);
 
   sidebarCollapsed = false;
   mobileSidebarOpen = false;
@@ -63,7 +65,9 @@ export class AdminLayoutComponent {
   }
 
   logout(): void {
-    this.auth.logout();
-    this.router.navigate(['/login']);
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.router.navigate(['/login']);
+    });
   }
 }
