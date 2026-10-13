@@ -438,7 +438,7 @@ export class DashboardService {
   getTableHeight(columns: Column[]): number {
     let visibleCount = columns.length;
     if (this.isKeyOnly) {
-      visibleCount = columns.filter(c => c.pk || c.fk || (c as any).isRelTarget).length;
+      visibleCount = columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource).length;
     } else if (this.isColumnNameOnly) {
       visibleCount = 0;
     }
@@ -2907,6 +2907,51 @@ export class DashboardService {
   parseAndLayout(): void {
     const parsed = this.parseDBML(this.code);
 
+    const fkMap = new Map<string, { targetTable: string; targetCol: string }>();
+    parsed.refs.forEach((r) => {
+      const fromTab = parsed.tables.find(t => t.name === r.fromTable);
+      const toTab = parsed.tables.find(t => t.name === r.toTable);
+      const fromCol = fromTab?.columns.find(c => c.name === r.fromCol);
+      const toCol = toTab?.columns.find(c => c.name === r.toCol);
+
+      const fromPk = fromCol?.pk;
+      const toPk = toCol?.pk;
+
+      if (r.relType === '-') {
+        // One-to-one: only mark FK if one side is not a PK
+        if (!fromPk && toPk) {
+          fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+        } else if (fromPk && !toPk) {
+          fkMap.set(`${r.toTable}.${r.toCol}`, { targetTable: r.fromTable, targetCol: r.fromCol });
+        } else if (!fromPk && !toPk) {
+          fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+        }
+      } else if (r.relType === '<>' || r.relType === '<->') {
+        // Many-to-many: neither column is a direct FK
+      } else {
+        // In DBML, '>' means fromTable is child/FK referencing toTable.
+        // For '<', parseDBML already normalized fromTable to be the child/FK.
+        // Therefore, r.fromTable is always the foreign key.
+        fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+      }
+    });
+
+    parsed.tables.forEach((t) => {
+      t.columns.forEach((c) => {
+        const refInfo = fkMap.get(`${t.name}.${c.name}`);
+        c.fk = !!refInfo;
+        if (refInfo) {
+          c.fkTable = refInfo.targetTable;
+          c.fkCol = refInfo.targetCol;
+        } else {
+          c.fkTable = undefined;
+          c.fkCol = undefined;
+        }
+        (c as any).isRelTarget = parsed.refs.some(r => (r.toTable === t.name && r.toCol === c.name) || (r.fromTable === t.name && r.fromCol === c.name));
+        (c as any).isRelSource = parsed.refs.some(r => r.fromTable === t.name && r.fromCol === c.name);
+      });
+    });
+
     // --- Sync Note blocks from DBML into svc.notes (editor → canvas) ---
     if (!this._syncingNotesToCode) {
       const canUseNotes = this.entitlementService.canUseFeature('diagram_notes');
@@ -3251,7 +3296,7 @@ export class DashboardService {
       if (this.isAllFields) {
         visibleColumns = t.columns;
       } else if (this.isKeyOnly) {
-        visibleColumns = t.columns.filter(c => c.pk || c.fk);
+        visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
       } else if (this.isColumnNameOnly) {
         visibleColumns = [];
       }
@@ -3317,57 +3362,6 @@ export class DashboardService {
         { waypoints: r.waypoints, color: r.color }
       ])
     );
-    const fkMap = new Map<string, { targetTable: string; targetCol: string }>();
-    parsed.refs.forEach((r) => {
-      const fromTab = parsed.tables.find(t => t.name === r.fromTable);
-      const toTab = parsed.tables.find(t => t.name === r.toTable);
-      const fromCol = fromTab?.columns.find(c => c.name === r.fromCol);
-      const toCol = toTab?.columns.find(c => c.name === r.toCol);
-
-      const fromPk = fromCol?.pk;
-      const toPk = toCol?.pk;
-
-      if (r.relType === '-') {
-        // One-to-one: only mark FK if one side is not a PK
-        if (!fromPk && toPk) {
-          fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
-        } else if (fromPk && !toPk) {
-          fkMap.set(`${r.toTable}.${r.toCol}`, { targetTable: r.fromTable, targetCol: r.fromCol });
-        }
-      } else if (r.relType === '<>' || r.relType === '<->') {
-        // Many-to-many: neither column is a direct FK
-      } else {
-        // In DBML, '>' means fromTable is child/FK referencing toTable.
-        // For '<', parseDBML already normalized fromTable to be the child/FK.
-        // Therefore, r.fromTable is always the foreign key.
-        fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
-      }
-    });
-    this.tables.forEach((t) => {
-      t.columns.forEach((c) => {
-        const refInfo = fkMap.get(`${t.name}.${c.name}`);
-
-        // Also ensure any column involved in a relation is considered a foreign key for visibility purposes
-        const isSource = parsed.refs.some(r => r.fromTable === t.name && r.fromCol === c.name);
-
-        c.fk = !!refInfo || isSource;
-
-        if (refInfo) {
-          c.fkTable = refInfo.targetTable;
-          c.fkCol = refInfo.targetCol;
-        } else if (isSource) {
-          const ref = parsed.refs.find(r => r.fromTable === t.name && r.fromCol === c.name);
-          c.fkTable = ref?.toTable;
-          c.fkCol = ref?.toCol;
-        } else {
-          c.fkTable = undefined;
-          c.fkCol = undefined;
-        }
-
-        // Track if it's a target so we can include it in Keys Only view even if not a PK/FK
-        (c as any).isRelTarget = parsed.refs.some(r => r.toTable === t.name && r.toCol === c.name);
-      });
-    });
     this.refs = parsed.refs.map((r) => {
       const key = `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`;
       const prev = prevByKey.get(key);
@@ -3720,14 +3714,21 @@ export class DashboardService {
     parsed.refs.forEach((r) => {
       if (r.fromTable === oldName) {
         const col = colMap.get(r.fromCol);
-        if (col && col.fk && col.fkTable && col.fkCol) {
+        if (col && (r.relType === '<>' || r.relType === '<->')) {
+          newRefs.push({
+            ...r,
+            fromTable: newName,
+            fromCol: col.name
+          });
+        } else if (col && col.fk && col.fkTable && col.fkCol) {
           newRefs.push({
             fromTable: newName,
             fromCol: col.name,
             toTable: col.fkTable,
             toCol: col.fkCol,
             waypoints: r.waypoints,
-            color: r.color
+            color: r.color,
+            relType: r.relType
           });
         }
       } else if (r.toTable === oldName) {
@@ -3804,7 +3805,7 @@ export class DashboardService {
     // Append the updated list of references
     if (newRefs.length > 0) {
       const refLines = newRefs
-        .map((ref) => `Ref: ${ref.fromTable}.${ref.fromCol} > ${ref.toTable}.${ref.toCol}`)
+        .map((ref) => `Ref: ${ref.fromTable}.${ref.fromCol} ${ref.relType || '>'} ${ref.toTable}.${ref.toCol}`)
         .join('\n');
       this.code = this.code.trimEnd() ? `${this.code.trimEnd()}\n\n${refLines}` : refLines;
     }
@@ -5921,6 +5922,7 @@ export class DashboardService {
     });
 
     parsed.refs.forEach((r) => {
+      if (r.relType === '<>' || r.relType === '<->') return;
       const constraintName = `fk_${r.fromTable}_${r.fromCol}`;
       sql += `ALTER TABLE ${this.quoteIdent(dialect, r.fromTable)} ADD CONSTRAINT ${constraintName} FOREIGN KEY (${this.quoteIdent(dialect, r.fromCol)}) REFERENCES ${this.quoteIdent(dialect, r.toTable)}(${this.quoteIdent(dialect, r.toCol)});\n`;
     });
