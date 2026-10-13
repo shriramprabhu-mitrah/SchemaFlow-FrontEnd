@@ -109,6 +109,15 @@
     "aiSessions": "http://localhost:4007/api/ai/sessions",
     "aiSessionHistory": "http://localhost:4007/api/ai/sessions/{sessionId}/history",
     "deleteSessionHistory": "http://localhost:4007/api/ai/sessions/:sessionId/history",
-    "aiModelConfig": "http://localhost:4007/api/ai/models/:modelId/config"
+    "aiModelConfig": "http://localhost:4007/api/ai/models/:modelId/config",
+    "monthSettings": "http://localhost:4000/api/admin/month-settings",
+    "globalMonth": "http://localhost:4000/api/admin/students/global-month",
+    "studentCredentials": "http://localhost:4000/api/student/credentials",
+    "studentCredentialsById": "http://localhost:4000/api/student/credentials/{id}",
+    "deleteStudentCredential": "http://localhost:4000/api/student/credentials/{id}"
+  },
+  "studentPlanApiUrls": {
+    "sendOtp": "http://localhost:4000/api/student/send-otp",
+    "verifyOtp": "http://localhost:4000/api/student/verify-otp"
   }
 }

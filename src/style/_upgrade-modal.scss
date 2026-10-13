@@ -466,6 +466,24 @@ app-upgrade-modal {
     .plan-card:hover {
       transform: translateY(-4px) scale(1.01) !important;
     }
+
+    .team-card.recommended, .student-card.recommended {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.45)) !important;
+      background-size: 16px 16px !important;
+    }
+
+    .team-card.recommended {
+      border: 2px solid #10b981 !important;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15) !important;
+    }
+
+    .student-card.recommended {
+      border: 2px solid #ec4899 !important;
+      box-shadow: 0 10px 30px rgba(236, 72, 153, 0.15) !important;
+    }
   }
 }
 

@@ -254,5 +254,199 @@ export class AdminService {
     
     return this.http.put(url, data, { withCredentials: true });
   }
+
+  getStudentCredentialsUrl(id?: number | string): string {
+    if (id !== undefined && id !== null) {
+      if (this.urls?.studentCredentialsById) {
+        return this.urls.studentCredentialsById.replace('{id}', id);
+      }
+      const studentPlanUrls = this.appConfig.environment?.studentPlanApiUrls;
+      if (studentPlanUrls?.credentialById) {
+        return studentPlanUrls.credentialById.replace('{id}', id);
+      }
+    }
+    let baseUrl = this.urls?.studentCredentials;
+    if (!baseUrl) {
+      const studentPlanUrls = this.appConfig.environment?.studentPlanApiUrls;
+      if (studentPlanUrls?.credentials) {
+        baseUrl = studentPlanUrls.credentials;
+      }
+    }
+    if (!baseUrl) {
+      const rawBase = this.appConfig.environment?.apiConfig?.baseUrl || '';
+      if (rawBase) {
+        const cleanBase = rawBase.replace(/\/+$/, '');
+        if (cleanBase.endsWith('/api')) {
+          baseUrl = `${cleanBase}/student/credentials`;
+        } else {
+          baseUrl = `${cleanBase}/api/student/credentials`;
+        }
+      } else {
+        const studentUrls = this.appConfig.environment?.studentApiUrls;
+        if (studentUrls?.credentials) {
+          baseUrl = studentUrls.credentials;
+        } else {
+          baseUrl = 'http://localhost:4000/api/student/credentials';
+        }
+      }
+    }
+    return id !== undefined && id !== null ? `${baseUrl}/${id}` : baseUrl;
+  }
+
+  getStudentCredentials(
+    pageOrParams: number | { page?: number; limit?: number; sortBy?: string; sortOrder?: string; search?: string } = 1,
+    limit: number = 10,
+    sortBy: string = 'is_approved',
+    sortOrder: string = 'asc',
+    search?: string
+  ): Observable<any> {
+    let p = 1;
+    let l = 10;
+    let sb = 'is_approved';
+    let so = 'asc';
+    let s: string | undefined = undefined;
+
+    if (typeof pageOrParams === 'object' && pageOrParams !== null) {
+      p = pageOrParams.page ?? 1;
+      l = pageOrParams.limit ?? 10;
+      sb = pageOrParams.sortBy ?? 'is_approved';
+      so = pageOrParams.sortOrder ?? 'asc';
+      s = pageOrParams.search;
+    } else {
+      p = typeof pageOrParams === 'number' ? pageOrParams : 1;
+      l = typeof limit === 'number' ? limit : 10;
+      sb = sortBy || 'is_approved';
+      so = sortOrder || 'asc';
+      s = search;
+    }
+
+    let params = new HttpParams()
+      .set('page', p.toString())
+      .set('limit', l.toString())
+      .set('sortBy', sb)
+      .set('sortOrder', so);
+
+    if (s && s.trim()) {
+      params = params.set('search', s.trim());
+    }
+
+    let url = this.getStudentCredentialsUrl();
+    if (url.includes('?')) {
+      url = url.split('?')[0];
+    }
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return this.http.get(url, { headers, params, withCredentials: true });
+  }
+
+  getStudentCredentialById(id: number | string): Observable<any> {
+    const url = this.getStudentCredentialsUrl(id);
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return this.http.get(url, { headers, withCredentials: true });
+  }
+
+  updateStudentCredentialStatus(id: number | string, isApproved: boolean): Observable<any> {
+    const url = this.getStudentCredentialsUrl(id);
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return this.http.put(url, { is_approved: isApproved }, { headers, withCredentials: true });
+  }
+
+  deleteStudentCredential(id: number | string): Observable<any> {
+    const url = this.urls?.deleteStudentCredential
+      ? this.urls.deleteStudentCredential.replace('{id}', id)
+      : this.getStudentCredentialsUrl(id);
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return this.http.delete(url, { headers, withCredentials: true });
+  }
+
+  // ── Month Settings (Student Plan) ──
+  getMonthSettingsUrl(): string {
+    if (this.urls?.monthSettings) {
+      return this.urls.monthSettings;
+    }
+    const studentPlanUrls = this.appConfig.environment?.studentPlanApiUrls;
+    if (studentPlanUrls?.monthSettings) {
+      return studentPlanUrls.monthSettings;
+    }
+    const rawBase = this.appConfig.environment?.apiConfig?.baseUrl || '';
+    if (rawBase) {
+      const cleanBase = rawBase.replace(/\/+$/, '');
+      if (cleanBase.endsWith('/api')) {
+        return `${cleanBase}/admin/month-settings`;
+      }
+      return `${cleanBase}/api/admin/month-settings`;
+    }
+    const studentUrls = this.appConfig.environment?.studentApiUrls;
+    if (studentUrls?.monthSettings) {
+      return studentUrls.monthSettings;
+    }
+    return 'http://localhost:4000/api/admin/month-settings';
+  }
+
+  getGlobalMonthUrl(): string {
+    if (this.urls?.globalMonth) {
+      return this.urls.globalMonth;
+    }
+    const studentPlanUrls = this.appConfig.environment?.studentPlanApiUrls;
+    if (studentPlanUrls?.globalMonth) {
+      return studentPlanUrls.globalMonth;
+    }
+    const rawBase = this.appConfig.environment?.apiConfig?.baseUrl || '';
+    if (rawBase) {
+      const cleanBase = rawBase.replace(/\/+$/, '');
+      if (cleanBase.endsWith('/api')) {
+        return `${cleanBase}/admin/students/global-month`;
+      }
+      return `${cleanBase}/api/admin/students/global-month`;
+    }
+    const studentUrls = this.appConfig.environment?.studentApiUrls;
+    if (studentUrls?.globalMonth) {
+      return studentUrls.globalMonth;
+    }
+    return 'http://localhost:4000/api/admin/students/global-month';
+  }
+
+  getMonthSettings(): Observable<any> {
+    const url = this.getMonthSettingsUrl();
+    const token = typeof localStorage !== 'undefined'
+      ? (localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('access_token'))
+      : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return this.http.get(url, { headers, withCredentials: true });
+  }
+
+  updateGlobalMonth(month: number | string): Observable<any> {
+    const url = this.getGlobalMonthUrl();
+    const token = typeof localStorage !== 'undefined'
+      ? (localStorage.getItem('auth_token') || localStorage.getItem('token') || localStorage.getItem('access_token'))
+      : null;
+    let headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const monthStr = (typeof month === 'string' && month.trim())
+      ? month.trim()
+      : ((typeof month === 'number' && month === 1) ? '1 month' : `${month} months`);
+    const payload = { month: monthStr };
+    return this.http.put(url, payload, { headers, withCredentials: true });
+  }
 }
 

@@ -8,6 +8,7 @@ import { EntitlementService } from '../../../core/services/entitlement.service';
 import { Subject, forkJoin, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, catchError } from 'rxjs/operators';
 import { Icons } from '../../../core/component/icons/icons';
+import { StudentSettingsService } from '../../../core/services/student-settings.service';
 
 @Component({
   selector: 'app-plan-management',
@@ -22,6 +23,7 @@ export class PlanManagementComponent implements OnInit {
   private ngZone = inject(NgZone);
   public dashService = inject(DashboardService);
   private entitlementService = inject(EntitlementService);
+  public studentSettings = inject(StudentSettingsService);
 
   private _savingEntitlements = signal(false);
   get savingEntitlements(): boolean { return this._savingEntitlements(); }
@@ -840,6 +842,12 @@ export class PlanManagementComponent implements OnInit {
 
     obs.subscribe({
       next: () => {
+        if (this.studentSettings.isStudentPlan(this.form) && this.form.month_plan) {
+          this.studentSettings.setMonth(this.form.month_plan);
+          this.admin.updateGlobalMonth(this.form.month_plan).subscribe({
+            error: () => {}
+          });
+        }
         this.dashService.showToast(this.editMode ? 'Plan updated successfully!' : 'Plan created successfully!', 3500, 'success');
         this.closeModal();
         this.loadPlans();
