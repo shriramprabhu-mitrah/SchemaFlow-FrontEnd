@@ -856,7 +856,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isAllFields) {
         visibleColumns = t.columns;
       } else if (this.svc.isKeyOnly) {
-        visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
+        visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
       } else if (this.svc.isColumnNameOnly) {
         visibleColumns = [];
       }
@@ -1682,7 +1682,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.svc.isAllFields) {
       visibleColumns = t.columns;
     } else if (this.svc.isKeyOnly) {
-      visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
+      visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
     } else if (this.svc.isColumnNameOnly) {
       visibleColumns = [];
     }
@@ -4261,7 +4261,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isAllFields) {
         visibleColumns = table.columns;
       } else if (this.svc.isKeyOnly) {
-        visibleColumns = table.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
+        visibleColumns = table.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
       } else if (this.svc.isColumnNameOnly) {
         visibleColumns = [];
       }
