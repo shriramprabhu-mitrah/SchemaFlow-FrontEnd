@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, inject, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { Icons } from '../../../core/component/icons/icons';
@@ -14,19 +14,22 @@ import { CommonModule } from '@angular/common';
     'style': 'display: block; width: 100%; margin: 0; padding: 0;'
   }
 })
-export class Footer implements OnInit {
-  isLoggedIn = false;
+export class Footer {
+  private cdr = inject(ChangeDetectorRef);
+
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
+
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
 
   constructor(
     private auth: AuthService,
     private router: Router
   ) {}
-
-  ngOnInit(): void {
-    if (typeof window !== 'undefined') {
-      this.isLoggedIn = this.auth.isLoggedIn();
-    }
-  }
 
   onCreateDiagram(): void {
     if (this.isLoggedIn) {

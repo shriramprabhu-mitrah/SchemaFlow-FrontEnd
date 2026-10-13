@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, HostListener, signal, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, HostListener, signal, inject, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -44,7 +44,14 @@ export class ContactComponent implements OnInit {
 
   @ViewChild('fileUploadInput') fileUploadInput?: ElementRef<HTMLInputElement>;
 
-  isLoggedIn = false;
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
+
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
   isMobileMenuOpen = false;
 
   contactForm!: FormGroup;
@@ -78,7 +85,6 @@ export class ContactComponent implements OnInit {
 
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'instant' });
-      this.isLoggedIn = this.auth.isLoggedIn();
     }
 
     const typeParam = this.route.snapshot.queryParamMap.get('type');
@@ -124,12 +130,13 @@ export class ContactComponent implements OnInit {
   }
 
   private signOutService = inject(SignOutService);
+  private cdr = inject(ChangeDetectorRef);
 
   logout(): void {
     this.signOutService.prompt(() => {
       this.auth.logout();
-      this.isLoggedIn = false;
       this.svc.showToast('Logged out successfully.', 2500, 'success');
+      this.cdr.detectChanges();
     });
   }
 
