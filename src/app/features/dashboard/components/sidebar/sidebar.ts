@@ -5,7 +5,8 @@ import {
   HostListener,
   OnInit,
   OnDestroy,
-  effect
+  effect,
+  inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -15,6 +16,7 @@ import { DashboardService } from '../../../../core/services/dashboard.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
 import { ExportService, SqlDialect } from '../../../../core/services/export.service';
+import { SignOutService } from '../../../../core/services/sign-out.service';
 import { Icons } from '../../../../core/component/icons/icons';
 
 @Component({
@@ -32,6 +34,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   importing = false;
   exportError: string | null = null;
   private destroy$ = new Subject<void>();
+  private signOutService = inject(SignOutService);
 
   constructor(
     public svc: DashboardService,
@@ -624,18 +627,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ AUTH / SIGNOUT ============
 
   handleSignOut(e?: Event): void {
-    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (!this.isLoggedIn) {
       this.router.navigate(['/login']);
       return;
     }
-    this.svc.askForConfirmation(() => {
-      this.auth.logout();
-      this.svc.clearDiagram(false);
-      this.svc.showToast('Logged out successfully.', 2500, 'success');
-      this.router.navigate(['/login']);
+    this.signOutService.prompt(() => {
+      this.svc.askForConfirmation(() => {
+        this.auth.logout();
+        this.svc.clearDiagram(false);
+        this.svc.showToast('Logged out successfully.', 2500, 'success');
+        this.router.navigate(['/login']);
+      });
     });
   }
 

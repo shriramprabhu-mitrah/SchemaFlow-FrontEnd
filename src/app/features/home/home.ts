@@ -1,7 +1,8 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { SignOutService } from '../../core/services/sign-out.service';
 import { Icons } from '../../core/component/icons/icons';
 import { ButtonComponent } from '../../shared/button/button';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -137,10 +138,14 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  private signOutService = inject(SignOutService);
+
   logout(): void {
-    this.auth.logout();
-    this.isLoggedIn = false;
-    this.svc.showToast('Logged out successfully.', 2500, 'success');
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.isLoggedIn = false;
+      this.svc.showToast('Logged out successfully.', 2500, 'success');
+    });
   }
 }
 

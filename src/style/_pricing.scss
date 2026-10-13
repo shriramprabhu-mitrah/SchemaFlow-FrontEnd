@@ -626,16 +626,25 @@
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  /* Disabled pill */
-  button.btn-disabled {
-    background: #f3f4f6 !important;
-    border: 1px solid #e5e7eb !important;
-    color: #9ca3af !important;
+  /* Disabled pill — no background color */
+  button.btn-disabled,
+  button:disabled,
+  button.disabled {
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #64748b !important;
     cursor: not-allowed !important;
     box-shadow: none !important;
+    opacity: 0.6 !important;
+    pointer-events: none !important;
 
-    /* Override global opacity from .disabled */
-    opacity: 1 !important;
+    &:hover {
+      background: transparent !important;
+      background-image: none !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
   }
 
   /* Free outline pill */
@@ -1148,6 +1157,27 @@ body.light-theme .pricing-container {
       &:hover {
         background: #e2e8f0 !important;
         color: #0f172a !important;
+      }
+    }
+
+    /* Disabled button in light mode — no background color */
+    button.btn-disabled,
+    button:disabled,
+    button.disabled {
+      background: transparent !important;
+      background-image: none !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #94a3b8 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      opacity: 0.65 !important;
+      pointer-events: none !important;
+
+      &:hover {
+        background: transparent !important;
+        background-image: none !important;
+        box-shadow: none !important;
+        transform: none !important;
       }
     }
 

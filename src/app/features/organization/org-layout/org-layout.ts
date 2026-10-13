@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { SignOutService } from '../../../core/services/sign-out.service';
 import { Icons } from '../../../core/component/icons/icons';
 import { OrganizationService } from '../services/organization.service';
 
@@ -17,6 +18,7 @@ export class OrgLayoutComponent {
   private auth = inject(AuthService);
   public dashService = inject(DashboardService);
   private orgService = inject(OrganizationService);
+  private signOutService = inject(SignOutService);
   sidebarCollapsed = false;
 
   ngOnInit() {
@@ -87,7 +89,9 @@ export class OrgLayoutComponent {
   }
 
   logout(): void {
-    this.auth.logout();
-    this.router.navigate(['/login']);
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.router.navigate(['/login']);
+    });
   }
 }

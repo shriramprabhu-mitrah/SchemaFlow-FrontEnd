@@ -93,9 +93,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private forceHighlightConnections = false;
   private watermarkLogo: HTMLImageElement | null = null;
   private exportingPdf = false;
+  private exportingPng = false;
 
   private isCanvasLight(): boolean {
-    return this.exportingPdf || this.svc.theme() === 'light';
+    return this.exporting || this.exportingPng || this.exportingPdf || this.svc.theme() === 'light';
   }
 
   private wheelListener!: (e: WheelEvent) => void;
@@ -353,6 +354,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (typeof window === 'undefined') return;
 
     this.exporting = true;
+    this.exportingPng = true;
     this.drawingClean = true;
 
     try {
@@ -416,6 +418,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.scheduleDraw();
     } finally {
       this.exporting = false;
+      this.exportingPng = false;
       this.drawingClean = false;
     }
   }
@@ -714,8 +717,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     const width = maxX - minX;
     const height = maxY - minY;
 
-    const isLight = this.svc.theme() === 'light';
-    const bgColor = isLight ? '#f8fafc' : '#08101f';
+    // SVG export is strictly restricted to light theme only
+    const isLight = true;
+    const bgColor = '#f8fafc';
 
     const connectedColumns = new Set<string>();
     this.svc.refs.forEach((ref) => {
@@ -856,7 +860,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isAllFields) {
         visibleColumns = t.columns;
       } else if (this.svc.isKeyOnly) {
-        visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
+        visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
       } else if (this.svc.isColumnNameOnly) {
         visibleColumns = [];
       }
@@ -1682,7 +1686,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.svc.isAllFields) {
       visibleColumns = t.columns;
     } else if (this.svc.isKeyOnly) {
-      visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
+      visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
     } else if (this.svc.isColumnNameOnly) {
       visibleColumns = [];
     }
@@ -4261,7 +4265,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.svc.isAllFields) {
         visibleColumns = table.columns;
       } else if (this.svc.isKeyOnly) {
-        visibleColumns = table.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget);
+        visibleColumns = table.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
       } else if (this.svc.isColumnNameOnly) {
         visibleColumns = [];
       }

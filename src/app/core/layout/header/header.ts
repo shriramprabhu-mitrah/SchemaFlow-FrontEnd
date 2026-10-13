@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, HostListener, Input, OnInit, effect, NgZone, ViewChild, ElementRef } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, Input, OnInit, effect, NgZone, ViewChild, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../../../core/services/dashboard.service';
@@ -11,6 +11,7 @@ import { finalize } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { EntitlementService } from '../../../core/services/entitlement.service';
+import { SignOutService } from '../../../core/services/sign-out.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
@@ -85,7 +86,7 @@ export class HeaderComponent implements OnInit {
   // Connection String import modal state
   connStringModalOpen = false;
   connStringConnectMode: 'host' | 'url' = 'host';
-  connStringDatabaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' = 'postgres';
+  connStringDatabaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake' = 'postgres';
   selectedSqliteFile: File | null = null;
   isSqliteDraggingOver = false;
 
@@ -96,17 +97,21 @@ export class HeaderComponent implements OnInit {
   connUsername = 'postgres';
   connPassword = '';
   connSchema = '';
+  connAccount = '';
+  connWarehouse = '';
+  connRole = '';
   showConnPassword = false;
 
   // URL mode field
   connStringValue = '';
   connStringUrlMismatchError: string | null = null;
   dbTypeDropdownOpen = false;
-  dbTypeOptions: Array<{ value: 'postgres' | 'mysql' | 'mariadb' | 'mssql'; label: string }> = [
+  dbTypeOptions: Array<{ value: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'snowflake'; label: string }> = [
     { value: 'postgres', label: 'PostgreSQL' },
     { value: 'mysql', label: 'MySQL' },
     { value: 'mariadb', label: 'MariaDB' },
-    { value: 'mssql', label: 'SQL Server (MSSQL)' }
+    { value: 'mssql', label: 'SQL Server (MSSQL)' },
+    { value: 'snowflake', label: 'Snowflake' }
   ];
 
   connStringImporting = false;
@@ -115,6 +120,8 @@ export class HeaderComponent implements OnInit {
 
   // Deletion warning alert modal state
 
+
+  private signOutService = inject(SignOutService);
 
   // Subject that drives debounced/cancelled SQL validation
   constructor(
@@ -350,8 +357,6 @@ export class HeaderComponent implements OnInit {
 
   selectDiagramById(id: number, onRevert?: () => void): void {
     if (!id) return;
-
-
 
     this.runWithUnsavedChangesCheck(() => {
       this.svc.requestSplitView();
@@ -770,6 +775,9 @@ openConnectionStringModal(): void {
     this.connUsername = 'postgres';
     this.connPassword = '';
     this.connSchema = '';
+    this.connAccount = '';
+    this.connWarehouse = '';
+    this.connRole = '';
     this.showConnPassword = false;
     this.connStringValue = '';
     this.connStringUrlMismatchError = null;
@@ -788,6 +796,9 @@ openConnectionStringModal(): void {
     this.dbTypeDropdownOpen = false;
     this.selectedSqliteFile = null;
     this.isSqliteDraggingOver = false;
+    this.connAccount = '';
+    this.connWarehouse = '';
+    this.connRole = '';
     this.connStringImporting = false;
     this.connStringError = null;
     this.cdr.markForCheck();
@@ -831,6 +842,11 @@ openConnectionStringModal(): void {
     this.connUsername = details.username;
     this.connPassword = details.password;
     this.connSchema = details.schema;
+    if (this.connStringDatabaseType === 'snowflake') {
+      this.connAccount = details.account || details.host || '';
+      this.connWarehouse = details.warehouse || '';
+      this.connRole = details.role || '';
+    }
     this.connStringError = null;
     this.cdr.markForCheck();
   }
@@ -858,7 +874,7 @@ openConnectionStringModal(): void {
 
   getSelectedDatabaseTypeLabel(): string {
     const found = this.dbTypeOptions.find(opt => opt.value === this.connStringDatabaseType);
-    return found ? found.label : (this.connStringDatabaseType === 'oracle' ? 'Oracle' : (this.connStringDatabaseType === 'sqlite' ? 'SQLite' : 'PostgreSQL'));
+    return found ? found.label : (this.connStringDatabaseType === 'snowflake' ? 'Snowflake' : (this.connStringDatabaseType === 'oracle' ? 'Oracle' : (this.connStringDatabaseType === 'sqlite' ? 'SQLite' : 'PostgreSQL')));
   }
 
   toggleDbTypeDropdown(event?: MouseEvent): void {
@@ -869,7 +885,7 @@ openConnectionStringModal(): void {
     this.cdr.markForCheck();
   }
 
-  selectDatabaseType(type: 'postgres' | 'mysql' | 'mariadb' | 'mssql', event?: MouseEvent): void {
+  selectDatabaseType(type: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'snowflake', event?: MouseEvent): void {
     if (event) {
       event.stopPropagation();
     }
@@ -885,13 +901,22 @@ openConnectionStringModal(): void {
   onDatabaseTypeChange(event?: Event): void {
     const selectedType = (event?.target as HTMLSelectElement | null)?.value;
     if (selectedType) {
-      this.connStringDatabaseType = selectedType as 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle';
+      this.connStringDatabaseType = selectedType as 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake';
     }
 
     this.connStringError = null;
     if (this.connStringDatabaseType === 'sqlite') {
       this.selectedSqliteFile = null;
       this.isSqliteDraggingOver = false;
+    } else if (this.connStringDatabaseType === 'snowflake') {
+      this.connAccount = '';
+      this.connWarehouse = '';
+      this.connRole = '';
+      this.connUsername = '';
+      this.connPassword = '';
+      this.connDatabase = '';
+      this.connSchema = '';
+      this.connPort = null;
     } else if (this.connStringDatabaseType === 'postgres') {
       if (!this.connPort || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 5432;
       if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'postgres';
@@ -980,6 +1005,16 @@ openConnectionStringModal(): void {
   getGeneratedConnectionString(): string {
     if (this.connStringConnectMode === 'url') {
       let raw = this.connStringValue.trim();
+      if (this.connStringDatabaseType === 'snowflake') {
+        if (/^snowflake\s*['"]/i.test(raw)) {
+          raw = raw.replace(/^snowflake\s*['"]/i, '').replace(/['"]\s*$/, '').trim();
+        } else if (/^snowflake\s+/i.test(raw)) {
+          raw = raw.replace(/^snowflake\s+/i, '').trim();
+        } else if (/^['"].*['"]$/.test(raw)) {
+          raw = raw.slice(1, -1).trim();
+        }
+        return raw;
+      }
       if (raw.toLowerCase().startsWith('jdbc:') && this.connStringDatabaseType !== 'oracle') {
         raw = raw.substring(5);
       }
@@ -1009,6 +1044,31 @@ openConnectionStringModal(): void {
       }
 
       return raw;
+    }
+
+    if (this.connStringDatabaseType === 'snowflake') {
+      const account = this.connAccount.trim();
+      const user = this.connUsername.trim();
+      const pass = this.connPassword.trim();
+      const db = this.connDatabase.trim();
+      const warehouse = this.connWarehouse.trim();
+      const role = this.connRole.trim();
+      const schema = this.connSchema.trim();
+
+      if (!account && !user && !pass && !db && !warehouse && !role && !schema) {
+        return 'SERVER=your_server_name;UID=your_username;PWD=your_password;DATABASE=your_database_name;WAREHOUSE=your_warehouse_name;ROLE=your_role_name;SCHEMAS=your_schema_names;';
+      }
+
+      const parts: string[] = [];
+      parts.push(`SERVER=${account || 'your_server_name'}`);
+      parts.push(`UID=${user || 'your_username'}`);
+      parts.push(`PWD=${pass || 'your_password'}`);
+      if (db) parts.push(`DATABASE=${db}`);
+      if (warehouse) parts.push(`WAREHOUSE=${warehouse}`);
+      if (role) parts.push(`ROLE=${role}`);
+      if (schema) parts.push(`SCHEMAS=${schema}`);
+
+      return `${parts.join(';')};`;
     }
 
     const host = this.connHost.trim() || 'localhost';
@@ -1042,10 +1102,41 @@ openConnectionStringModal(): void {
     return `postgresql://${userPass}${host}:${port}/${db}`;
   }
 
+  getConnStringPlaceholder(): string {
+    if (this.connStringDatabaseType === 'snowflake') {
+      return 'SERVER=your_server_name;UID=your_username;PWD=your_password;DATABASE=your_database_name;WAREHOUSE=your_warehouse_name;ROLE=your_role_name;SCHEMAS=your_schema_names;';
+    }
+    if (this.connStringDatabaseType === 'mssql') {
+      return 'Server=host,port;Database=database;User Id=username;Password=password;Encrypt=false;TrustServerCertificate=true;';
+    }
+    if (this.connStringDatabaseType === 'mysql') {
+      return 'mysql://username:password@host:port/database';
+    }
+    if (this.connStringDatabaseType === 'mariadb') {
+      return 'mariadb://username:password@host:port/database';
+    }
+    if (this.connStringDatabaseType === 'oracle') {
+      return 'jdbc:oracle:thin:username/password@//host:port/database';
+    }
+    return 'postgresql://username:password@host:port/database?schema=schema_1';
+  }
+
   isConnStringSubmitDisabled(): boolean {
     if (this.connStringImporting) return true;
     if (this.connStringDatabaseType === 'sqlite') {
       return !this.selectedSqliteFile;
+    }
+    if (this.connStringDatabaseType === 'snowflake') {
+      if (this.connStringConnectMode === 'host') {
+        return !this.connAccount.trim()
+          || !this.connUsername.trim()
+          || !this.connPassword.trim();
+      }
+      if (this.connStringUrlMismatchError) return true;
+      return !this.connStringValue.trim()
+        || !this.connAccount.trim()
+        || !this.connUsername.trim()
+        || !this.connPassword.trim();
     }
     if (this.connStringConnectMode === 'host') {
       return !this.connHost.trim()
@@ -1063,6 +1154,15 @@ openConnectionStringModal(): void {
     if (this.connStringDatabaseType === 'sqlite') {
       return !this.selectedSqliteFile;
     }
+    if (this.connStringDatabaseType === 'snowflake') {
+      if (this.connStringConnectMode === 'host') {
+        return !this.connAccount.trim()
+          || !this.connUsername.trim()
+          || !this.connPassword.trim();
+      }
+      if (this.connStringUrlMismatchError) return true;
+      return !this.connStringValue.trim();
+    }
     if (this.connStringConnectMode === 'host') {
       return !this.connHost.trim()
         || !this.connPort
@@ -1072,6 +1172,49 @@ openConnectionStringModal(): void {
     }
     if (this.connStringUrlMismatchError) return true;
     return !this.connStringValue.trim();
+  }
+
+  private extractErrorMessage(err: any, fallbackMessage: string = 'Operation failed.'): string {
+    if (!err) return fallbackMessage;
+
+    let errorPayload = err.error ?? err;
+    if (typeof errorPayload === 'string') {
+      try {
+        errorPayload = JSON.parse(errorPayload);
+      } catch {
+        if (typeof errorPayload === 'string' && errorPayload.trim() && !errorPayload.trim().startsWith('<')) {
+          return errorPayload.trim();
+        }
+      }
+    }
+
+    if (errorPayload && typeof errorPayload === 'object') {
+      if (errorPayload.message) {
+        return Array.isArray(errorPayload.message) ? errorPayload.message.join(', ') : String(errorPayload.message).trim();
+      }
+      if (errorPayload.error) {
+        if (typeof errorPayload.error === 'string') {
+          return errorPayload.error.trim();
+        }
+        if (typeof errorPayload.error === 'object') {
+          if (errorPayload.error.message) {
+            return Array.isArray(errorPayload.error.message) ? errorPayload.error.message.join(', ') : String(errorPayload.error.message).trim();
+          }
+          if (errorPayload.error.details) {
+            return String(errorPayload.error.details).trim();
+          }
+        }
+      }
+      if (errorPayload.details) {
+        return String(errorPayload.details).trim();
+      }
+    }
+
+    if (err.message && typeof err.message === 'string' && !err.message.startsWith('Http failure response')) {
+      return err.message;
+    }
+
+    return fallbackMessage;
   }
 
   testConnection(): void {
@@ -1102,9 +1245,13 @@ openConnectionStringModal(): void {
       error: (err: any) => {
         this.connStringTesting = false;
         this.cdr.markForCheck();
-        const message = err?.error?.message || err?.message || 'Database connection failed.';
+        let message = this.extractErrorMessage(err, 'Database connection failed.');
+        if (message.toLowerCase().includes('authentication failed') || message.toLowerCase().includes('password authentication failed')) {
+          message = 'Database Authentication Failed: Incorrect database username or password.';
+        } else if (err?.status === 503) {
+          message = 'Service Unavailable (503): Backend failed to reach the target database. Check host and port.';
+        }
         this.connStringError = message;
-        this.svc.showToast('Database connection failed.', 4000, 'error');
       }
     });
   }
@@ -1150,25 +1297,7 @@ openConnectionStringModal(): void {
         },
         error: (err: any) => {
           console.error('SQLite import failed:', err);
-          let errorMessage = 'Failed to generate DBML from SQLite file.';
-
-          if (err?.error) {
-            try {
-              const parsed = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-              if (parsed?.message) {
-                errorMessage = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
-              } else if (parsed?.error) {
-                errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
-              }
-            } catch {
-              if (typeof err.error === 'string' && err.error.trim()) {
-                errorMessage = err.error.length > 250 ? err.error.substring(0, 250) + '...' : err.error;
-              }
-            }
-          } else if (err?.message) {
-            errorMessage = err.message;
-          }
-
+          const errorMessage = this.extractErrorMessage(err, 'Failed to generate DBML from SQLite file.');
           this.connStringError = errorMessage;
           this.cdr.markForCheck();
         }
@@ -1213,24 +1342,7 @@ openConnectionStringModal(): void {
       },
       error: (err: any) => {
         console.error('Connection string import failed:', err);
-        let errorMessage = 'Failed to generate DBML from connection string.';
-
-        if (err?.error) {
-          try {
-            const parsed = typeof err.error === 'string' ? JSON.parse(err.error) : err.error;
-            if (parsed?.message) {
-              errorMessage = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
-            } else if (parsed?.error) {
-              errorMessage = typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error);
-            }
-          } catch {
-            if (typeof err.error === 'string' && err.error.trim()) {
-              errorMessage = err.error.length > 250 ? err.error.substring(0, 250) + '...' : err.error;
-            }
-          }
-        } else if (err?.message) {
-          errorMessage = err.message;
-        }
+        let errorMessage = this.extractErrorMessage(err, 'Failed to generate DBML from connection string.');
 
         if (errorMessage.toLowerCase().includes('authentication failed') || errorMessage.toLowerCase().includes('password authentication failed')) {
           errorMessage = 'Database Authentication Failed: Incorrect database username or password in connection string.';
@@ -1403,11 +1515,13 @@ openConnectionStringModal(): void {
   }
 
   logout(): void {
-    this.runWithUnsavedChangesCheck(() => {
-      this.auth.logout();
-      this.svc.clearDiagram(false);
-      this.svc.showToast('Logged out successfully.', 2500, 'success');
-      this.router.navigate(['/login']);
+    this.signOutService.prompt(() => {
+      this.runWithUnsavedChangesCheck(() => {
+        this.auth.logout();
+        this.svc.clearDiagram(false);
+        this.svc.showToast('Logged out successfully.', 2500, 'success');
+        this.router.navigate(['/login']);
+      });
     });
   }
 

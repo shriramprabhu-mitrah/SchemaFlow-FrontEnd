@@ -534,28 +534,6 @@ body.light-theme .interactive-preview-wrapper,
     display: none !important;
   }
 
-  /* Make tabs wrap beautifully on mobile */
-  .ip-tabs-container {
-    padding: 12px 10px;
-    justify-content: center;
-  }
-  
-  .ip-tabs {
-    flex-wrap: wrap;
-    width: 100%;
-    border-radius: 16px;
-    justify-content: center;
-    gap: 6px;
-  }
-  
-  .ip-tab {
-    flex: 1 1 calc(50% - 6px);
-    justify-content: center;
-    padding: 8px 12px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-  
   /* Code & Diagram scaling */
   .ip-content-container {
     height: 380px;
@@ -563,7 +541,7 @@ body.light-theme .interactive-preview-wrapper,
   
   .ip-canvas-container {
     overflow: hidden !important;
-    zoom: 0.6;
+    zoom: 0.85;
   }
   
   .ip-canvas-grid, .ip-canvas-container > svg {
@@ -584,6 +562,52 @@ body.light-theme .interactive-preview-wrapper,
 }
 
 @media (max-width: 576px) {
+  /* Make tabs wrap beautifully on mobile */
+  .ip-tabs-container {
+    padding: 12px 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  
+  .ip-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0;
+    margin: 0 auto;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .ip-tab {
+    display: flex;
+    flex: 1 1 calc(50% - 8px); /* 2x2 grid, all same size */
+    max-width: 130px; /* prevent getting too huge */
+    background: var(--ip-tabs-pill-bg);
+    border: 1px solid var(--ip-tabs-pill-border);
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+  }
+  
+  .ip-tab.active {
+    background: var(--ip-tab-active-bg) !important;
+    border-color: transparent !important;
+  }
+
   .ip-content-container {
     height: 320px;
   }
