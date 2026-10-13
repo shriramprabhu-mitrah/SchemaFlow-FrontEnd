@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { EnquiryService } from '../../core/services/enquiry.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SignOutService } from '../../core/services/sign-out.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { SeoService } from '../../core/services/seo.service';
 import { Icons } from '../../core/component/icons/icons';
@@ -122,10 +123,14 @@ export class ContactComponent implements OnInit {
     }
   }
 
+  private signOutService = inject(SignOutService);
+
   logout(): void {
-    this.auth.logout();
-    this.isLoggedIn = false;
-    this.svc.showToast('Logged out successfully.', 2500, 'success');
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.isLoggedIn = false;
+      this.svc.showToast('Logged out successfully.', 2500, 'success');
+    });
   }
 
   resetForm() {

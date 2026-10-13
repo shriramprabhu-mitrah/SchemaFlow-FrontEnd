@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, HostListener, Input, OnInit, effect, NgZone, ViewChild, ElementRef } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, Input, OnInit, effect, NgZone, ViewChild, ElementRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../../../core/services/dashboard.service';
@@ -11,6 +11,7 @@ import { finalize } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { EntitlementService } from '../../../core/services/entitlement.service';
+import { SignOutService } from '../../../core/services/sign-out.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
@@ -119,6 +120,8 @@ export class HeaderComponent implements OnInit {
 
   // Deletion warning alert modal state
 
+
+  private signOutService = inject(SignOutService);
 
   // Subject that drives debounced/cancelled SQL validation
   constructor(
@@ -1512,11 +1515,13 @@ openConnectionStringModal(): void {
   }
 
   logout(): void {
-    this.runWithUnsavedChangesCheck(() => {
-      this.auth.logout();
-      this.svc.clearDiagram(false);
-      this.svc.showToast('Logged out successfully.', 2500, 'success');
-      this.router.navigate(['/login']);
+    this.signOutService.prompt(() => {
+      this.runWithUnsavedChangesCheck(() => {
+        this.auth.logout();
+        this.svc.clearDiagram(false);
+        this.svc.showToast('Logged out successfully.', 2500, 'success');
+        this.router.navigate(['/login']);
+      });
     });
   }
 

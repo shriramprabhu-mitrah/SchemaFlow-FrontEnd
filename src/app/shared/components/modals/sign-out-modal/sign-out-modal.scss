@@ -1,0 +1,350 @@
+/* ==========================================================================
+   Sign Out Confirmation Modal Styles
+   Centered Layout with Close Button in Top-Right Corner
+   Supports both Dark and Light Themes seamlessly
+   ========================================================================== */
+
+.signout-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(8, 16, 31, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000000;
+  padding: 20px;
+  box-sizing: border-box;
+  animation: signoutFadeIn 0.2s ease-out;
+}
+
+.signout-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 410px;
+  background: #141c2c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 28px;
+  box-sizing: border-box;
+  color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  animation: signoutSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+/* Close Button - Fixed at top-right corner */
+.signout-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: #7082a0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  z-index: 2;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #3ec5c1;
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* Header - Aligned at left corner */
+.signout-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  margin-bottom: 16px;
+  padding-right: 32px;
+  box-sizing: border-box;
+
+  .signout-header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .signout-icon-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .signout-title-wrap {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    gap: 2px;
+  }
+
+  .signout-modal-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.25;
+    letter-spacing: -0.2px;
+  }
+
+  .signout-modal-subtitle {
+    margin: 0;
+    font-size: 12.5px;
+    color: #94a3b8;
+    line-height: 1.3;
+  }
+}
+
+/* Body - Centered */
+.signout-modal-body {
+  width: 100%;
+  margin-bottom: 22px;
+  display: flex;
+  justify-content: flex-start;
+
+  .signout-message {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #cbd5e1;
+    line-height: 1.5;
+    text-align: center;
+    word-break: break-word;
+  }
+}
+
+/* Footer - Centered */
+.signout-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+
+  button {
+    height: 38px;
+    min-width: 96px;
+    padding: 0 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-sizing: border-box;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #3ec5c1;
+      outline-offset: 2px;
+    }
+  }
+
+  .btn-signout-cancel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+  }
+
+  .btn-signout-confirm {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+    }
+  }
+
+  .signout-btn-icon {
+    flex-shrink: 0;
+  }
+
+  .signout-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: signoutSpin 0.7s linear infinite;
+    display: inline-block;
+  }
+}
+
+/* ==========================================================================
+   Light Theme Overrides
+   Matches all SchemaFlow light mode selectors
+   ========================================================================== */
+html.light-theme,
+body.light-theme,
+html[data-theme="light"],
+body[data-theme="light"],
+.light-theme {
+  .signout-modal-backdrop {
+    background: rgba(15, 23, 42, 0.45);
+  }
+
+  .signout-modal-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  }
+
+  .signout-modal-close {
+    color: #64748b;
+
+    &:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    &:focus-visible {
+      outline-color: #2563eb;
+    }
+  }
+
+  .signout-modal-header {
+    .signout-icon-badge {
+      background: #fef2f2;
+      border: 1px solid #fee2e2;
+      color: #ef4444;
+    }
+
+    .signout-modal-title {
+      color: #0f172a;
+    }
+
+    .signout-modal-subtitle {
+      color: #64748b;
+    }
+  }
+
+  .signout-modal-body {
+    .signout-message {
+      color: #334155;
+    }
+  }
+
+  .signout-modal-footer {
+    button:focus-visible {
+      outline-color: #2563eb;
+    }
+
+    .btn-signout-cancel {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+      &:hover:not(:disabled) {
+        background: #f8fafc;
+        border-color: #94a3b8;
+        color: #0f172a;
+      }
+    }
+
+    .btn-signout-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      border: none;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4);
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+@keyframes signoutFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes signoutSlideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes signoutSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
