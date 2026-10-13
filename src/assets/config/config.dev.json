@@ -110,7 +110,16 @@
     "aiSessionHistory": "API_URL/api/ai/sessions/{sessionId}/history",
     "deleteSessionHistory": "API_URL/api/ai/sessions/:sessionId/history",
     "aiModelConfig": "API_URL/api/ai/models/:modelId/config",
-    "aiSystemSettings": "API_URL/api/ai/admin/system-settings"
+    "aiSystemSettings": "API_URL/api/ai/admin/system-settings",
+    "monthSettings": "API_URL/api/admin/month-settings",
+    "globalMonth": "API_URL/api/admin/students/global-month",
+    "studentCredentials": "API_URL/api/student/credentials",
+    "studentCredentialsById": "API_URL/api/student/credentials/{id}",
+    "deleteStudentCredential": "API_URL/api/student/credentials/{id}"
+  },
+  "studentPlanApiUrls": {
+    "sendOtp": "API_URL/api/student/send-otp",
+    "verifyOtp": "API_URL/api/student/verify-otp"
   },
   "chatbotApiUrls": {
     "session": "API_URL/api/chatbot/sessions",
