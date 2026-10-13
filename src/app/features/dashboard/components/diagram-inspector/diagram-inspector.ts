@@ -445,8 +445,6 @@ export class DiagramInspectorComponent implements OnInit, OnDestroy {
       this.expandedRefs.add(index);
     }
     this.cdr.markForCheck();
-  }
-
-
+  }         
 
 }

@@ -231,10 +231,7 @@
   width: max-content;
   animation: dbMarqueeScroll 28s linear infinite;
   will-change: transform;
-
-  &:hover {
-    animation-play-state: paused;
-  }
+  cursor: default;
 }
 
 .db-marquee-group {
@@ -270,9 +267,8 @@
   border: none;
   box-shadow: none;
   padding: 6px 12px;
-  transition: transform 0.2s ease;
   user-select: none;
-  cursor: pointer;
+  cursor: default;
 
   app-icons {
     display: flex;
@@ -284,10 +280,6 @@
     display: block;
     object-fit: contain;
     flex-shrink: 0;
-  }
-
-  &:hover {
-    transform: translateY(-2px);
   }
 }
 
