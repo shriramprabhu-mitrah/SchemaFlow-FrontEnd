@@ -30,7 +30,7 @@
     <div class="spinner"></div><span>Loading users...</span>
   </div>
 
-  <div class="data-table-wrap" *ngIf="!loading">
+  <div class="data-table-wrap" [class.has-open-dropdown]="openStatusDropdownId !== null" *ngIf="!loading">
     <table class="data-table">
       <thead>
         <tr>
@@ -84,15 +84,38 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let u of displayUsers; let i = index">
+        <tr *ngFor="let u of displayUsers; let i = index" [class.has-open-dropdown]="openStatusDropdownId === (u.userid || i)">
           <td>{{ paginationStartIndex + i }}</td>
           <td><strong class="user-name-text">{{ u.username }}</strong></td>
           <td><span class="user-email-text">{{ u.email }}</span></td>
           <td><span class="text-muted">{{ u.organization_name || 'Individual' }}</span></td>
           <td>
-            <span class="badge" [class.badge-active]="u.isactive !== false" [class.badge-inactive]="u.isactive === false">
-              {{ u.isactive !== false ? 'Active' : 'Inactive' }}
-            </span>
+            <div class="custom-status-dropdown-container dropdown-container-rel"
+                 [class.open]="openStatusDropdownId === (u.userid || i)">
+              <button type="button" class="custom-status-dropdown-trigger user-status-trigger"
+                      [ngClass]="u.isactive !== false ? 'status-active' : 'status-inactive'"
+                      (click)="toggleStatusDropdown(u.userid || i, $event, i)">
+                <span>{{ u.isactive !== false ? 'Active' : 'Inactive' }}</span>
+                <app-icons name="chevron-down" size="12"></app-icons>
+              </button>
+              <div class="custom-status-dropdown-menu user-status-menu"
+                   [class.dropdown-up]="openStatusDropdownUpward"
+                   *ngIf="openStatusDropdownId === (u.userid || i)"
+                   (click)="$event.stopPropagation()">
+                <button type="button" class="custom-status-dropdown-option"
+                        [class.selected]="u.isactive !== false"
+                        (click)="selectUserStatus(u, true)">
+                  <span class="status-option-dot active"></span>
+                  <span>Active</span>
+                </button>
+                <button type="button" class="custom-status-dropdown-option"
+                        [class.selected]="u.isactive === false"
+                        (click)="selectUserStatus(u, false)">
+                  <span class="status-option-dot inactive"></span>
+                  <span>Inactive</span>
+                </button>
+              </div>
+            </div>
           </td>
 
           <td><span class="text-muted">{{ u.createddate | date:'mediumDate' }}</span></td>

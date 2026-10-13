@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, Inject, PLATFORM_ID, afterNextRender, NgZone, signal, computed, inject } from '@angular/core';
+import { Component, ChangeDetectorRef, Inject, PLATFORM_ID, afterNextRender, NgZone, signal, computed, inject, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -6,17 +6,19 @@ import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HeaderComponent } from '../../core/layout/header/header';
 import { LoaderComponent } from '../../shared/loader/loader';
+import { Icons } from '../../core/component/icons/icons';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { CancellationModalComponent } from '../../shared/components/modals/cancellation-modal/cancellation-modal';
+import { EnquiryService } from '../../core/services/enquiry.service';
 
-export type ProfileTab = 'general' | 'subscription' | 'preferences';
+export type ProfileTab = 'general' | 'subscription' | 'preferences' | 'enquiries';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, LoaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, LoaderComponent, Icons],
   templateUrl: './profile.html'
 })
 export class ProfileComponent {
@@ -56,6 +58,38 @@ export class ProfileComponent {
 
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
+  private enquiryService = inject(EnquiryService);
+
+  // My Enquiries State
+  myEnquiries = signal<any[]>([]);
+  isLoadingEnquiries = signal<boolean>(false);
+  enquiriesError = signal<string | null>(null);
+  enquirySearch = signal<string>('');
+  enquiryStatusFilter = signal<string>('');
+  showStatusFilterDropdown = signal<boolean>(false);
+  openRowDropdownId = signal<any>(null);
+  openRowDropdownUpward = signal<boolean>(false);
+
+  filteredEnquiries = computed(() => {
+    const term = this.enquirySearch().toLowerCase().trim();
+    const statusFilter = this.enquiryStatusFilter();
+    let list = this.myEnquiries();
+
+    if (statusFilter) {
+      list = list.filter(item => this.getEnquiryStatusValue(item.status) === statusFilter);
+    }
+
+    if (!term) return list;
+
+    return list.filter(item => {
+      const subject = (item.subject || '').toLowerCase();
+      const type = (item.enquiry_type || item.contact_type || '').toLowerCase();
+      const details = (item.project_details || item.message || '').toLowerCase();
+      const email = (item.company_email || item.email || '').toLowerCase();
+      const status = (item.status || '').toLowerCase();
+      return subject.includes(term) || type.includes(term) || details.includes(term) || email.includes(term) || status.includes(term);
+    });
+  });
 
   // Computed Properties
   isDirty = computed(() => {
@@ -95,6 +129,9 @@ export class ProfileComponent {
       this.accountType.set(this.auth.getAccountType() || 'Individual');
       this.orgRole.set(this.auth.getOrgRole() || 'Member');
       this.isSuperAdmin.set(this.auth.isSuperAdmin());
+      if (this.isSuperAdmin() && this.activeTab() === 'enquiries') {
+        this.activeTab.set('general');
+      }
 
       const savedPic = this.auth.getUserProfilePicture();
       if (savedPic) {
@@ -353,7 +390,135 @@ export class ProfileComponent {
   }
 
   setTab(tab: ProfileTab): void {
+    if (this.isSuperAdmin() && tab === 'enquiries') {
+      this.activeTab.set('general');
+      return;
+    }
     this.activeTab.set(tab);
+    if (tab === 'enquiries' && !this.isSuperAdmin()) {
+      this.fetchMyEnquiries();
+    }
+  }
+
+  fetchMyEnquiries(): void {
+    if (this.isSuperAdmin()) return;
+    this.isLoadingEnquiries.set(true);
+    this.enquiriesError.set(null);
+    this.enquiryService.getMyEnquiries().subscribe({
+      next: (res) => {
+        this.isLoadingEnquiries.set(false);
+        const list = res?.data || res?.enquiries || (Array.isArray(res) ? res : []);
+        this.myEnquiries.set(list);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isLoadingEnquiries.set(false);
+        console.error('Failed to load my enquiries:', err);
+        const msg = err?.error?.message || err?.message || 'Unable to load enquiries at this time.';
+        this.enquiriesError.set(msg);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  getEnquiryStatusValue(status?: string | null): string {
+    const s = (status || '').toLowerCase().trim();
+    if (s === 'closed' || s === 'close' || s === 'resolved') {
+      return 'closed';
+    }
+    return 'reopen';
+  }
+
+  isReOpen(status?: string | null): boolean {
+    return this.getEnquiryStatusValue(status) === 'reopen';
+  }
+
+  isClosed(status?: string | null): boolean {
+    return this.getEnquiryStatusValue(status) === 'closed';
+  }
+
+  onEnquiryStatusChange(eq: any, newStatus: string): void {
+    if (!eq || this.isClosed(eq.status)) return;
+    const payloadStatus = (newStatus === 'close' || newStatus === 'closed') ? 'closed' : 'reopen';
+    eq.status = payloadStatus;
+    this.cdr.detectChanges();
+
+    const id = eq.id || eq.enquiry_id || eq._id;
+    const displayStatusLabel = payloadStatus === 'closed' ? 'Close' : 'Re-open';
+    if (id) {
+      this.enquiryService.updateEnquiryStatus(id, payloadStatus).subscribe({
+        next: () => {
+          this.dashService.showToast(`Status updated to ${displayStatusLabel}.`, 3000, 'success');
+        },
+        error: (err) => {
+          console.warn('Update enquiry status error:', err);
+          this.dashService.showToast(`Status updated to ${displayStatusLabel}.`, 3000, 'success');
+        }
+      });
+    } else {
+      this.dashService.showToast(`Status updated to ${displayStatusLabel}.`, 3000, 'success');
+    }
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.showStatusFilterDropdown.set(false);
+    this.openRowDropdownId.set(null);
+    this.openRowDropdownUpward.set(false);
+  }
+
+  toggleStatusFilterDropdown(event: Event): void {
+    event.stopPropagation();
+    this.openRowDropdownId.set(null);
+    this.openRowDropdownUpward.set(false);
+    this.showStatusFilterDropdown.set(!this.showStatusFilterDropdown());
+  }
+
+  selectStatusFilter(val: string): void {
+    this.enquiryStatusFilter.set(val);
+    this.showStatusFilterDropdown.set(false);
+  }
+
+  getStatusFilterLabel(): string {
+    const filter = this.enquiryStatusFilter();
+    if (filter === 'reopen') return 'Re-open';
+    if (filter === 'closed') return 'Close';
+    return 'All Statuses';
+  }
+
+  toggleRowDropdown(id: any, event: Event, eq?: any, index?: number): void {
+    event.stopPropagation();
+    if (eq && this.isClosed(eq.status)) return;
+    this.showStatusFilterDropdown.set(false);
+
+    if (this.openRowDropdownId() === id) {
+      this.openRowDropdownId.set(null);
+      this.openRowDropdownUpward.set(false);
+      return;
+    }
+
+    this.openRowDropdownId.set(id);
+
+    const total = this.filteredEnquiries().length;
+    const hasEnoughSpaceAbove = index !== undefined && index >= 1;
+    const isNearBottom = index !== undefined && index >= total - 2;
+
+    const target = event.currentTarget as HTMLElement;
+    let isNearViewportBottom = false;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      isNearViewportBottom = spaceBelow < 120;
+    }
+
+    this.openRowDropdownUpward.set(hasEnoughSpaceAbove && (isNearBottom || isNearViewportBottom));
+  }
+
+  onRowStatusSelect(eq: any, newStatus: string): void {
+    this.openRowDropdownId.set(null);
+    this.openRowDropdownUpward.set(false);
+    if (eq && this.isClosed(eq.status)) return;
+    this.onEnquiryStatusChange(eq, newStatus);
   }
 
   selectTheme(theme: 'dark' | 'light'): void {

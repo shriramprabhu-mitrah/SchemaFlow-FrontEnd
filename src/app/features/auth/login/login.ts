@@ -46,15 +46,24 @@ import { config } from '../../../app.config.server';
  	private appConfig: AppConfigService,
  	private http: HttpClient
    ) {
+ 	const params = this.route.snapshot.queryParams;
  	if (this.auth.isLoggedIn()) {
-   	if (this.auth.isSuperAdmin()) {
-     	this.router.navigate(['/admin']);
-   	} else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
-     	this.router.navigate(['/organization']);
+   	if (params['forgot'] === 'true' || params['mode'] === 'forgot') {
+     	this.isForgotPasswordMode = true;
+     	const currentEmail = this.auth.getUserEmail();
+     	if (currentEmail) {
+       	this.forgotPasswordEmail = currentEmail;
+     	}
    	} else {
-     	this.router.navigate(['/dashboard']);
+     	if (this.auth.isSuperAdmin()) {
+       	this.router.navigate(['/admin']);
+     	} else if (this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+       	this.router.navigate(['/organization']);
+     	} else {
+       	this.router.navigate(['/dashboard']);
+     	}
+     	return;
    	}
-   	return;
  	}
  
 	this.seoService.updateTags({
@@ -67,6 +76,17 @@ import { config } from '../../../app.config.server';
   ngOnInit(): void {
  	const params = this.route.snapshot.queryParams;
  
+	this.route.queryParams.subscribe(p => {
+   	if (p['forgot'] === 'true' || p['mode'] === 'forgot') {
+     	this.isForgotPasswordMode = true;
+     	const currentEmail = this.auth.getUserEmail();
+     	if (currentEmail && !this.forgotPasswordEmail) {
+       	this.forgotPasswordEmail = currentEmail;
+     	}
+     	this.cdr.detectChanges();
+   	}
+ 	});
+
 	// Handle error redirect from Google / LinkedIn
  	if (params['error']) {
    	const errorMsg = decodeURIComponent(params['error']);
@@ -155,6 +175,9 @@ import { config } from '../../../app.config.server';
  	this.passwordError = '';
  	this.forgotPasswordEmail = '';
  	this.forgotPasswordEmailError = '';
+ 	if (!this.isForgotPasswordMode && this.auth.isLoggedIn()) {
+   	this.auth.logout();
+ 	}
    }
  
   private getErrorMessage(err: any, fallback: string): string {
