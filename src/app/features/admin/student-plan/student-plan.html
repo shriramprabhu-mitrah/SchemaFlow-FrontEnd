@@ -1,0 +1,467 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>Student Plan</h1>
+      <p class="text-muted" style="margin:4px 0 0">View and verify student credentials submitted for the {{ displayMonthSettings }}-month free offer.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="load()" [disabled]="loading()" style="display:flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.spin]="loading()">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Refresh</span>
+      </button>
+
+      <div class="search-box-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-input" placeholder="Search students, college, city..." [ngModel]="searchInput" (ngModelChange)="onSearch($event)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Common Settings Summary Bar (Below Refresh) -->
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;">
+    <div class="common-settings-badge-bar">
+      <div class="badge-item">
+        <span
+          style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:rgba(245, 158, 11, 0.2);color:#fbbf24;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <span class="badge-label">Duration:</span>
+        <span
+          style="background:rgba(245, 158, 11, 0.15);color:#fbbf24;border:1px solid rgba(245, 158, 11, 0.3);padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px;">{{
+          displayMonthSettings }} {{ displayMonthSettings === 1 ? 'Month' : 'Months' }}</span>
+      </div>
+
+      <button class="btn-quick-edit" (click)="openMonthModal()" title="Quick Edit Student Plan Duration">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Edit
+      </button>
+    </div>
+  </div>
+
+  <div class="error-banner" *ngIf="error()" style="background:rgba(239,68,68,0.12);border:1px solid #ef4444;color:#ef4444;padding:12px 16px;border-radius:8px;margin-bottom:20px;">
+    {{ error() }}
+  </div>
+
+  <div class="success-banner" *ngIf="statusSuccessMsg()" style="background:rgba(16,185,129,0.12);border:1px solid #10b981;color:#10b981;padding:12px 16px;border-radius:8px;margin-bottom:20px;">
+    {{ statusSuccessMsg() }}
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading()">
+    <div class="spinner"></div>
+    <span>Loading student credentials...</span>
+  </div>
+
+  <!-- Data Table Wrap -->
+  <div class="data-table-wrap" *ngIf="!loading()">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 5%">
+            <span class="sort-header-clickable" style="cursor: default;">
+              <span>S.NO</span>
+            </span>
+          </th>
+          <th style="width: 16%">
+            <span class="sort-header-clickable" (click)="sortBy('full_name')">
+              <span>STUDENT NAME</span>
+              <span class="sort-icon" [class.active]="sortColumn() === 'full_name'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width: 17%">
+            <span class="sort-header-clickable" (click)="sortBy('email')">
+              <span>EMAIL</span>
+              <span class="sort-icon" [class.active]="sortColumn() === 'email'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width: 12%">
+            <span>PHONE NUMBER</span>
+          </th>
+          <th style="width: 9%">
+            <span class="sort-header-clickable" (click)="sortBy('city')">
+              <span>CITY</span>
+              <span class="sort-icon" [class.active]="sortColumn() === 'city'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width: 14%">
+            <span class="sort-header-clickable" (click)="sortBy('institution_name')">
+              <span>INSTITUTION</span>
+              <span class="sort-icon" [class.active]="sortColumn() === 'institution_name'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width: 7%; text-align: center;">ACTIONS</th>
+          <th style="width: 9%; text-align: center;">
+            <span class="sort-header-clickable" style="justify-content: center;" (click)="sortBy('is_approved')">
+              <span>STATUS</span>
+              <span class="sort-icon" [class.active]="sortColumn() === 'is_approved' || sortColumn() === 'status'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width: 11%; text-align: center;">APPROVAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let student of paginatedStudents(); let i = index">
+          <td>{{ paginationStartIndex() + i }}</td>
+          <td>
+            <strong class="user-name-text">{{ getStudentName(student) }}</strong>
+          </td>
+          <td>
+            <span style="color:#64748b;font-size:13px;">{{ student.email || '-' }}</span>
+          </td>
+          <td>
+            <span style="font-size:13px;">{{ getStudentPhone(student) }}</span>
+          </td>
+          <td>
+            <span style="font-size:13px;">{{ student.city || '-' }}</span>
+          </td>
+          <td>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-size:13px;" [title]="getStudentInstitution(student)">
+                {{ getStudentInstitution(student) }}
+              </span>
+              <span *ngIf="getStudentAcademicYear(student)" style="font-size:11px;color:#64748b;font-weight:500;">
+                {{ getStudentAcademicYear(student) }}
+              </span>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <a role="button" class="action-link" (click)="viewDetails(student); $event.preventDefault()">View</a>
+          </td>
+          <td style="text-align: center;">
+            <span class="status-badge" [ngClass]="{
+              'status-accepted': getApprovalStatus(student) === 'Accepted',
+              'status-rejected': getApprovalStatus(student) === 'Rejected',
+              'status-pending': getApprovalStatus(student) === 'Pending'
+            }">
+              {{ getApprovalStatus(student) }}
+            </span>
+          </td>
+          <td style="text-align: center;">
+            <div class="approval-btn-group">
+              <button
+                type="button"
+                class="btn-accept"
+                [disabled]="isApprovalDecided(student) || updatingStudentId() === getStudentId(student)"
+                [title]="isApproved(student) ? 'Already accepted' : (isRejected(student) ? 'Decision already made' : 'Accept student')"
+                (click)="openConfirmModal(student, 'accept')">
+                <svg *ngIf="updatingStudentId() === getStudentId(student) && updatingAction() === 'accept'" class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                </svg>
+                <span>Accept</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-reject"
+                [disabled]="isApprovalDecided(student) || updatingStudentId() === getStudentId(student)"
+                [title]="isRejected(student) ? 'Already rejected' : (isApproved(student) ? 'Decision already made' : 'Reject student')"
+                (click)="openConfirmModal(student, 'reject')">
+                <svg *ngIf="updatingStudentId() === getStudentId(student) && updatingAction() === 'reject'" class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                </svg>
+                <span>Reject</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="paginatedStudents().length === 0">
+          <td colspan="9" class="empty-table-cell" style="text-align:center;padding:40px 20px;color:#94a3b8;">
+            No student verification records found.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-container" *ngIf="totalFilteredCount() > 0">
+      <div class="pagination-info">
+        {{ paginationStartIndex() }}-{{ paginationEndIndex() }} of {{ totalFilteredCount() }} Items
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn tt tt-top" [disabled]="page() === 1" (click)="goToPage(1)" data-tt="First Page">«</button>
+        <button class="page-btn tt tt-top" [disabled]="page() === 1" (click)="goToPage(page() - 1)" data-tt="Previous Page">‹</button>
+        <button class="page-btn" *ngFor="let p of totalPages()" [class.active]="p === page()" (click)="goToPage(p)">{{ p }}</button>
+        <button class="page-btn tt tt-top" [disabled]="page() === totalPagesCount()" (click)="goToPage(page() + 1)" data-tt="Next Page">›</button>
+        <button class="page-btn tt tt-top" [disabled]="page() === totalPagesCount()" (click)="goToPage(totalPagesCount())" data-tt="Last Page">»</button>
+      </div>
+      <div class="page-size-selector page-size-selector-wrap">
+        <div class="custom-status-dropdown-container dropdown-container-rel">
+          <button class="custom-status-dropdown-trigger page-size-trigger" (click)="showLimitDropdown.set(!showLimitDropdown()); $event.stopPropagation()">
+            <span>{{ limit() }}</span>
+            <app-icons name="chevron-down" size="14"></app-icons>
+          </button>
+          <div class="custom-status-dropdown-menu dropdown-up" *ngIf="showLimitDropdown()" (click)="$event.stopPropagation()">
+            <button class="custom-status-dropdown-option" [class.selected]="limit() === 10" (click)="setLimit(10)">10</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit() === 25" (click)="setLimit(25)">25</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit() === 50" (click)="setLimit(50)">50</button>
+            <button class="custom-status-dropdown-option" [class.selected]="limit() === 100" (click)="setLimit(100)">100</button>
+          </div>
+        </div>
+        <span class="limit-label">items per page</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Details Modal -->
+  <div class="modal-overlay" *ngIf="showDetailsModal()" (click)="closeDetailsModal()">
+    <div class="modal-content" style="width:680px;max-width:92vw;padding:28px" (click)="$event.stopPropagation()">
+      <div class="modal-header" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+        <h3 class="modal-title" style="margin:0;font-size:18px;">ID Preview</h3>
+        <button class="modal-close" (click)="closeDetailsModal()" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;">✕</button>
+      </div>
+
+      <div class="loading-state" *ngIf="loadingStudentDetails()" style="padding:40px 0;">
+        <div class="spinner"></div>
+        <span>Loading ID card image...</span>
+      </div>
+
+      <div *ngIf="!loadingStudentDetails()">
+        <!-- Student ID Card Image Alone -->
+        <div class="id-card-section">
+          <div *ngIf="getStudentImageUrl(selectedStudent())" class="id-card-preview-box" style="position:relative;border:1px solid rgba(255,255,255,0.1);border-radius:10px;overflow:hidden;background:#0b1120;text-align:center;padding:12px;">
+            <img [src]="getStudentImageUrl(selectedStudent())" alt="Student ID Card" style="max-width:100%;max-height:480px;object-fit:contain;border-radius:6px;cursor:pointer;" (click)="openImagePreview(getStudentImageUrl(selectedStudent()), $event)">
+          </div>
+
+          <div *ngIf="!getStudentImageUrl(selectedStudent())" style="padding:40px 20px;border:1px dashed rgba(255,255,255,0.15);border-radius:8px;text-align:center;color:#64748b;font-size:14px;">
+            No ID card image uploaded for this record.
+          </div>
+        </div>
+
+        <div class="modal-footer" style="margin-top:20px;display:flex;justify-content:flex-end;">
+          <button class="btn-secondary" (click)="closeDetailsModal()" style="min-width:100px;">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Image Preview Modal -->
+  <div class="modal-overlay image-preview-modal" *ngIf="showImagePreview()" (click)="closeImagePreview()" style="z-index:1100;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);">
+    <div style="position:relative;max-width:90vw;max-height:90vh;display:flex;align-items:center;justify-content:center;" (click)="$event.stopPropagation()">
+      <button (click)="closeImagePreview()" style="position:absolute;top:-40px;right:0;background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">✕</button>
+      <img [src]="previewImageUrl()" alt="Full Preview" style="max-width:88vw;max-height:85vh;object-fit:contain;border-radius:8px;box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+    </div>
+  </div>
+
+  <!-- Month Settings Quick Edit Modal -->
+  <div class="common-settings-overlay" *ngIf="showMonthModal()" (click)="closeMonthModal()">
+    <div class="common-settings-dialog month-settings-dialog" (click)="$event.stopPropagation()">
+
+      <!-- Modal Header -->
+      <div class="common-modal-header">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="modal-icon-badge" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h2 class="modal-title-text">Edit Student Plan Duration</h2>
+              <span class="modal-scope-tag" style="background:rgba(245, 158, 11, 0.2);color:#fbbf24;border-color:rgba(245, 158, 11, 0.35);">GLOBAL</span>
+            </div>
+            <p class="modal-subtitle-text">Set the free duration granted to verified students</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="closeMonthModal()" [disabled]="savingMonth()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="common-modal-body">
+        <div class="setting-section-card">
+          <div class="section-header-row">
+            <div class="section-title-wrap">
+              <span class="icon-box-amber">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </span>
+              <span class="section-title">FREE OFFER MONTHS</span>
+            </div>
+            <span class="status-pill-amber">
+              {{ displayMonthInput }} {{ displayMonthInput === 1 ? 'Month' : 'Months' }}
+            </span>
+          </div>
+
+          <!-- Existing Application Custom Select Dropdown -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 6px; letter-spacing: 0.3px;">SELECT DURATION</label>
+            <div class="custom-select-container" style="width: 100%; display: block;">
+              <button 
+                type="button" 
+                class="custom-select-btn" 
+                [class.open]="showMonthDropdown()"
+                (click)="toggleMonthDropdown($event)"
+              >
+                <span>{{ getSelectedMonthLabel() }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showMonthDropdown()" (click)="$event.stopPropagation()">
+                <div 
+                  class="custom-select-option" 
+                  *ngFor="let opt of availableMonthOptions()"
+                  [class.active]="displayMonthInput === opt.value"
+                  (click)="selectMonthOption(opt)"
+                >
+                  {{ opt.label }}
+                </div>
+                <div class="custom-select-option" *ngIf="availableMonthOptions().length === 0" style="opacity: 0.6; pointer-events: none;">
+                  No duration settings found
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="section-description" style="margin: 12px 0 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+            Applies globally to all newly verified student subscriptions.
+          </p>
+        </div>
+
+        <div *ngIf="monthError()" style="color: #ef4444; font-size: 12px; padding: 8px 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2);">
+          {{ monthError() }}
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="common-modal-footer">
+        <button type="button" class="btn-cancel-modal" (click)="closeMonthModal()" [disabled]="savingMonth()">
+          Cancel
+        </button>
+        <button type="button" class="btn-save-modal" (click)="saveMonthSetting()" [disabled]="savingMonth() || displayMonthInput < 1">
+          <span *ngIf="savingMonth()" class="spinner" style="width:15px;height:15px;border-width:2px;border-color:white;border-top-color:transparent;"></span>
+          <svg *ngIf="!savingMonth()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          {{ savingMonth() ? 'Saving Duration...' : 'Save Duration' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Accept / Reject Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="showConfirmModal()" (click)="closeConfirmModal()">
+    <div class="modal-content confirmation-card-modal student-status-confirm-modal" (click)="$event.stopPropagation()">
+      <!-- Close button on top right -->
+      <button class="modal-close" (click)="closeConfirmModal()" [disabled]="submittingStatus()" aria-label="Close modal">✕</button>
+
+      <!-- Accept Confirmation Icon -->
+      <div class="confirm-icon-wrap icon-wrap-accept" *ngIf="confirmAction() === 'accept'">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+
+      <!-- Reject Confirmation Icon -->
+      <div class="confirm-icon-wrap icon-wrap-reject" *ngIf="confirmAction() === 'reject'">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+
+      <h3 class="confirm-title">
+        {{ confirmAction() === 'accept' ? 'Accept Student Plan' : 'Reject Student Plan' }}
+      </h3>
+
+      <p class="confirm-message">
+        {{ confirmAction() === 'accept' 
+            ? 'Are you sure you want to accept this student plan request?' 
+            : 'Are you sure you want to reject this student plan request?' }}
+      </p>
+
+      <!-- Student Brief Info Card -->
+      <div class="confirm-student-badge" *ngIf="confirmStudent()">
+        <div class="badge-icon">🎓</div>
+        <div class="badge-info">
+          <span class="confirm-student-name">{{ getStudentName(confirmStudent()) }}</span>
+          <span class="confirm-student-email">{{ confirmStudent()?.email || '-' }}</span>
+        </div>
+      </div>
+
+      <!-- Reject Reason Textbox -->
+      <div class="reject-reason-wrap" *ngIf="confirmAction() === 'reject'">
+        <label for="rejectionReasonInput" class="form-label">
+          Reason for Rejection <span class="required-star">*</span>
+        </label>
+        <textarea
+          id="rejectionReasonInput"
+          class="form-textarea rejection-textarea"
+          rows="3"
+          placeholder="Enter reason for rejection..."
+          [ngModel]="rejectionReason"
+          (ngModelChange)="onRejectionReasonChange($event)"
+          [class.is-invalid]="rejectionError()"
+          [disabled]="submittingStatus()"
+        ></textarea>
+        <div class="field-error-msg" *ngIf="rejectionError()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{{ rejectionError() }}</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons (Cancel / OK) -->
+      <div class="confirm-actions-row">
+        <button
+          type="button"
+          class="btn-secondary btn-cancel-confirm"
+          (click)="closeConfirmModal()"
+          [disabled]="submittingStatus()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          [class]="confirmAction() === 'accept' ? 'btn-confirm-accept' : 'btn-confirm-reject'"
+          (click)="confirmStatusUpdate()"
+          [disabled]="submittingStatus()"
+        >
+          <svg *ngIf="submittingStatus()" class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+          </svg>
+          <span>OK</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+

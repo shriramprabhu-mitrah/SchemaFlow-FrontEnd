@@ -11,6 +11,7 @@ import { OrganizationService } from '../../../organization/services/organization
 import { timeout } from 'rxjs';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
 import { environment } from '../../../../../environment/environment';
+import { StudentSettingsService } from '../../../../core/services/student-settings.service';
 
 @Component({
   selector: 'app-upgrade-modal',
@@ -103,6 +104,7 @@ export class UpgradeModalComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private orgService = inject(OrganizationService);
   private entitlementService = inject(EntitlementService);
+  public studentSettings = inject(StudentSettingsService);
 
   constructor(
     private auth: AuthService,
@@ -168,6 +170,13 @@ export class UpgradeModalComponent implements OnInit {
           const plans = res?.data && res.data.length > 0 ? res.data : (Array.isArray(res) ? res : []);
           if (plans.length > 0) {
             this.allPlans = plans;
+            const studentPlan = plans.find((p: any) => this.studentSettings.isStudentPlan(p));
+            if (studentPlan) {
+              const m = this.studentSettings.extractPlanMonth(studentPlan);
+              if (m > 0) {
+                this.studentSettings.setMonth(m);
+              }
+            }
             this.entitlementService.loadPlans(true).subscribe();
           }
           this.applyFeatureFilter();
@@ -534,7 +543,10 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   getCtaLabel(plan: any): string {
+    if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
     if (this.auth.isSuperAdmin()) return 'Super Admin';
+    if (plan.slug === 'enterprise') return 'Contact Sales';
+
     const trialDuration = this.formatTrialDuration(plan);
     if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
       return 'Individual Only';
@@ -550,18 +562,21 @@ export class UpgradeModalComponent implements OnInit {
       return 'Current Plan';
     }
 
-    if (plan.slug === 'enterprise') return 'Contact Sales';
-
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
 
     if (!this.isLoggedIn) {
+      if (plan.slug !== 'free' && plan.slug !== 'enterprise') {
+        return `Start free trial for ${trialDuration}`;
+      }
       if (plan.cta_text) return plan.cta_text;
       if (monthlyPrice === 0) return 'Sign Up Free';
       if (this.isOrganization) return 'Sign Up & Try Free';
       return `Start free trial for ${trialDuration}`;
     }
 
-    if (this.isEligibleForTrial() && plan.slug !== 'free') return `Start free trial for ${trialDuration}`;
+    if (this.isEligibleForTrial() && plan.slug !== 'free') {
+      return `Start free trial for ${trialDuration}`;
+    }
 
     // Logged-in user: show contextual upgrade label based on plan type
     if (monthlyPrice === 0) return 'Start for Free';
@@ -570,6 +585,9 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   isCtaDisabled(plan: any): boolean {
+    // Student plan button must always remain enabled for any user (free, premium, team, etc.)
+    if (this.studentSettings.isStudentPlan(plan)) return false;
+
     if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
 
@@ -636,6 +654,17 @@ export class UpgradeModalComponent implements OnInit {
 
   selectPlan(plan: any): void {
     if (this.auth.isSuperAdmin()) return;
+
+    if (this.studentSettings.isStudentPlan(plan)) {
+      this.closeModal();
+      if (typeof window !== 'undefined') {
+        const url = this.router.serializeUrl(this.router.createUrlTree(['/student-offer']));
+        window.open(url, '_blank');
+      } else {
+        this.router.navigate(['/student-offer']);
+      }
+      return;
+    }
 
     if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
       this.svc.showToast('Business accounts can only subscribe to the Team plan.', 4000, 'error');

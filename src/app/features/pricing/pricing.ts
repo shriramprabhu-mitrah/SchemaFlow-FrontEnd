@@ -13,6 +13,7 @@ import { EntitlementService } from '../../core/services/entitlement.service';
 import { SeoService } from '../../core/services/seo.service';
 import { Footer } from '../../shared/components/footer/footer';
 import { environment } from '../../../environment/environment';
+import { StudentSettingsService } from '../../core/services/student-settings.service';
 
 @Component({
   selector: 'app-pricing',
@@ -45,6 +46,12 @@ export class PricingComponent implements OnInit {
 
   get isLoggedIn(): boolean {
     return this.auth.isLoggedIn();
+  }
+
+  set isLoggedIn(value: boolean) {
+    if (!value) {
+      this.auth.clearLocalState();
+    }
   }
 
   @HostListener('window:userLogout')
@@ -83,6 +90,7 @@ export class PricingComponent implements OnInit {
   private orgService = inject(OrganizationService);
   private entitlementService = inject(EntitlementService);
   private seoService = inject(SeoService);
+  public studentSettings = inject(StudentSettingsService);
 
   constructor(
     private auth: AuthService,
@@ -117,6 +125,9 @@ export class PricingComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to fetch user features on visibility change:', err);
+        if (err?.status === 401) {
+          this.auth.clearLocalState();
+        }
       }
     });
   }
@@ -171,6 +182,9 @@ export class PricingComponent implements OnInit {
           },
           error: (err) => {
             console.error('Failed to fetch user features:', err);
+            if (err?.status === 401) {
+              this.auth.clearLocalState();
+            }
             setTimeout(() => {
               this.cdr.detectChanges();
             });
@@ -215,6 +229,13 @@ export class PricingComponent implements OnInit {
             }
           }
           const loadedPlans = res?.data && res.data.length > 0 ? res.data : [];
+          const studentPlan = loadedPlans.find((p: any) => this.studentSettings.isStudentPlan(p));
+          if (studentPlan) {
+            const m = this.studentSettings.extractPlanMonth(studentPlan);
+            if (m > 0) {
+              this.studentSettings.setMonth(m);
+            }
+          }
           this.plans = [...loadedPlans].sort((a, b) => {
             const orderA = this.getPlanOrder(a);
             const orderB = this.getPlanOrder(b);
@@ -635,6 +656,7 @@ export class PricingComponent implements OnInit {
 
   /** CTA button label depending on audience + plan type + login state */
   getCtaLabel(plan: any): string {
+    if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
     if (this.auth.isSuperAdmin()) return 'Super Admin';
     if (plan.slug === 'enterprise') return 'Contact Sales';
 
@@ -644,6 +666,7 @@ export class PricingComponent implements OnInit {
     // --- Public (not logged in) ---
     if (!this.isLoggedIn) {
       if (plan.slug !== 'free' && plan.slug !== 'enterprise') {
+        if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
         return `Start free trial for ${trialDuration}`;
       }
       if (plan.cta_text) return plan.cta_text;
@@ -674,7 +697,10 @@ export class PricingComponent implements OnInit {
       return 'Business Only';
     }
 
-    if (this.isEligibleForTrial() && plan.slug !== 'free') return `Start free trial for ${trialDuration}`;
+    if (this.isEligibleForTrial() && plan.slug !== 'free') {
+      if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
+      return `Start free trial for ${trialDuration}`;
+    }
 
 
     if (monthlyPrice === 0) return 'Start for Free';
@@ -752,6 +778,11 @@ export class PricingComponent implements OnInit {
   }
 
   isCtaDisabled(plan: any): boolean {
+    // Student plan button must always remain enabled for any user (free, premium, team, etc.)
+    if (this.studentSettings.isStudentPlan(plan)) {
+      return false;
+    }
+
     if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
     if (this.currentPlanStatus === 'expired') return false;
@@ -793,6 +824,16 @@ export class PricingComponent implements OnInit {
   }
 
   selectPlan(plan: any): void {
+    if (this.studentSettings.isStudentPlan(plan)) {
+      if (typeof window !== 'undefined') {
+        const url = this.router.serializeUrl(this.router.createUrlTree(['/student-offer']));
+        window.open(url, '_blank');
+      } else {
+        this.router.navigate(['/student-offer']);
+      }
+      return;
+    }
+
     if (this.auth.isSuperAdmin()) {
       return;
     }

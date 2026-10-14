@@ -635,6 +635,13 @@
         </div>
       </div>
 
+      <!-- Student Plan Duration (Month Plan) -->
+      <div class="form-group" style="margin-bottom:16px" *ngIf="studentSettings.isStudentPlan(form) || form.month_plan !== undefined">
+        <label class="form-label" style="font-size:12px;font-weight:700">STUDENT PLAN DURATION (MONTHS)</label>
+        <input class="form-input" style="height:38px" type="number" min="1" [(ngModel)]="form.month_plan" placeholder="e.g. 6">
+        <p style="font-size:11px;color:#94a3b8;margin:4px 0 0">Free offer duration in months for students (e.g. 1, 3, 6, 12). Updates pricing card badge and validity.</p>
+      </div>
+
       <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="form-group" style="margin:0">
           <label class="form-label" style="font-size:12px;font-weight:700">BADGE TEXT</label>
