@@ -110,7 +110,7 @@
     "aiSessionHistory": "API_URL/api/ai/sessions/{sessionId}/history",
     "deleteSessionHistory": "API_URL/api/ai/sessions/:sessionId/history",
     "aiModelConfig": "API_URL/api/ai/models/:modelId/config",
-     "aiSystemSettings": "API_URL/api/ai/admin/system-settings",
+    "aiSystemSettings": "API_URL/api/ai/admin/system-settings",
     "monthSettings": "API_URL/api/admin/month-settings",
     "globalMonth": "API_URL/api/admin/students/global-month",
     "studentCredentials": "API_URL/api/student/credentials",
