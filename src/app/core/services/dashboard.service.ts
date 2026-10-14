@@ -42,6 +42,8 @@ export interface Column {
   note?: string;
   fkTable?: string;
   fkCol?: string;
+  acceptedValues?: string[];
+  acceptedValuesCount?: number;
 }
 
 export interface TableDef {
@@ -54,6 +56,8 @@ export interface TableDef {
   height: number;
   colY: Record<string, number>;
   color?: string;
+  indexes?: string[];
+  checks?: string[];
 }
 
 export interface PathPoint {
@@ -2682,8 +2686,8 @@ export class DashboardService {
 
   /* ============ DBML PARSER ============ */
 
-  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
-    const tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string }[] = [];
+  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string; indexes?: string[]; checks?: string[] }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
+    const tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string; indexes?: string[]; checks?: string[] }[] = [];
     const refs: RefDef[] = [];
     const groups: { name: string; color: string; tables: string[] }[] = [];
 
@@ -2695,11 +2699,52 @@ export class DashboardService {
       .replace(/^(\s*)ref(\s*:)/gim, '$1Ref$2')
       .replace(/^(\s*)note(\s)/gim, '$1Note$2');
 
-    const tableRe = /Table\s+([^{\r\n]+?)\s*\{([\s\S]*?)\}/gi;
+    const tableStartRe = /Table\s+([^{\r\n]+?)\s*\{/gi;
     let m: RegExpExecArray | null;
     const seenTables = new Set<string>();
-    while ((m = tableRe.exec(text)) !== null) {
+    while ((m = tableStartRe.exec(text)) !== null) {
       const header = m[1].trim();
+      const startIndex = tableStartRe.lastIndex;
+      let braceCount = 1;
+      let i = startIndex;
+      let inSingleQuote = false;
+      let inDoubleQuote = false;
+      let inBacktick = false;
+      let inLineComment = false;
+
+      while (i < text.length && braceCount > 0) {
+        const char = text[i];
+        const prevChar = i > 0 ? text[i - 1] : '';
+
+        if (inLineComment) {
+          if (char === '\n' || char === '\r') inLineComment = false;
+        } else if (inSingleQuote) {
+          if (char === "'" && prevChar !== '\\') inSingleQuote = false;
+        } else if (inDoubleQuote) {
+          if (char === '"' && prevChar !== '\\') inDoubleQuote = false;
+        } else if (inBacktick) {
+          if (char === '`' && prevChar !== '\\') inBacktick = false;
+        } else {
+          if (char === '/' && text[i + 1] === '/') {
+            inLineComment = true;
+            i++;
+          } else if (char === "'") {
+            inSingleQuote = true;
+          } else if (char === '"') {
+            inDoubleQuote = true;
+          } else if (char === '`') {
+            inBacktick = true;
+          } else if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+          }
+        }
+        i++;
+      }
+      const body = text.substring(startIndex, i > startIndex ? i - 1 : startIndex);
+      tableStartRe.lastIndex = i;
+
       let rawAttrs = '';
       let namePart = header;
       const bracketMatch = header.match(/^(.*?)\s*\[(.*?)\]\s*$/);
@@ -2717,20 +2762,83 @@ export class DashboardService {
         continue;
       }
       seenTables.add(nameLower);
-      const body = m[2];
+
+      const tableIndexes: string[] = [];
+      const tableChecks: string[] = [];
+
+      // Extract indexes block
+      const indexesMatch = body.match(/indexes\s*\{([\s\S]*?)\}/i);
+      if (indexesMatch) {
+        indexesMatch[1].split('\n').forEach(line => {
+          line = line.trim();
+          if (!line || line.startsWith('//') || line === '}') return;
+          const bMatch = line.match(/^([\s\S]*?)\s*\[/);
+          let expr = (bMatch ? bMatch[1] : line).trim();
+          if (!expr.startsWith('(') && (
+            (expr.startsWith('`') && expr.endsWith('`')) ||
+            (expr.startsWith("'") && expr.endsWith("'")) ||
+            (expr.startsWith('"') && expr.endsWith('"'))
+          )) {
+            expr = expr.slice(1, -1).trim();
+          }
+          if (expr && !tableIndexes.includes(expr)) {
+            tableIndexes.push(expr);
+          }
+        });
+      }
+
+      // Extract checks block
+      const checksMatch = body.match(/checks\s*\{([\s\S]*?)\}/i);
+      if (checksMatch) {
+        checksMatch[1].split('\n').forEach(line => {
+          line = line.trim();
+          if (!line || line.startsWith('//') || line === '}') return;
+          const bMatch = line.match(/^([\s\S]*?)\s*\[/);
+          let expr = (bMatch ? bMatch[1] : line).trim();
+          if (
+            (expr.startsWith('`') && expr.endsWith('`')) ||
+            (expr.startsWith("'") && expr.endsWith("'")) ||
+            (expr.startsWith('"') && expr.endsWith('"'))
+          ) {
+            expr = expr.slice(1, -1).trim();
+          }
+          if (expr && !tableChecks.includes(expr)) {
+            tableChecks.push(expr);
+          }
+        });
+      }
+
+      // Strip nested blocks before column parsing
+      let cleanBody = body
+        .replace(/indexes\s*\{[\s\S]*?\}/gi, '')
+        .replace(/checks\s*\{[\s\S]*?\}/gi, '')
+        .replace(/Note\s*\{[\s\S]*?\}/gi, '');
+
+      // Collapse newlines inside square brackets [ ... ] so multi-line column definitions stay on one line
+      cleanBody = cleanBody.replace(/\[([^\]]*)\]/g, (match) => {
+        return match.replace(/\r?\n\s*/g, ' ');
+      });
+
       const cols: Column[] = [];
-      body.split('\n').forEach((line) => {
+      cleanBody.split('\n').forEach((line) => {
         line = line.trim();
-        if (!line || line.indexOf('//') === 0 || /^Note\b/i.test(line) || /^indexes\b/i.test(line) || line === '}') return;
+        if (!line || line.indexOf('//') === 0 || /^Note\b/i.test(line) || /^indexes\b/i.test(line) || /^checks\b/i.test(line) || line === '}') return;
 
         let rawAttrs = '';
         let mainPart = line;
 
-        // Extract settings in [...] at the end of the line
-        const bracketMatch = line.match(/^([\s\S]*?)\s*\[([\s\S]*)\]\s*$/);
-        if (bracketMatch) {
-          mainPart = bracketMatch[1].trim();
-          rawAttrs = bracketMatch[2].trim();
+        // Extract settings in [...] (support single or multiple bracket groups)
+        const allBracketMatches = line.match(/\[([\s\S]*?)\]/g);
+        if (allBracketMatches) {
+          rawAttrs = allBracketMatches.map(b => b.slice(1, -1).trim()).join(', ');
+          mainPart = line.replace(/\[[\s\S]*?\]/g, '').trim();
+        } else {
+          // If an unclosed bracket [ exists on the line, separate attributes to avoid leaking into colType
+          const unclosedBracketIdx = line.indexOf('[');
+          if (unclosedBracketIdx !== -1) {
+            mainPart = line.substring(0, unclosedBracketIdx).trim();
+            rawAttrs = line.substring(unclosedBracketIdx + 1).trim();
+          }
         }
 
         // Match column name (identifier or quoted) and column type (the rest of mainPart)
@@ -2748,9 +2856,34 @@ export class DashboardService {
             colType = colType.slice(1, -1).trim();
           }
 
-          let cleanType = colType.trim();
-          if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+          // Strip any residual bracket markup from colType
+          colType = colType.replace(/\s*\[[\s\S]*$/, '').trim();
+
+          let cleanType = colType;
+          let acceptedValues: string[] = [];
+
+          // 1. If cleanType is enum(...) with literal values: enum('A', 'B') -> enum(2)
+          const enumMatch = cleanType.match(/^enum\s*\(\s*(?:['"][^'"]+['"](?:\s*,\s*['"][^'"]+['"])*)\s*\)/i);
+          if (enumMatch) {
+            const rawVals = cleanType.match(/('[^']*'|"[^"]*")/g);
+            if (rawVals && rawVals.length > 0) {
+              acceptedValues = rawVals.map((v: string) => v.slice(1, -1));
+              cleanType = `enum(${acceptedValues.length})`;
+            }
+          }
+
+          if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double|enum|set)\b/i.test(cleanType)) {
             cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+          }
+
+          // 2. Extract accepted values if present in rawAttrs (e.g. check: IN ('A', 'B') or ('A', 'B'))
+          const allowedValuesMatch = rawAttrs.match(/(?:\bin\s*)?(\(\s*(?:['"][^'"]+['"](?:\s*,\s*['"][^'"]+['"])*)\s*\))/i);
+          if (allowedValuesMatch) {
+            const rawVals = allowedValuesMatch[1].match(/('[^']*'|"[^"]*")/g);
+            if (rawVals && rawVals.length > 0) {
+              acceptedValues = rawVals.map((v: string) => v.slice(1, -1));
+              cleanType = `${cleanType} (${acceptedValues.length})`;
+            }
           }
           const attrsLower = rawAttrs.toLowerCase();
 
@@ -2780,6 +2913,9 @@ export class DashboardService {
               val = val.slice(1, -1);
             }
             checkVal = val;
+            if (checkVal && !tableChecks.includes(checkVal)) {
+              tableChecks.push(checkVal);
+            }
           }
 
           const noteMatch = rawAttrs.match(/note:\s*('[^']*'|"[^"]*"|`[^`]*`)/i);
@@ -2808,7 +2944,9 @@ export class DashboardService {
             defaultVal,
             check: hasCheck,
             checkVal,
-            note: noteVal
+            note: noteVal,
+            acceptedValues: acceptedValues.length > 0 ? acceptedValues : undefined,
+            acceptedValuesCount: acceptedValues.length > 0 ? acceptedValues.length : undefined
           });
 
           const inlineRefMatch = rawAttrs.match(/ref:\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
@@ -2836,7 +2974,7 @@ export class DashboardService {
           }
         }
       });
-      tables.push({ name, columns: cols, color: headerColor });
+      tables.push({ name, columns: cols, color: headerColor, indexes: tableIndexes, checks: tableChecks });
     }
 
    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?/gi;
@@ -3340,7 +3478,9 @@ export class DashboardService {
         width: this.getTableWidth(t.name, t.columns),
         height,
         colY,
-        color: finalColor
+        color: finalColor,
+        indexes: t.indexes || [],
+        checks: t.checks || []
       };
     });
 
@@ -3800,8 +3940,11 @@ export class DashboardService {
     const colorAttr = color ? ` [headercolor: ${color}] ` : ' ';
     const tableBlock = `Table ${newName}${colorAttr}{\n${columns
       .map((column) => {
-        let cleanType = column.type.trim().toLowerCase();
-        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+        let cleanType = column.type.trim();
+        if (!cleanType.includes("'") && !cleanType.includes('"')) {
+          cleanType = cleanType.toLowerCase();
+        }
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double|enum|set)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
         return `  ${column.name} ${cleanType}${attributes(column)}`;
@@ -4303,8 +4446,11 @@ export class DashboardService {
 
     const tableBlock = `Table ${name} {\n${columns
       .map((column) => {
-        let cleanType = column.type.trim().toLowerCase();
-        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+        let cleanType = column.type.trim();
+        if (!cleanType.includes("'") && !cleanType.includes('"')) {
+          cleanType = cleanType.toLowerCase();
+        }
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double|enum|set)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
         return `  ${column.name} ${cleanType}${attributes(column)}`;

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, Subject, tap } from 'rxjs';
+import { Observable,BehaviorSubject, Subject, tap } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
 export interface ChatbotCategory {
@@ -55,6 +55,35 @@ export class ChatbotService {
   private sessionId: string | null = null;
   private readonly GUEST_TOKEN_KEY = 'dbnexus_chat_guest_token';
   private readonly SESSION_ID_KEY = 'dbnexus_chat_session_id';
+  private readonly BOT_HIDDEN_KEY = 'dbnexus_chatbot_hidden';
+
+  private readonly botHidden$ = new BehaviorSubject<boolean>(this.checkIfHidden());
+
+  get isHidden$(): Observable<boolean> {
+    return this.botHidden$.asObservable();
+  }
+
+  get isHidden(): boolean {
+    return this.botHidden$.value;
+  }
+
+  setHidden(hidden: boolean): void {
+    this.botHidden$.next(hidden);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      if (hidden) {
+        localStorage.setItem(this.BOT_HIDDEN_KEY, 'true');
+      } else {
+        localStorage.removeItem(this.BOT_HIDDEN_KEY);
+      }
+    }
+  }
+
+  private checkIfHidden(): boolean {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return false;
+    }
+    return localStorage.getItem(this.BOT_HIDDEN_KEY) === 'true';
+  }
 
   readonly closeChat$ = new Subject<void>();
   readonly closeHeaderMenus$ = new Subject<void>();
