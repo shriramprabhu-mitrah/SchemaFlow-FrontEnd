@@ -12,6 +12,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { EntitlementService } from '../../../core/services/entitlement.service';
 import { SignOutService } from '../../../core/services/sign-out.service';
+import { ChatbotService } from '../../services/chatbot.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
@@ -122,6 +123,7 @@ export class HeaderComponent implements OnInit {
 
 
   private signOutService = inject(SignOutService);
+  public chatbotService = inject(ChatbotService);
 
   // Subject that drives debounced/cancelled SQL validation
   constructor(
@@ -146,6 +148,16 @@ export class HeaderComponent implements OnInit {
         nameEl.innerText = this.svc.diagramName;
       }
     });
+  }
+
+  toggleChatbotFromMenu(): void {
+    const nextState = !this.chatbotService.isHidden;
+    this.chatbotService.setHidden(nextState);
+    if (nextState) {
+      this.svc.showToast('Support bot hidden from screen.', 3000, 'info');
+    } else {
+      this.svc.showToast('Support bot restored.', 3000, 'success');
+    }
   }
 
   goToHome(): void {
@@ -224,6 +236,37 @@ export class HeaderComponent implements OnInit {
       this.openConnectionStringModal();
       this.cdr.detectChanges();
     });
+    if (this.svc.pendingOpenConnectionStringModal) {
+      this.svc.pendingOpenConnectionStringModal = false;
+      this.openConnectionStringModal();
+      this.cdr.detectChanges();
+    }
+    this.svc.closeHeaderMenus$.subscribe(() => {
+      this.closeAllDropdownMenus();
+    });
+    if (this.chatbotService) {
+      this.chatbotService.closeHeaderMenus$.subscribe(() => {
+        this.closeAllDropdownMenus();
+      });
+    }
+  }
+
+  closeChatbot(): void {
+    this.chatbotService?.closeChat();
+    this.svc?.closeChatbot();
+  }
+
+  closeAllDropdownMenus(): void {
+    this.profileMenuOpen = false;
+    this.personalMenuOpen = false;
+    this.exportMenuOpen = false;
+    this.importMenuOpen = false;
+    this.showMyDiagramsSubmenu = false;
+    this.showWorkspaceSubmenu = false;
+    this.showSampleSubmenu = false;
+    this.dbTypeDropdownOpen = false;
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
 
@@ -618,6 +661,7 @@ export class HeaderComponent implements OnInit {
       this.profileMenuOpen = false;
       this.exportError = null;
       this.exporting = false;
+      this.closeChatbot();
     }
   }
 
@@ -742,6 +786,7 @@ export class HeaderComponent implements OnInit {
       this.importing = false;
       this.personalMenuOpen = false;
       this.profileMenuOpen = false;
+      this.closeChatbot();
     }
   }
 
@@ -755,6 +800,7 @@ export class HeaderComponent implements OnInit {
     this.importDialect = dialect;
     this.importModalOpen = true;
     this.importMenuOpen = false;
+    this.closeChatbot();
     this.resetImportState();
   }
 
@@ -767,6 +813,7 @@ openConnectionStringModal(): void {
     }
     this.connStringModalOpen = true;
     this.importMenuOpen = false;
+    this.closeChatbot();
     this.connStringConnectMode = 'host';
     this.connStringDatabaseType = 'postgres';
     this.connHost = 'localhost';
@@ -1536,6 +1583,7 @@ openConnectionStringModal(): void {
       this.showWorkspaceSubmenu = false;
       this.showSampleSubmenu = false;
       this.profileMenuOpen = false;
+      this.closeChatbot();
     }
   }
 
@@ -1549,6 +1597,8 @@ openConnectionStringModal(): void {
       this.showMyDiagramsSubmenu = false;
       this.showWorkspaceSubmenu = false;
       this.showSampleSubmenu = false;
+      this.profileMenuOpen = false;
+      this.closeChatbot();
     }
   }
 
@@ -1623,9 +1673,11 @@ openConnectionStringModal(): void {
     this.showWorkspaceSubmenu = false;
     this.showSampleSubmenu = false;
     this.profileMenuOpen = false;
+    this.closeChatbot();
   }
 
   openShareModal(): void {
+    this.closeChatbot();
     if (this.svc.showVersionHistory()) {
       this.svc.closeVersionHistory$.next();
       this.svc.showVersionHistory.set(false);
@@ -1694,10 +1746,10 @@ openConnectionStringModal(): void {
   openUpgradeModal(featureKey?: string): void {
     this.upgradeFeatureKey = featureKey || 'premium_plan';
     this.upgradeModalOpen = true;
+    this.closeChatbot();
   }
 
   toggleProfileMenu(e?: Event): void {
-    
     this.profileMenuOpen = !this.profileMenuOpen;
     if (this.profileMenuOpen) {
       this.personalMenuOpen = false;
@@ -1706,6 +1758,7 @@ openConnectionStringModal(): void {
       this.showMyDiagramsSubmenu = false;
       this.showWorkspaceSubmenu = false;
       this.showSampleSubmenu = false;
+      this.closeChatbot();
     }
   }
 

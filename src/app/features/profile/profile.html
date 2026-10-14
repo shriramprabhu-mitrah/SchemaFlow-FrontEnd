@@ -137,6 +137,14 @@
           </svg>
           <span>Preferences & Theme</span>
         </button>
+
+        <button *ngIf="!isSuperAdmin()" class="tab-btn" [class.active]="activeTab() === 'enquiries'" (click)="setTab('enquiries')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>My Enquiries</span>
+          <span class="tab-badge" *ngIf="myEnquiries().length > 0">{{ myEnquiries().length }}</span>
+        </button>
     </div>
 
     <!-- TAB 1: Personal Details (Only Username & Profile Picture Editable) -->
@@ -397,6 +405,174 @@
       </div>
     </div>
 
+    <!-- TAB 4: My Enquiries (Hidden for Super Admin) -->
+    <div class="tab-panel" *ngIf="!isSuperAdmin() && activeTab() === 'enquiries'">
+      <div class="settings-card enquiries-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h3>My Enquiries & Support Tickets</h3>
+            <p>Track your submitted questions, feature requests, and support tickets.</p>
+          </div>
+          <div class="header-actions" *ngIf="myEnquiries().length > 0">
+            <!-- Custom Status Dropdown Filter -->
+            <div class="custom-status-dropdown-container dropdown-container-rel">
+              <button type="button" class="custom-status-dropdown-trigger"
+                (click)="toggleStatusFilterDropdown($event)">
+                <span>{{ getStatusFilterLabel() }}</span>
+                <app-icons name="chevron-down" size="14"></app-icons>
+              </button>
+              <div class="custom-status-dropdown-menu" *ngIf="showStatusFilterDropdown()" (click)="$event.stopPropagation()">
+                <button type="button" class="custom-status-dropdown-option" [class.selected]="enquiryStatusFilter() === ''" (click)="selectStatusFilter('')">All Statuses</button>
+                <button type="button" class="custom-status-dropdown-option" [class.selected]="enquiryStatusFilter() === 'reopen'" (click)="selectStatusFilter('reopen')">Re-open</button>
+                <button type="button" class="custom-status-dropdown-option" [class.selected]="enquiryStatusFilter() === 'close'" (click)="selectStatusFilter('close')">Close</button>
+              </div>
+            </div>
+
+            <!-- Search Box Wrap -->
+            <div class="search-box-wrap">
+              <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input class="search-input" placeholder="Search enquiries..." [ngModel]="enquirySearch()" (ngModelChange)="enquirySearch.set($event)">
+            </div>
+
+            <span class="enquiry-count-badge">{{ filteredEnquiries().length }} of {{ myEnquiries().length }}</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Loading State -->
+          <div *ngIf="isLoadingEnquiries()" class="enquiries-loading-state">
+            <div class="btn-spinner" style="width: 24px; height: 24px; border-width: 2.5px;"></div>
+            <span>Loading your enquiries...</span>
+          </div>
+
+          <!-- Error State -->
+          <div *ngIf="!isLoadingEnquiries() && enquiriesError()" class="enquiries-error-state">
+            <div class="error-icon-box">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div class="error-msg-box">
+              <p class="error-title">Failed to load enquiries</p>
+              <p class="error-desc">{{ enquiriesError() }}</p>
+            </div>
+            <button class="btn-retry" (click)="fetchMyEnquiries()">Try Again</button>
+          </div>
+
+          <!-- Empty State (No enquiries at all) -->
+          <div *ngIf="!isLoadingEnquiries() && !enquiriesError() && myEnquiries().length === 0" class="enquiries-empty-state">
+            <div class="empty-icon-wrap">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <h4>No Enquiries Found</h4>
+            <p>You haven't submitted any sales, support, or general enquiries yet.</p>
+            <a routerLink="/contact" class="btn-new-enquiry">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Submit an Enquiry</span>
+            </a>
+          </div>
+
+          <!-- Search has no matches -->
+          <div *ngIf="!isLoadingEnquiries() && !enquiriesError() && myEnquiries().length > 0 && filteredEnquiries().length === 0" class="enquiries-empty-state">
+            <h4>No matching enquiries</h4>
+            <p>No enquiries match your search query "{{ enquirySearch() }}".</p>
+          </div>
+
+          <!-- Table of Enquiries -->
+          <div *ngIf="!isLoadingEnquiries() && !enquiriesError() && filteredEnquiries().length > 0"
+               class="data-table-wrap enquiries-table-wrap"
+               [class.has-open-dropdown]="openRowDropdownId() !== null">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 5%">#</th>
+                  <th style="width: 14%">TYPE</th>
+                  <th style="width: 43%">SUBJECT / DETAILS</th>
+                  <th style="width: 20%">SUBMITTED</th>
+                  <th style="width: 18%; text-align: right;">STATUS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let eq of filteredEnquiries(); let i = index"
+                    [class.has-open-dropdown]="openRowDropdownId() === (eq.id || i)">
+                  <td>{{ i + 1 }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'badge-team': eq.enquiry_type === 'Sales' || eq.contact_type === 'Sales',
+                      'badge-free': eq.enquiry_type === 'Support' || eq.contact_type === 'Support'
+                    }" [class.badge-primary]="eq.enquiry_type !== 'Sales' && eq.enquiry_type !== 'Support'">
+                      {{ eq.enquiry_type === 'cancellation_request' ? 'Cancellation' : (eq.enquiry_type || eq.contact_type || 'General') }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="enquiry-subject-wrap">
+                      <strong class="enquiry-subject-title">{{ eq.subject || 'Enquiry #' + (eq.id || (i + 1)) }}</strong>
+                      <span class="enquiry-preview-desc">{{ eq.project_details || eq.message || 'No additional details provided' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-muted">{{ (eq.created_at || eq.createdAt) | date:'mediumDate' }}</span>
+                    <span class="enquiry-time-sub text-muted" *ngIf="eq.created_at || eq.createdAt">
+                      {{ (eq.created_at || eq.createdAt) | date:'shortTime' }}
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <div class="custom-status-dropdown-container dropdown-container-rel row-status-wrap"
+                         [class.open]="!isClosed(eq.status) && openRowDropdownId() === (eq.id || i)">
+
+                      <!-- If Closed: Not editable (Static badge, disabled, no chevron) -->
+                      <button *ngIf="isClosed(eq.status)" type="button"
+                              class="custom-status-dropdown-trigger row-status-trigger status-close status-closed disabled"
+                              disabled
+                              title="Closed enquiries cannot be edited">
+                        <span>Close</span>
+                      </button>
+
+                      <!-- If Not Closed: Interactive dropdown trigger with chevron -->
+                      <button *ngIf="!isClosed(eq.status)" type="button"
+                              class="custom-status-dropdown-trigger row-status-trigger status-reopen"
+                              (click)="toggleRowDropdown(eq.id || i, $event, eq, i)">
+                        <span>Re-open</span>
+                        <app-icons name="chevron-down" size="13"></app-icons>
+                      </button>
+
+                      <div class="custom-status-dropdown-menu dropdown-menu-end"
+                           [class.dropdown-up]="openRowDropdownUpward()"
+                           *ngIf="!isClosed(eq.status) && openRowDropdownId() === (eq.id || i)"
+                           (click)="$event.stopPropagation()">
+                        <button type="button" class="custom-status-dropdown-option"
+                                [class.selected]="isReOpen(eq.status)"
+                                (click)="onRowStatusSelect(eq, 'reopen')">
+                          <span class="status-option-dot reopen"></span>
+                          <span>Re-open</span>
+                        </button>
+                        <button type="button" class="custom-status-dropdown-option"
+                                [class.selected]="isClosed(eq.status)"
+                                (click)="onRowStatusSelect(eq, 'closed')">
+                          <span class="status-option-dot closed"></span>
+                          <span>Close</span>
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
 
   </div>
 

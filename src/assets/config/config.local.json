@@ -4,7 +4,7 @@
     "frontendUrl": "http://localhost:4200"
   },
   "apiConfig": {
-    "baseUrl": "http://localhost:4000/api"
+    "baseUrl": "http://localhost:4000"
   },
   "authApiUrls": {
     "login": "http://localhost:4000/api/auth/login",
@@ -13,11 +13,13 @@
     "resetPassword": "http://localhost:4000/api/auth/reset-password",
     "refreshToken": "http://localhost:4000/api/auth/refreshToken",
     "logout": "http://localhost:4000/api/auth/logout"
+    
   },
   "userApiUrls": {
     "userDetails": "http://localhost:4000/api/user-details",
     "updateProfile": "http://localhost:4000/api/update-profile",
     "userFeatures": "http://localhost:4000/api/user-features"
+  
   },
   "diagramApiUrls": {
     "diagrams": "http://localhost:4000/api/diagrams",
@@ -31,6 +33,7 @@
     "diagramPublic": "http://localhost:4000/api/diagrams/{id}/public",
     "diagramShareEmail": "http://localhost:4000/api/diagrams/{id}/share-email",
     "publicDiagram": "http://localhost:4000/api/diagrams/public/{token}"
+   
   },
   "workspaceApiUrls": {
     "validateMember": "http://localhost:4000/api/workspaces/validate-member",
@@ -40,22 +43,24 @@
     "workspaceDiagrams": "http://localhost:4000/api/workspaces/{workspaceId}/diagrams",
     "inviteAccept": "http://localhost:4000/api/workspaces/invite-accept/{id}",
     "accept": "http://localhost:4000/api/workspaces/accept/{id}"
+  
   },
   "importExportApiUrls": {
     "validateSql": "http://localhost:4000/api/validate/sql",
     "import": "http://localhost:4000/api/import",
     "export": "http://localhost:4000/api/export/{id}",
     "generateDbml": "http://localhost:4000/api/dbml/generate",
-    "generateDbmlSqlite": "http://localhost:4000/api/dbml/generate-form-sqllite",
-    "testConnection": "http://localhost:4000/api/db/test-connection"
+    "generateDbmlSqlite": "http://localhost:4000/api/dbml/generate-form-sqllite"
   },
   "pricingApiUrls": {
     "plans": "http://localhost:4000/api/pricing/plans",
     "profileUpgrade": "http://localhost:4000/api/profile/subscription/upgrade"
+    
   },
   "paymentApiUrls": {
     "createSubscription": "http://localhost:4000/api/payments/create-subscription",
     "verifySubscription": "http://localhost:4000/api/payments/verify-subscription"
+    
   },
   "organizationApiUrls": {
     "organizations": "http://localhost:4000/api/organizations",
@@ -70,6 +75,7 @@
     "orgEntitlements": "http://localhost:4000/api/organizations/{id}/entitlements",
     "orgUsage": "http://localhost:4000/api/organizations/{id}/usage",
     "orgGroups": "http://localhost:4000/api/organizations/{id}/groups"
+   
   },
   "roleApiUrls": {
     "roles": "http://localhost:4000/api/roles",
@@ -79,6 +85,7 @@
     "roleAssignments": "http://localhost:4000/api/role-assignments",
     "groups": "http://localhost:4000/api/groups/{id}",
     "groupMembers": "http://localhost:4000/api/groups/{id}/members"
+  
   },
   "adminApiUrls": {
     "dashboard": "http://localhost:4000/api/admin/dashboard",
@@ -102,10 +109,9 @@
     "aiModels": "http://localhost:4000/api/ai/admin/models",
     "aiModelManage": "http://localhost:4000/api/ai/models",
     "aiModelById": "http://localhost:4000/api/ai/models/{id}",
-    "aiChatModels": "http://localhost:4000/api/ai/models",
+    "aiChatModels": "http://localhost:4000/api/ai/models/",
     "aiChat": "http://localhost:4000/api/ai/chat",
     "aiChatHistoryById": "http://localhost:4000/api/ai/chat/history/{id}",
-    "aiChatHistoryApplied": "http://localhost:4000/api/ai/chat/history/applied",
     "aiSessions": "http://localhost:4000/api/ai/sessions",
     "aiSessionHistory": "http://localhost:4000/api/ai/sessions/{sessionId}/history",
     "aiModelConfig": "http://localhost:4000/api/ai/models/{modelId}/config",
@@ -113,10 +119,27 @@
     "globalMonth": "http://localhost:4000/api/admin/students/global-month",
     "studentCredentials": "http://localhost:4000/api/student/credentials",
     "studentCredentialsById": "http://localhost:4000/api/student/credentials/{id}",
-    "deleteStudentCredential": "http://localhost:4000/api/student/credentials/{id}"
+    "deleteStudentCredential": "http://localhost:4000/api/student/credentials/{id}",
+    "aiSystemSettings": "http://localhost:4000/api/ai/admin/system-settings"
+
   },
   "studentPlanApiUrls": {
     "sendOtp": "http://localhost:4000/api/student/send-otp",
     "verifyOtp": "http://localhost:4000/api/student/verify-otp"
+  },
+  "chatbotApiUrls": {
+    "session": "http://localhost:4000/api/chatbot/sessions",
+    "categories": "http://localhost:4000/api/chatbot/categories",
+    "categoryNodes": "http://localhost:4000/api/chatbot/categories/{id}/nodes",
+    "nodeById": "http://localhost:4000/api/chatbot/nodes/{id}",
+    "search": "http://localhost:4000/api/chatbot/search",
+    "interaction": "http://localhost:4000/api/chatbot/interactions",
+    "escalate": "http://localhost:4000/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "http://localhost:4000/api/enquiry",
+    "myEnquiries": "http://localhost:4000/api/enquiry/my-enquiries",
+    "updateEnquiry": "http://localhost:4000/api/enquiry/{id}",
+     "enquiryById": "http://localhost:4000/api/enquiry/{id}"
   }
 }

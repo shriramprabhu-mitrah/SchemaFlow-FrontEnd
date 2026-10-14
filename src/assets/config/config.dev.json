@@ -120,5 +120,20 @@
   "studentPlanApiUrls": {
     "sendOtp": "API_URL/api/student/send-otp",
     "verifyOtp": "API_URL/api/student/verify-otp"
+  },
+  "chatbotApiUrls": {
+    "session": "API_URL/api/chatbot/sessions",
+    "categories": "API_URL/api/chatbot/categories",
+    "categoryNodes": "API_URL/api/chatbot/categories/{id}/nodes",
+    "nodeById": "API_URL/api/chatbot/nodes/{id}",
+    "search": "API_URL/api/chatbot/search",
+    "interaction": "API_URL/api/chatbot/interactions",
+    "escalate": "API_URL/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "API_URL/api/enquiry",
+    "myEnquiries": "API_URL/api/enquiry/my-enquiries",
+    "updateEnquiry": "API_URL/api/enquiry/{id}",
+    "enquiryById": "API_URL/api/enquiry/{id}"
   }
 }

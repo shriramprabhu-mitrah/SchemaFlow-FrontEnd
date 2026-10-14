@@ -396,8 +396,11 @@ export class DiffEngine {
     if (/^-?\d+(\.\d+)?$/.test(text)) {
       return 'number';
     }
-    if (/^(Table|Ref|Enum|TableGroup|Project|true|false|null|pk|not\s+null|unique|default|int|varchar|boolean|datetime|timestamp)$/i.test(text)) {
+    if (/^(Table|Ref|Enum|TableGroup|Project|indexes|checks|true|false|null|pk|not\s+null|unique|int|varchar|boolean|datetime|timestamp)$/i.test(text)) {
       return 'keyword';
+    }
+    if (/^(default|check)$/i.test(text)) {
+      return 'key';
     }
     if (/^[{}[\]()]$/.test(text)) {
       return 'bracket';

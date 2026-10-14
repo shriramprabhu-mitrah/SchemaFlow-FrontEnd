@@ -2527,7 +2527,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             }
 
             codePart = codePart.replace(
-                /\b(TableGroup|Table|Ref|Note|Project|enum|indexes)(:)?(?=\s|$)/gi,
+                /\b(TableGroup|Table|Ref|Note|Project|enum|indexes|checks)(:)?(?=\s|$)/gi,
                 (match, p1, p2) => `<span class="keyword">${p1}${p2 || ''}</span>`
             );
 
@@ -2539,6 +2539,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             codePart = codePart.replace(
                 /(&#039;.*?&#039;|'.*?')/g,
                 '<span class="attribute">$1</span>'
+            );
+
+            codePart = codePart.replace(
+                /\b(not\s+null|null|pk|primary\s+key|unique|increment|default|check)\b(:)?/gi,
+                (match, p1, p2) => `<span class="attribute">${p1}${p2 || ''}</span>`
             );
 
             codePart = codePart.replace(
