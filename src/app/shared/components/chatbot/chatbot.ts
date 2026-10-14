@@ -26,6 +26,7 @@ export interface ChatMessage {
 export class ChatbotComponent implements OnInit, OnDestroy {
   private readonly chatbotService = inject(ChatbotService);
   private readonly auth = inject(AuthService);
+  private readonly dashboardService = inject(DashboardService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
@@ -33,49 +34,51 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   private readonly dashboardSvc = inject(DashboardService, { optional: true });
   private readonly themeSub = new Subscription();
 
+  private themeObserver?: MutationObserver;
+
   constructor() {
     if (this.dashboardSvc) {
       effect(() => {
         // Automatically re-evaluate when dashboard theme signal changes
         this.dashboardSvc?.theme();
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
     }
   }
 
   isLightTheme(): boolean {
     if (typeof document !== 'undefined') {
-      // 1. Explicit dark theme indicators on DOM take absolute precedence
+      // 1. Explicit light theme indicators on DOM
       if (
-        document.documentElement.getAttribute('data-theme') === 'dark' ||
-        document.body.classList.contains('dark-theme') ||
-        document.documentElement.classList.contains('dark-theme')
-      ) {
-        return false;
-      }
-
-      // 2. Explicit light theme indicators on DOM
-      if (
-        document.body.classList.contains('light-theme') ||
-        document.documentElement.classList.contains('light-theme') ||
-        document.documentElement.getAttribute('data-theme') === 'light'
+        document.body?.classList.contains('light-theme') ||
+        document.documentElement?.classList.contains('light-theme') ||
+        document.documentElement?.getAttribute('data-theme') === 'light'
       ) {
         return true;
       }
+
+      // 2. Explicit dark theme indicators on DOM
+      if (
+        document.body?.classList.contains('dark-theme') ||
+        document.documentElement?.classList.contains('dark-theme') ||
+        document.documentElement?.getAttribute('data-theme') === 'dark'
+      ) {
+        return false;
+      }
     }
 
-    // 3. Check localStorage saved theme directly
+    // 3. Fallback to DashboardService theme signal
+    if (this.dashboardSvc) {
+      return this.dashboardSvc.theme() === 'light';
+    }
+
+    // 4. Check localStorage saved theme directly
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       try {
         const saved = localStorage.getItem('theme');
-        if (saved === 'dark') return false;
         if (saved === 'light') return true;
+        if (saved === 'dark') return false;
       } catch (_) {}
-    }
-
-    // 4. Fallback to DashboardService theme signal
-    if (this.dashboardSvc) {
-      return this.dashboardSvc.theme() === 'light';
     }
 
     // 5. Default in SchemaFlow is dark
@@ -85,6 +88,8 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   isOpen = false;
   isLoading = false;
   isLoggedIn = false;
+  isBotHidden = false;
+  private hiddenSub?: Subscription;
 
   categories: ChatbotCategory[] = [];
   selectedCategory: ChatbotCategory | null = null;
@@ -120,11 +125,18 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     if (typeof window !== 'undefined') {
       this.isLoggedIn = this.auth.isLoggedIn();
       this.prefillUser();
+      this.isBotHidden = this.chatbotService.isHidden;
+      this.hiddenSub = this.chatbotService.isHidden$.subscribe((hidden) => {
+        this.isBotHidden = hidden;
+        if (hidden) {
+          this.isOpen = false;
+        }
+        this.cdr.detectChanges();
+      });
     }
     if (this.dashboardSvc) {
       this.themeSub.add(
         this.dashboardSvc.forceRedraw$.subscribe(() => {
-          this.cdr.markForCheck();
           this.cdr.detectChanges();
         })
       );
@@ -138,19 +150,51 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         })
       );
     }
-    this.themeSub.add(
-      this.chatbotService.closeChat$.subscribe(() => {
-        if (this.isOpen) {
-          this.isOpen = false;
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
-        }
-      })
-    );
+    if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined') {
+      this.themeObserver = new MutationObserver(() => {
+        this.cdr.detectChanges();
+      });
+      if (document.documentElement) {
+        this.themeObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['class', 'data-theme']
+        });
+      }
+      if (document.body) {
+        this.themeObserver.observe(document.body, {
+          attributes: true,
+          attributeFilter: ['class', 'data-theme']
+        });
+      }
+    }
   }
 
   ngOnDestroy(): void {
     this.themeSub.unsubscribe();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  hideChatbot(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    this.isOpen = false;
+    this.chatbotService.setHidden(true);
+    this.dashboardService.showToast('Support bot hidden from screen.', 3000, 'info');
+    this.cdr.detectChanges();
+  }
+
+  unhideChatbot(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    this.chatbotService.setHidden(false);
+    this.dashboardService.showToast('Support bot restored.', 2000, 'success');
+    this.cdr.detectChanges();
   }
 
   private prefillUser(): void {

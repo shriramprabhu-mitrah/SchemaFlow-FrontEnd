@@ -1,8 +1,55 @@
-// Floating Launcher Button
-.chatbot-launcher {
+// Floating Launcher Wrapper & Buttons
+.chatbot-launcher-wrapper {
   position: fixed;
   bottom: 24px;
   right: 24px;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .launcher-hide-btn {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    z-index: 1051;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #ef4444;
+      transform: scale(1.15);
+    }
+  }
+
+  &:hover .launcher-hide-btn {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  @media (hover: none) {
+    .launcher-hide-btn {
+      opacity: 0.85;
+      transform: scale(1);
+    }
+  }
+}
+
+.chatbot-launcher {
   width: 54px;
   height: 54px;
   border-radius: 50%;
@@ -14,7 +61,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
@@ -35,6 +81,10 @@
     align-items: center;
     justify-content: center;
 
+    .robot-icon {
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+    }
+
     .online-indicator {
       position: absolute;
       top: -2px;
@@ -44,6 +94,52 @@
       border-radius: 50%;
       background: #10b981;
       border: 2px solid #3b82f6;
+    }
+  }
+}
+
+// Restore Pill (Unhide trigger at screen edge)
+.chatbot-restore-pill {
+  position: fixed;
+  bottom: 12px;
+  right: 14px;
+  height: 26px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 13px;
+  background:#2563eb;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color:  #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 1040;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  svg {
+    color: #ffffff;
+    transition: transform 0.2s ease;
+  }
+
+  .restore-text {
+    line-height: 1;
+  }
+
+  &:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+    transform: translateY(-1px);
+
+    svg {
+      color: #ffffff;
+      transform: scale(1.1);
     }
   }
 }
@@ -166,6 +262,11 @@
       &:hover {
         background: rgba(255, 255, 255, 0.08);
         color: #f8fafc;
+      }
+
+      &.hide-btn:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
       }
     }
   }
@@ -997,14 +1098,29 @@
 :host-context(body.light-theme) .chatbot-launcher,
 :host-context(html.light-theme) .chatbot-launcher,
 :host-context([data-theme='light']) .chatbot-launcher {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35) !important;
 
   &.active {
-    background: #ffffff;
-    color: #0f172a;
-    border: 1px solid #cbd5e1;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  }
+}
+
+:host-context(body.light-theme) .launcher-hide-btn,
+:host-context(html.light-theme) .launcher-hide-btn,
+:host-context([data-theme='light']) .launcher-hide-btn {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+
+  &:hover {
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
   }
 }
 
@@ -1012,33 +1128,33 @@
 :host-context(body.light-theme) .chatbot-window,
 :host-context(html.light-theme) .chatbot-window,
 :host-context([data-theme='light']) .chatbot-window {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  color: #0f172a;
-  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
 
   .chatbot-header {
-    background: rgba(255, 255, 255, 0.95);
-    border-bottom-color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
 
     .header-bot-info {
       .bot-meta {
         .bot-name {
-          color: #0f172a;
+          color: #0f172a !important;
         }
         .bot-status {
-          color: #64748b;
+          color: #64748b !important;
         }
       }
     }
 
     .header-actions {
       .header-btn {
-        color: #64748b;
+        color: #64748b !important;
 
         &:hover {
-          background: #f1f5f9;
-          color: #0f172a;
+          background: #f1f5f9 !important;
+          color: #0f172a !important;
         }
       }
     }
@@ -1514,9 +1630,9 @@
 // ==========================================
 // EXPLICIT DARK THEME ENFORCEMENT
 // ==========================================
-.chatbot-launcher.dark-theme,
-:host-context([data-theme='dark']) .chatbot-launcher,
-:host-context(body.dark-theme) .chatbot-launcher {
+.chatbot-launcher.dark-theme:not(.light-theme),
+:host-context(body.dark-theme:not(.light-theme)) .chatbot-launcher:not(.light-theme),
+:host-context([data-theme='dark']:not(.light-theme)) .chatbot-launcher:not(.light-theme) {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
 
@@ -1528,9 +1644,9 @@
   }
 }
 
-.chatbot-window.dark-theme,
-:host-context([data-theme='dark']) .chatbot-window,
-:host-context(body.dark-theme) .chatbot-window {
+.chatbot-window.dark-theme:not(.light-theme),
+:host-context(body.dark-theme:not(.light-theme)) .chatbot-window:not(.light-theme),
+:host-context([data-theme='dark']:not(.light-theme)) .chatbot-window:not(.light-theme) {
   background: #0f172a !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #f1f5f9 !important;

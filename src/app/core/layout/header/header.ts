@@ -12,10 +12,10 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { EntitlementService } from '../../../core/services/entitlement.service';
 import { SignOutService } from '../../../core/services/sign-out.service';
+import { ChatbotService } from '../../services/chatbot.service';
 import { WorkspaceModalComponent } from '../../../features/dashboard/components/workspace-modal/workspace-modal';
 import { ShareModalComponent } from '../../../features/dashboard/components/share-modal/share-modal';
 import { UpgradeModalComponent } from '../../../features/dashboard/components/upgrade-modal/upgrade-modal';
-import { ChatbotService } from '../../../core/services/chatbot.service';
 import { parseConnectionDetails, getConnectionUrlMismatchError } from '../../../dbconnect/connection-string.util';
 
 @Component({
@@ -123,7 +123,7 @@ export class HeaderComponent implements OnInit {
 
 
   private signOutService = inject(SignOutService);
-  private chatbotService = inject(ChatbotService, { optional: true });
+  public chatbotService = inject(ChatbotService);
 
   // Subject that drives debounced/cancelled SQL validation
   constructor(
@@ -148,6 +148,16 @@ export class HeaderComponent implements OnInit {
         nameEl.innerText = this.svc.diagramName;
       }
     });
+  }
+
+  toggleChatbotFromMenu(): void {
+    const nextState = !this.chatbotService.isHidden;
+    this.chatbotService.setHidden(nextState);
+    if (nextState) {
+      this.svc.showToast('Support bot hidden from screen.', 3000, 'info');
+    } else {
+      this.svc.showToast('Support bot restored.', 3000, 'success');
+    }
   }
 
   goToHome(): void {
