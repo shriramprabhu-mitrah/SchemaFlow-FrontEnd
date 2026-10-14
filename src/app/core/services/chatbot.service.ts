@@ -175,11 +175,11 @@ export class ChatbotService {
     return this.http.get<{ statusCode: number; data: ChatbotNode }>(`${url}${query}`);
   }
 
-  search(query: string): Observable<{ statusCode: number; data: { matched: boolean; results?: ChatbotNode[]; message?: string; options?: any[] } }> {
+  search(query: string): Observable<{ statusCode: number; data: { matched: boolean; results?: ChatbotNode[]; message?: string; options?: any[]; fallbackType?: string } }> {
     const base = this.endpoints.search || `${this.baseUrl}/api/chatbot/search`;
     const sessionId = this.getCurrentSessionId() || '';
     const url = `${base}?q=${encodeURIComponent(query)}&sessionId=${encodeURIComponent(sessionId)}`;
-    return this.http.get<{ statusCode: number; data: { matched: boolean; results?: ChatbotNode[]; message?: string; options?: any[] } }>(url);
+    return this.http.get<{ statusCode: number; data: { matched: boolean; results?: ChatbotNode[]; message?: string; options?: any[]; fallbackType?: string } }>(url);
   }
 
   logFeedback(nodeId: number, wasHelpful: boolean): Observable<any> {
