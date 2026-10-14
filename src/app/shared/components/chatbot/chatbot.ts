@@ -105,6 +105,16 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   searchFallbackMessage = '';
   searchFallbackOptions: any[] = [];
 
+  // Chat conversation stream & typing loader states
+  lastUserMessage = '';
+  lastUserMessageTime = '';
+  isBotTyping = false;
+  consecutiveMismatches = 0;
+  currentFallbackType: 'mismatch' | 'rating' | 'services' = 'mismatch';
+  experienceRating: number | null = null;
+  experienceRatingHover: number = 0;
+  experienceRatingSubmitted = false;
+
   feedbackGiven: { [nodeId: number]: boolean | null } = {};
 
   // Support ticket form model
@@ -266,20 +276,28 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     this.pushNavState();
     this.selectedCategory = category;
     this.isLoading = true;
+    this.isBotTyping = true;
     this.currentView = 'sub_menu';
     this.cdr.detectChanges();
 
+    const startTime = Date.now();
     this.chatbotService.getCategoryNodes(category.category_id).subscribe({
       next: (res) => {
-        this.ngZone.run(() => {
-          this.currentNodes = res?.data || [];
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        });
+        const elapsed = Date.now() - startTime;
+        const delay = Math.max(0, 400 - elapsed);
+        setTimeout(() => {
+          this.ngZone.run(() => {
+            this.currentNodes = res?.data || [];
+            this.isLoading = false;
+            this.isBotTyping = false;
+            this.cdr.detectChanges();
+          });
+        }, delay);
       },
       error: () => {
         this.ngZone.run(() => {
           this.isLoading = false;
+          this.isBotTyping = false;
           this.cdr.detectChanges();
         });
       }
@@ -289,20 +307,28 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   selectNode(nodeId: number): void {
     this.pushNavState();
     this.isLoading = true;
+    this.isBotTyping = true;
     this.cdr.detectChanges();
 
+    const startTime = Date.now();
     this.chatbotService.getNodeDetail(nodeId).subscribe({
       next: (res) => {
-        this.ngZone.run(() => {
-          this.currentNode = res?.data || null;
-          this.currentView = 'answer';
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        });
+        const elapsed = Date.now() - startTime;
+        const delay = Math.max(0, 400 - elapsed);
+        setTimeout(() => {
+          this.ngZone.run(() => {
+            this.currentNode = res?.data || null;
+            this.currentView = 'answer';
+            this.isLoading = false;
+            this.isBotTyping = false;
+            this.cdr.detectChanges();
+          });
+        }, delay);
       },
       error: () => {
         this.ngZone.run(() => {
           this.isLoading = false;
+          this.isBotTyping = false;
           this.cdr.detectChanges();
         });
       }
@@ -586,7 +612,31 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     this.searchQuery = '';
     this.searchResults = [];
     this.ticketSubmittedSuccess = false;
+    this.consecutiveMismatches = 0;
+    this.experienceRatingSubmitted = false;
+    this.experienceRating = null;
+    this.isBotTyping = false;
+    this.isLoading = false;
     this.cdr.detectChanges();
+  }
+
+  getCurrentTime(): string {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  rateExperience(stars: number): void {
+    this.experienceRating = stars;
+    this.experienceRatingSubmitted = true;
+    this.cdr.detectChanges();
+
+    const sessionId = this.chatbotService.getCurrentSessionId();
+    if (sessionId) {
+      this.chatbotService.logFeedback(0, stars >= 4).subscribe({
+        next: () => {},
+        error: () => {}
+      });
+    }
   }
 
   private pushNavState(): void {
@@ -606,37 +656,76 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     const q = this.searchQuery.trim();
     if (!q) return;
 
+    this.lastUserMessage = q;
+    this.lastUserMessageTime = this.getCurrentTime();
+    this.searchQuery = '';
+
     this.pushNavState();
     this.isLoading = true;
+    this.isBotTyping = true;
     this.currentView = 'search_results';
     this.cdr.detectChanges();
 
+    const startTime = Date.now();
     this.chatbotService.search(q).subscribe({
       next: (res) => {
-        this.ngZone.run(() => {
-          this.isLoading = false;
-          if (res.data?.matched && res.data.results && res.data.results.length > 0) {
-            this.searchResults = res.data.results;
-            this.searchFallbackMessage = '';
-            this.searchFallbackOptions = [];
-          } else {
-            this.searchResults = [];
-            this.searchFallbackMessage = res.data?.message || "I couldn't find an answer for that. As a guided assistant, I can help you with dbNexus features, connections, or billing.";
-            this.searchFallbackOptions = res.data?.options || [
-              { label: '📂 Browse Support Categories', action: 'show_categories' },
-              { label: '📖 View Documentation', action: 'link', url: '/docs' },
-              { label: '📩 Contact Support Team', action: 'escalate' }
-            ];
-          }
-          this.cdr.detectChanges();
-        });
+        const elapsed = Date.now() - startTime;
+        const minDelay = 600; // minimum authentic bot typing loader time
+        const delay = Math.max(0, minDelay - elapsed);
+
+        setTimeout(() => {
+          this.ngZone.run(() => {
+            this.isLoading = false;
+            this.isBotTyping = false;
+
+            if (res.data?.matched && res.data.results && res.data.results.length > 0) {
+              this.consecutiveMismatches = 0;
+              this.searchResults = res.data.results;
+              this.searchFallbackMessage = '';
+              this.searchFallbackOptions = [];
+            } else {
+              this.consecutiveMismatches++;
+              this.searchResults = [];
+              this.experienceRatingSubmitted = false;
+              this.experienceRating = null;
+
+              // If consecutive mismatches >= 2 or explicit service query: showcase dbNexus services!
+              // Otherwise: ask to rate experience or state anything else that I can help you with!
+              const isExplicitServices = res.data?.fallbackType === 'services';
+              const isExplicitRating = res.data?.fallbackType === 'rating';
+
+              if (isExplicitServices || this.consecutiveMismatches >= 2) {
+                this.currentFallbackType = 'services';
+                this.searchFallbackMessage = res.data?.message || "Hello, welcome to the dbNexus AI Assistant! How can we help you today? Here are the services dbNexus provides:";
+              } else {
+                this.currentFallbackType = 'rating';
+                this.searchFallbackMessage = res.data?.message || "Please rate your experience, or state anything else that I can help you with.";
+              }
+
+              this.searchFallbackOptions = res.data?.options || [
+                { label: '📂 Browse All Services', action: 'show_categories' },
+                { label: '📩 Contact Support Team', action: 'escalate' },
+                { label: '📖 View Documentation', action: 'link', url: '/docs' }
+              ];
+            }
+            this.cdr.detectChanges();
+          });
+        }, delay);
       },
       error: () => {
         this.ngZone.run(() => {
           this.isLoading = false;
+          this.isBotTyping = false;
+          this.consecutiveMismatches++;
           this.searchResults = [];
-          this.searchFallbackMessage = "Unable to complete search. Please browse categories below.";
-          this.searchFallbackOptions = [{ label: '📂 Browse Support Categories', action: 'show_categories' }];
+          this.currentFallbackType = this.consecutiveMismatches >= 2 ? 'services' : 'rating';
+          this.searchFallbackMessage = this.currentFallbackType === 'services'
+            ? "Hello, welcome to the dbNexus AI Assistant! How can we help you today? Here are the services dbNexus provides:"
+            : "Please rate your experience, or state anything else that I can help you with.";
+          this.searchFallbackOptions = [
+            { label: '📂 Browse All Services', action: 'show_categories' },
+            { label: '📩 Contact Support Team', action: 'escalate' }
+          ];
           this.cdr.detectChanges();
         });
       }
