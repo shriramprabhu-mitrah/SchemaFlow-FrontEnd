@@ -86,6 +86,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.cdr.markForCheck();
       });
+
+    this.svc.openSidebarImportMenu$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.openImportFlyout();
+      });
+
+    if (this.svc.pendingOpenSidebarImportMenu) {
+      this.svc.pendingOpenSidebarImportMenu = false;
+      this.openImportFlyout();
+    }
+
+    this.svc.openAiChat$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      });
   }
 
   ngOnDestroy(): void {
@@ -182,6 +200,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.exportMenuOpen = false;
     }
     this.cdr.markForCheck();
+  }
+
+  openImportFlyout(): void {
+    if (this.isMemberRestricted(['import_sql'])) return;
+    this.svc.closeErrorsCard();
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      return;
+    }
+    this.exportMenuOpen = false;
+    if (this.svc.showVersionHistory()) {
+      this.svc.closeVersionHistory$.next();
+      this.svc.showVersionHistory.set(false);
+    }
+    setTimeout(() => {
+      this.importMenuOpen = true;
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    }, 50);
   }
 
   openImportDialect(dialect: SqlDialect, e?: Event): void {

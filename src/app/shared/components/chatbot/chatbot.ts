@@ -309,11 +309,81 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     });
   }
 
-  private isDbConnectOption(opt: any): boolean {
+  isDbConnectOption(opt: any): boolean {
     if (!opt) return false;
-    if (opt.action === 'db_connect' || opt.action === 'open_db_connect') return true;
-    if (opt.url === '/features/db-connect') return true;
-    if (typeof opt.label === 'string' && /test connection|connect to database/i.test(opt.label)) return true;
+    const action = (opt.action || '').toString().toLowerCase().trim();
+    const url = (opt.url || opt.action_url || '').toString().toLowerCase().trim();
+    const label = (opt.label || '').toString().toLowerCase().trim();
+    if (action === 'db_connect' || action === 'open_db_connect' || action === 'connect_db') return true;
+    if (url === '/features/db-connect' || url === '/db-connect' || url === '/connect') return true;
+    if (/test connection|connect to database|database connection|live connection|db connect/i.test(label)) return true;
+    return false;
+  }
+
+  isDbConnectNode(node?: ChatbotNode | null): boolean {
+    if (!node) return false;
+    const title = (node.title || '').toLowerCase();
+    const url = (node.action_url || '').toLowerCase();
+    if (url === '/features/db-connect' || url === '/db-connect' || url === '/connect') return true;
+    if (/test connection|connect to database|database connection|live connection|db connect/i.test(title)) return true;
+    return false;
+  }
+
+  isImportOption(opt: any): boolean {
+    if (!opt) return false;
+    const action = (opt.action || '').toString().toLowerCase().trim();
+    const url = (opt.url || opt.action_url || '').toString().toLowerCase().trim();
+    const label = (opt.label || '').toString().toLowerCase().trim();
+    if (action === 'import' || action === 'open_import' || action === 'import_sql' || action === 'import_schema' || action === 'import_modal') {
+      return true;
+    }
+    if (url === '/features/import' || url === '/import' || url === '/import-sql' || url.includes('/import')) {
+      return true;
+    }
+    if (/import sql|import schema|import database|import ddl|import file|upload sql/i.test(label) || label === 'import') {
+      return true;
+    }
+    if ((url === '/dashboard' || !url) && this.isImportNode(this.currentNode)) {
+      return true;
+    }
+    return false;
+  }
+
+  isImportNode(node?: ChatbotNode | null): boolean {
+    if (!node) return false;
+    const title = (node.title || '').toLowerCase();
+    const url = (node.action_url || '').toLowerCase();
+    if (url === '/features/import' || url === '/import' || url === '/import-sql' || url.includes('import')) return true;
+    if (/\b(import|import sql|import schema|import database|importing)\b/i.test(title)) return true;
+    return false;
+  }
+
+  isAiOption(opt: any): boolean {
+    if (!opt) return false;
+    const action = (opt.action || '').toString().toLowerCase().trim();
+    const url = (opt.url || opt.action_url || '').toString().toLowerCase().trim();
+    const label = (opt.label || '').toString().toLowerCase().trim();
+    if (action === 'ai' || action === 'ai_chat' || action === 'open_ai' || action === 'open_ai_chat' || action === 'ai_assistant') {
+      return true;
+    }
+    if (url === '/features/ai' || url === '/features/ai-chat' || url === '/ai' || url === '/ai-chat' || url === '/dashboard/ai' || url.includes('ai-chat')) {
+      return true;
+    }
+    if (/\b(ai|dbnexus ai|schemaflow ai|ai assistant|ai chat|ask ai|generate with ai|try ai|use ai|ai generator)\b/i.test(label)) {
+      return true;
+    }
+    if ((url === '/dashboard' || !url) && this.isAiNode(this.currentNode)) {
+      return true;
+    }
+    return false;
+  }
+
+  isAiNode(node?: ChatbotNode | null): boolean {
+    if (!node) return false;
+    const title = (node.title || '').toLowerCase();
+    const url = (node.action_url || '').toLowerCase();
+    if (url === '/features/ai' || url === '/features/ai-chat' || url === '/ai' || url === '/ai-chat' || url.includes('ai-chat')) return true;
+    if (/\b(ai|dbnexus ai|schemaflow ai|ai assistant|ai chat|ai generator)\b/i.test(title)) return true;
     return false;
   }
 
@@ -333,9 +403,51 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         }, 150);
       });
     }
-    if (typeof window !== 'undefined' && window.innerWidth < 640) {
-      this.isOpen = false;
+    this.isOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  openImportSection(): void {
+    if (this.router.url.includes('/dashboard')) {
+      this.dashboardSvc?.openSidebarImportMenu();
+    } else {
+      if (this.dashboardSvc) {
+        this.dashboardSvc.pendingOpenSidebarImportMenu = true;
+      }
+      this.router.navigate(['/dashboard']).then(() => {
+        setTimeout(() => {
+          if (this.dashboardSvc?.pendingOpenSidebarImportMenu) {
+            this.dashboardSvc.pendingOpenSidebarImportMenu = false;
+            this.dashboardSvc.openSidebarImportMenu();
+          }
+        }, 150);
+      });
     }
+    this.isOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  openImportModal(dialect: string = 'mysql'): void {
+    this.openImportSection();
+  }
+
+  openAiSection(): void {
+    if (this.router.url.includes('/dashboard')) {
+      this.dashboardSvc?.openAiChat();
+    } else {
+      if (this.dashboardSvc) {
+        this.dashboardSvc.pendingOpenAiChat = true;
+      }
+      this.router.navigate(['/dashboard']).then(() => {
+        setTimeout(() => {
+          if (this.dashboardSvc?.pendingOpenAiChat) {
+            this.dashboardSvc.pendingOpenAiChat = false;
+            this.dashboardSvc.openAiChat();
+          }
+        }, 150);
+      });
+    }
+    this.isOpen = false;
     this.cdr.detectChanges();
   }
 
@@ -348,23 +460,53 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       this.openEscalateForm(this.currentNode?.title);
     } else if (opt.action === 'show_categories') {
       this.goToMainMenu();
-    } else if (this.isDbConnectOption(opt)) {
-      this.openDbConnectModal();
-    } else if ((opt.action === 'link' || opt.action === 'navigate') && targetUrl) {
-      this.navigateToActionUrl(targetUrl);
     } else if (opt.nextNodeId) {
       this.selectNode(opt.nextNodeId);
+    } else if (this.isDbConnectOption(opt)) {
+      this.openDbConnectModal();
+    } else if (this.isImportOption(opt)) {
+      this.openImportSection();
+    } else if (this.isAiOption(opt)) {
+      this.openAiSection();
+    } else if ((opt.action === 'link' || opt.action === 'navigate') && targetUrl) {
+      this.navigateToActionUrl(targetUrl);
     } else if (targetUrl) {
       this.navigateToActionUrl(targetUrl);
     }
   }
 
   navigateToActionUrl(url?: string | null): void {
-    if (!url) return;
-    if (url === '/features/db-connect') {
+    if (!url) {
+      if (this.isDbConnectNode(this.currentNode)) {
+        this.openDbConnectModal();
+        return;
+      }
+      if (this.isImportNode(this.currentNode)) {
+        this.openImportSection();
+        return;
+      }
+      if (this.isAiNode(this.currentNode)) {
+        this.openAiSection();
+        return;
+      }
+      return;
+    }
+
+    if (url === '/features/db-connect' || (url === '/dashboard' && this.isDbConnectNode(this.currentNode))) {
       this.openDbConnectModal();
       return;
     }
+
+    if (url === '/features/import' || url === '/import' || url === '/import-sql' || (url === '/dashboard' && this.isImportNode(this.currentNode))) {
+      this.openImportSection();
+      return;
+    }
+
+    if (url === '/features/ai' || url === '/features/ai-chat' || url === '/ai' || url === '/ai-chat' || (url === '/dashboard' && this.isAiNode(this.currentNode))) {
+      this.openAiSection();
+      return;
+    }
+
     if (url.startsWith('http')) {
       window.open(url, '_blank');
       return;
@@ -401,6 +543,15 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     const url = node?.action_url?.toLowerCase() || '';
     if (title.includes('password') || title.includes('reset') || url.includes('login')) {
       return 'Go to Login & Reset Password ↗';
+    }
+    if (this.isAiNode(node) || this.isAiOption({ action: node?.action_type, url: node?.action_url, label: node?.title })) {
+      return 'Open AI Assistant ↗';
+    }
+    if (this.isImportNode(node) || this.isImportOption({ action: node?.action_type, url: node?.action_url, label: node?.title })) {
+      return 'Open Import ↗';
+    }
+    if (this.isDbConnectNode(node) || this.isDbConnectOption({ action: node?.action_type, url: node?.action_url, label: node?.title })) {
+      return 'Connect to Database ↗';
     }
     return 'Open in App ↗';
   }

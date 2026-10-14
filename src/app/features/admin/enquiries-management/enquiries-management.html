@@ -5,7 +5,7 @@
       <p class="text-muted" style="margin:4px 0 0">View and manage contact sales enquiries.</p>
     </div>
     <div class="header-actions">
-      <div class="custom-status-dropdown-container dropdown-container-rel" style="margin-right: 12px;">
+      <div class="custom-status-dropdown-container dropdown-container-rel">
         <button class="custom-status-dropdown-trigger" style="min-width: 120px; padding: 6px 12px; height: 38px; border-radius: 8px;"
           (click)="showTypeDropdown = !showTypeDropdown; $event.stopPropagation()">
           <span>{{ filterType || 'All Types' }}</span>
@@ -40,7 +40,7 @@
               <span>S.NO</span>
             </span>
           </th>
-          <th style="width:15%">
+          <th style="width:14%">
             <span class="sort-header-clickable" (click)="sortBy('first_name')">
               <span>NAME</span>
               <span class="sort-icon" [class.active]="sortColumn === 'first_name'">
@@ -48,7 +48,7 @@
               </span>
             </span>
           </th>
-          <th style="width:20%">
+          <th style="width:18%">
             <span class="sort-header-clickable" (click)="sortBy('company_email')">
               <span>EMAIL</span>
               <span class="sort-icon" [class.active]="sortColumn === 'company_email'">
@@ -56,7 +56,7 @@
               </span>
             </span>
           </th>
-          <th style="width:15%">
+          <th style="width:14%">
             <span>PHONE / COUNTRY</span>
           </th>
 
@@ -76,7 +76,7 @@
               </span>
             </span>
           </th>
-          <th style="width:13%">
+          <th style="width:12%">
             <span class="sort-header-clickable" (click)="sortBy('created_at')">
               <span>SUBMITTED</span>
               <span class="sort-icon" [class.active]="sortColumn === 'created_at'">
@@ -153,7 +153,7 @@
           </td>
           <td><span class="text-muted">{{ eq.created_at | date:'mediumDate' }}</span></td>
           <td>
-            <div class="action-btns" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <div class="details-cell-wrap" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span class="text-muted" [title]="eq.project_details">{{ eq.project_details || 'No Details' }}</span>
             </div>
           </td>
