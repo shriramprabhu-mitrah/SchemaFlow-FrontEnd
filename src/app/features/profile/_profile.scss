@@ -1314,9 +1314,18 @@
   }
 }
 
-/* ==========================================
-   MY ENQUIRIES SECTION & MODAL
-   ========================================== */
+.settings-card.enquiries-card {
+  &.has-open-dropdown,
+  &:has(.open) {
+    overflow: visible !important;
+  }
+
+  .card-body {
+    overflow: visible !important;
+    padding: 24px 28px;
+  }
+}
+
 .enquiries-card {
   .header-actions {
     display: flex;
@@ -1326,8 +1335,12 @@
 
     .enquiry-count-badge {
       font-size: 12px;
+      font-weight: 500;
       color: #64748b;
       white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
     }
   }
 
@@ -1483,21 +1496,33 @@
     overflow-x: auto;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.06);
+    min-height: 140px;
 
     &.has-open-dropdown,
     &:has(.open) {
       overflow: visible !important;
     }
 
-    .data-table tr.has-open-dropdown,
-    .data-table tr:has(.open) {
-      position: relative;
-      z-index: 1000 !important;
-    }
-
     .data-table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
+
+      tr {
+        position: relative;
+        z-index: 1;
+
+        &.has-open-dropdown,
+        &:has(.open) {
+          position: relative;
+          z-index: 1000 !important;
+
+          td {
+            position: relative;
+            z-index: 1000 !important;
+          }
+        }
+      }
 
       th {
         text-align: left;
@@ -1516,6 +1541,15 @@
         color: #cbd5e1;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         vertical-align: middle;
+        position: relative;
+        z-index: 1;
+
+        &.has-open-dropdown,
+        &:has(.open) {
+          overflow: visible !important;
+          position: relative;
+          z-index: 1001 !important;
+        }
       }
 
       tr:last-child td {
@@ -1524,6 +1558,36 @@
 
       tr:hover td {
         background: rgba(255, 255, 255, 0.02);
+      }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.4;
+      border: 1px solid transparent;
+
+      &.badge-team {
+        background: rgba(16, 185, 129, 0.14);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+
+      &.badge-free {
+        background: rgba(59, 130, 246, 0.14);
+        color: #60a5fa;
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+
+      &.badge-primary {
+        background: rgba(148, 163, 184, 0.14);
+        color: #94a3b8;
+        border-color: rgba(148, 163, 184, 0.3);
       }
     }
   }
@@ -1598,6 +1662,10 @@
     position: relative;
     display: inline-block;
 
+    &.open {
+      z-index: 1001 !important;
+    }
+
     .custom-status-dropdown-trigger {
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1629,7 +1697,8 @@
         font-weight: 600;
         min-width: 96px;
 
-        &.status-re-open {
+        &.status-re-open,
+        &.status-reopen {
           background-color: rgba(245, 158, 11, 0.14);
           color: #fbbf24;
           border-color: rgba(245, 158, 11, 0.35);
@@ -1661,8 +1730,8 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       padding: 4px 0;
-      z-index: 60;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      z-index: 9999 !important;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
 
       &.dropdown-menu-end {
         left: auto;
@@ -2286,8 +2355,21 @@ html.light-theme {
       justify-content: space-between;
     }
   }
+}
 
+:host-context(body.light-theme),
+body.light-theme,
+html.light-theme {
   .enquiries-card {
+    &.has-open-dropdown,
+    &:has(.open) {
+      overflow: visible !important;
+    }
+
+    .card-body {
+      overflow: visible !important;
+    }
+
     .btn-refresh-enquiries {
       background: #f1f5f9;
       border-color: #e2e8f0;
@@ -2316,6 +2398,13 @@ html.light-theme {
     }
 
     .custom-status-dropdown-container {
+      position: relative;
+      display: inline-block;
+
+      &.open {
+        z-index: 1001 !important;
+      }
+
       .custom-status-dropdown-trigger {
         background-color: #ffffff;
         border-color: #cbd5e1;
@@ -2327,7 +2416,8 @@ html.light-theme {
         }
 
         &.row-status-trigger {
-          &.status-re-open {
+          &.status-re-open,
+          &.status-reopen {
             background-color: rgba(245, 158, 11, 0.15);
             color: #b45309;
             border-color: rgba(245, 158, 11, 0.4);
@@ -2353,7 +2443,8 @@ html.light-theme {
       .custom-status-dropdown-menu {
         background: #ffffff;
         border-color: #cbd5e1;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+        z-index: 9999 !important;
 
         .custom-status-dropdown-option {
           color: #334155;
@@ -2384,6 +2475,7 @@ html.light-theme {
 
     .enquiries-table-wrap {
       border-color: #e2e8f0;
+      min-height: 140px;
 
       &.has-open-dropdown,
       &:has(.open) {
@@ -2391,26 +2483,90 @@ html.light-theme {
       }
 
       .data-table {
+        table-layout: fixed;
+        width: 100%;
+
+        tr {
+          position: relative;
+          z-index: 1;
+
+          &.has-open-dropdown,
+          &:has(.open) {
+            position: relative;
+            z-index: 1000 !important;
+
+            td {
+              position: relative;
+              z-index: 1000 !important;
+            }
+          }
+        }
+
         th {
           background: #f8fafc;
           border-color: #e2e8f0;
           color: #64748b;
+          padding: 12px 14px;
         }
 
         td {
           border-color: #f1f5f9;
           color: #334155;
+          padding: 12px 14px;
+          vertical-align: middle;
+          position: relative;
+          z-index: 1;
+
+          &.has-open-dropdown,
+          &:has(.open) {
+            overflow: visible !important;
+            position: relative;
+            z-index: 1001 !important;
+          }
         }
 
         tr:hover td {
           background: #f8fafc;
         }
       }
+
+      .badge {
+        &.badge-team {
+          background: #ecfdf5 !important;
+          color: #059669 !important;
+          border-color: #a7f3d0 !important;
+        }
+
+        &.badge-free {
+          background: #eff6ff !important;
+          color: #2563eb !important;
+          border-color: #bfdbfe !important;
+        }
+
+        &.badge-primary {
+          background: #f1f5f9 !important;
+          color: #475569 !important;
+          border-color: #cbd5e1 !important;
+        }
+      }
     }
 
     .enquiry-subject-wrap {
-      .enquiry-subject-title { color: #0f172a; }
-      .enquiry-preview-desc { color: #64748b; }
+      .enquiry-subject-title {
+        color: #0f172a !important;
+        font-weight: 600 !important;
+      }
+      .enquiry-preview-desc {
+        color: #64748b !important;
+      }
+    }
+
+    .text-muted {
+      color: #64748b !important;
+    }
+
+    .enquiry-count-badge {
+      color: #64748b !important;
     }
   }
 }

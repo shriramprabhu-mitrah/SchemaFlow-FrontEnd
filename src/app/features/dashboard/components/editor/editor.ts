@@ -37,6 +37,7 @@ export class EditorComponent implements OnInit, OnDestroy {
   private aiResizerStartWidth = 380;
 
   private codeSub?: Subscription;
+  private aiChatSub?: Subscription;
 
   get showErrorsCard(): boolean {
     return this.svc.showErrorsCard();
@@ -143,7 +144,10 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-
+    this.aiChatSub = this.svc.openAiChat$.subscribe(() => {
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    });
   }
   ngAfterViewInit(): void {
     this.codeSub = this.svc.code$.subscribe(val => {
@@ -175,6 +179,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.codeSub?.unsubscribe();
+    this.aiChatSub?.unsubscribe();
     if (typeof document !== 'undefined') {
       document.removeEventListener('click', this.onDocumentClickCapture, true);
     }

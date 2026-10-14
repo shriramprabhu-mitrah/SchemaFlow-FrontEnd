@@ -241,6 +241,11 @@ export class HeaderComponent implements OnInit {
       this.openConnectionStringModal();
       this.cdr.detectChanges();
     }
+    if (this.svc.pendingOpenAiChat) {
+      this.svc.pendingOpenAiChat = false;
+      this.svc.openAiChat();
+      this.cdr.detectChanges();
+    }
     this.svc.closeHeaderMenus$.subscribe(() => {
       this.closeAllDropdownMenus();
     });

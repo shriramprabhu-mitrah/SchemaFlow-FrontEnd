@@ -770,6 +770,7 @@ app-org-layout {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    vertical-align: middle;
   }
 
   .user-name-text {
@@ -2594,6 +2595,7 @@ body.light-theme {
     font-weight: 500 !important;
     border-bottom: 1px solid #f1f5f9 !important;
     padding: 12px 14px !important;
+    vertical-align: middle !important;
   }
 
   .data-table tr:nth-child(even) td {

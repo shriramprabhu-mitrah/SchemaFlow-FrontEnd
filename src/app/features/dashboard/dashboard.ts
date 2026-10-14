@@ -49,6 +49,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   private trialExpiredSubscription!: Subscription;
   private socketConnectSubscription!: Subscription;
   private socketErrorSubscription!: Subscription;
+  private aiChatSub?: Subscription;
   private isInitialLoad = true;
 
   constructor(
@@ -111,6 +112,23 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     });
     if (typeof window !== 'undefined') {
       this.svc.syncThemeFromStorage();
+      if (this.svc.pendingOpenAiChat) {
+        this.svc.pendingOpenAiChat = false;
+        setTimeout(() => {
+          this.svc.openAiChat();
+          this.cdr.detectChanges();
+        }, 150);
+      }
+      if (this.svc.pendingOpenSidebarImportMenu) {
+        this.svc.pendingOpenSidebarImportMenu = false;
+        setTimeout(() => {
+          this.svc.openSidebarImportMenu();
+          this.cdr.detectChanges();
+        }, 150);
+      }
+      this.aiChatSub = this.svc.openAiChat$.subscribe(() => {
+        this.cdr.detectChanges();
+      });
       this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
         const id = params['id'];
         const sampleParam = params['sample'];
@@ -258,6 +276,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     if (this.trialExpiredSubscription) this.trialExpiredSubscription.unsubscribe();
     if (this.socketConnectSubscription) this.socketConnectSubscription.unsubscribe();
     if (this.socketErrorSubscription) this.socketErrorSubscription.unsubscribe();
+    if (this.aiChatSub) this.aiChatSub.unsubscribe();
   }
 
   showEditorFullScreen(): void {
