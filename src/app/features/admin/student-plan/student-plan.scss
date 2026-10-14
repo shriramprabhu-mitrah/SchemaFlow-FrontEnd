@@ -103,22 +103,13 @@
     border-color: #10b981;
   }
 
-  &.active {
-    background: #10b981;
-    color: #ffffff;
-    border-color: #10b981;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
-  }
-
   &:disabled {
-    cursor: not-allowed;
-    &.active {
-      opacity: 0.9;
-      cursor: default;
-    }
-    &:not(.active) {
-      opacity: 0.45;
-    }
+    cursor: not-allowed !important;
+    opacity: 0.4 !important;
+    box-shadow: none !important;
+    background: rgba(16, 185, 129, 0.08) !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+    color: #10b981 !important;
   }
 }
 
@@ -143,22 +134,13 @@
     border-color: #ef4444;
   }
 
-  &.active {
-    background: #ef4444;
-    color: #ffffff;
-    border-color: #ef4444;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
-  }
-
   &:disabled {
-    cursor: not-allowed;
-    &.active {
-      opacity: 0.9;
-      cursor: default;
-    }
-    &:not(.active) {
-      opacity: 0.45;
-    }
+    cursor: not-allowed !important;
+    opacity: 0.4 !important;
+    box-shadow: none !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+    border-color: rgba(239, 68, 68, 0.25) !important;
+    color: #ef4444 !important;
   }
 }
 
@@ -248,41 +230,315 @@ body.light-theme .common-settings-dialog.month-settings-dialog {
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
 }
 
-.student-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 16px;
+/* ── Accept / Reject Confirmation Modal ── */
+.student-status-confirm-modal {
+  position: relative !important;
+  width: 440px !important;
+  max-width: 92vw !important;
+  padding: 28px !important;
+  border-radius: 16px !important;
+  text-align: center !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 
-  .info-label {
-    font-size: 11px;
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 18px;
     color: #94a3b8;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s ease;
+
+    &:hover:not(:disabled) {
+      color: #ffffff;
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
   }
 
-  .info-val {
-    font-size: 13px;
-    color: #f1f5f9;
-    font-weight: 600;
-    margin-top: 2px;
+  .confirm-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+
+    &.icon-wrap-accept {
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    &.icon-wrap-reject {
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+  }
+
+  .confirm-title {
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  .confirm-message {
+    font-size: 14px !important;
+    color: #94a3b8 !important;
+    line-height: 1.5 !important;
+    margin: 0 0 18px 0 !important;
+  }
+
+  .confirm-student-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    text-align: left;
+
+    .badge-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(62, 197, 193, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .badge-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      .confirm-student-name {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #f8fafc;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .confirm-student-email {
+        font-size: 12px;
+        color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .reject-reason-wrap {
+    text-align: left;
+    margin-bottom: 20px;
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #cbd5e1;
+
+      .required-star {
+        color: #ef4444;
+        margin-left: 2px;
+      }
+    }
+
+    .rejection-textarea {
+      width: 100% !important;
+      box-sizing: border-box !important;
+      min-height: 76px !important;
+      resize: vertical !important;
+      border-radius: 8px !important;
+      padding: 10px 12px !important;
+      font-size: 13px !important;
+      background: #1e293b !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      color: #ffffff !important;
+      line-height: 1.5 !important;
+
+      &::placeholder {
+        color: #64748b !important;
+      }
+
+      &:focus {
+        border-color: #3ec5c1 !important;
+        box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.2) !important;
+        outline: none !important;
+      }
+
+      &.is-invalid {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+      }
+    }
+
+    .field-error-msg {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 5px;
+      font-weight: 500;
+    }
+  }
+
+  .confirm-actions-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 6px;
+
+    .btn-cancel-confirm {
+      min-width: 110px;
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-confirm-accept {
+      min-width: 110px;
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      background: #10b981;
+      color: #ffffff;
+      border: 1px solid #10b981;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: #059669;
+        border-color: #059669;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      }
+      &:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+    }
+
+    .btn-confirm-reject {
+      min-width: 110px;
+      height: 38px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      background: #ef4444;
+      color: #ffffff;
+      border: 1px solid #ef4444;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: #dc2626;
+        border-color: #dc2626;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+      }
+      &:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+    }
   }
 }
 
-:host-context(body.light-theme),
-body.light-theme {
-  .student-info-grid {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    .info-label { color: #64748b; }
-    .info-val { color: #0f172a; }
+/* Light Theme Overrides */
+:host-context(body.light-theme) .student-status-confirm-modal,
+body.light-theme .student-status-confirm-modal {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+
+  .modal-close {
+    color: #64748b;
+    &:hover:not(:disabled) {
+      color: #0f172a;
+    }
+  }
+
+  .confirm-title {
+    color: #0f172a !important;
+  }
+
+  .confirm-message {
+    color: #64748b !important;
+  }
+
+  .confirm-student-badge {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+
+    .confirm-student-name {
+      color: #0f172a !important;
+    }
+
+    .confirm-student-email {
+      color: #64748b !important;
+    }
+  }
+
+  .reject-reason-wrap {
+    .form-label {
+      color: #475569 !important;
+    }
+
+    .rejection-textarea {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+
+      &::placeholder {
+        color: #94a3b8 !important;
+      }
+
+      &:focus {
+        border-color: #3ec5c1 !important;
+        box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.15) !important;
+      }
+    }
   }
 }
+
+
+
 
 
 

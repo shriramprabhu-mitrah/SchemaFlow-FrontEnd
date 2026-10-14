@@ -48,6 +48,12 @@ export class PricingComponent implements OnInit {
     return this.auth.isLoggedIn();
   }
 
+  set isLoggedIn(value: boolean) {
+    if (!value) {
+      this.auth.clearLocalState();
+    }
+  }
+
   @HostListener('window:userLogout')
   onUserLogout(): void {
     this.cdr.detectChanges();
@@ -120,7 +126,7 @@ export class PricingComponent implements OnInit {
       error: (err) => {
         console.error('Failed to fetch user features on visibility change:', err);
         if (err?.status === 401) {
-          this.isLoggedIn = false;
+          this.auth.clearLocalState();
         }
       }
     });
@@ -177,7 +183,7 @@ export class PricingComponent implements OnInit {
           error: (err) => {
             console.error('Failed to fetch user features:', err);
             if (err?.status === 401) {
-              this.isLoggedIn = false;
+              this.auth.clearLocalState();
             }
             setTimeout(() => {
               this.cdr.detectChanges();
@@ -650,9 +656,9 @@ export class PricingComponent implements OnInit {
 
   /** CTA button label depending on audience + plan type + login state */
   getCtaLabel(plan: any): string {
+    if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
     if (this.auth.isSuperAdmin()) return 'Super Admin';
     if (plan.slug === 'enterprise') return 'Contact Sales';
-    if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
 
     const monthlyPrice = parseFloat(plan.price_monthly || '0');
     const trialDuration = this.formatTrialDuration(plan);
@@ -772,6 +778,11 @@ export class PricingComponent implements OnInit {
   }
 
   isCtaDisabled(plan: any): boolean {
+    // Student plan button must always remain enabled for any user (free, premium, team, etc.)
+    if (this.studentSettings.isStudentPlan(plan)) {
+      return false;
+    }
+
     if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
     if (this.currentPlanStatus === 'expired') return false;
@@ -813,10 +824,6 @@ export class PricingComponent implements OnInit {
   }
 
   selectPlan(plan: any): void {
-    if (this.auth.isSuperAdmin()) {
-      return;
-    }
-
     if (this.studentSettings.isStudentPlan(plan)) {
       if (typeof window !== 'undefined') {
         const url = this.router.serializeUrl(this.router.createUrlTree(['/student-offer']));
@@ -824,6 +831,10 @@ export class PricingComponent implements OnInit {
       } else {
         this.router.navigate(['/student-offer']);
       }
+      return;
+    }
+
+    if (this.auth.isSuperAdmin()) {
       return;
     }
 

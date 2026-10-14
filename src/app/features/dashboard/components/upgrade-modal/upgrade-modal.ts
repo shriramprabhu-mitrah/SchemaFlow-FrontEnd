@@ -543,9 +543,9 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   getCtaLabel(plan: any): string {
+    if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
     if (this.auth.isSuperAdmin()) return 'Super Admin';
     if (plan.slug === 'enterprise') return 'Contact Sales';
-    if (plan.slug === 'student' || plan.name?.toLowerCase().includes('student')) return 'Apply Offer';
 
     const trialDuration = this.formatTrialDuration(plan);
     if (this.isOrganization && (plan.slug === 'free' || plan.slug === 'premium' || plan.plan_type === 'individual')) {
@@ -585,6 +585,9 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   isCtaDisabled(plan: any): boolean {
+    // Student plan button must always remain enabled for any user (free, premium, team, etc.)
+    if (this.studentSettings.isStudentPlan(plan)) return false;
+
     if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
 

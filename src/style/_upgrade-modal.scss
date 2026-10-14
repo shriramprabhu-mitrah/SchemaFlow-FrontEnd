@@ -459,6 +459,18 @@ app-upgrade-modal {
           font-size: 13px !important;
           height: 38px !important;
         }
+
+        button.btn-student-gradient {
+          background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+          border: none !important;
+          color: #ffffff !important;
+          box-shadow: 0 4px 10px rgba(236, 72, 153, 0.25) !important;
+
+          &:hover {
+            box-shadow: 0 6px 18px rgba(236, 72, 153, 0.4) !important;
+            transform: scale(1.02);
+          }
+        }
       }
     }
 
@@ -468,11 +480,7 @@ app-upgrade-modal {
     }
 
     .team-card.recommended, .student-card.recommended {
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-        linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.45)) !important;
-      background-size: 16px 16px !important;
+      background-image: none !important;
     }
 
     .team-card.recommended {
@@ -593,10 +601,7 @@ body.light-theme {
       color: #334155 !important;
       border: 1px solid #e2e8f0 !important;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04) !important;
-      background-image: 
-        linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px) !important;
-      background-size: 16px 16px !important;
+      background-image: none !important;
 
       .plan-title { color: #0f172a !important; }
       .plan-desc { color: #64748b !important; }
