@@ -70,7 +70,7 @@
                 {{ getRoleBadgeLabel() }}
               </span>
 
-              <span class="badge badge-plan" title="View Plans & Pricing">
+              <span class="badge badge-plan" [class.plan-student]="planSlug().includes('student')" title="View Plans & Pricing">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polygon
                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
@@ -254,14 +254,14 @@
       </div>
     </div>
 
-    <!-- TAB 2: Plan & Subscription (Shows ONLY 3 Plans: Free, Premium, Team) -->
+    <!-- TAB 2: Plan & Subscription -->
     <div class="tab-panel" *ngIf="activeTab() === 'subscription'">
       <div class="settings-card">
         <div class="card-header">
           <div class="card-title-group">
             <h3>Plan & Subscription</h3>
-            <p>Active plan loaded from your subscription entitlement. SchemaFlow offers 3 tiers: <strong>Free</strong>,
-              <strong>Premium</strong>, and <strong>Team</strong>.
+            <p>Active plan loaded from your subscription entitlement. dbNexus offers 4 tiers: <strong>Free</strong>,
+              <strong>Student</strong>, <strong>Premium</strong>, and <strong>Team</strong>.
             </p>
           </div>
           <button class="btn-secondary-link" (click)="goToPricing()">
@@ -272,7 +272,8 @@
         <div class="card-body">
           <!-- Active Plan Banner -->
           <div class="current-plan-banner" [class.tier-premium]="planSlug() === 'premium'"
-            [class.tier-team]="planSlug() === 'team'">
+            [class.tier-team]="planSlug() === 'team'"
+            [class.tier-student]="planSlug().includes('student')">
             <div class="banner-badge-group">
               <span class="banner-sub-tag">Currently Active Plan</span>
               <h4 class="banner-title">{{ getPlanBadgeLabel() }} Plan</h4>
@@ -282,7 +283,7 @@
                 <span class="live-dot"></span>
                 <span>Active</span>
               </div>
-              <button *ngIf="planSlug() !== 'free' && planStatus() === 'active'" class="premium-btn-cancel-renewal" (click)="requestCancellation()">Cancel Auto Renewal</button>
+              <button *ngIf="planSlug() !== 'free' && !planSlug().includes('student') && planStatus() === 'active'" class="premium-btn-cancel-renewal" (click)="requestCancellation()">Cancel Auto Renewal</button>
             </div>
           </div>
 

@@ -34,8 +34,8 @@ export class ProfileComponent {
   isSuperAdmin = signal<boolean>(false);
   organizationName = signal<string>('');
 
-  // Plan State (Only 3 supported plans: free, premium, team)
-  planSlug = signal<'free' | 'premium' | 'team'>('free');
+  // Plan State (Supports free, student_plan, premium, team)
+  planSlug = signal<string>('free');
   planStatus = signal<string>('active');
   apiPlans = signal<any[]>([]);
   subscriptionId = signal<number | null>(null);
@@ -210,22 +210,31 @@ export class ProfileComponent {
           }
 
           const rawSlug = (plan.slug || plan.name || '').toLowerCase();
-          if (rawSlug.includes('team')) {
+          if (rawSlug.includes('student')) {
+            this.planSlug.set('student_plan');
+            this.auth.setCurrentPlanSlug('student_plan');
+          } else if (rawSlug.includes('team')) {
             this.planSlug.set('team');
+            this.auth.setCurrentPlanSlug('team');
           } else if (rawSlug.includes('premium') || rawSlug.includes('pro')) {
             this.planSlug.set('premium');
+            this.auth.setCurrentPlanSlug('premium');
           } else {
             this.planSlug.set('free');
+            this.auth.setCurrentPlanSlug('free');
           }
 
           if (plan.status) {
             this.planStatus.set(plan.status);
+            this.auth.setCurrentPlanStatus(plan.status);
           }
         }
       },
       error: () => {
         const cached = (this.auth.getCurrentPlanSlug() || localStorage.getItem('cachedPlanSlug') || 'free').toLowerCase();
-        if (cached.includes('team')) {
+        if (cached.includes('student')) {
+          this.planSlug.set('student_plan');
+        } else if (cached.includes('team')) {
           this.planSlug.set('team');
         } else if (cached.includes('premium') || cached.includes('pro')) {
           this.planSlug.set('premium');
@@ -384,6 +393,7 @@ export class ProfileComponent {
 
   getPlanBadgeLabel(): string {
     const p = this.planSlug().toLowerCase();
+    if (p.includes('student')) return 'Student';
     if (p === 'team') return 'Team';
     if (p === 'premium' || p === 'pro') return 'Premium';
     return 'Free';
