@@ -1452,10 +1452,19 @@ export class DashboardService {
   }
 
   openImportModal$ = new Subject<string>();
+  pendingOpenImportModal: string | boolean = false;
 
-  openImportModal(dialect: string): void {
+  openImportModal(dialect: string = 'mysql'): void {
     this.closeChatbot();
     this.openImportModal$.next(dialect);
+  }
+
+  openSidebarImportMenu$ = new Subject<void>();
+  pendingOpenSidebarImportMenu = false;
+
+  openSidebarImportMenu(): void {
+    this.closeChatbot();
+    this.openSidebarImportMenu$.next();
   }
 
   openConnectionStringModal$ = new Subject<void>();
@@ -1464,6 +1473,36 @@ export class DashboardService {
   openConnectionStringModal(): void {
     this.closeChatbot();
     this.openConnectionStringModal$.next();
+  }
+
+  openAiChat$ = new Subject<void>();
+  pendingOpenAiChat = false;
+
+  openAiChat(): void {
+    this.closeChatbot();
+    this.closeErrorsCard();
+    if (!this.auth.isLoggedIn()) {
+      this.authModalVisible.set(true);
+      return;
+    }
+    if (this.isSampleDiagram()) {
+      return;
+    }
+    if (!this.entitlementService.canUseFeature('ai_chat')) {
+      if (!this.entitlementService.orgHasFeature('ai_chat')) {
+        this.showUpgradeModal('ai_chat');
+      }
+      return;
+    }
+    if (this.showDiffChecker()) {
+      this.closeDiffChecker();
+    }
+    this.showDocs = false;
+    if (this.sidebarInspectorTab()) {
+      this.sidebarInspectorTab.set(null);
+    }
+    this.toggleAiChat(true);
+    this.openAiChat$.next();
   }
 
   formatVersionDate(dateStr: string | Date): string {

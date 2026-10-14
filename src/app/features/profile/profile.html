@@ -407,7 +407,7 @@
 
     <!-- TAB 4: My Enquiries (Hidden for Super Admin) -->
     <div class="tab-panel" *ngIf="!isSuperAdmin() && activeTab() === 'enquiries'">
-      <div class="settings-card enquiries-card">
+      <div class="settings-card enquiries-card" [class.has-open-dropdown]="openRowDropdownId() !== null">
         <div class="card-header">
           <div class="card-title-group">
             <h3>My Enquiries & Support Tickets</h3>
@@ -495,11 +495,12 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th style="width: 5%">#</th>
+                  <th style="width: 6%">#</th>
                   <th style="width: 14%">TYPE</th>
-                  <th style="width: 43%">SUBJECT / DETAILS</th>
+                  <th style="width: 44%">SUBJECT </th> 
+                  <th style="width: 20%">DETAILS</th>
                   <th style="width: 20%">SUBMITTED</th>
-                  <th style="width: 18%; text-align: right;">STATUS</th>
+                  <th style="width: 16%">STATUS</th>
                 </tr>
               </thead>
               <tbody>
@@ -516,7 +517,11 @@
                   </td>
                   <td>
                     <div class="enquiry-subject-wrap">
-                      <strong class="enquiry-subject-title">{{ eq.subject || 'Enquiry #' + (eq.id || (i + 1)) }}</strong>
+                      <div class="enquiry-subject-title">{{ eq.subject || 'Enquiry #' + (eq.id || (i + 1)) }}</div>
+                    </div>
+                  </td>
+                   <td>
+                    <div class="enquiry-subject-wrap">
                       <span class="enquiry-preview-desc">{{ eq.project_details || eq.message || 'No additional details provided' }}</span>
                     </div>
                   </td>
@@ -526,7 +531,7 @@
                       {{ (eq.created_at || eq.createdAt) | date:'shortTime' }}
                     </span>
                   </td>
-                  <td style="text-align: right;">
+                  <td [class.has-open-dropdown]="openRowDropdownId() === (eq.id || i)">
                     <div class="custom-status-dropdown-container dropdown-container-rel row-status-wrap"
                          [class.open]="!isClosed(eq.status) && openRowDropdownId() === (eq.id || i)">
 
@@ -535,7 +540,7 @@
                               class="custom-status-dropdown-trigger row-status-trigger status-close status-closed disabled"
                               disabled
                               title="Closed enquiries cannot be edited">
-                        <span>Close</span>
+                        <span>Closed</span>
                       </button>
 
                       <!-- If Not Closed: Interactive dropdown trigger with chevron -->
@@ -546,7 +551,7 @@
                         <app-icons name="chevron-down" size="13"></app-icons>
                       </button>
 
-                      <div class="custom-status-dropdown-menu dropdown-menu-end"
+                      <div class="custom-status-dropdown-menu"
                            [class.dropdown-up]="openRowDropdownUpward()"
                            *ngIf="!isClosed(eq.status) && openRowDropdownId() === (eq.id || i)"
                            (click)="$event.stopPropagation()">
@@ -560,7 +565,7 @@
                                 [class.selected]="isClosed(eq.status)"
                                 (click)="onRowStatusSelect(eq, 'closed')">
                           <span class="status-option-dot closed"></span>
-                          <span>Close</span>
+                          <span>Closed</span>
                         </button>
                       </div>
                     </div>

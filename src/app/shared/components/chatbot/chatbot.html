@@ -219,8 +219,8 @@
           
           <div class="answer-content" [innerHTML]="formatContent(currentNode.content)"></div>
 
-          <!-- Action URL button if exists -->
-          @if (currentNode.action_url) {
+          <!-- Action URL button if exists or recognized as modal/feature node -->
+          @if (currentNode.action_url || isAiNode(currentNode) || isImportNode(currentNode) || isDbConnectNode(currentNode)) {
             <div class="action-btn-row">
               <button class="primary-action-btn" (click)="navigateToActionUrl(currentNode.action_url)">
                 {{ getActionBtnLabel(currentNode) }}
