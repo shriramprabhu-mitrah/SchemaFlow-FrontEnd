@@ -38,6 +38,7 @@ export class StudentPlanComponent implements OnInit {
   loading = signal<boolean>(true);
   error = signal<string>('');
   serverTotalCount = signal<number | null>(null);
+  serverTotalPages = signal<number | null>(null);
 
   // Single student details modal state
   showDetailsModal = signal<boolean>(false);
@@ -53,6 +54,14 @@ export class StudentPlanComponent implements OnInit {
   updatingStudentId = signal<number | string | null>(null);
   updatingAction = signal<'accept' | 'reject' | null>(null);
   statusSuccessMsg = signal<string>('');
+
+  // Confirmation modal state for accept / reject
+  showConfirmModal = signal<boolean>(false);
+  confirmAction = signal<'accept' | 'reject' | null>(null);
+  confirmStudent = signal<any>(null);
+  rejectionReason = '';
+  rejectionError = signal<string>('');
+  submittingStatus = signal<boolean>(false);
 
   // Month settings state
   studentPlan = signal<any>(null);
@@ -132,13 +141,54 @@ export class StudentPlanComponent implements OnInit {
           list = res?.data ? (Array.isArray(res.data) ? res.data : [res.data]) : [res];
         }
 
-        const total = res?.total ?? res?.totalCount ?? res?.total_count ?? res?.count ??
-                      res?.meta?.total ?? res?.meta?.totalCount ??
-                      res?.pagination?.total ?? res?.data?.total ?? res?.data?.totalCount;
-        if (typeof total === 'number' && !isNaN(total)) {
-          this.serverTotalCount.set(total);
+        const total = res?.pagination?.totalRecords ??
+                      res?.pagination?.total_records ??
+                      res?.pagination?.total ??
+                      res?.pagination?.totalCount ??
+                      res?.pagination?.total_count ??
+                      res?.pagination?.count ??
+                      res?.data?.pagination?.totalRecords ??
+                      res?.data?.pagination?.total_records ??
+                      res?.data?.pagination?.total ??
+                      res?.data?.pagination?.totalCount ??
+                      res?.totalRecords ??
+                      res?.total_records ??
+                      res?.totalCount ??
+                      res?.total_count ??
+                      res?.total ??
+                      res?.count ??
+                      res?.meta?.total ??
+                      res?.meta?.totalCount ??
+                      res?.data?.total ??
+                      res?.data?.totalCount;
+
+        if (total != null && !isNaN(Number(total))) {
+          this.serverTotalCount.set(Number(total));
         } else {
           this.serverTotalCount.set(null);
+        }
+
+        const totalPages = res?.pagination?.totalPages ??
+                           res?.pagination?.total_pages ??
+                           res?.data?.pagination?.totalPages ??
+                           res?.data?.pagination?.total_pages;
+
+        if (totalPages != null && !isNaN(Number(totalPages))) {
+          this.serverTotalPages.set(Number(totalPages));
+        } else {
+          this.serverTotalPages.set(null);
+        }
+
+        const serverPage = res?.pagination?.currentPage ??
+                           res?.pagination?.current_page ??
+                           res?.pagination?.page ??
+                           res?.data?.pagination?.currentPage;
+
+        if (serverPage != null && !isNaN(Number(serverPage))) {
+          const sp = Number(serverPage);
+          if (sp >= 1 && this.page() !== sp) {
+            this.page.set(sp);
+          }
         }
 
         this.allStudents.set(list);
@@ -196,7 +246,12 @@ export class StudentPlanComponent implements OnInit {
     return this.filteredStudents().length;
   });
 
-  totalPagesCount = computed(() => Math.ceil(this.totalFilteredCount() / this.limit()) || 1);
+  totalPagesCount = computed(() => {
+    if (this.serverTotalPages() !== null) {
+      return Math.max(1, this.serverTotalPages()!);
+    }
+    return Math.ceil(this.totalFilteredCount() / this.limit()) || 1;
+  });
 
   totalPages = computed(() => {
     const total = this.totalPagesCount();
@@ -290,9 +345,24 @@ export class StudentPlanComponent implements OnInit {
 
   getApprovalStatus(student: any): 'Accepted' | 'Rejected' | 'Pending' {
     const val = student?.is_approved ?? student?.is_accepted;
-    if (val === true) return 'Accepted';
-    if (val === false) return 'Rejected';
+    if (val === true || val === 1 || val === 'true') return 'Accepted';
+    if (val === false || val === 0 || val === 'false') return 'Rejected';
     return 'Pending';
+  }
+
+  isApprovalDecided(student: any): boolean {
+    const val = student?.is_approved ?? student?.is_accepted;
+    return val === true || val === false || val === 1 || val === 0 || val === 'true' || val === 'false';
+  }
+
+  isApproved(student: any): boolean {
+    const val = student?.is_approved ?? student?.is_accepted;
+    return val === true || val === 1 || val === 'true';
+  }
+
+  isRejected(student: any): boolean {
+    const val = student?.is_approved ?? student?.is_accepted;
+    return val === false || val === 0 || val === 'false';
   }
 
   viewDetails(student: any): void {
@@ -387,29 +457,76 @@ export class StudentPlanComponent implements OnInit {
     return student?.image_url || student?.imageUrl || student?.file_url || student?.image || '';
   }
 
-  updateStatus(student: any, isApproved: boolean): void {
+  openConfirmModal(student: any, action: 'accept' | 'reject'): void {
+    if (!student) return;
+    if (this.isApprovalDecided(student)) return;
+
+    this.confirmStudent.set(student);
+    this.confirmAction.set(action);
+    this.rejectionReason = '';
+    this.rejectionError.set('');
+    this.showConfirmModal.set(true);
+    this.cdr.markForCheck();
+  }
+
+  closeConfirmModal(): void {
+    if (this.submittingStatus()) return;
+    this.showConfirmModal.set(false);
+    this.confirmStudent.set(null);
+    this.confirmAction.set(null);
+    this.rejectionReason = '';
+    this.rejectionError.set('');
+    this.cdr.markForCheck();
+  }
+
+  onRejectionReasonChange(val: string): void {
+    this.rejectionReason = val;
+    if (val && val.trim()) {
+      this.rejectionError.set('');
+    }
+  }
+
+  confirmStatusUpdate(): void {
+    const student = this.confirmStudent();
+    const action = this.confirmAction();
+    if (!student || !action) return;
+
+    if (action === 'reject') {
+      if (!this.rejectionReason || !this.rejectionReason.trim()) {
+        this.rejectionError.set('Please enter a reason for rejection.');
+        return;
+      }
+    }
+
+    const isApproved = action === 'accept';
+    const reason = action === 'reject' ? this.rejectionReason.trim() : undefined;
     const studentId = student?.id ?? student?.student_id;
     if (studentId === undefined || studentId === null) return;
 
-    // Prevent clicking the same option twice
-    const currentStatus = student?.is_approved ?? student?.is_accepted;
-    if (currentStatus === isApproved) return;
-
+    this.submittingStatus.set(true);
     this.updatingStudentId.set(studentId);
-    this.updatingAction.set(isApproved ? 'accept' : 'reject');
+    this.updatingAction.set(action);
     this.error.set('');
     this.statusSuccessMsg.set('');
     this.cdr.markForCheck();
 
-    this.admin.updateStudentCredentialStatus(studentId, isApproved).subscribe({
+    this.admin.updateStudentCredentialStatus(studentId, isApproved, reason).subscribe({
       next: (res: any) => {
         student.is_approved = isApproved;
         student.is_accepted = isApproved;
+        if (reason) {
+          student.reason = reason;
+        }
         this.allStudents.update(students =>
           students.map(s => {
             const sId = s?.id ?? s?.student_id;
             if (sId === studentId) {
-              return { ...s, is_approved: isApproved, is_accepted: isApproved };
+              return {
+                ...s,
+                is_approved: isApproved,
+                is_accepted: isApproved,
+                ...(reason ? { reason } : {})
+              };
             }
             return s;
           })
@@ -419,17 +536,28 @@ export class StudentPlanComponent implements OnInit {
           this.statusSuccessMsg.set('');
           this.cdr.markForCheck();
         }, 3000);
+        this.submittingStatus.set(false);
         this.updatingStudentId.set(null);
         this.updatingAction.set(null);
+        this.showConfirmModal.set(false);
+        this.confirmStudent.set(null);
+        this.confirmAction.set(null);
+        this.rejectionReason = '';
+        this.rejectionError.set('');
         this.cdr.markForCheck();
       },
       error: (err: any) => {
+        this.submittingStatus.set(false);
         this.updatingStudentId.set(null);
         this.updatingAction.set(null);
         this.error.set(err?.error?.message || err?.message || 'Failed to update student approval status');
         this.cdr.markForCheck();
       }
     });
+  }
+
+  updateStatus(student: any, isApproved: boolean): void {
+    this.openConfirmModal(student, isApproved ? 'accept' : 'reject');
   }
 
   // ── Month Settings Handlers ──

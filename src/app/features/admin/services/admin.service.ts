@@ -352,14 +352,18 @@ export class AdminService {
     return this.http.get(url, { headers, withCredentials: true });
   }
 
-  updateStudentCredentialStatus(id: number | string, isApproved: boolean): Observable<any> {
+  updateStudentCredentialStatus(id: number | string, isApproved: boolean, reason?: string): Observable<any> {
     const url = this.getStudentCredentialsUrl(id);
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
     let headers: Record<string, string> = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    return this.http.put(url, { is_approved: isApproved }, { headers, withCredentials: true });
+    const body: any = { is_approved: isApproved };
+    if (!isApproved && reason && reason.trim()) {
+      body.reason = reason.trim();
+    }
+    return this.http.put(url, body, { headers, withCredentials: true });
   }
 
   deleteStudentCredential(id: number | string): Observable<any> {

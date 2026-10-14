@@ -329,12 +329,8 @@
   transition: all 0.38s cubic-bezier(0.16, 1, 0.3, 1) !important;
   z-index: 2;
 
-  /* Creative Blueprint Drawing Canvas Grid Background Texture */
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.45)) !important;
-  background-size: 16px 16px !important;
+  /* Clean solid background without grid texture */
+  background-image: none !important;
 
   /* Spotlight hover brings to front and lights up custom backdrop glow */
   &:hover {
@@ -689,6 +685,19 @@
     }
   }
 
+  /* Student rose/pink gradient pill */
+  button.btn-student-gradient {
+    background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(236, 72, 153, 0.25) !important;
+
+    &:hover {
+      box-shadow: 0 6px 18px rgba(236, 72, 153, 0.4) !important;
+      transform: scale(1.02);
+    }
+  }
+
   /* Enterprise gold gradient pill */
   button.btn-enterprise-gradient {
     background: linear-gradient(135deg, #f59e0b, #ec4899) !important;
@@ -719,10 +728,7 @@
 }
 
 .student-card.recommended {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.45)) !important;
+  background-image: none !important;
   border: 2px solid #ec4899 !important; /* Pink/Rose border */
   --card-glow-rgb: 236, 72, 153;
   --card-border-hover: #ec4899;
@@ -746,10 +752,7 @@
 }
 
 .team-card.recommended {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.45)) !important;
+  background-image: none !important;
   border: 2px solid #10b981 !important;
   /* Emerald border */
   --card-glow-rgb: 16, 185, 129;
@@ -1225,11 +1228,8 @@ body.light-theme .pricing-container {
     border: 1px solid #e2e8f0 !important;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04) !important;
 
-    /* Light drawing grid inside cards */
-    background-image:
-      linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px) !important;
-    background-size: 16px 16px !important;
+    /* Clean solid background without grid texture */
+    background-image: none !important;
 
     .plan-title {
       color: #0f172a !important;
@@ -1357,16 +1357,12 @@ body.light-theme .pricing-container {
 
   .student-card.recommended {
     border: 2px solid #ec4899 !important;
-    background-image:
-      linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px) !important;
+    background-image: none !important;
   }
 
   .team-card.recommended {
     border: 2px solid #10b981 !important;
-    background-image:
-      linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px) !important;
+    background-image: none !important;
   }
 
   /* Comparison Grid Light Theme Style */

@@ -234,7 +234,7 @@
 
         <div class="card-action" style="margin-bottom: 15px;">
           <app-button *ngIf="!hideFreePlanButton(plan)" variant="none"
-            [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient'))))"
+            [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (studentSettings.isStudentPlan(plan) ? 'btn-student-gradient' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient')))))"
             [disabled]="isCtaDisabled(plan)" (onClick)="selectPlan(plan)">
             {{ getCtaLabel(plan) }}
           </app-button>
