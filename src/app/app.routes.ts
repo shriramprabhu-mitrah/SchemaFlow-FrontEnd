@@ -59,6 +59,11 @@ export const routes: Routes = [
     title: 'Pricing Plans - DBNexus',
     loadComponent: () => import('./features/pricing/pricing').then(m => m.PricingComponent)
   },
+  {
+    path: 'student-offer',
+    title: 'Student Offer - DBNexus',
+    loadComponent: () => import('./features/pricing/student-offer/student-offer').then(m => m.StudentOfferComponent)
+  },
   // Super Admin Panel
   {
     path: 'admin',
@@ -69,6 +74,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', title: 'Admin Dashboard - DBNexus', loadComponent: () => import('./features/admin/admin-dashboard/admin-dashboard').then(m => m.AdminDashboardComponent) },
       { path: 'plans', title: 'Plan Management - DBNexus', loadComponent: () => import('./features/admin/plan-management/plan-management').then(m => m.PlanManagementComponent) },
+      { path: 'student-plan', title: 'Student Plan - DBNexus', loadComponent: () => import('./features/admin/student-plan/student-plan').then(m => m.StudentPlanComponent) },
       { path: 'features', title: 'Feature Management - DBNexus', loadComponent: () => import('./features/admin/feature-management/feature-management').then(m => m.FeatureManagementComponent) },
       { path: 'ai-configs', title: 'AI Configurations - DBNexus', loadComponent: () => import('./features/admin/ai-configs/ai-configs').then(m => m.AiConfigsComponent) },
       { path: 'organizations', title: 'Organization Management - DBNexus', loadComponent: () => import('./features/admin/organization-management/organization-management').then(m => m.OrganizationManagementComponent) },
