@@ -327,10 +327,13 @@ Table projects {
         });
 
         // Keywords
-        const keywords = ['Table', 'Ref:', 'Enum', 'Project', 'TableGroup', 'Note'];
+        const keywords = ['Table', 'Ref:', 'Enum', 'Project', 'TableGroup', 'Note', 'indexes', 'checks'];
         keywords.forEach(kw => {
           htmlCode = htmlCode.replace(new RegExp(`\\b${kw.replace(':', '')}:?`, 'g'), `<span class="ip-syntax-dbml-kw">$&</span>`);
         });
+
+        // Column attributes/constraints
+        htmlCode = htmlCode.replace(/\b(default|check)\b(:)?/gi, (match, p1, p2) => `<span class="ip-syntax-attr">${p1}${p2 || ''}</span>`);
         
         // Brackets and attributes
         htmlCode = htmlCode.replace(/\[(.*?)\]/g, '<span class="ip-syntax-attr">[$1]</span>');

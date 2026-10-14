@@ -85,7 +85,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   hoveredGroupColorIcon: string | null = null;
   hoveredGroupName: string | null = null;
   private groupColorIcons: { groupName: string; x: number; y: number }[] = [];
-  activeTooltip: { x: number; y: number; label: string; column?: any } | null = null;
+  activeTooltip: { x: number; y: number; label: string; column?: any; tableDetails?: any } | null = null;
   hoveredColumn: { tableName: string; columnName: string } | null = null;
   isMouseOverCanvas = false;
   private lastMouseWorldPoint: { x: number; y: number } | null = null;
@@ -1212,9 +1212,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       // Render active tooltip at the absolute top layer
-      const tooltip = this.activeTooltip as { x: number; y: number; label: string; column?: any } | null;
+      const tooltip = this.activeTooltip as { x: number; y: number; label: string; column?: any; tableDetails?: any } | null;
       if (tooltip) {
-        if (tooltip.column) {
+        if (tooltip.tableDetails) {
+          this.drawTableHeaderTooltip(ctx, tooltip.x, tooltip.y, tooltip.tableDetails);
+        } else if (tooltip.column) {
           this.drawColumnRichTooltip(ctx, tooltip.x, tooltip.y, tooltip.column);
         } else {
           this.drawIconTooltip(ctx, tooltip.x, tooltip.y, tooltip.label);
@@ -1674,12 +1676,29 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       this.lastMouseWorldPoint.y >= t.y &&
       this.lastMouseWorldPoint.y <= t.y + this.svc.HEADER_H;
 
-    if (isTableHeaderHovered && t.name.length > 15 && !isSettingsHovered) {
-      this.activeTooltip = {
-        x: t.x + 12,
-        y: editY,
-        label: t.name
-      };
+    const hasIndexes = !!(t.indexes && t.indexes.length > 0);
+    const hasChecks = !!(t.checks && t.checks.length > 0);
+
+    if (isTableHeaderHovered && !isSettingsHovered && !this.draggingTable) {
+      if (hasIndexes || hasChecks) {
+        this.activeTooltip = {
+          x: t.x + t.width + 8,
+          y: t.y,
+          label: t.name,
+          tableDetails: {
+            table: t,
+            name: t.name,
+            indexes: t.indexes || [],
+            checks: t.checks || []
+          }
+        };
+      } else if (t.name.length > 15) {
+        this.activeTooltip = {
+          x: t.x + 12,
+          y: editY,
+          label: t.name
+        };
+      }
     }
 
     let visibleColumns: Column[] = [];
@@ -1719,7 +1738,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // Measure type width
       ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      let typeText = (c.type || '').toLowerCase();
+      let typeText = (c.type || '').replace(/\s*\[[\s\S]*$/, '').trim();
+      if (!typeText.includes("'") && !typeText.includes('"')) {
+        typeText = typeText.toLowerCase();
+      }
       let typeWidth = ctx.measureText(typeText).width;
 
       const maxTypeWidth = Math.max(30, availableWidth * 0.6);
@@ -1761,7 +1783,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.fillText(label, t.x + padding, textY);
 
       if (this.hoveredColumn?.tableName === t.name && this.hoveredColumn?.columnName === c.name) {
-        if (c.defaultVal || c.note) {
+        if (c.defaultVal || c.note || (c.acceptedValues && c.acceptedValues.length > 0)) {
           this.activeTooltip = {
             x: t.x + t.width,
             y: textY,
@@ -3032,6 +3054,183 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     return lines.length > 0 ? lines : [text];
   }
 
+  private drawTableHeaderTooltip(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    details: { table?: TableDef; name: string; indexes: string[]; checks: string[] }
+  ): void {
+    const isLight = this.isCanvasLight();
+    const bg = isLight ? '#ffffff' : '#141d31';
+    const headerBorderColor = isLight ? '#f1f5f9' : '#233149';
+    const borderColor = isLight ? '#e2e8f0' : '#2d3b55';
+    const titleColor = isLight ? '#0f172a' : '#f8fafc';
+    const sectionTitleColor = isLight ? '#1e293b' : '#f1f5f9';
+    const itemTextColor = isLight ? '#c2410c' : '#fb923c';
+    const bulletColor = isLight ? '#ea580c' : '#f97316';
+    const shadowColor = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.45)';
+
+    const indexes = details.indexes || [];
+    const checks = details.checks || [];
+    if (indexes.length === 0 && checks.length === 0) return;
+
+    ctx.save();
+
+    const paddingX = 14;
+    const headerH = 34;
+
+    // Measure widths to determine box width
+    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const titleW = ctx.measureText(details.name).width + 24;
+
+    ctx.font = '600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    let maxContentW = titleW;
+    if (indexes.length > 0) {
+      maxContentW = Math.max(maxContentW, ctx.measureText('Indexes').width);
+    }
+    if (checks.length > 0) {
+      maxContentW = Math.max(maxContentW, ctx.measureText('Check Constraints').width);
+    }
+
+    ctx.font = '400 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    indexes.forEach(idx => {
+      const w = ctx.measureText(idx).width + 16;
+      maxContentW = Math.max(maxContentW, w);
+    });
+
+    checks.forEach(chk => {
+      const w = ctx.measureText(chk).width + 16;
+      maxContentW = Math.max(maxContentW, w);
+    });
+
+    const boxW = Math.max(170, maxContentW + paddingX * 2);
+
+    // Calculate height
+    let contentH = 12;
+    if (indexes.length > 0) {
+      contentH += 18;
+      contentH += indexes.length * 18;
+    }
+    if (checks.length > 0) {
+      if (indexes.length > 0) contentH += 10;
+      contentH += 18;
+      contentH += checks.length * 18;
+    }
+    contentH += 12;
+
+    const boxH = headerH + contentH;
+
+    // Viewport bound check to keep tooltip visible
+    let boxX = x;
+    const table = details.table;
+    if (table) {
+      const canvasW = this.canvasRef?.nativeElement ? this.canvasRef.nativeElement.width : 2000;
+      const rightWorldLimit = (canvasW - this.svc.view.x) / this.svc.view.scale;
+      if (boxX + boxW > rightWorldLimit) {
+        boxX = table.x - boxW - 8;
+      }
+    }
+    let boxY = y;
+
+    // Draw main container bubble
+    ctx.beginPath();
+    this.roundRectPath(ctx, boxX, boxY, boxW, boxH, 8);
+    ctx.shadowColor = shadowColor;
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = bg;
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Draw Header Separator
+    ctx.beginPath();
+    ctx.moveTo(boxX, boxY + headerH);
+    ctx.lineTo(boxX + boxW, boxY + headerH);
+    ctx.strokeStyle = headerBorderColor;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Draw Table Icon in Header
+    const iconX = boxX + paddingX;
+    const iconCenterY = boxY + headerH / 2;
+    const iconW = 13;
+    const iconH = 12;
+    ctx.strokeStyle = isLight ? '#64748b' : '#94a3b8';
+    ctx.lineWidth = 1.3;
+    ctx.strokeRect(iconX, iconCenterY - iconH / 2, iconW, iconH);
+    ctx.beginPath();
+    ctx.moveTo(iconX, iconCenterY - iconH / 2 + 4);
+    ctx.lineTo(iconX + iconW, iconCenterY - iconH / 2 + 4);
+    ctx.stroke();
+
+    // Draw Table Name in Header
+    ctx.font = '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = titleColor;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(details.name, iconX + iconW + 8, iconCenterY);
+
+    // Draw Content Body
+    let currY = boxY + headerH + 16;
+
+    // 1. Indexes Section
+    if (indexes.length > 0) {
+      ctx.font = '600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = sectionTitleColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Indexes', boxX + paddingX, currY);
+      currY += 18;
+
+      ctx.font = '400 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      indexes.forEach(idx => {
+        // Draw bullet dot
+        ctx.beginPath();
+        ctx.arc(boxX + paddingX + 3.5, currY, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = bulletColor;
+        ctx.fill();
+
+        // Draw index text
+        ctx.fillStyle = itemTextColor;
+        ctx.fillText(idx, boxX + paddingX + 13, currY);
+        currY += 18;
+      });
+    }
+
+    // 2. Check Constraints Section
+    if (checks.length > 0) {
+      if (indexes.length > 0) {
+        currY += 8;
+      }
+      ctx.font = '600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = sectionTitleColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Check Constraints', boxX + paddingX, currY);
+      currY += 18;
+
+      ctx.font = '400 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      checks.forEach(chk => {
+        // Draw bullet dot
+        ctx.beginPath();
+        ctx.arc(boxX + paddingX + 3.5, currY, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = bulletColor;
+        ctx.fill();
+
+        // Draw check text
+        ctx.fillStyle = itemTextColor;
+        ctx.fillText(chk, boxX + paddingX + 13, currY);
+        currY += 18;
+      });
+    }
+
+    ctx.restore();
+  }
+
   private drawColumnRichTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, column: any): void {
     const isLight = this.isCanvasLight();
     const bg = isLight ? '#ffffff' : '#141d31';
@@ -3069,6 +3268,18 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         w2Suffix = ctx.measureText(defVal).width;
         maxW = Math.max(maxW, w2Prefix + w2Suffix);
     }
+
+    // Accepted Values Line
+    const hasAccepted = column.acceptedValues && column.acceptedValues.length > 0;
+    let w3Prefix = 0, w3Suffix = 0;
+    const acceptedValText = (column.acceptedValues || []).join(', ');
+    if (hasAccepted) {
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        w3Prefix = ctx.measureText(`Accepted (${column.acceptedValues.length}) `).width;
+        ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        w3Suffix = ctx.measureText(acceptedValText).width;
+        maxW = Math.max(maxW, w3Prefix + w3Suffix);
+    }
     
     // Note Lines
     let noteLines: string[] = [];
@@ -3090,6 +3301,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     let boxH = paddingY * 2 + 13; // Header line height ~13
     if (hasDefault) {
         boxH += 22; // Default line height
+    }
+    if (hasAccepted) {
+        boxH += 22; // Accepted values line height
     }
     if (hasNote) {
         boxH += 22; // 'Note' label line height
@@ -3153,6 +3367,17 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.fillStyle = textHighlight;
         ctx.fillText(defVal, startX + w2Prefix, currY);
     }
+
+    // Draw Accepted Values Line
+    if (hasAccepted) {
+        currY += 22;
+        ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = textSub;
+        ctx.fillText(`Accepted (${column.acceptedValues.length}) `, startX, currY);
+        ctx.font = '500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = textHighlight;
+        ctx.fillText(acceptedValText, startX + w3Prefix, currY);
+    }
     
     // Draw Note
     if (hasNote) {
@@ -3162,7 +3387,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
         ctx.fillText('Note', startX, currY);
         
         ctx.font = '400 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = textMain; // Note text is primary color and larger
+        ctx.fillStyle = textHighlight; // Note text is primary color and larger
         for (const line of noteLines) {
             currY += 18;
             ctx.fillText(line, startX, currY);
