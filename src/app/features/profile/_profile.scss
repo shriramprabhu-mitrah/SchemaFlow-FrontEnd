@@ -313,6 +313,12 @@
         background: linear-gradient(135deg, rgba(62, 197, 193, 0.16), rgba(59, 130, 246, 0.16));
         border: 1px solid rgba(62, 197, 193, 0.35);
         color: #3ec5c1;
+
+        &.plan-student {
+          background: linear-gradient(135deg, rgba(236, 72, 153, 0.16), rgba(244, 63, 94, 0.16));
+          border-color: rgba(236, 72, 153, 0.35);
+          color: #f472b6;
+        }
       }
 
       .badge-account-type {
@@ -776,6 +782,15 @@
   &.tier-team {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(62, 197, 193, 0.12) 100%);
     border-color: rgba(16, 185, 129, 0.35);
+  }
+
+  &.tier-student {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(244, 63, 94, 0.12) 100%);
+    border-color: rgba(236, 72, 153, 0.35);
+
+    .banner-badge-group .banner-title {
+      color: #f472b6;
+    }
   }
 
   .banner-badge-group {
@@ -1857,6 +1872,12 @@ html.light-theme {
           background: rgba(14, 165, 233, 0.1);
           border-color: rgba(14, 165, 233, 0.28);
           color: #0284c7;
+
+          &.plan-student {
+            background: #fdf2f8 !important;
+            border-color: #fbcfe8 !important;
+            color: #db2777 !important;
+          }
         }
 
         .badge-account-type {
@@ -2074,6 +2095,15 @@ html.light-theme {
   .current-plan-banner {
     background: #f0fdf4;
     border-color: #bbf7d0;
+
+    &.tier-student {
+      background: #fdf2f8 !important;
+      border-color: #fbcfe8 !important;
+
+      .banner-badge-group .banner-title {
+        color: #db2777 !important;
+      }
+    }
 
     .banner-badge-group .banner-title {
       color: #0f172a;
