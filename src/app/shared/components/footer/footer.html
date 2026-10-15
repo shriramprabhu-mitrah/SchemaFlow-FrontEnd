@@ -28,12 +28,14 @@
       <div class="footer-col">
         <h4>Features</h4>
         <a class="footer-link" (click)="onCreateDiagram()">Schema Designer</a>
-        <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
-        <a class="footer-link" routerLink="/pricing" routerLinkActive="active">Pricing</a>
-        <a class="footer-link" routerLink="/student-offer" routerLinkActive="active" (click)="onStudentPlanClick()">Student Plan</a>
+        <a class="footer-link" routerLink="/features/ai-schema-generator" routerLinkActive="active" (click)="onAiGeneratorClick()">AI Schema Generator</a>
+        
+        <!-- <a class="footer-link" routerLink="/pricing" routerLinkActive="active">Pricing</a> -->
+        <!-- <a class="footer-link" routerLink="/student-registration" routerLinkActive="active" (click)="onStudentPlanClick()">Student Plan</a> -->
         <a class="footer-link" routerLink="/diff" routerLinkActive="active">SQL Compare</a>
-        <a class="footer-link" routerLink="/faq" routerLinkActive="active" (click)="onFaqClick()">FAQ</a>
-        <a class="footer-link" routerLink="/features/ai-generated" routerLinkActive="active" (click)="onAiGeneratorClick()">AI Generator</a>
+        <a class="footer-link" routerLink="/dashboard">Team Workspaces</a>
+        
+        
       </div>
 
       <div class="footer-col">
@@ -45,6 +47,7 @@
 
       <div class="footer-col">
         <h4>Company</h4>
+        <a class="footer-link" routerLink="/faq" routerLinkActive="active" (click)="onFaqClick()">FAQ</a>
         <a class="footer-link" routerLink="/docs/privacy-policy">Privacy Policy</a>
         <a class="footer-link" routerLink="/docs/refund-policy">Refund Policy</a>
         <a class="footer-link" routerLink="/docs/terms-of-service">Terms of Service</a>

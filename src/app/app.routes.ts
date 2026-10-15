@@ -60,9 +60,19 @@ export const routes: Routes = [
     loadComponent: () => import('./features/pricing/pricing').then(m => m.PricingComponent)
   },
   {
-    path: 'student-offer',
+    path: 'student-registration',
     title: 'Student Application Form - Free Student Plan - dbNexus',
     loadComponent: () => import('./features/pricing/student-offer/student-offer').then(m => m.StudentOfferComponent)
+  },
+  {
+    path: 'student-offer',
+    redirectTo: 'student-registration',
+    pathMatch: 'full'
+  },
+  {
+    path: 'student- registration',
+    redirectTo: 'student-registration',
+    pathMatch: 'full'
   },
   {
     path: 'faq',
@@ -141,18 +151,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/public-features/live-connection/live-connection').then(m => m.LiveConnectionComponent)
   },
   {
-    path: 'features/ai-generated',
-    title: 'AI Schema Generation - DBNexus',
+    path: 'features/ai-schema-generator',
+    title: 'AI Schema Generator - DBNexus',
     loadComponent: () => import('./features/public-features/ai-generated/ai-generated').then(m => m.AiGeneratedComponent)
   },
   {
-    path: 'features/ai-generate',
-    redirectTo: 'features/ai-generated',
+    path: 'features/ai-generated',
+    redirectTo: 'features/ai-schema-generator',
     pathMatch: 'full'
   },
   {
-    path: 'features/ai-schema-generator',
-    redirectTo: 'features/ai-generated',
+    path: 'features/ai-generate',
+    redirectTo: 'features/ai-schema-generator',
     pathMatch: 'full'
   },
   {

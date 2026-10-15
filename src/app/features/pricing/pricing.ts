@@ -861,10 +861,10 @@ export class PricingComponent implements OnInit {
   selectPlan(plan: any): void {
     if (this.studentSettings.isStudentPlan(plan)) {
       if (typeof window !== 'undefined') {
-        const url = this.router.serializeUrl(this.router.createUrlTree(['/student-offer']));
+        const url = this.router.serializeUrl(this.router.createUrlTree(['/student-registration']));
         window.open(url, '_blank');
       } else {
-        this.router.navigate(['/student-offer']);
+        this.router.navigate(['/student-registration']);
       }
       return;
     }
@@ -921,7 +921,7 @@ export class PricingComponent implements OnInit {
       this.cdr.detectChanges();
       this.orgService.upgrade(orgId, plan.slug).subscribe({
         next: (res) => {
-          console.log('ORG UPGRADE RESPONSE:', res);
+          // console.log('ORG UPGRADE RESPONSE:', res);
           const localSubId = res.data?.subscription_id || res.subscription_id;
 
           // Check if the plan requires payment (status will be 'expired' or pending)

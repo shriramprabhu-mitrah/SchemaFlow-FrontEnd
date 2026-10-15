@@ -58,10 +58,10 @@ export class AiGeneratedComponent implements OnInit {
 
   ngOnInit(): void {
     this.seoService.updateTags({
-      title: 'AI Database Schema Generator - Prompt to DBML - dbNexus',
-      description: 'Generate production-ready DBML and database schemas instantly from natural language prompts using dbNexus AI Schema Generator.',
-      url: 'https://www.dbnexus.io/features/ai-generated',
-      keywords: 'AI database generator, AI schema generator, text to database, prompt to DBML, AI ERD generator, natural language database design, AI database schema generator, text to database schema, AI database diagram tool'
+      title: 'Prompt to DBML: The First AI Database Schema Generator Built for Teams - dbNexus',
+      description: 'Describe your application or microservice in plain English. Watch dbNexus AI write the code, generate the tables, and map relationships instantly.',
+      url: 'https://www.dbnexus.io/features/ai-schema-generator',
+      keywords: 'AI database schema generator, text to database schema, AI database diagram tool, prompt to DBML'
     });
 
     this.seoService.setStructuredData({
@@ -69,7 +69,7 @@ export class AiGeneratedComponent implements OnInit {
       "@type": "SoftwareApplication",
       "name": "dbNexus AI Database Schema Generator",
       "applicationCategory": "DeveloperApplication",
-      "url": "https://www.dbnexus.io/features/ai-generated"
+      "url": "https://www.dbnexus.io/features/ai-schema-generator"
     });
   }
 

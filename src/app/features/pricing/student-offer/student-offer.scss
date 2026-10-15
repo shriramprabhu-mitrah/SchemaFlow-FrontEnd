@@ -71,6 +71,20 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 22px;
+  cursor: pointer;
+  text-decoration: none;
+  width: fit-content;
+  user-select: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 
   .brand-logo {
     height: 44px;

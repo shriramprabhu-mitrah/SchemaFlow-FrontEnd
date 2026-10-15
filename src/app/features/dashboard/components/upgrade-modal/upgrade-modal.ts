@@ -664,10 +664,10 @@ export class UpgradeModalComponent implements OnInit {
     if (this.studentSettings.isStudentPlan(plan)) {
       this.closeModal();
       if (typeof window !== 'undefined') {
-        const url = this.router.serializeUrl(this.router.createUrlTree(['/student-offer']));
+        const url = this.router.serializeUrl(this.router.createUrlTree(['/student-registration']));
         window.open(url, '_blank');
       } else {
-        this.router.navigate(['/student-offer']);
+        this.router.navigate(['/student-registration']);
       }
       return;
     }

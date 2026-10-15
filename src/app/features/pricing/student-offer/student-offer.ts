@@ -135,7 +135,7 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     this.seoService.updateTags({
       title: 'Student Application Form - Free Student Plan - dbNexus',
       description: 'Apply for the free dbNexus student plan. Get complete access to visual database design, SQL export, schema modeling, and AI diagram tools for students and educators.',
-      url: 'https://www.dbnexus.io/student-offer',
+      url: 'https://www.dbnexus.io/student-registration',
       keywords: 'student application form, free student plan, dbNexus student offer, database tool for students, student developer pack, free database schema tool'
     });
 
@@ -144,7 +144,7 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       "@type": "WebPage",
       "name": "Student Application Form - dbNexus",
       "description": "Apply for the free dbNexus student plan. Get complete access to visual database design and schema modeling tools.",
-      "url": "https://www.dbnexus.io/student-offer"
+      "url": "https://www.dbnexus.io/student-registration"
     });
   
 

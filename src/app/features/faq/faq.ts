@@ -152,7 +152,7 @@ export class FaqComponent implements OnInit {
               question: 'Does dbNexus offer a free plan for students and educators?',
               answer: 'Yes! Through our Student Offer program, currently enrolled university and college students, as well as academic faculty, can claim 100% free access to dbNexus premium features.',
               linkText: 'Apply on the Student Offer Page',
-              linkUrl: '/student-offer'
+              linkUrl: '/student-registration'
             },
             {
               id: 'faq-edu-2',
