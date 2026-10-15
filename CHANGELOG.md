@@ -2,6 +2,22 @@
  
 ---
 
+## [1.5.0] - 2026-10-15
+
+### Added
+- AI Chatbot assistant for in-app support and guided help
+- Student Plan program with multi-step verification
+- Coupon-based offer management with Razorpay sync and discount checkout modal
+- FAQ page and AI Generator landing page
+
+### Changed
+- Navigation and footer updates to integrate new feature pages
+- UI and styling enhancements across account management and modals
+
+### Fixed
+- Member redemption limit validation and discount modification notices
+- General bug fixes, modal field alignments, and clipboard copy improvements
+
 ## [1.4.0] - 2026-10-08
  
 ### Added

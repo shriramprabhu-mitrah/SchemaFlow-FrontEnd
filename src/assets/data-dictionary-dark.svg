@@ -6,9 +6,9 @@
 *{box-sizing:border-box}
 #app{font-family:Inter,Segoe UI,Arial,sans-serif;width:1200px;height:760px;background:#050b17;color:#e2e8f0;display:flex;border:1px solid #1b2740;border-radius:10px;overflow:hidden;position:relative}
 #side{width:72px;border-right:1px solid #16213a;background:#08101f;display:flex;flex-direction:column;align-items:center;padding:10px 0;flex-shrink:0;position:relative;transition:width .3s}
-#side .nav{display:flex;flex-direction:column;gap:4px;flex:1;width:100%;align-items:center}
-.si{width:56px;padding:9px 0 7px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:#cbd5e1;font-size:10px;transition:background .2s,transform .2s,color .2s}
-.si svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}
+#side .nav{display:flex;flex-direction:column;gap:3px;flex:1;width:100%;align-items:center}
+.si{width:56px;padding:6px 0 4px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:#cbd5e1;font-size:10px;text-align:center;line-height:1.15;white-space:nowrap;transition:background .2s,transform .2s,color .2s}
+.si svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}
 .si:hover{background:#122036;transform:translateX(2px);color:#fff}
 .si:hover svg{transform:scale(1.15)}
 .si.act{background:#0f3a3c;color:#2dd4bf;font-weight:600}
@@ -83,7 +83,7 @@ td:first-child{font-family:monospace;color:#e2e8f0}
 .dl{animation:glow 2.6s ease-in-out infinite}
 .si.act svg{animation:bob 2s ease-in-out infinite}
 .dl.pulse{transform:scale(1.08);background:#5eead4}
-#toast{position:absolute;bottom:20px;left:50%;transform:translate(-50%,30px);background:#1e293b;color:#fff;padding:9px 16px;border-radius:8px;font-size:12px;opacity:0;transition:.3s;pointer-events:none}
+#toast{position:absolute;bottom:24px;left:50%;transform:translate(-50%,30px);background:#1e293b;color:#fff;padding:9px 18px;border-radius:8px;font-size:12px;opacity:0;transition:.3s;pointer-events:none;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.6);white-space:nowrap;border:1px solid #334155}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 ]]></style>
 
@@ -113,23 +113,29 @@ var EYE='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2
 var EYEOFF='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s4 7 10 7a9.7 9.7 0 0 0 4.4-1"/></svg>';
 var TBL='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M9 4v16"/></svg>';
 var NAV=[
-['Import','M12 3v12M7 10l5 5 5-5M5 21h14'],
-['Export','M12 15V3M7 8l5-5 5 5M5 21h14'],
-['Share','M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4'],
-['Versions','M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3 2'],
-['AI','M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z'],
-['DBML','M8 6l-6 6 6 6M16 6l6 6-6 6'],
-['Compare','M4 4h7v16H4zM13 4h7v16h-7zM6.5 9h2M6.5 13h2M15.5 9h2M15.5 13h2'],
-['Tables','M3 4h18v16H3zM3 10h18M9 4v16'],
-['Refs','M5 4h4v4H5zM15 16h4v4h-4zM9 6h3a3 3 0 0 1 3 3v7'],
-['Diagram','M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'],
+['Import','<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'],
+['Export','<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="15"/>'],
+['DB connect','<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'],
+['Share','<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>'],
+['Versions','<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><polyline points="12 7 12 12 15 15"/>'],
+['AI','<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>'],
+['DBML','<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'],
+['Compare','<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/><line x1="6.5" y1="9" x2="7.5" y2="9"/><line x1="6.5" y1="13" x2="7.5" y2="13"/><line x1="16.5" y1="9" x2="18.5" y2="9"/><line x1="16.5" y1="13" x2="18.5" y2="13"/>'],
+['Tables','<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/>'],
+['Refs','<circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/><circle cx="18" cy="6" r="3"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/>'],
+['View Docs','<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/><path d="M9 9h1"/>'],
 ['__sp'],
-['Sign Out','M9 21H5V3h4M16 17l5-5-5-5M21 12H9']
+['Sign Out','<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>']
 ];
-var active='Diagram',h='';
+var active='View Docs',h='';
 NAV.forEach(function(n){
  if(n[0]==='__sp'){h+='<div style="flex:1"></div>';return}
- h+='<div class="si'+(n[0]===active?' act':'')+'" data-n="'+n[0]+'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="'+n[1]+'"/></svg>'+n[0]+'</div>';});
+ var lbl=n[0];
+ if(n[0]==='DB connect') lbl='DB<br/>connect';
+ else if(n[0]==='View Docs') lbl='View<br/>Docs';
+ else if(n[0]==='Sign Out') lbl='Sign<br/>Out';
+ h+='<div class="si'+(n[0]===active?' act':'')+'" data-n="'+n[0]+'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'+n[1]+'</svg><span>'+lbl+'</span></div>';
+});
 $('nav').innerHTML=h;
 
 var T=[
@@ -185,22 +191,28 @@ function go(n){if(!visible[n])setVis(n,true);closed[n]=false;$('c_'+n).classList
  e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash');setTimeout(function(){e.classList.remove('flash')},1000);}
 function togglePanel(f){var o=typeof f==='boolean'?f:!$('panel').classList.contains('open');
  $('panel').classList.toggle('open',o);$('pbtn').classList.toggle('on',o);}
-function download(){
- var md='# Data Dictionary\n\n';
- T.filter(function(t){return visible[t.n]}).forEach(function(t){
-  md+='## '+t.n+'\n\n| Column | Type | Key |\n|---|---|---|\n';
-  t.c.forEach(function(c){md+='| '+c[0]+' | '+c[1]+' | '+c[2].replace(/FK:/,'FK → ').replace(/,/g,', ')+' |\n'});
-  var r=rels(t.n);if(r.length){md+='\n**Relationships**\n\n';r.forEach(function(x){md+='- `'+x.from+'.'+x.fc+'` → `'+x.to+'.'+x.tc+'`\n'});}
-  md+='\n';});
- var b=new Blob([md],{type:'text/markdown'}),a=document.createElement('a');
- a.href=URL.createObjectURL(b);a.download='data-dictionary.md';document.body.appendChild(a);a.click();a.remove();
- var d=$('dl');$('dlt').textContent='✓ Downloaded';d.classList.add('done');
- setTimeout(function(){$('dlt').textContent='Download Markdown';d.classList.remove('done')},1500);}
+function download(msg){
+ toast(msg||'Download (demo only)');
+ try{
+  var md='# Data Dictionary\n\n';
+  T.filter(function(t){return visible[t.n]}).forEach(function(t){
+   md+='## '+t.n+'\n\n| Column | Type | Key |\n|---|---|---|\n';
+   t.c.forEach(function(c){md+='| '+c[0]+' | '+c[1]+' | '+c[2].replace(/FK:/,'FK → ').replace(/,/g,', ')+' |\n'});
+   var r=rels(t.n);if(r.length){md+='\n**Relationships**\n\n';r.forEach(function(x){md+='- `'+x.from+'.'+x.fc+'` → `'+x.to+'.'+x.tc+'`\n'});}
+   md+='\n';});
+  var b=new Blob([md],{type:'text/markdown'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='data-dictionary.md';
+  var p=document.body||$('app')||document.documentElement;
+  if(p)p.appendChild(a);
+  a.click();
+  a.remove();
+ }catch(e){}
+}
 
 $('nav').addEventListener('click',function(e){var s=e.target.closest('.si');if(!s)return;var n=s.getAttribute('data-n');
- if(n==='Export'){download();return}
+ if(n==='Export'){download('Export (demo only)');return}
  if(n==='Tables'){togglePanel();return}
- if(n==='Sign Out'||n==='Import'||n==='Share'||n==='Versions'||n==='AI'||n==='DBML'||n==='Compare'||n==='Refs'){toast(n+' (demo only)');return}
+ if(n==='Sign Out'||n==='Import'||n==='DB connect'||n==='Share'||n==='Versions'||n==='AI'||n==='DBML'||n==='Compare'||n==='Refs'||n==='View Docs'){toast(n+' (demo only)');return}
  active=n;[].forEach.call(document.querySelectorAll('.si'),function(x){x.classList.toggle('act',x.getAttribute('data-n')===n)});});
 var sc=false;$('sw').onclick=function(){sc=!sc;$('side').style.width=sc?'0':'72px';$('side').style.padding=sc?'0':'10px 0';$('side').style.borderRight=sc?'0':'';$('sw').style.right=sc?'-26px':'-12px';$('sw').style.background='#dbeafe';};
 $('list').addEventListener('click',function(e){
@@ -218,10 +230,10 @@ $('allbtn').onclick=function(){var any=T.some(function(t){return visible[t.n]});
 $('toggleAll').onclick=function(){allClosed=!allClosed;T.forEach(function(t){closed[t.n]=allClosed});
  $('toggleAll').textContent=allClosed?'⌄ Expand All':'⌃ Collapse All';
  T.forEach(function(t){var e=$('c_'+t.n);if(e)e.classList.toggle('closed',allClosed)});};
-$('dl').onclick=download;
+$('dl').onclick=function(){download('Download (demo only)');};
 
 var auto={i:0,pause:0};
-function listTo(n){var e=$('c_'+n);$('list').scrollTo({top:Math.max(0,e.offsetTop-24),behavior:'smooth'})}
+function listTo(n){var e=$('c_'+n),l=$('list');if(l&&e){if(l.scrollTo)l.scrollTo({top:Math.max(0,e.offsetTop-24),behavior:'smooth'});else l.scrollTop=Math.max(0,e.offsetTop-24);}}
 function ping(n){var r=document.querySelector('[data-p="'+n+'"]');if(r){r.classList.add('ping');setTimeout(function(){r.classList.remove('ping')},900)}}
 function showT(n){setVis(n,true);render();ping(n);setTimeout(function(){listTo(n)},350)}
 function hideT(n){ping(n);setTimeout(function(){setVis(n,false);render()},350)}
@@ -229,7 +241,7 @@ function resetDemo(){hover('',false);allClosed=false;$('toggleAll').textContent=
  T.forEach(function(t){closed[t.n]=false;var e=$('c_'+t.n);if(e)e.classList.remove('closed')});
  ['categories','comments','tags'].forEach(function(n){if(visible[n])setVis(n,false)});
  ['users','todos'].forEach(function(n){if(!visible[n])setVis(n,true)});
- render();$('list').scrollTo({top:0,behavior:'smooth'});togglePanel(true)}
+ render();var l=$('list');if(l){if(l.scrollTo)l.scrollTo({top:0,behavior:'smooth'});else l.scrollTop=0;}togglePanel(true)}
 var steps=[
  resetDemo,
  function(){hover('users',true)},

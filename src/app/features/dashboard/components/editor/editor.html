@@ -90,6 +90,7 @@
             [class.line-context]="line.type === 'context'" [class.line-delete]="line.type === 'delete'"
             [class.line-add]="line.type === 'add'"
             [class.is-active-hunk]="line.hunkId && line.hunkId === svc.currentActiveHunkId()"
+            [class.has-inline-actions]="isLastLineOfPendingHunk(i, line)"
             [id]="'diff-line-' + i" [attr.data-hunk-id]="line.hunkId">
             <!-- Line gutter / number -->
             <div class="diff-line-gutter">

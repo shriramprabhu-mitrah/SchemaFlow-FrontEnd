@@ -68,11 +68,17 @@
           
         </button>
 
-        <!-- <button class="flyout-item" (click)="openImportDialect('oracle', $event)"
+        <button class="flyout-item" (click)="openImportDialect('oracle', $event)"
           [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
           <span class="db-icon oracle-icon"><app-icons name="oracle" size="14" color="#EA1B22"></app-icons></span>
           <span class="item-name">Oracle</span>
-        </button> -->
+        </button>
+
+        <button class="flyout-item" (click)="openImportDialect('snowflake', $event)"
+          [disabled]="entitlementService.orgHasFeature('import_sql') && !entitlementService.hasMemberAccess('import_sql')">
+          <span class="db-icon snowflake-icon"><app-icons name="snowflake" size="14" color="#29B5E8"></app-icons></span>
+          <span class="item-name">Snowflake</span>
+        </button>
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="import-sqlite-btn"
@@ -224,12 +230,19 @@
           
         </button>
 
-        <!-- <button class="flyout-item" (click)="exportSQL('oracle', $event)"
+        <button class="flyout-item" (click)="exportSQL('oracle', $event)"
           [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
           <span class="db-icon oracle-icon"><app-icons name="oracle" size="14" color="#EA1B22"></app-icons></span>
           <span class="item-name">Oracle</span>
           <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
-        </button> -->
+        </button>
+
+        <button class="flyout-item" (click)="exportSQL('snowflake', $event)"
+          [disabled]="isDiagramEmpty() || hasDbmlErrors() || exporting || !entitlementService.hasMemberAccess('export_sql')">
+          <span class="db-icon snowflake-icon"><app-icons name="snowflake" size="14" color="#29B5E8"></app-icons></span>
+          <span class="item-name">Snowflake</span>
+          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('export_sql')" name="premium-crown" size="14" color="#f59e0b" style="margin-left: auto;"></app-icons>
+        </button>
 
         <!-- SQLite -->
         <button class="flyout-item export-item" id="export-sqlite-btn"
@@ -266,11 +279,11 @@
     </div>
 
     <!-- Connect Button (directly below Export) -->
-    <div class="activity-nav-item connect-item tt-right"
+    <div class="activity-nav-item connect-item tt tt-right" *ngIf="!isCanViewOnly"
       [class.active]="false"
-      [class.disabled]="!isLoggedIn || isSampleDiagram()"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['db_connect'])"
       (click)="openConnectionStringModal($event)"
-      [attr.data-tt]="!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'DB connect')"
+      [attr.data-tt]="isMemberRestricted(['db_connect']) ? null : (!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'DB connect'))"
       aria-label="DB connect">
       <div class="sidebar-crown-badge" *ngIf="showCrown('connect')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
       <div class="nav-icon-box">

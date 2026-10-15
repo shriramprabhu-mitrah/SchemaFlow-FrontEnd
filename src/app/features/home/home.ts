@@ -1,7 +1,8 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { SignOutService } from '../../core/services/sign-out.service';
 import { Icons } from '../../core/component/icons/icons';
 import { ButtonComponent } from '../../shared/button/button';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -44,11 +45,17 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
 
-  isLoggedIn = false;
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
+
   isMobileMenuOpen = false;
 
-  
   isMobileFeaturesDropdownOpen = false;
 
   toggleMobileFeaturesDropdown(event: Event): void {
@@ -107,7 +114,8 @@ export class HomeComponent implements OnInit {
     this.seoService.updateTags({
       title: 'DBNexus - Database Schema Design Tool',
       description: 'Design, document, and collaborate on database schemas with ease. A simple and powerful tool for developers and teams.',
-      url: 'https://dbnexus.up.railway.app/'
+      url: 'https://www.dbnexus.io/',
+      keywords: 'database schema design tool, collaborative database modeler, visual database design software, db diagram, Schema diagram, ER diagram, draw SQL, AI database schema generator, text to database schema, AI database diagram tool, prompt to DBML'
     });
 
     this.seoService.setStructuredData({
@@ -124,7 +132,6 @@ export class HomeComponent implements OnInit {
     });
 
     if (typeof window !== 'undefined') {
-      this.isLoggedIn = this.auth.isLoggedIn();
       this.svc.syncThemeFromStorage();
     }
   }
@@ -137,10 +144,15 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  private signOutService = inject(SignOutService);
+  private cdr = inject(ChangeDetectorRef);
+
   logout(): void {
-    this.auth.logout();
-    this.isLoggedIn = false;
-    this.svc.showToast('Logged out successfully.', 2500, 'success');
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.svc.showToast('Logged out successfully.', 2500, 'success');
+      this.cdr.detectChanges();
+    });
   }
 }
 

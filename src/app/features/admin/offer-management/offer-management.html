@@ -1,0 +1,1163 @@
+<div class="admin-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left-flex">
+      <div>
+        <h1>Coupon & Offer Management</h1>
+        <p class="text-muted" style="margin:4px 0 0">
+          Create, edit, and link coupons to plans. Manage discount benefits, validity duration, and member usage limits directly.
+        </p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="search-box-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-input" placeholder="Search coupon code or name..." [(ngModel)]="searchQuery">
+      </div>
+
+      <button class="btn-secondary" (click)="loadOffers(true)" [disabled]="refreshing" style="display:inline-flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round" [class.spinning]="refreshing">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ refreshing ? 'Syncing...' : 'Sync Offers' }}</span>
+      </button>
+
+      <button class="btn-primary" (click)="openCreateModal()" style="display:inline-flex;align-items:center;gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Create Coupon</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Stats Bar -->
+  <div class="offers-stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrap stat-icon-blue">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+          <line x1="7" y1="7" x2="7.01" y2="7"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Total Coupons</span>
+        <span class="stat-value">{{ totalOffersCount }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap stat-icon-green">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Active Coupons</span>
+        <span class="stat-value">{{ activeOffersCount }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap stat-icon-purple">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Linked to Plans</span>
+        <span class="stat-value">{{ linkedOffersCount }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap" style="background: rgba(244, 63, 94, 0.14); color: #fb7185;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Expired / Inactive</span>
+        <span class="stat-value">{{ inactiveOffersCount + expiredOffersCount }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Row -->
+  <div class="filter-tabs-row" style="margin-bottom: 16px;">
+    <div class="plan-tabs-bar" style="margin-bottom: 0;">
+      <button class="plan-type-tab" [class.active]="statusFilter === 'all'" (click)="statusFilter = 'all'">
+        All Coupons
+        <span class="tab-count">{{ offers.length }}</span>
+      </button>
+      <button class="plan-type-tab indiv-tab" [class.active]="statusFilter === 'active'" (click)="statusFilter = 'active'">
+        Active
+        <span class="tab-count">{{ activeOffersCount }}</span>
+      </button>
+      <button class="plan-type-tab org-tab" [class.active]="statusFilter === 'inactive'" (click)="statusFilter = 'inactive'">
+        Inactive
+        <span class="tab-count">{{ inactiveOffersCount }}</span>
+      </button>
+      <button class="plan-type-tab" [class.active]="statusFilter === 'expired'" (click)="statusFilter = 'expired'">
+        Expired
+        <span class="tab-count">{{ expiredOffersCount }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="table-loading-container" style="text-align:center;padding:60px 0;">
+    <div class="spinner" style="margin: 0 auto 12px;"></div>
+    <p class="loading-text">Loading coupons and offers...</p>
+  </div>
+
+  <!-- Offers Table -->
+  <div class="data-table-wrap" *ngIf="!loading">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 140px;">Coupon Code</th>
+          <th style="min-width: 200px; width: 260px;">Details</th>
+          <th style="width: 130px;">Discount</th>
+          <th style="width: 100px;">Status</th>
+          <th style="width: 140px;">Redemptions</th>
+          <th style="width: 170px;">Duration / Expiry</th>
+          <th style="width: 130px;">Linked Plans</th>
+          <th style="width: 110px; text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let offer of filteredOffers">
+          <!-- Coupon Code -->
+          <td>
+            <div class="coupon-code-chip" (click)="copyCode(offer.name, $event)" title="Click to copy coupon code">
+              <span class="code-text">{{ offer.name }}</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </div>
+            <div class="offer-sub-id">ID: {{ offer.id }}</div>
+          </td>
+
+          <!-- Details -->
+          <td class="offer-details-cell" [title]="getOfferDetailsTooltip(offer)">
+            <div class="offer-title" [title]="offer.display_name || offer.name">{{ offer.display_name || offer.name }}</div>
+            <div class="offer-desc" *ngIf="offer.description" [title]="offer.description">
+              {{ offer.description }}
+            </div>
+          </td>
+
+          <!-- Discount -->
+          <td>
+            <span class="discount-pill">
+              {{ formatDiscount(offer.benefit) }}
+            </span>
+            <div style="margin-top: 5px;">
+              <span *ngIf="offer.applicable_cycles === 'FIRST_CYCLE'" class="cycle-pill" style="font-size: 10.5px; padding: 2px 7px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                1st Cycle
+              </span>
+              <span *ngIf="offer.applicable_cycles !== 'FIRST_CYCLE'" class="cycle-pill" style="font-size: 10.5px; padding: 2px 7px; border-radius: 12px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Recurring
+              </span>
+            </div>
+          </td>
+
+          <!-- Status Toggle Switch -->
+          <td>
+            <div class="status-toggle-wrap" (click)="toggleOfferStatus(offer, $event)" [title]="(offer.status === 'ACTIVE' || offer.status === 'active') ? 'Click to deactivate' : 'Click to activate'">
+              <div class="toggle-switch" [class.active]="offer.status === 'ACTIVE' || offer.status === 'active'">
+                <div class="toggle-thumb"></div>
+              </div>
+              <span class="toggle-label" [class.active]="offer.status === 'ACTIVE' || offer.status === 'active'">
+                {{ (offer.status === 'ACTIVE' || offer.status === 'active') ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Redemptions / Member Limit -->
+          <td>
+            <div class="table-redemption-cell">
+              <div class="redemption-badge">
+                <div class="redemption-numbers-row">
+                  <span class="redemption-count">{{ offer.redemption_count || 0 }} / {{ offer.max_redemptions || 10 }}</span>
+                  <span class="redemption-pct" *ngIf="(offer.redemption_count || 0) > 0">
+                    {{ Math.round(((offer.redemption_count || 0) / (offer.max_redemptions || 10)) * 100) }}%
+                  </span>
+                </div>
+                <span class="redemption-sub" [class.sold-out]="(offer.redemption_count || 0) >= (offer.max_redemptions || 10)">
+                  <ng-container *ngIf="(offer.redemption_count || 0) >= (offer.max_redemptions || 10)">
+                    Fully claimed
+                  </ng-container>
+                  <ng-container *ngIf="(offer.redemption_count || 0) < (offer.max_redemptions || 10)">
+                    {{ Math.max(0, (offer.max_redemptions || 10) - (offer.redemption_count || 0)) }}
+                    {{ Math.max(0, (offer.max_redemptions || 10) - (offer.redemption_count || 0)) === 1 ? 'spot left' : 'spots left' }}
+                  </ng-container>
+                </span>
+              </div>
+              <div class="table-progress-wrap" [title]="(offer.redemption_count || 0) + ' of ' + (offer.max_redemptions || 10) + ' claimed'">
+                <div class="table-progress-track">
+                  <div class="table-progress-fill" 
+                       [class.limit-reached]="(offer.redemption_count || 0) >= (offer.max_redemptions || 10)"
+                       [class.near-limit]="(offer.redemption_count || 0) < (offer.max_redemptions || 10) && (((offer.redemption_count || 0) / (offer.max_redemptions || 10)) >= 0.8)"
+                       [style.width.%]="Math.min(100, (((offer.redemption_count || 0) / (offer.max_redemptions || 10)) * 100))">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Validity / Duration -->
+          <td>
+            <div class="validity-dates">
+              <span>{{ formatDate(offer.starts_at) }}</span>
+              <span class="validity-arrow">→</span>
+              <span [style.color]="isOfferExpired(offer.ends_at) ? '#f43f5e' : ''">
+                {{ formatDate(offer.ends_at) }}
+              </span>
+            </div>
+            <span class="status-badge" style="background: rgba(244, 63, 94, 0.15); color: #fb7185; border-color: rgba(244, 63, 94, 0.3); margin-top: 4px;" *ngIf="isOfferExpired(offer.ends_at)">
+              Expired
+            </span>
+          </td>
+
+          <!-- Linked Plans -->
+          <td>
+            <div class="linked-plans-tags" *ngIf="offer.linked_plans && offer.linked_plans.length > 0">
+              <span class="plan-tag" *ngFor="let p of offer.linked_plans">
+                {{ p.plan_name }}
+              </span>
+            </div>
+            <div *ngIf="!offer.linked_plans || offer.linked_plans.length === 0">
+              <span class="no-plan-tag">Not Linked</span>
+            </div>
+          </td>
+
+          <!-- Actions -->
+          <td style="text-align: right;">
+            <div style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end;">
+              <!-- Link Plans -->
+              <button class="btn-action-icon" (click)="openLinkModal(offer, $event)" title="Link Plans">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </button>
+
+              <!-- Edit -->
+              <button class="btn-action-icon btn-edit" (click)="openEditModal(offer, $event)" title="Edit Coupon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+
+              <!-- Delete -->
+              <button class="btn-action-icon btn-delete" (click)="openDeleteModal(offer, $event)" title="Delete Coupon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Empty State -->
+        <tr *ngIf="filteredOffers.length === 0">
+          <td colspan="8" class="table-empty-td">
+            <div class="empty-state-wrap">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <div>No coupons found matching your criteria.</div>
+              <button class="btn-primary" (click)="openCreateModal()" style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Create Your First Coupon</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========================================================
+     CREATE / EDIT COUPON MODAL
+     ========================================================= -->
+<div class="offer-modal-backdrop" *ngIf="createModalOpen">
+  <div class="offer-modal-container modal-wide" (click)="$event.stopPropagation(); onModalContainerClick($event)">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="modal-header-icon-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+          </svg>
+        </div>
+        <div>
+          <h2 class="modal-title">
+            {{ isEditing ? 'Edit Coupon' : 'Create New Coupon' }}
+          </h2>
+          <p class="modal-subtitle">
+            Configure coupon code, discount rates, cycle applicability, member limits, and linked plans.
+          </p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeCreateModal()" title="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Form Body -->
+    <div class="modal-form-scrollable">
+
+      <!-- Section 1: Coupon Code & Name -->
+      <div class="modal-subcard">
+        <div class="subcard-header-row">
+          <div class="subcard-title">Coupon Identity</div>
+          <div class="status-toggle-wrap" (click)="offerForm.status = offerForm.status === 'active' ? 'inactive' : 'active'" title="Toggle coupon active status">
+            <div class="toggle-switch" [class.active]="offerForm.status === 'active'">
+              <div class="toggle-thumb"></div>
+            </div>
+            <span class="toggle-label" [class.active]="offerForm.status === 'active'">
+              {{ offerForm.status === 'active' ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Coupon Code <span class="req">*</span></label>
+            <div class="input-with-icon" [class.has-error]="formErrors.code">
+              <span class="input-icon-prefix">🏷️</span>
+              <input type="text"
+                     class="form-control code-input"
+                     [class.is-invalid]="formErrors.code"
+                     placeholder="e.g. PARTNER30"
+                     [(ngModel)]="offerForm.code"
+                     (input)="onCodeChange()"
+                     (blur)="validateForm('code')"
+                     style="text-transform: uppercase; font-family: monospace; font-weight: 700; letter-spacing: 0.5px;">
+            </div>
+            <div class="field-error-hint" *ngIf="formErrors.code">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.code }}</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Offer Title / Display Name</label>
+            <input type="text"
+                   class="form-control"
+                   placeholder="e.g. Partner Special 30% Off"
+                   [(ngModel)]="offerForm.display_name">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px; margin-bottom: 0;">
+          <label>Description (Optional)</label>
+          <input type="text"
+                 class="form-control"
+                 placeholder="e.g. Organization-wide promo for new members"
+                 [(ngModel)]="offerForm.description">
+        </div>
+      </div>
+
+      <!-- Section 2: Discount Benefit -->
+      <div class="modal-subcard">
+        <div class="subcard-header-row">
+          <div class="subcard-title">Discount Benefit</div>
+          <div class="live-discount-preview" *ngIf="offerForm.discount_value">
+            <span class="preview-label">Live Preview:</span>
+            <span class="preview-badge">{{ formDiscountPreview }}</span>
+          </div>
+        </div>
+
+        <div class="form-grid-3" [class.form-grid-2]="offerForm.discount_type === 'FLAT'">
+          <!-- Discount Type Custom Select Dropdown -->
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Discount Type</label>
+            <div class="custom-select-container">
+              <button type="button"
+                      class="custom-select-btn"
+                      [class.open]="showDiscountTypeDropdown"
+                      (click)="toggleDiscountTypeDropdown($event)">
+                <span>{{ offerForm.discount_type === 'PERCENTAGE' ? 'Percentage (%)' : 'Flat Amount (₹)' }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div class="custom-select-menu" *ngIf="showDiscountTypeDropdown" (click)="$event.stopPropagation()">
+                <div class="custom-select-option"
+                     [class.active]="offerForm.discount_type === 'PERCENTAGE'"
+                     (click)="selectDiscountType('PERCENTAGE')">
+                  Percentage (%)
+                </div>
+                <div class="custom-select-option"
+                     [class.active]="offerForm.discount_type === 'FLAT'"
+                     (click)="selectDiscountType('FLAT')">
+                  Flat Amount (₹)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discount Value (% at the end) -->
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Discount Value <span class="req">*</span></label>
+            <div class="input-with-suffix" [class.has-error]="formErrors.discount_value" *ngIf="offerForm.discount_type === 'PERCENTAGE'">
+              <input type="number"
+                     min="1"
+                     max="100"
+                     class="form-control"
+                     [class.is-invalid]="formErrors.discount_value"
+                     placeholder="e.g. 20"
+                     [(ngModel)]="offerForm.discount_value"
+                     (keydown)="preventNegative($event)"
+                     (input)="onDiscountValueInput($event)"
+                     (blur)="validateForm('discount_value')">
+              <span class="input-suffix">%</span>
+            </div>
+            <div class="input-with-icon" [class.has-error]="formErrors.discount_value" *ngIf="offerForm.discount_type !== 'PERCENTAGE'">
+              <span class="input-icon-prefix">₹</span>
+              <input type="number"
+                     min="1"
+                     class="form-control"
+                     [class.is-invalid]="formErrors.discount_value"
+                     placeholder="e.g. 500"
+                     [(ngModel)]="offerForm.discount_value"
+                     (keydown)="preventNegative($event)"
+                     (input)="onDiscountValueInput($event)"
+                     (blur)="validateForm('discount_value')">
+            </div>
+            <div class="field-error-hint" *ngIf="formErrors.discount_value">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.discount_value }}</span>
+            </div>
+          </div>
+
+          <!-- Max Cap (₹, Optional) -->
+          <div class="form-group" style="margin-bottom:0;" *ngIf="offerForm.discount_type === 'PERCENTAGE'">
+            <label>Max Cap (₹, Optional)</label>
+            <div class="input-with-icon" [class.has-error]="formErrors.max_discount_cap">
+              <span class="input-icon-prefix">₹</span>
+              <input type="number"
+                     min="1"
+                     class="form-control"
+                     [class.is-invalid]="formErrors.max_discount_cap"
+                     placeholder="e.g. 2000"
+                     [(ngModel)]="offerForm.max_discount_cap"
+                     (keydown)="preventNegative($event)"
+                     (input)="onMaxCapInput($event)"
+                     (blur)="validateForm('max_discount_cap')">
+            </div>
+            <div class="field-error-hint" *ngIf="formErrors.max_discount_cap">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.max_discount_cap }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notice banner when discount or max cap modified in edit mode -->
+        <div class="edit-notice-banner warning-banner" *ngIf="isDiscountModified">
+          <div class="notice-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div class="notice-content">
+            <span class="notice-title">Discount benefit modified</span>
+            <span class="notice-desc">This change will not affect existing users. A separate plan will be created for new subscribers.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Discount Applicability (1st Cycle vs Recurring) -->
+      <div class="modal-subcard">
+        <div class="subcard-header-row">
+          <div>
+            <div class="subcard-title">Billing Applicability Policy</div>
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">
+              Specify whether this discount applies once or recurs on renewals
+            </div>
+          </div>
+        </div>
+
+        <div class="cycle-applicability-options" style="display:flex;gap:12px;margin-top:10px;">
+          <div class="cycle-radio-card"
+               [class.selected]="offerForm.applicable_cycles === 'FIRST_CYCLE'"
+               (click)="offerForm.applicable_cycles = 'FIRST_CYCLE'">
+            <div class="radio-card-header">
+              <div class="radio-icon-box amber">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 14 14"></polyline>
+                </svg>
+              </div>
+              <span class="cycle-policy-tag tag-amber">1st Cycle Only</span>
+              <div class="selection-check-circle" *ngIf="offerForm.applicable_cycles === 'FIRST_CYCLE'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+            </div>
+            <div class="subcard-radio-title">First Billing Cycle Only</div>
+            <div class="subcard-radio-desc">
+              Applies once at initial checkout. Automatically reverts to standard plan pricing upon renewal with an alert.
+            </div>
+          </div>
+
+          <div class="cycle-radio-card"
+               [class.selected]="offerForm.applicable_cycles === 'ALL_CYCLES'"
+               (click)="offerForm.applicable_cycles = 'ALL_CYCLES'">
+            <div class="radio-card-header">
+              <div class="radio-icon-box blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+              </div>
+              <span class="cycle-policy-tag tag-blue">Recurring</span>
+              <div class="selection-check-circle" *ngIf="offerForm.applicable_cycles === 'ALL_CYCLES'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+            </div>
+            <div class="subcard-radio-title">All Billing Cycles (Recurring)</div>
+            <div class="subcard-radio-desc">
+              Discount continues recurring on every subscription renewal as long as the coupon remains active.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Duration & Member Limits (Side by Side Grid) -->
+      <div class="form-grid-2">
+        <!-- Duration Card -->
+        <div class="modal-subcard">
+          <div class="subcard-header-row">
+            <div class="subcard-title">Validity Duration</div>
+            <label class="toggle-pill-wrap" [class.active]="offerForm.never_expires" (click)="offerForm.never_expires = !offerForm.never_expires">
+              <span class="toggle-pill-switch" [class.active]="offerForm.never_expires">
+                <span class="toggle-pill-handle"></span>
+              </span>
+              <span class="toggle-pill-text">Never Expires</span>
+            </label>
+          </div>
+
+          <div class="duration-inputs-wrap" style="display:flex;flex-direction:column;gap:12px;">
+            <!-- Starts At Field -->
+            <div class="form-group" style="margin-bottom:0;">
+              <label>Starts At <span class="req">*</span></label>
+              <div class="custom-datepicker-container">
+                <button type="button"
+                        class="custom-datepicker-trigger"
+                        [class.open]="activeDatePicker === 'start'"
+                        [class.is-invalid]="formErrors.dates"
+                        (click)="toggleDatePicker('start', $event)">
+                  <div class="trigger-left">
+                    <svg class="trigger-calendar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span class="trigger-display-text" [class.placeholder]="!offerForm.starts_at">
+                      {{ formatDisplayDateTime(offerForm.starts_at) || 'Select start date & time' }}
+                    </span>
+                  </div>
+                  <svg class="trigger-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                <!-- Backdrop to close when clicking outside -->
+                <div class="datepicker-fixed-backdrop" *ngIf="activeDatePicker === 'start'" (click)="closeDatePicker($event)"></div>
+
+                <!-- Custom Calendar Dropdown for Starts At -->
+                <div class="custom-datepicker-dropdown" *ngIf="activeDatePicker === 'start'" (click)="$event.stopPropagation()">
+                  <!-- Header: Month & Year navigation -->
+                  <div class="picker-nav-header">
+                    <button type="button" class="p-nav-btn" (click)="prevPickerMonth($event)" title="Previous Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                    <div class="p-nav-title">
+                      {{ monthNames[pickerMonth] }} {{ pickerYear }}
+                    </div>
+                    <button type="button" class="p-nav-btn" (click)="nextPickerMonth($event)" title="Next Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Days of Week Header -->
+                  <div class="picker-weekdays-row">
+                    <span *ngFor="let w of weekDayNames" class="picker-weekday">{{ w }}</span>
+                  </div>
+
+                  <!-- Calendar Days Grid -->
+                  <div class="picker-calendar-grid">
+                    <button type="button"
+                            *ngFor="let cell of pickerDays"
+                            class="p-day-cell"
+                            [class.other-month]="!cell.isCurrentMonth"
+                            [class.is-today]="cell.isToday"
+                            [class.is-selected]="cell.isSelected"
+                            [class.is-disabled]="cell.isDisabled"
+                            [disabled]="cell.isDisabled"
+                            (click)="selectPickerDate(cell, $event)">
+                      <span>{{ cell.dayNum }}</span>
+                      <span class="p-today-dot" *ngIf="cell.isToday"></span>
+                    </button>
+                  </div>
+
+                  <!-- Time Selector Row -->
+                  <div class="picker-time-section">
+                    <div class="time-section-label">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>Time</span>
+                    </div>
+                    <div class="time-controls-row">
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="1"
+                               max="12"
+                               class="time-num-input"
+                               [ngModel]="pickerHour"
+                               (ngModelChange)="setPickerHour($event)">
+                        <span class="time-unit-label">H</span>
+                      </div>
+                      <span class="time-colon">:</span>
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="0"
+                               max="59"
+                               class="time-num-input"
+                               [ngModel]="pickerMinute"
+                               (ngModelChange)="setPickerMinute($event)">
+                        <span class="time-unit-label">M</span>
+                      </div>
+                      <div class="time-period-switch">
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'AM'"
+                                (click)="setPickerPeriod('AM', $event)">AM</button>
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'PM'"
+                                (click)="setPickerPeriod('PM', $event)">PM</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expires At Field -->
+            <div class="form-group" style="margin-bottom:0;" [style.opacity]="offerForm.never_expires ? '0.45' : '1'">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <label style="margin:0;">Expires At <span class="req" *ngIf="!offerForm.never_expires">*</span></label>
+                <span class="never-expires-badge" *ngIf="offerForm.never_expires">Disabled</span>
+              </div>
+              <div class="custom-datepicker-container">
+                <button type="button"
+                        class="custom-datepicker-trigger"
+                        [class.open]="activeDatePicker === 'end'"
+                        [class.is-invalid]="formErrors.dates && !offerForm.never_expires"
+                        [disabled]="offerForm.never_expires"
+                        (click)="toggleDatePicker('end', $event)">
+                  <div class="trigger-left">
+                    <svg class="trigger-calendar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span class="trigger-display-text" [class.placeholder]="!offerForm.ends_at">
+                      {{ offerForm.never_expires ? 'Never expires (indefinite)' : (formatDisplayDateTime(offerForm.ends_at) || 'Select expiration date & time') }}
+                    </span>
+                  </div>
+                  <svg class="trigger-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" *ngIf="!offerForm.never_expires">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                <!-- Backdrop to close when clicking outside -->
+                <div class="datepicker-fixed-backdrop" *ngIf="activeDatePicker === 'end'" (click)="closeDatePicker($event)"></div>
+
+                <!-- Custom Calendar Dropdown for Expires At -->
+                <div class="custom-datepicker-dropdown" *ngIf="activeDatePicker === 'end'" (click)="$event.stopPropagation()">
+                  <!-- Header: Month & Year navigation -->
+                  <div class="picker-nav-header">
+                    <button type="button" class="p-nav-btn" (click)="prevPickerMonth($event)" [disabled]="!canGoToPrevMonth()" [style.opacity]="canGoToPrevMonth() ? '1' : '0.35'" title="Previous Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                    <div class="p-nav-title">
+                      {{ monthNames[pickerMonth] }} {{ pickerYear }}
+                    </div>
+                    <button type="button" class="p-nav-btn" (click)="nextPickerMonth($event)" title="Next Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Days of Week Header -->
+                  <div class="picker-weekdays-row">
+                    <span *ngFor="let w of weekDayNames" class="picker-weekday">{{ w }}</span>
+                  </div>
+
+                  <!-- Calendar Days Grid -->
+                  <div class="picker-calendar-grid">
+                    <button type="button"
+                            *ngFor="let cell of pickerDays"
+                            class="p-day-cell"
+                            [class.other-month]="!cell.isCurrentMonth"
+                            [class.is-today]="cell.isToday"
+                            [class.is-selected]="cell.isSelected"
+                            [class.is-disabled]="cell.isDisabled"
+                            [disabled]="cell.isDisabled"
+                            (click)="selectPickerDate(cell, $event)">
+                      <span>{{ cell.dayNum }}</span>
+                      <span class="p-today-dot" *ngIf="cell.isToday"></span>
+                    </button>
+                  </div>
+
+                  <!-- Time Selector Row -->
+                  <div class="picker-time-section">
+                    <div class="time-section-label">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>Time</span>
+                    </div>
+                    <div class="time-controls-row">
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="1"
+                               max="12"
+                               class="time-num-input"
+                               [ngModel]="pickerHour"
+                               (ngModelChange)="setPickerHour($event)">
+                        <span class="time-unit-label">H</span>
+                      </div>
+                      <span class="time-colon">:</span>
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="0"
+                               max="59"
+                               class="time-num-input"
+                               [ngModel]="pickerMinute"
+                               (ngModelChange)="setPickerMinute($event)">
+                        <span class="time-unit-label">M</span>
+                      </div>
+                      <div class="time-period-switch">
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'AM'"
+                                (click)="setPickerPeriod('AM', $event)">AM</button>
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'PM'"
+                                (click)="setPickerPeriod('PM', $event)">PM</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-error-hint" *ngIf="formErrors.dates">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.dates }}</span>
+            </div>
+
+            <!-- Notice banner when expiration modified in edit mode -->
+            <div class="edit-notice-banner info-banner" *ngIf="isExpirationModified">
+              <div class="notice-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              <div class="notice-content">
+                <span class="notice-title">Expiration date modified</span>
+                <span class="notice-desc">This change will not affect existing subscribed users.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Member Limits Card -->
+        <div class="modal-subcard">
+          <div class="subcard-header-row">
+            <div>
+              <div class="subcard-title">Max Member Limit</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Unique claims allowed</div>
+            </div>
+            <div class="policy-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span>1 per email</span>
+            </div>
+          </div>
+
+          <div class="limits-control-row" style="margin-top: 10px;">
+            <div class="stepper-wrap" [class.is-invalid]="formErrors.max_redemptions">
+              <button type="button" class="stepper-btn" (click)="stepFormRedemptionLimit(-1)" [disabled]="offerForm.max_redemptions <= minRedemptionsAllowed" title="Decrease">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <div class="stepper-input-container">
+                <input type="number"
+                       min="1"
+                       max="100000"
+                       class="stepper-input"
+                       [class.is-invalid]="formErrors.max_redemptions"
+                       [(ngModel)]="offerForm.max_redemptions"
+                       (keydown)="preventNegative($event)"
+                       (input)="onRedemptionsInput($event)"
+                       (blur)="validateForm('max_redemptions')">
+                <span class="stepper-unit">members</span>
+              </div>
+              <button type="button" class="stepper-btn" (click)="stepFormRedemptionLimit(1)" title="Increase">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+
+            <div class="limit-presets-row">
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 10" [disabled]="10 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(10)">10</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 25" [disabled]="25 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(25)">25</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 50" [disabled]="50 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(50)">50</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 100" [disabled]="100 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(100)">100</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 500" [disabled]="500 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(500)">500</button>
+            </div>
+          </div>
+
+          <!-- Current used count note in edit mode -->
+          <div class="used-count-info" *ngIf="isEditing && currentUsedCount > 0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span><strong>{{ currentUsedCount }}</strong> already claimed — limit cannot be reduced below this.</span>
+          </div>
+
+          <div class="field-error-hint" *ngIf="formErrors.max_redemptions" style="margin-top: 8px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span>{{ formErrors.max_redemptions }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 5: Applicable Plans Selection -->
+      <div class="modal-subcard">
+        <div class="subcard-header-row">
+          <div>
+            <div class="subcard-title">
+              Applicable Subscription Plans
+              <span class="badge badge-active" style="margin-left: 6px; font-size: 11px;">{{ formPlanIds.size }} of {{ availablePlans.length }} selected</span>
+            </div>
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">Select which plans this coupon can be applied to at checkout</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button type="button" class="btn-text-action" (click)="selectAllFormPlans()">Select All</button>
+            <button type="button" class="btn-text-action" (click)="deselectAllFormPlans()">Clear All</button>
+          </div>
+        </div>
+
+        <div class="field-error-hint" *ngIf="formErrors.plans" style="margin-top: 10px; margin-bottom: 2px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span>{{ formErrors.plans }}</span>
+        </div>
+
+        <div class="plans-selection-list" style="margin-top:12px; margin-bottom: 0;">
+          <div *ngFor="let plan of availablePlans"
+               class="plan-select-item"
+               [class.selected]="isFormPlanSelected(plan.plan_id)"
+               (click)="toggleFormPlan(plan.plan_id)">
+            <div class="checkbox-box" [class.checked]="isFormPlanSelected(plan.plan_id)">
+              <svg *ngIf="isFormPlanSelected(plan.plan_id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="plan-item-info">
+              <div class="plan-item-name-row">
+                <span class="plan-item-name">{{ plan.name }}</span>
+                <span class="plan-tier-badge badge-paid">
+                  {{ plan.billing_cycle === 'yearly' ? 'Annual' : 'Monthly' }}
+                </span>
+              </div>
+              <div class="plan-item-price-sub" *ngIf="plan.price">
+                ₹{{ plan.price }}/{{ plan.billing_cycle === 'yearly' ? 'year' : 'month' }}
+                <span *ngIf="plan.billing_cycle === 'yearly' && plan.price_annual"> (₹{{ plan.price_annual }}/mo)</span>
+                · {{ plan.plan_type }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="closeCreateModal()" [disabled]="saving">
+        Cancel
+      </button>
+      <button type="button" class="btn-primary" (click)="saveOffer()" [disabled]="saving" style="display:inline-flex;align-items:center;gap:6px;">
+        <span *ngIf="saving" class="spinner" style="width:14px;height:14px;"></span>
+        <span>{{ saving ? 'Saving...' : (isEditing ? 'Update Coupon' : 'Create Coupon') }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     LINK PLANS MODAL (Quick Modal)
+     ========================================================= -->
+<div class="offer-modal-backdrop" *ngIf="modalOpen">
+  <div class="offer-modal-container" (click)="$event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">
+          Link Plans: <span class="highlight-code">{{ selectedOffer?.name }}</span>
+        </h2>
+        <p class="modal-subtitle">
+          Select which plans can use this coupon code.
+        </p>
+      </div>
+      <button class="modal-close-btn" (click)="closeModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Offer Info Card -->
+    <div class="modal-offer-brief">
+      <div class="brief-flex">
+        <div>
+          <span class="brief-label">Offer Benefit</span>
+          <div class="brief-benefit-val">
+            {{ formatDiscount(selectedOffer?.benefit) }}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span class="brief-label">Status</span>
+          <div>
+            <span class="status-badge" [class.badge-active]="selectedOffer?.status === 'ACTIVE' || selectedOffer?.status === 'active'" [class.badge-inactive]="selectedOffer?.status !== 'ACTIVE' && selectedOffer?.status !== 'active'">
+              {{ selectedOffer?.status }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Redemption & Member Limits Card -->
+    <div class="modal-limits-card">
+      <div class="limits-card-header">
+        <div class="limits-header-left">
+          <div class="limits-icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="limits-title">Maximum Member Usage Limit</div>
+            <div class="limits-subtitle">Total unique members who can claim this offer</div>
+          </div>
+        </div>
+        <div class="policy-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>1 per email</span>
+        </div>
+      </div>
+
+      <div class="limits-control-row">
+        <!-- Interactive Stepper -->
+        <div class="stepper-wrap">
+          <button type="button" class="stepper-btn" (click)="stepRedemptionLimit(-1)" [disabled]="maxRedemptionsInput <= 1" title="Decrease">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <div class="stepper-input-container">
+            <input type="number" 
+                   min="1" 
+                   max="10000" 
+                   class="stepper-input" 
+                   [(ngModel)]="maxRedemptionsInput">
+            <span class="stepper-unit">members</span>
+          </div>
+          <button type="button" class="stepper-btn" (click)="stepRedemptionLimit(1)" title="Increase">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="limit-presets-row">
+          <button type="button" class="preset-pill" [class.active]="maxRedemptionsInput === 10" (click)="setRedemptionLimitPreset(10)">
+            10
+          </button>
+          <button type="button" class="preset-pill" [class.active]="maxRedemptionsInput === 25" (click)="setRedemptionLimitPreset(25)">
+            25
+          </button>
+          <button type="button" class="preset-pill" [class.active]="maxRedemptionsInput === 50" (click)="setRedemptionLimitPreset(50)">
+            50
+          </button>
+          <button type="button" class="preset-pill" [class.active]="maxRedemptionsInput === 100" (click)="setRedemptionLimitPreset(100)">
+            100
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Progress Tracker -->
+      <div class="limits-progress-bar-wrap" *ngIf="selectedOffer">
+        <div class="progress-labels">
+          <span class="claimed-text">
+            <strong>{{ selectedOffer.redemption_count || 0 }}</strong> claimed
+          </span>
+          <span class="remaining-text">
+            <strong>{{ Math.max(0, (maxRedemptionsInput || 10) - (selectedOffer.redemption_count || 0)) }}</strong> spots remaining
+          </span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="Math.min(100, (((selectedOffer.redemption_count || 0) / (maxRedemptionsInput || 10)) * 100))"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Selection Actions -->
+    <div class="quick-actions-bar">
+      <div>
+        <span class="section-heading">Available Subscription Plans</span>
+        <span class="section-subheading">Select plans configured in database where this offer applies</span>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button type="button" class="btn-text-action" (click)="selectAllPlans()">Select All</button>
+        <button type="button" class="btn-text-action" (click)="deselectAllPlans()">Clear All</button>
+      </div>
+    </div>
+
+    <!-- Plans Checkbox List -->
+    <div class="plans-selection-list">
+      <div *ngFor="let plan of availablePlans" 
+           class="plan-select-item" 
+           [class.selected]="isPlanSelected(plan.plan_id)"
+           (click)="togglePlan(plan.plan_id)">
+        <div class="checkbox-box" [class.checked]="isPlanSelected(plan.plan_id)">
+          <svg *ngIf="isPlanSelected(plan.plan_id)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="plan-item-info">
+          <div class="plan-item-name-row">
+            <span class="plan-item-name">{{ plan.name }}</span>
+            <span class="plan-tier-badge badge-paid">
+              {{ plan.billing_cycle === 'yearly' ? 'Annual' : 'Monthly' }}
+            </span>
+          </div>
+          <div class="plan-item-price-sub" *ngIf="plan.price">
+            ₹{{ plan.price }}/{{ plan.billing_cycle === 'yearly' ? 'year' : 'month' }}
+            <span *ngIf="plan.billing_cycle === 'yearly' && plan.price_annual"> (₹{{ plan.price_annual }}/mo)</span>
+            · {{ plan.plan_type }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" (click)="closeModal()" [disabled]="saving">
+        Cancel
+      </button>
+      <button type="button" class="btn-primary" (click)="saveOfferPlans()" [disabled]="saving" style="display:inline-flex;align-items:center;gap:6px;">
+        <span *ngIf="saving" class="spinner" style="width:14px;height:14px;"></span>
+        <span>{{ saving ? 'Saving...' : 'Save Changes' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     DELETE CONFIRMATION MODAL
+     ========================================================= -->
+<div class="offer-modal-backdrop" *ngIf="deleteConfirmOpen">
+  <div class="offer-modal-container" style="max-width: 420px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </div>
+        <div>
+          <h2 class="modal-title" style="color:#f8fafc;font-size:16px;">Delete Coupon?</h2>
+          <p class="modal-subtitle">This action cannot be undone.</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeDeleteModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div style="font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin: 12px 0 20px;">
+      Are you sure you want to delete coupon <strong style="color: #38bdf8;">{{ offerToDelete?.name }}</strong>? Users will no longer be able to use this coupon code for plan discounts.
+    </div>
+
+    <div class="modal-footer" style="margin-top:0;">
+      <button type="button" class="btn-secondary" (click)="closeDeleteModal()" [disabled]="deleting">
+        Cancel
+      </button>
+      <button type="button" class="btn-primary" (click)="confirmDelete()" [disabled]="deleting" style="background:#ef4444;border-color:#ef4444;display:inline-flex;align-items:center;gap:6px;">
+        <span *ngIf="deleting" class="spinner" style="width:14px;height:14px;"></span>
+        <span>{{ deleting ? 'Deleting...' : 'Delete Coupon' }}</span>
+      </button>
+    </div>
+  </div>
+</div>

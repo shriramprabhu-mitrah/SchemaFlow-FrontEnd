@@ -13,7 +13,7 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const extraHosts = process.env['ALLOWED_HOSTS']?.split(',').map(h => h.trim()).filter(Boolean) ?? [];
 const allowedHosts = extraHosts.includes('*')
   ? ['*']
-  : ['*.railway.app', 'localhost', '127.0.0.1', ...extraHosts];
+  : ['*.railway.app', 'localhost', '127.0.0.1', 'dbnexus.io', '*.dbnexus.io', ...extraHosts];
 
 const app = express();
 
@@ -77,7 +77,7 @@ app.use((req, res, next) => {
 if (isMainModule(import.meta.url) || process.env['pm_id'] || process.env['RAILWAY_ENVIRONMENT']) {
   const port = process.env['PORT'] || 4000;
   app.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
+    // console.log(`Node Express server listening on http://localhost:${port}`);
   });
 }
 

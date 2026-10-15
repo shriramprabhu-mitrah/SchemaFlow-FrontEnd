@@ -459,12 +459,38 @@ app-upgrade-modal {
           font-size: 13px !important;
           height: 38px !important;
         }
+
+        button.btn-student-gradient {
+          background: linear-gradient(135deg, #ec4899, #f43f5e) !important;
+          border: none !important;
+          color: #ffffff !important;
+          box-shadow: 0 4px 10px rgba(236, 72, 153, 0.25) !important;
+
+          &:hover {
+            box-shadow: 0 6px 18px rgba(236, 72, 153, 0.4) !important;
+            transform: scale(1.02);
+          }
+        }
       }
     }
 
     /* Keep hover transition same, override grid translation slightly for modal context */
     .plan-card:hover {
       transform: translateY(-4px) scale(1.01) !important;
+    }
+
+    .team-card.recommended, .student-card.recommended {
+      background-image: none !important;
+    }
+
+    .team-card.recommended {
+      border: 2px solid #10b981 !important;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15) !important;
+    }
+
+    .student-card.recommended {
+      border: 2px solid #ec4899 !important;
+      box-shadow: 0 10px 30px rgba(236, 72, 153, 0.15) !important;
     }
   }
 }
@@ -575,10 +601,7 @@ body.light-theme {
       color: #334155 !important;
       border: 1px solid #e2e8f0 !important;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04) !important;
-      background-image: 
-        linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px) !important;
-      background-size: 16px 16px !important;
+      background-image: none !important;
 
       .plan-title { color: #0f172a !important; }
       .plan-desc { color: #64748b !important; }

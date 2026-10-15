@@ -1,0 +1,14 @@
+S.No,Dimension Name,Scope,User Property Name,Description,Example Value
+1,User ID Encoded,User,user_id_encoded,Base64 encoded internal user ID (protects PII),NDI=
+2,Account Type,User,account_type,Type of SchemaFlow account,organization / individual
+3,Organization Role,User,org_role,Role within organization,admin / member / none
+4,Organization ID,User,organization_id,Active workspace organization ID,12
+5,Is Super Admin,User,is_super_admin,Flag indicating if user has super admin privileges,true / false
+6,Auth Provider,User,auth_provider,Authentication provider type,sso / standard
+7,Plan Slug,User,plan_slug,Current subscription plan tier,free / starter / pro / enterprise
+8,Plan Status,User,plan_status,Status of current subscription,active / expired / trial
+9,User Theme,User,theme_mode,Active UI theme mode,dark / light
+10,Device Type,User,device_type,Device classification,desktop / tablet / mobile
+11,Language Code,User,language_code,Browser locale code,en-US / en-GB
+12,User Timezone,User,timezone,Client local timezone,Asia/Kolkata / America/New_York
+13,Client IP Address,User,client_ip,User public IP address (fetched via ipify / cached),103.212.145.22

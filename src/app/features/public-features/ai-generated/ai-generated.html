@@ -1,0 +1,324 @@
+<div class="landing-container light-mode-enforced">
+  <!-- NAVIGATION HEADER -->
+  <header class="landing-header clean-header">
+    <div class="header-inner">
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text">dbNexus</span>
+      </div>
+      <nav class="header-nav">
+        <div class="nav-item-dropdown" [class.show]="isFeaturesDropdownOpen">
+          <a class="nav-link" style="cursor: pointer;" (click)="toggleFeaturesDropdown($event)">
+            Features
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </a>
+          <div class="dropdown-menu" (click)="$event.stopPropagation()">
+            <a routerLink="/features/db-docs" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Docs</span>
+                <span class="desc">Generate beautiful documentation for your database schema</span>
+              </div>
+            </a>
+            <a routerLink="/features/db-connect" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Connect</span>
+                <span class="desc">Connect securely directly to your live database</span>
+              </div>
+            </a>
+            <a routerLink="/features/ai-schema-generator" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">AI Schema Generator</span>
+                <span class="desc">Prompt to DBML: generate tables and map relationships instantly</span>
+              </div>
+            </a>
+          </div>
+        </div>
+        <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
+        <a routerLink="/docs" target="_blank" routerLinkActive="active" class="nav-link">Docs</a>
+        <a routerLink="/diff" routerLinkActive="active" class="nav-link">SQL Compare</a>
+      </nav>
+      <div class="header-actions">
+        <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-signin-light">Sign In</app-button>
+        </a>
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign Out</app-button>
+        
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE MENU OVERLAY -->
+  <div class="mobile-menu-overlay" [class.open]="isMobileMenuOpen">
+    <nav class="mobile-nav">
+      <!-- Features Dropdown for Mobile -->
+      <div class="mobile-nav-item" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+        <div class="mobile-nav-link" (click)="toggleMobileFeaturesDropdown($event)" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          Features
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="isMobileFeaturesDropdownOpen ? 'rotate(180deg)' : 'rotate(0)'" style="transition: transform 0.2s;">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+        <div class="mobile-dropdown-menu" *ngIf="isMobileFeaturesDropdownOpen" style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px; align-items: center; width: 100%;">
+          <a routerLink="/features/db-docs" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">DB Docs</a>
+          <a routerLink="/features/db-connect" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">DB Connect</a>
+          <a routerLink="/features/ai-schema-generator" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">AI Schema Generator</a>
+        </div>
+      </div>
+      <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Pricing</a>
+      <a routerLink="/docs" target="_blank" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">Docs</a>
+      <a routerLink="/diff" routerLinkActive="active" class="mobile-nav-link" (click)="toggleMobileMenu()">SQL Compare</a>
+
+      <div class="mobile-nav-bottom">
+        <div class="mobile-nav-divider"></div>
+        <a routerLink="/dashboard" class="mobile-nav-link" (click)="toggleMobileMenu()">Go To App ↗</a>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" class="mobile-nav-link" (click)="toggleMobileMenu()">Sign In</a>
+        <a *ngIf="isLoggedIn" class="mobile-nav-link" (click)="logout(); toggleMobileMenu()">Sign Out</a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- 1. HERO SECTION (ABOVE THE FOLD) -->
+  <section class="hero-clean-wrapper">
+    <div class="hero-bg-shape shape-left"></div>
+    <div class="hero-bg-shape shape-right"></div>
+    
+    <div class="hero-content" style="position: relative; z-index: 10; width: 100%; max-width: 1000px;">
+      <div class="hero-badge">
+        <div class="badge-pulse"></div>
+        ✨ AI Database Schema Generator
+      </div>
+      <h1 class="hero-title lc-hero-title">Prompt to DBML: The First AI Database Schema Generator Built for Teams.</h1>
+      <p class="hero-subtitle lc-hero-subtitle" style="text-align: center !important;">
+        Describe your application or microservice in plain English. Watch dbNexus AI write the code, generate the tables, and map relationships instantly.
+      </p>
+      
+      <div class="hero-actions ai-hero-actions">
+        <button class="ai-hero-btn" (click)="onCreateDiagram()" aria-label="Generate Your First Schema Free">
+          <span class="btn-text-wrap">
+            <span class="btn-title">Generate Your First Schema Free</span>
+            <span class="btn-note">(No Credit Card Required)</span>
+          </span>
+          <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- VISUAL ANCHOR: AI CHAT ANIMATION SHOWCASE -->
+      <div class="ai-hero-mockup-wrapper" style="margin-top: 40px;">
+        <img src="assets/dbnexus_ai_chat_light_theme.svg" alt="AI Database Schema Generator" class="feature-img-light dbnexus-ai-img" style="width: 100%; max-width: 1000px; border-radius: 14px; box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.12);">
+        <img src="assets/dbnexus_ai_chat_dark_theme.svg" alt="AI Database Schema Generator" class="feature-img-dark dbnexus-ai-img" style="width: 100%; max-width: 1000px; border-radius: 14px; box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.5);">
+        
+        <div class="ai-mockup-caption">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span>Real-time Prompt: <code>"A music streaming app with users, playlists, and songs"</code> &mdash; schema builds itself in real-time</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. THE CORE PROBLEM & SOLUTION (H2) -->
+  <section class="feature-grid-section" style="padding: 0px 24px 64px; max-width: 1200px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 64px;">
+      <h2 class="lc-section-title" style="font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px;">Stop Writing Database Boilerplate by Hand.</h2>
+      <p class="lc-section-subtitle" style="font-size: 18px; color: #6b7280; max-width: 800px; margin: 0 auto;">Traditional database design forces you to manually type raw DDL scripts or code complex DBML files from scratch. It’s slow, tedious, and prone to broken foreign keys. dbNexus acts as your intelligent AI database diagram tool, handling the architectural heavy lifting so you can focus on shipping features.</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; margin-bottom: 22px">
+      
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        </div>
+        <h3>Manual DDL Bottlenecks</h3>
+        <p>Stop wasting hours writing repetitive CREATE TABLE statements and manually specifying column data types, foreign keys, and indexes across staging databases.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        </div>
+        <h3>Broken Foreign Keys & Drifts</h3>
+        <p>Manual schema changes lead to typos, invalid foreign key constraints, cyclic loops, and migration failures that break production and take diagrams out of sync.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        </div>
+        <h3>The dbNexus AI Solution</h3>
+        <p>Translate plain English prompts into clean, normalized DBML schemas in 3 seconds. Pre-validates relational integrity and builds an interactive visual ER diagram instantly.</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- 3. DEEP-DIVE FEATURE BREAKDOWN (H2) -->
+  <section class="feature-grid-section" style="padding: 0px 24px 64px; max-width: 1200px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 64px;">
+      <h2 class="lc-section-title" style="font-size: 32px; font-weight: 700; color: #111827; margin-bottom: 16px;">Deep-Dive Feature Breakdown</h2>
+      <p class="lc-section-subtitle" style="font-size: 18px; color: #6b7280; max-width: 600px; margin: 0 auto;">Architect, iterate, and export complete database designs without writing boilerplate.</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px;">
+      
+      <!-- Section A (H3): Natural Language Prototyping -->
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+        <h3>Natural Language Prototyping</h3>
+        <p>Type what you need—like an e-commerce platform with multi-vendor support—and get an optimized database foundation in 3 seconds.</p>
+      </div>
+      
+      <!-- Section B (H3): Bi-Directional AI Iterations -->
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+        </div>
+        <h3>Bi-Directional AI Iterations</h3>
+        <p>Want to add a column or a new analytics table later? Just ask the AI chat assistant to update your existing workspace without breaking dependencies.</p>
+      </div>
+
+      <!-- Section C (H3): Multi-Dialect Export -->
+      <div class="feature-card">
+        <div class="feature-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        </div>
+        <h3>Multi-Dialect Export</h3>
+        <p>Instantly compile your AI-generated layout into ready-to-run DDL for PostgreSQL, MySQL, SQLite, or MariaDB.</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS (WITH SVG DIAGRAM) -->
+  <section class="how-it-works-section">
+    <div class="how-it-works-container">
+      <div class="how-it-works-content">
+        <h2 class="how-it-works-title">How dbNexus AI Works</h2>
+        
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number" style="background: #ef4444; color: white; border-color: #fca5a5;">1</div>
+            <h4>Type Requirements in Plain English</h4>
+          </div>
+          <p>Describe your app domain or microservice in plain English. Include as much domain detail, custom constraints, or business logic as you need.</p>
+        </div>
+        
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number" style="background: #f59e0b; color: white; border-color: #fcd34d;">2</div>
+            <h4>AI Synthesizes Relational DBML Code</h4>
+          </div>
+          <p>dbNexus AI parses your requirements, derives normalized tables, assigns primary keys, and wires foreign-key references automatically.</p>
+        </div>
+
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number" style="background: #10b981; color: white; border-color: #6ee7b7;">3</div>
+            <h4>Interactive Visual Canvas & DDL Compilation</h4>
+          </div>
+          <p>Explore your interactive visual ER diagram, make real-time adjustments on the canvas, collaborate with your team, and export production-ready SQL scripts.</p>
+        </div>
+      </div>
+      
+      <div class="how-it-works-ide" style="background: none; border: none; box-shadow: none; display: flex; align-items: center; justify-content: center;">
+        <img src="/assets/dbnexus-ai.svg" alt="AI Schema Generation Engine"
+          class="feature-img-light dbnexus-ai-img dark-theme-border" style="max-width: 100%; border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,0.08);">
+        <img src="/assets/dbnexus-ai-dark.svg" alt="AI Schema Generation Engine"
+          class="feature-img-dark dbnexus-ai-img dark-theme-border" style="max-width: 100%; border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,0.35);">
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SOCIAL PROOF & TECHNICAL VALIDATION (H2) -->
+  <section class="interactive-dict-section">
+    <div style="max-width: 1200px; margin: 0 auto;">
+      
+      <div style="text-align: center; margin-bottom: 64px;">
+        <h2>Optimized Architectures by Default.</h2>
+        <p class="subtitle">
+          Our AI engine doesn't just generate text; it builds scalable relational schemas adhering to strict database normalization rules.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px;">
+        
+        <!-- Validation 1 -->
+        <div class="interactive-dict-card">
+          <div style="width: 48px; height: 48px; background: #dbeafe; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <h3>Strict 3NF Normalization</h3>
+          <p>
+            Decomposes domain entities into third-normal-form relational tables by default, eliminating redundant data, update anomalies, and duplicate column groups.
+          </p>
+        </div>
+
+        <!-- Validation 2 -->
+        <div class="interactive-dict-card">
+          <div style="width: 48px; height: 48px; background: #dcfce7; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h3>Guaranteed Referential Integrity</h3>
+          <p>
+            Pre-validates all foreign key references and cardinalities before generating DBML, preventing broken references, cyclic loops, and migration script failures.
+          </p>
+        </div>
+
+        <!-- Validation 3 -->
+        <div class="interactive-dict-card">
+          <div style="width: 48px; height: 48px; background: #f3e8ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          </div>
+          <h3>dbNexus Ecosystem Sync</h3>
+          <p>
+            Seamlessly feed AI schemas into <strong>DB Docs</strong> for searchable living data dictionaries, or compare revisions against production using the <strong>Diff Checker</strong>.
+          </p>
+        </div>
+
+      </div>
+
+   
+      
+      <!-- Highlight Banner (Matching db-docs and live-connection exactly) -->
+      <div class="highlight-banner">
+        <div class="highlight-content">
+          <h3>Turn Ideas into Production Schemas Instantly</h3>
+          <p>
+            Stop writing database boilerplate by hand. Experience prompt-to-DBML velocity with dbNexus AI. Free forever, no credit card required.
+          </p>
+        </div>
+        <div class="highlight-icon-wrapper" >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <app-footer></app-footer>
+</div>

@@ -45,7 +45,8 @@
     "import": "http://192.168.1.201:3001/api/import",
     "export": "http://192.168.1.201:3001/api/export/{id}",
     "generateDbml": "http://192.168.1.201:3001/api/dbml/generate",
-    "generateDbmlSqlite": "http://192.168.1.201:3001/api/dbml/generate-form-sqllite"
+    "generateDbmlSqlite": "http://192.168.1.201:3001/api/dbml/generate-form-sqllite",
+    "testConnection": "http://192.168.1.201:3001/api/db/test-connection"
 
   },
   "pricingApiUrls": {
@@ -54,7 +55,8 @@
   },
   "paymentApiUrls": {
     "createSubscription": "http://192.168.1.201:3001/api/payments/create-subscription",
-    "verifySubscription": "http://192.168.1.201:3001/api/payments/verify-subscription"
+    "verifySubscription": "http://192.168.1.201:3001/api/payments/verify-subscription",
+    "validateCoupon": "http://192.168.1.201:3001/api/payments/validate-coupon"
   },
   "organizationApiUrls": {
     "organizations": "http://192.168.1.201:3001/api/organizations",
@@ -108,6 +110,33 @@
     "aiSessions": "http://localhost:4007/api/ai/sessions",
     "aiSessionHistory": "http://localhost:4007/api/ai/sessions/{sessionId}/history",
     "deleteSessionHistory": "http://localhost:4007/api/ai/sessions/:sessionId/history",
-    "aiModelConfig": "http://localhost:4007/api/ai/models/:modelId/config"
+    "aiModelConfig": "http://localhost:4007/api/ai/models/:modelId/config",
+    "monthSettings": "http://localhost:4000/api/admin/month-settings",
+    "globalMonth": "http://localhost:4000/api/admin/students/global-month",
+    "studentCredentials": "http://localhost:4000/api/student/credentials",
+    "studentCredentialsById": "http://localhost:4000/api/student/credentials/{id}",
+    "deleteStudentCredential": "http://localhost:4000/api/student/credentials/{id}",
+    "offers": "http://192.168.1.201:3001/api/admin/offers",
+    "linkOffer": "http://192.168.1.201:3001/api/admin/offers/link"
+  },
+  "studentPlanApiUrls": {
+    "sendOtp": "http://localhost:4000/api/student/send-otp",
+    "verifyOtp": "http://localhost:4000/api/student/verify-otp"
+    
+  },
+  "chatbotApiUrls": {
+    "session": "http://192.168.1.201:3001/api/chatbot/sessions",
+    "categories": "http://192.168.1.201:3001/api/chatbot/categories",
+    "categoryNodes": "http://192.168.1.201:3001/api/chatbot/categories/{id}/nodes",
+    "nodeById": "http://192.168.1.201:3001/api/chatbot/nodes/{id}",
+    "search": "http://192.168.1.201:3001/api/chatbot/search",
+    "interaction": "http://192.168.1.201:3001/api/chatbot/interactions",
+    "escalate": "http://192.168.1.201:3001/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "http://192.168.1.201:3001/api/enquiry",
+    "myEnquiries": "http://192.168.1.201:3001/api/enquiry/my-enquiries",
+    "updateEnquiry": "http://192.168.1.201:3001/api/enquiry/{id}",
+     "enquiryById": "http://192.168.1.201:3001/api/enquiry/{id}"
   }
 }

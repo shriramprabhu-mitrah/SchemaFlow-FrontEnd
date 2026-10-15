@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable, of, catchError ,throwError} from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
 import { AuthService } from './auth.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'sqlite' | 'mongodb';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'snowflake' | 'sqlite' | 'mongodb';
 
 export interface ImportRequest {
   databaseType: string;
@@ -29,6 +29,7 @@ export class ImportService {
     sqlserver: 'SqlServer',
     sqlite: 'Sqlite',
     oracle: 'Oracle',
+    snowflake: 'Snowflake',
     mongodb: 'MongoDB'
   };
 
@@ -61,7 +62,7 @@ export class ImportService {
   /**
    * Converts schema script (SQL or NoSQL/MongoDB) to DBML
    */
-  convert(diagramId: string | number, dialect: SqlDialect, sqlScript: string): Observable<string> {
+  convert(diagramId: string | number, dialect: SqlDialect, sqlScript: string): Observable<HttpEvent<string>> {
     const url = this.appConfig.environment?.importExportApiUrls?.import ?? '';
 
     const body: ImportRequest = {
@@ -70,18 +71,26 @@ export class ImportService {
     };
 
     if (dialect === 'mongodb') {
-      return this.http.post(url, body, { responseType: 'text' }).pipe(
-        catchError(() => of(this.convertMongoToDbmlLocal(sqlScript)))
+      return this.http.post(url, body, {
+        reportProgress: true,
+        observe: 'events',
+        responseType: 'text'
+      }).pipe(
+        catchError(() => of(new HttpResponse<string>({ body: this.convertMongoToDbmlLocal(sqlScript), status: 200 })))
       );
     }
 
-    return this.http.post(url, body, { responseType: 'text' });
+    return this.http.post(url, body, {
+      reportProgress: true,
+      observe: 'events',
+      responseType: 'text'
+    });
   }
 
    /**
    * Generates DBML schema from database connection string
    */
-  generateFromConnectionString(databaseType: string, connectionString: string): Observable<string> {
+  generateFromConnectionString(databaseType: string, connectionString: string): Observable<HttpEvent<string>> {
     const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml || 'http://localhost:4000/api/dbml/generate';
     const token = this.authService ? this.authService.getToken() : null;
     let headers: Record<string, string> = {
@@ -91,18 +100,117 @@ export class ImportService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    const isMariaDb = databaseType.toLowerCase() === 'mariadb';
+    const isSnowflake = databaseType.toLowerCase() === 'snowflake';
+    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType));
+
+    let finalConnectionString = connectionString;
+    if (isSnowflake) {
+      let cleaned = connectionString.trim();
+      if (/^snowflake\s*['"]/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s*['"]/i, '').replace(/['"]\s*$/, '').trim();
+      } else if (/^snowflake\s+/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s+/i, '').trim();
+      } else if (/^['"].*['"]$/.test(cleaned)) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      finalConnectionString = cleaned;
+    }
+
     const body = {
-      databaseType: databaseType.toLowerCase() === 'oracle' ? 'Oracle' : databaseType,
-      connectionString
+      databaseType: dbType,
+      connectionString: finalConnectionString
     };
 
-    return this.http.post(url, body, { headers, responseType: 'text' });
+    if (isMariaDb) {
+      return this.http.post(url, body, {
+        headers,
+        reportProgress: true,
+        observe: 'events',
+        responseType: 'text'
+      }).pipe(
+        catchError((primaryErr) => {
+          const fallbackBody = {
+            databaseType: 'mysql',
+            connectionString: connectionString.replace(/^mariadb:\/\//i, 'mysql://')
+          };
+          return this.http.post(url, fallbackBody, {
+            headers,
+            reportProgress: true,
+            observe: 'events',
+            responseType: 'text'
+          }).pipe(
+            catchError(() => throwError(() => primaryErr))
+          );
+        })
+      );
+    }
+
+    return this.http.post(url, body, {
+      headers,
+      reportProgress: true,
+      observe: 'events',
+      responseType: 'text'
+    });
+  }
+
+  /**
+   * Tests whether the supplied database connection details are reachable.
+   */
+  testConnection(databaseType: string, connectionString: string): Observable<string> {
+    const token = this.authService ? this.authService.getToken() : null;
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const isMariaDb = databaseType.toLowerCase() === 'mariadb';
+    const isSnowflake = databaseType.toLowerCase() === 'snowflake';
+    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType));
+
+    let finalConnectionString = connectionString;
+    if (isSnowflake) {
+      let cleaned = connectionString.trim();
+      if (/^snowflake\s*['"]/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s*['"]/i, '').replace(/['"]\s*$/, '').trim();
+      } else if (/^snowflake\s+/i.test(cleaned)) {
+        cleaned = cleaned.replace(/^snowflake\s+/i, '').trim();
+      } else if (/^['"].*['"]$/.test(cleaned)) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      finalConnectionString = cleaned;
+    }
+
+    const body = {
+      databaseType: dbType,
+      connectionString: finalConnectionString
+    };
+
+    const url = this.appConfig.environment?.importExportApiUrls?.testConnection;
+
+    if (isMariaDb) {
+      return this.http.post(url!, body, { headers, responseType: 'text' }).pipe(
+        catchError((primaryErr) => {
+          const fallbackBody = {
+            databaseType: 'mysql',
+            connectionString: connectionString.replace(/^mariadb:\/\//i, 'mysql://')
+          };
+          return this.http.post(url!, fallbackBody, { headers, responseType: 'text' }).pipe(
+            catchError(() => throwError(() => primaryErr))
+          );
+        })
+      );
+    }
+
+    return this.http.post(url!, body, { headers, responseType: 'text' });
   }
 
   /**
    * Generates DBML schema from SQLite database file (.db, .sqlite, .sqlite3, .db3)
    */
-  generateFromSqlite(file: File): Observable<string> {
+  generateFromSqlite(file: File): Observable<HttpEvent<string>> {
     const url = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbmlSqlite || 'http://localhost:4000/api/dbml/generate-sqlite';
 
     const token = this.authService ? this.authService.getToken() : null;
@@ -114,7 +222,12 @@ export class ImportService {
     const formData = new FormData();
     formData.append('file', file, file.name);
 
-    return this.http.post(url, formData, { headers, responseType: 'text' });
+    return this.http.post(url, formData, {
+      headers,
+      reportProgress: true,
+      observe: 'events',
+      responseType: 'text'
+    });
   }
 
   /**

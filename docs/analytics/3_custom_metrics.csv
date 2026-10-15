@@ -1,0 +1,5 @@
+S.No,Metric Name,Scope,Event Parameter Name,Unit of Measurement,Description
+1,Network Speed,Event,network_speed,Standard,Estimated network download speed in Megabits per second (Mbps)
+2,API Server Status,Event,api_server_status,Standard,"HTTP status code returned by backend API (e.g. 200, 401, 500)"
+3,Window Viewport Width,Event,window_width,Standard,Browser window viewport width in pixels
+4,Window Viewport Height,Event,window_height,Standard,Browser window viewport height in pixels
