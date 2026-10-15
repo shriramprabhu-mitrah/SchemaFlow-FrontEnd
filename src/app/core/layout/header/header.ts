@@ -1729,6 +1729,10 @@ openConnectionStringModal(): void {
       this.svc.showUpgradeModal('create_workspaces');
       return;
     }
+    if (tab === 'shared' && !this.entitlementService.canUseFeature('share_diagram')) {
+      this.openUpgradeModal('share_diagram');
+      return;
+    }
     this.workspaceModalTab = tab;
     this.workspaceModalOpen = true;
     this.personalMenuOpen = false;
@@ -1809,6 +1813,7 @@ openConnectionStringModal(): void {
   openUpgradeModal(featureKey?: string): void {
     this.upgradeFeatureKey = featureKey || 'premium_plan';
     this.upgradeModalOpen = true;
+    this.personalMenuOpen = false;
     this.closeChatbot();
   }
 

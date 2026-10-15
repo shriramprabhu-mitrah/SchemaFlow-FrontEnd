@@ -249,10 +249,12 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       }
       if (
         ((this.activeTab === 'my-workspaces') && !this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces')) ||
-        ((this.activeTab === 'create-workspace') && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces')))
+        ((this.activeTab === 'create-workspace') && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces'))) ||
+        ((this.activeTab === 'shared') && !this.entitlementService.canUseFeature('share_diagram'))
       ) {
+        const feature = this.activeTab === 'shared' ? 'share_diagram' : 'create_workspaces';
         this.activeTab = 'my-diagrams';
-        this.svc.showUpgradeModal('create_workspaces');
+        this.svc.showUpgradeModal(feature);
         return;
       }
       if (this.activeTab === 'my-diagrams') {
@@ -430,6 +432,10 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   }
 
   openSharedTab(): void {
+    if (!this.entitlementService.canUseFeature('share_diagram')) {
+      this.svc.showUpgradeModal('share_diagram');
+      return;
+    }
     this.clearSearches();
     const tabChanged = this._activeTab !== 'shared';
     this.selectedWorkspace = null;
