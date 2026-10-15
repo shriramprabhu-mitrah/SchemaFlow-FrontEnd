@@ -21,6 +21,25 @@
       </div>
     </div>
 
+    <!-- Promotional Offer Notice / Regular Plan Transition Alert -->
+    <div class="profile-offer-alert" *ngIf="nextBillingRegular() || offerExpiredNotice()">
+      <div class="alert-icon-wrap">
+        <span class="alert-emoji">⚠️</span>
+      </div>
+      <div class="alert-content">
+        <h4 class="alert-title">Promotional Offer Expired — Standard Billing Applies</h4>
+        <p class="alert-desc">
+          Your promotional discount has concluded. Your next renewal will automatically be charged at standard plan rates on <strong class="renewal-date-highlight">{{ effectiveRenewalDate() }}</strong>.
+        </p>
+      </div>
+      <button class="alert-link-btn" (click)="setTab('subscription')">
+        <span>View Plan</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
     <!-- Hero Profile Banner Card -->
     <div class="profile-hero-card">
       <div class="hero-cover-pattern">

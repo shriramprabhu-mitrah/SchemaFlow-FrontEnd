@@ -452,5 +452,46 @@ export class AdminService {
     const payload = { month: monthStr };
     return this.http.put(url, payload, { headers, withCredentials: true });
   }
+  // ── Offer Management (Super Admin) ──
+  getOffers(): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000/api';
+    const url = this.urls.offers || `${baseUrl}/admin/offers`;
+    return this.http.get(url, { withCredentials: true });
+  }
+
+  linkOffer(offerId: string, planIds: number[], maxRedemptions: number = 10): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000/api';
+    const url = this.urls.linkOffer || `${baseUrl}/admin/offers/link`;
+    return this.http.post(url, {
+      offer_id: offerId,
+      plan_ids: planIds,
+      max_redemptions: maxRedemptions,
+      per_user_limit: 1
+    }, { withCredentials: true });
+  }
+
+  createOffer(data: any): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000/api';
+    const url = this.urls.offers || `${baseUrl}/admin/offers`;
+    return this.http.post(url, data, { withCredentials: true });
+  }
+
+  updateOffer(offerId: string, data: any): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000/api';
+    const url = `${this.urls.offers || (baseUrl + '/admin/offers')}/${offerId}`;
+    return this.http.put(url, data, { withCredentials: true });
+  }
+
+  toggleOfferStatus(offerId: string, status: string): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000/api';
+    const url = `${this.urls.offers || (baseUrl + '/admin/offers')}/${offerId}/status`;
+    return this.http.patch(url, { status }, { withCredentials: true });
+  }
+
+  deleteOffer(offerId: string): Observable<any> {
+    const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000/api';
+    const url = `${this.urls.offers || (baseUrl + '/admin/offers')}/${offerId}`;
+    return this.http.delete(url, { withCredentials: true });
+  }
 }
 

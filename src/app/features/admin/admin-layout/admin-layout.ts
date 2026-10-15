@@ -33,6 +33,7 @@ export class AdminLayoutComponent {
     { path: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
     { path: '/admin/plans', icon: 'plans', label: 'Plans' },
     { path: '/admin/student-plan', icon: 'student-plan', label: 'Student Plan' },
+    { path: '/admin/offers', icon: 'offers', label: 'Offers' },
     { path: '/admin/features', icon: 'features', label: 'Features' },
     { path: '/admin/ai-configs', icon: 'ai-configs', label: 'AI configs' },
     { path: '/admin/organizations', icon: 'organizations', label: 'Organizations' },

@@ -39,6 +39,25 @@ export class ProfileComponent {
   planStatus = signal<string>('active');
   apiPlans = signal<any[]>([]);
   subscriptionId = signal<number | null>(null);
+  nextBillingRegular = signal<boolean>(false);
+  offerExpiredNotice = signal<string | null>(null);
+  currentPeriodEnd = signal<string | null>(null);
+
+  effectiveRenewalDate = computed(() => {
+    const end = this.currentPeriodEnd();
+    if (!end) return 'your next billing date';
+    try {
+      const d = new Date(end);
+      if (isNaN(d.getTime())) return 'your next billing date';
+      return d.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch {
+      return 'your next billing date';
+    }
+  });
 
   // Avatar State
   previewUrl = signal<SafeUrl | null>(null);
@@ -208,6 +227,10 @@ export class ProfileComponent {
           if (plan.subscription_id || plan.id) {
             this.subscriptionId.set(plan.subscription_id || plan.id);
           }
+
+          this.nextBillingRegular.set(!!plan.next_billing_regular);
+          this.offerExpiredNotice.set(plan.offer_expired_notice || null);
+          this.currentPeriodEnd.set(plan.current_period_end || null);
 
           const rawSlug = (plan.slug || plan.name || '').toLowerCase();
           if (rawSlug.includes('student')) {

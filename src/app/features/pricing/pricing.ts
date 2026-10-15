@@ -12,16 +12,22 @@ import { OrganizationService } from '../organization/services/organization.servi
 import { EntitlementService } from '../../core/services/entitlement.service';
 import { SeoService } from '../../core/services/seo.service';
 import { Footer } from '../../shared/components/footer/footer';
+import { CouponCheckoutModalComponent } from '../../shared/components/modals/coupon-checkout-modal/coupon-checkout-modal';
 import { environment } from '../../../environment/environment';
 import { StudentSettingsService } from '../../core/services/student-settings.service';
 
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer, CouponCheckoutModalComponent],
   templateUrl: './pricing.html',
 })
 export class PricingComponent implements OnInit {
+
+  showCouponModal = false;
+  pendingSubId: string | null = null;
+  pendingPlan: any = null;
+  processingPayment = false;
 
   isFeaturesDropdownOpen = false;
 
@@ -892,7 +898,11 @@ export class PricingComponent implements OnInit {
 
           // Check if the plan requires payment (status will be 'expired' or pending)
           if (res.data?.status === 'expired' && localSubId) {
-            this.initiateRazorpayPayment(localSubId, plan);
+            this.upgrading = false;
+            this.pendingSubId = localSubId;
+            this.pendingPlan = plan;
+            this.showCouponModal = true;
+            this.cdr.detectChanges();
             return;
           }
 
@@ -929,7 +939,11 @@ export class PricingComponent implements OnInit {
 
         // Check if the plan is paid (no trial) and requires Razorpay
         if (res.data?.status === 'expired' && localSubId) {
-          this.initiateRazorpayPayment(localSubId, plan);
+          this.upgrading = false;
+          this.pendingSubId = localSubId;
+          this.pendingPlan = plan;
+          this.showCouponModal = true;
+          this.cdr.detectChanges();
           return;
         }
 
@@ -967,6 +981,20 @@ export class PricingComponent implements OnInit {
     });
   }
 
+  closeCouponModal(): void {
+    this.showCouponModal = false;
+    this.pendingSubId = null;
+    this.pendingPlan = null;
+    this.processingPayment = false;
+    this.cdr.detectChanges();
+  }
+
+  onProceedWithCoupon(event: { couponCode?: string; offerId?: string; discount?: any }): void {
+    if (!this.pendingSubId || !this.pendingPlan) return;
+    this.processingPayment = true;
+    this.initiateRazorpayPayment(this.pendingSubId, this.pendingPlan, event.couponCode);
+  }
+
   private loadRazorpayScript(): Promise<boolean> {
     return new Promise(resolve => {
       if (typeof window === 'undefined') {
@@ -983,19 +1011,26 @@ export class PricingComponent implements OnInit {
     });
   }
 
-  private initiateRazorpayPayment(localSubId: string, plan: any): void {
+  private initiateRazorpayPayment(localSubId: string, plan: any, couponCode?: string): void {
     const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000';
     const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
     const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
 
     const planType = `${plan.slug}_${this.isAnnual ? 'annual' : 'monthly'}`;
 
-    this.http.post<any>(createSubUrl, {
+    const payload: any = {
       planType: planType,
       currency: this.selectedCurrency,
       subscriptionId: localSubId
-    }, { withCredentials: true }).subscribe({
+    };
+    if (couponCode) {
+      payload.couponCode = couponCode;
+    }
+
+    this.http.post<any>(createSubUrl, payload, { withCredentials: true }).subscribe({
       next: async (res) => {
+        this.showCouponModal = false;
+        this.processingPayment = false;
         const rpSubId = res.subscription_id;
         if (!rpSubId) {
           this.upgrading = false;
@@ -1075,7 +1110,9 @@ export class PricingComponent implements OnInit {
       },
       error: (err) => {
         this.upgrading = false;
-        this.svc.showToast('Error initiating checkout. Please try again.', 4000, 'error');
+        this.processingPayment = false;
+        const msg = err?.error?.error || err?.error?.message || 'Error initiating checkout. Please try again.';
+        this.svc.showToast(msg, 4000, 'error');
         this.cdr.detectChanges();
       }
     });
