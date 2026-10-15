@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, signal, ViewChild, ElementRef, HostListener, OnDestroy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, signal, ViewChild, ElementRef, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AppConfigService } from '../../../core/services/app-config.service';
 import { StudentSettingsService } from '../../../core/services/student-settings.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   selector: 'app-student-offer',
@@ -15,7 +16,7 @@ import { DashboardService } from '../../../core/services/dashboard.service';
   templateUrl: './student-offer.html',
   styleUrls: ['./student-offer.scss']
 })
-export class StudentOfferComponent implements OnDestroy {
+export class StudentOfferComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
   private emailSub?: Subscription;
@@ -59,7 +60,8 @@ export class StudentOfferComponent implements OnDestroy {
     private appConfig: AppConfigService,
     private cdr: ChangeDetectorRef,
     public studentSettings: StudentSettingsService,
-    private svc: DashboardService
+    private svc: DashboardService,
+    private seoService: SeoService
   ) {
     this.studentForm = this.fb.group({
       fullName: ['', Validators.required],
@@ -100,6 +102,23 @@ export class StudentOfferComponent implements OnDestroy {
 
     this.studentForm.get('passedOutYear')?.valueChanges.subscribe(() => {
       this.validateYearOrder();
+    });
+  }
+
+  ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'Student Application Form - Free Student Plan - dbNexus',
+      description: 'Apply for the free dbNexus student plan. Get complete access to visual database design, SQL export, schema modeling, and AI diagram tools for students and educators.',
+      url: 'https://www.dbnexus.io/student-offer',
+      keywords: 'student application form, free student plan, dbNexus student offer, database tool for students, student developer pack, free database schema tool'
+    });
+
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Student Application Form - dbNexus",
+      "description": "Apply for the free dbNexus student plan. Get complete access to visual database design and schema modeling tools.",
+      "url": "https://www.dbnexus.io/student-offer"
     });
   }
 

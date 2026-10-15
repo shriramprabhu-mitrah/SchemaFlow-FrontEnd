@@ -8,6 +8,7 @@ import { Icons } from '../../../core/component/icons/icons';
 import { ButtonComponent } from '../../../shared/button/button';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { Footer } from '../../../shared/components/footer/footer';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   selector: 'app-db-docs',
@@ -52,10 +53,25 @@ export class DbDocsComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private router: Router,
-    public svc: DashboardService
+    public svc: DashboardService,
+    private seoService: SeoService
   ) { }
 
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'DB Docs - Database Schema Documentation Tool - dbNexus',
+      description: 'Generate beautiful, interactive, and searchable documentation for your database schemas with dbNexus DB Docs.',
+      url: 'https://www.dbnexus.io/features/db-docs',
+      keywords: 'database documentation tool, db docs, schema documentation generator, interactive data dictionary, SQL documentation'
+    });
+
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "dbNexus DB Docs",
+      "applicationCategory": "DeveloperApplication",
+      "url": "https://www.dbnexus.io/features/db-docs"
+    });
   }
 
   

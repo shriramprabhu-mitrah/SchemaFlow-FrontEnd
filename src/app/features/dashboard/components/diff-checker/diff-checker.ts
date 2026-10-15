@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DashboardService } from '../../../../core/services/dashboard.service';
 import { DiffEngine, DiffResult, SideBySideRow } from './diff-engine';
+import { SeoService } from '../../../../core/services/seo.service';
 
 export interface OverviewMarker {
   type: 'added' | 'removed' | 'modified';
@@ -46,10 +47,18 @@ export class DiffCheckerComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     public svc: DashboardService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private seoService: SeoService
   ) {}
 
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'SQL Compare - Database Schema Diff & Migration Generator - DBNexus',
+      description: 'Compare SQL schemas, generate database migration diff scripts, and synchronize database structures visually with DBNexus SQL Compare.',
+      url: 'https://www.dbnexus.io/diff',
+      keywords: 'SQL schema compare tool, SQL schema diff tool, database migration script generator'
+    });
+
     if (this.svc.diffCheckerData) {
       this.leftText = this.svc.diffCheckerData.leftText || '';
       this.rightText = this.svc.diffCheckerData.rightText || '';

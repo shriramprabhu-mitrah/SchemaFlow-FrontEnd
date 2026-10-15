@@ -69,7 +69,7 @@ import { config } from '../../../app.config.server';
 	this.seoService.updateTags({
    	title: 'Login - DBNexus',
    	description: 'Log in to your DBNexus account to access your database schemas, collaborate with your team, and manage your diagrams.',
-   	url: 'https://dbnexus.up.railway.app/login'
+   	url: 'https://www.dbnexus.io/login'
  	});
    }
  

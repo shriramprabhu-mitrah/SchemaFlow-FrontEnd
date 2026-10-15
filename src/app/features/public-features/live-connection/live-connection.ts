@@ -8,6 +8,7 @@ import { Icons } from '../../../core/component/icons/icons';
 import { ButtonComponent } from '../../../shared/button/button';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { Footer } from '../../../shared/components/footer/footer';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   selector: 'app-live-connection',
@@ -52,10 +53,25 @@ export class LiveConnectionComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private router: Router,
-    public svc: DashboardService
+    public svc: DashboardService,
+    private seoService: SeoService
   ) { }
 
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'DB Connect - Live Database Connection & Reverse Engineering - dbNexus',
+      description: 'Connect securely directly to PostgreSQL, MySQL, SQL Server, and SQLite databases to import and visualize schemas in real-time.',
+      url: 'https://www.dbnexus.io/features/db-connect',
+      keywords: 'live database connection, reverse engineer database, db connect, database visualizer, import live schema'
+    });
+
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "dbNexus DB Connect",
+      "applicationCategory": "DeveloperApplication",
+      "url": "https://www.dbnexus.io/features/db-connect"
+    });
   }
 
   

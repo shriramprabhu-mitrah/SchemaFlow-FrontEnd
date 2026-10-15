@@ -33,7 +33,7 @@ export const routes: Routes = [
   },
   {
     path: 'diff',
-    title: 'Diff Checker - DBNexus',
+    title: 'SQL Compare - DBNexus',
     loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard)
   },
   {
@@ -61,7 +61,7 @@ export const routes: Routes = [
   },
   {
     path: 'student-offer',
-    title: 'Student Offer - DBNexus',
+    title: 'Student Application Form - Free Student Plan - dbNexus',
     loadComponent: () => import('./features/pricing/student-offer/student-offer').then(m => m.StudentOfferComponent)
   },
   // Super Admin Panel

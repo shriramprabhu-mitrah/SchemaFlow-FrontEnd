@@ -1,0 +1,15 @@
+S.No,Event Name,Category,Trigger / Description,Parameters Sent,Service Method Helper
+1,page_view,Navigation,SPA route navigation completed,"page_title, page_location, page_path","trackPageView(title?, path?)"
+2,login,Authentication,User signs in successfully,"method ('password', 'google', 'sso')",trackLogin(method)
+3,sign_up,Authentication,User completes registration,"method ('password', 'google')",trackSignUp(method)
+4,logout,Authentication,User signs out from application,session_duration ('ended'),trackLogout()
+5,diagram_create,Diagram,New ERD diagram created,"diagram_name, source ('blank', 'template')","trackDiagramCreated(name?, source?)"
+6,diagram_open,Diagram,Existing diagram loaded onto canvas,"diagram_id, diagram_name","trackDiagramOpened(id, name?)"
+7,diagram_save,Diagram,Diagram auto-saved or saved explicitly,"diagram_id, is_draft (true/false)","trackDiagramSaved(id?, isDraft?)"
+8,diagram_export,Diagram,Diagram exported as file/code,"export_type ('png', 'svg', 'pdf', 'sql', 'dbml'), diagram_id","trackDiagramExported(type, id?)"
+9,diagram_import,Diagram,Schema file imported into canvas,"import_type ('sql', 'sqlite', 'dbml'), file_size_bytes","trackDiagramImported(type, size?)"
+10,ai_prompt_sent,AI_Assistant,Prompt submitted to AI schema assistant,"model, prompt_length","trackAiChatPrompt(model?, len?)"
+11,subscription_intent,Monetization,User clicks on plan upgrade / billing CTA,"plan_slug, billing_cycle ('monthly', 'yearly')","trackSubscriptionClick(slug, cycle?)"
+12,workspace_switch,Workspace,User switches organization workspace,workspace_id,trackWorkspaceSwitched(workspaceId)
+13,app_error,Diagnostics,Client or component error logged,"error_message, error_source, fatal (true/false)","trackError(msg, source?, fatal?)"
+14,api_request,API_Telemetry,HTTP request telemetry tracked,"endpoint, api_server_status, api_request_duration","trackApiCall(endpoint, status, ms)"
