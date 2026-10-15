@@ -55,7 +55,8 @@
   },
   "paymentApiUrls": {
     "createSubscription": "API_URL/api/payments/create-subscription",
-    "verifySubscription": "API_URL/api/payments/verify-subscription"
+    "verifySubscription": "API_URL/api/payments/verify-subscription",
+    "validateCoupon": "API_URL/api/payments/validate-coupon"
   },
   "organizationApiUrls": {
     "organizations": "API_URL/api/organizations",
@@ -115,11 +116,14 @@
     "globalMonth": "API_URL/api/admin/students/global-month",
     "studentCredentials": "API_URL/api/student/credentials",
     "studentCredentialsById": "API_URL/api/student/credentials/{id}",
-    "deleteStudentCredential": "API_URL/api/student/credentials/{id}"
+    "deleteStudentCredential": "API_URL/api/student/credentials/{id}",
+    "offers": "API_URL/api/admin/offers",
+    "linkOffer": "API_URL/api/admin/offers/link"
   },
   "studentPlanApiUrls": {
     "sendOtp": "API_URL/api/student/send-otp",
     "verifyOtp": "API_URL/api/student/verify-otp"
+   
   },
   "chatbotApiUrls": {
     "session": "API_URL/api/chatbot/sessions",

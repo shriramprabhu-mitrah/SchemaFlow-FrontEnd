@@ -59,8 +59,8 @@
   },
   "paymentApiUrls": {
     "createSubscription": "http://localhost:4000/api/payments/create-subscription",
-    "verifySubscription": "http://localhost:4000/api/payments/verify-subscription"
-    
+    "verifySubscription": "http://localhost:4000/api/payments/verify-subscription",
+    "validateCoupon": "http://localhost:4000/api/payments/validate-coupon"
   },
   "organizationApiUrls": {
     "organizations": "http://localhost:4000/api/organizations",
@@ -120,11 +120,14 @@
     "globalMonth": "http://localhost:4000/api/admin/students/global-month",
     "studentCredentials": "http://localhost:4000/api/student/credentials",
     "studentCredentialsById": "http://localhost:4000/api/student/credentials/{id}",
-    "deleteStudentCredential": "http://localhost:4000/api/student/credentials/{id}"    
+    "deleteStudentCredential": "http://localhost:4000/api/student/credentials/{id}" ,
+    "offers": "http://localhost:4000/api/admin/offers",
+    "linkOffer": "http://localhost:4000/api/admin/offers/link"   
   },
   "studentPlanApiUrls": {
     "sendOtp": "http://localhost:4000/api/student/send-otp",
     "verifyOtp": "http://localhost:4000/api/student/verify-otp"
+    
   },
   "chatbotApiUrls": {
     "session": "http://localhost:4000/api/chatbot/sessions",
