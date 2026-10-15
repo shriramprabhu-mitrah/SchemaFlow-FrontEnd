@@ -90,6 +90,33 @@ export class PricingComponent implements OnInit {
 
   selectedCurrency = 'INR';
 
+  // FAQ Accordion State & Content
+  activeFaqIndex: number | null = 0;
+
+  faqs = [
+    {
+      question: 'Can I switch between monthly and annual plans?',
+      answer: 'Yes, you can upgrade or downgrade your billing frequency at any time from your account settings. Subscriptions will adjust automatically.'
+    },
+    {
+      question: 'What happens when a diagram is shared?',
+      answer: 'Under the Free tier, shared diagrams are public and viewable by anyone with the link. Premium and Team tiers allow you to password-protect shared layouts or restrict access to specified workspace members.'
+    },
+    {
+      question: 'How do team user licenses work?',
+      answer: 'The Team plan includes pro-rated developer licenses. Additional seats can be purchased dynamically at a pro-rated price based on your current billing cycle duration.'
+    },
+    {
+      question: 'Do you offer refunds?',
+      answer: 'All subscription purchases, upgrades, seat additions, and renewals are strictly final and non-refundable. You can disable auto-renewal in your account settings at any time to prevent future billing. For details, please review our ',
+      hasRefundLink: true
+    }
+  ];
+
+  toggleFaq(index: number): void {
+    this.activeFaqIndex = this.activeFaqIndex === index ? null : index;
+  }
+
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
   private cdr = inject(ChangeDetectorRef);

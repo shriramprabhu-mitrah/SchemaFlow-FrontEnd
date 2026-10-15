@@ -361,28 +361,44 @@
   <!-- FAQ SECTION -->
   <section class="faq-section">
     <div class="faq-header">
-      <h2>Frequently Asked Questions</h2>
+      <h2 class="faq-title">Frequently Asked Questions</h2>
+      <p class="faq-subtitle">Everything you need to know about dbNexus, subscriptions, and how it fits into your workflow.</p>
     </div>
-    <div class="faq-grid">
-      <div class="faq-item">
-        <h4>Can I switch between monthly and annual plans?</h4>
-        <p>Yes, you can upgrade or downgrade your billing frequency at any time from your account settings.
-          Subscriptions will adjust automatically.</p>
+
+    <div class="faq-accordion">
+      <div 
+        class="faq-accordion-item" 
+        *ngFor="let item of faqs; let i = index" 
+        [class.is-open]="activeFaqIndex === i"
+      >
+        <button 
+          type="button"
+          class="faq-question-btn" 
+          (click)="toggleFaq(i)"
+          [attr.aria-expanded]="activeFaqIndex === i"
+        >
+          <span class="faq-question-text">{{ item.question }}</span>
+          <span class="faq-icon-indicator" [class.is-open]="activeFaqIndex === i">
+            <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"></line>
+              <line class="faq-icon-v" x1="12" y1="5" x2="12" y2="19"></line>
+            </svg>
+          </span>
+        </button>
+
+        <div class="faq-answer-panel">
+          <div class="faq-answer-inner">
+            <p class="faq-answer-text">
+              {{ item.answer }}<ng-container *ngIf="item.hasRefundLink"><a routerLink="/docs/refund-policy" class="faq-link">Refund Policy</a>.</ng-container>
+            </p>
+          </div>
+        </div>
       </div>
-      <div class="faq-item">
-        <h4>What happens when a diagram is shared?</h4>
-        <p>Under the Free tier, shared diagrams are public and viewable by anyone with the link. Premium and Team tiers
-          allow you to password-protect shared layouts or restrict access to specified workspace members.</p>
-      </div>
-      <div class="faq-item">
-        <h4>How do team user licenses work?</h4>
-        <p>The Team plan includes pro-rated developer licenses. Additional seats can be purchased dynamically at a
-          pro-rated price based on your current billing cycle duration.</p>
-      </div>
-      <div class="faq-item">
-        <h4>Do you offer refunds?</h4>
-        <p>All subscription purchases, upgrades, seat additions, and renewals are strictly final and non-refundable. You can disable auto-renewal in your account settings at any time to prevent future billing. For details, please review our <a routerLink="/docs/refund-policy">Refund Policy</a>.</p>
-      </div>
+    </div>
+
+    <div class="faq-footer-cta">
+      <p class="faq-cta-prompt">Didn't find your answer?</p>
+      <a routerLink="/faq" class="btn-see-faq">See the full FAQ</a>
     </div>
   </section>
 
