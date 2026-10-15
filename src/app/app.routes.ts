@@ -141,6 +141,21 @@ export const routes: Routes = [
     loadComponent: () => import('./features/public-features/live-connection/live-connection').then(m => m.LiveConnectionComponent)
   },
   {
+    path: 'features/ai-generated',
+    title: 'AI Schema Generation - DBNexus',
+    loadComponent: () => import('./features/public-features/ai-generated/ai-generated').then(m => m.AiGeneratedComponent)
+  },
+  {
+    path: 'features/ai-generate',
+    redirectTo: 'features/ai-generated',
+    pathMatch: 'full'
+  },
+  {
+    path: 'features/ai-schema-generator',
+    redirectTo: 'features/ai-generated',
+    pathMatch: 'full'
+  },
+  {
     path: '**',
     title: '404 - Page Not Found - DBNexus',
     loadComponent: () => import('./features/not-found/not-found').then(m => m.NotFoundComponent)
