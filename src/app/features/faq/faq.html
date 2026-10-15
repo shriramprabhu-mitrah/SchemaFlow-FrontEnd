@@ -1,0 +1,143 @@
+<div class="pricing-container faq-page-root">
+  <!-- Neon Glow Overlays -->
+  <div class="glow-node glow-primary"></div>
+  <div class="glow-node glow-secondary"></div>
+  <div class="glow-node glow-accent"></div>
+
+  <!-- NAVIGATION HEADER -->
+  <header class="landing-header clean-header">
+    <div class="header-inner">
+      <div class="header-brand" routerLink="/" style="cursor: pointer;">
+        <app-icons name="db-diagram-logo" size="56"></app-icons>
+        <span class="brand-text">dbNexus</span>
+      </div>
+
+      <nav class="header-nav">
+        <div class="nav-item-dropdown" [class.show]="isFeaturesDropdownOpen">
+          <a class="nav-link" style="cursor: pointer;" (click)="toggleFeaturesDropdown($event)">
+            Features
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </a>
+          <div class="dropdown-menu" (click)="$event.stopPropagation()">
+            <a routerLink="/features/db-docs" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Docs</span>
+                <span class="desc">Generate beautiful documentation for your database schema</span>
+              </div>
+            </a>
+            <a routerLink="/features/db-connect" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">DB Connect</span>
+                <span class="desc">Connect securely directly to your live database</span>
+              </div>
+            </a>
+          </div>
+        </div>
+        <a routerLink="/pricing" class="nav-link">Pricing</a>
+        <a routerLink="/docs" target="_blank" class="nav-link">Docs</a>
+        <a routerLink="/diff" class="nav-link">SQL Compare</a>
+      </nav>
+
+      <div class="header-actions">
+        <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-signin-light">Sign In</app-button>
+        </a>
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign Out</app-button>
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+          <svg *ngIf="!isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="18" x2="18" y2="6"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE OVERLAY MENU -->
+  <div class="mobile-nav-overlay" [class.open]="isMobileMenuOpen" (click)="toggleMobileMenu()">
+    <div class="mobile-nav-panel" (click)="$event.stopPropagation()">
+      <div class="mobile-nav-header">
+        <div class="header-brand" routerLink="/" (click)="toggleMobileMenu()">
+          <app-icons name="db-diagram-logo" size="40"></app-icons>
+          <span class="brand-text">dbNexus</span>
+        </div>
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="18" x2="18" y2="6"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="mobile-nav-links">
+        <div class="mobile-nav-item">
+          <div class="mobile-nav-dropdown-trigger" (click)="toggleMobileFeaturesDropdown($event)">
+            <span>Features</span>
+            <svg [style.transform]="isMobileFeaturesDropdownOpen ? 'rotate(180deg)' : 'rotate(0)'" style="transition: transform 0.2s;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="mobile-sub-menu" *ngIf="isMobileFeaturesDropdownOpen">
+            <a routerLink="/features/db-docs" (click)="toggleMobileMenu()" class="mobile-sub-link">DB Docs</a>
+            <a routerLink="/features/db-connect" (click)="toggleMobileMenu()" class="mobile-sub-link">DB Connect</a>
+          </div>
+        </div>
+        <a routerLink="/pricing" (click)="toggleMobileMenu()">Pricing</a>
+        <a routerLink="/docs" target="_blank" (click)="toggleMobileMenu()">Docs</a>
+        <a routerLink="/diff" (click)="toggleMobileMenu()">SQL Compare</a>
+      </div>
+      <div class="mobile-nav-actions">
+        <app-button variant="none" customClass="btn-goto-light" (onClick)="onCreateDiagram()">Go To App ↗</app-button>
+        <a routerLink="/login" [queryParams]="{ fromHome: 'true' }" *ngIf="!isLoggedIn" (click)="toggleMobileMenu()" style="text-decoration: none;">
+          <app-button variant="none" customClass="btn-signin-light">Sign In</app-button>
+        </a>
+        <app-button *ngIf="isLoggedIn" variant="none" customClass="btn-signin-light" (onClick)="logout()">Sign Out</app-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ PAGE CONTENT -->
+  <main class="faq-page-main">
+    <div class="faq-page-hero">
+      <div class="faq-hero-badge">Knowledge Base</div>
+      <h1 class="faq-hero-title">Frequently Asked Questions</h1>
+      <p class="faq-hero-subtext">Find answers to common questions about dbNexus, subscriptions, licenses, and schema workflows.</p>
+    </div>
+
+    <!-- Empty / Placeholder State Card -->
+    <div class="faq-empty-card">
+      <div class="faq-empty-icon-wrapper">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <h2 class="faq-empty-heading">Full FAQ Section Coming Soon</h2>
+      <p class="faq-empty-desc">
+        We are assembling a comprehensive knowledge base covering database connectors, live synchronization, migration scripts, and team collaboration.
+      </p>
+      <div class="faq-empty-actions">
+        <a routerLink="/pricing" class="btn-faq-action btn-faq-primary">
+          View Pricing Plans
+        </a>
+        <a routerLink="/contact" class="btn-faq-action btn-faq-secondary">
+          Contact Support
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <app-footer></app-footer>
+</div>

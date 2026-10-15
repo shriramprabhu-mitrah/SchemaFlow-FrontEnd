@@ -1,0 +1,188 @@
+.faq-page-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.faq-page-main {
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 24px 100px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+}
+
+.faq-page-hero {
+  text-align: center;
+  margin-bottom: 48px;
+
+  .faq-hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 9999px;
+    background: rgba(62, 197, 193, 0.12);
+    border: 1px solid rgba(62, 197, 193, 0.3);
+    color: #3ec5c1;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .faq-hero-title {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 16px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .faq-hero-subtext {
+    font-size: clamp(15px, 2vw, 17px);
+    color: #94a3b8;
+    max-width: 620px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+}
+
+.faq-empty-card {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 60px 32px;
+  text-align: center;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+
+  .faq-empty-icon-wrapper {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 24px;
+    border-radius: 50%;
+    background: rgba(62, 197, 193, 0.1);
+    border: 1px solid rgba(62, 197, 193, 0.25);
+    color: #3ec5c1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .faq-empty-heading {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 12px;
+  }
+
+  .faq-empty-desc {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #94a3b8;
+    max-width: 520px;
+    margin: 0 auto 32px;
+  }
+
+  .faq-empty-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .btn-faq-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 28px;
+      border-radius: 9999px;
+      font-size: 14.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-faq-primary {
+      background: linear-gradient(135deg, #3ec5c1, #3b82f6);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(62, 197, 193, 0.3);
+
+      &:hover {
+        opacity: 0.92;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(62, 197, 193, 0.45);
+      }
+    }
+
+    .btn-faq-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #e2e8f0;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+        transform: translateY(-1px);
+      }
+    }
+  }
+}
+
+/* Light Theme Overrides */
+body.light-theme {
+  .faq-page-hero {
+    .faq-hero-badge {
+      background: rgba(13, 148, 136, 0.1);
+      border-color: rgba(13, 148, 136, 0.25);
+      color: #0d9488;
+    }
+
+    .faq-hero-title {
+      color: #0f172a !important;
+    }
+
+    .faq-hero-subtext {
+      color: #475569 !important;
+    }
+  }
+
+  .faq-empty-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+
+    .faq-empty-icon-wrapper {
+      background: #f0fdfa !important;
+      border-color: #ccfbf1 !important;
+      color: #0d9488 !important;
+    }
+
+    .faq-empty-heading {
+      color: #0f172a !important;
+    }
+
+    .faq-empty-desc {
+      color: #64748b !important;
+    }
+
+    .btn-faq-secondary {
+      background: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+
+      &:hover {
+        background: #f1f5f9 !important;
+        border-color: #94a3b8 !important;
+      }
+    }
+  }
+}
