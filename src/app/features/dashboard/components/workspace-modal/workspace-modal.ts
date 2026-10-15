@@ -113,7 +113,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     isDeleting: false,
     deleteSuccess: false,
     diagramId: null as number | null,
-    diagramName: ''
+    diagramName: '',
+    isDocUnlocked: false
   };
   activeDiagramDeleted = false;
 
@@ -1856,7 +1857,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       isDeleting: false,
       deleteSuccess: false,
       diagramId: diagram.id,
-      diagramName: diagram.name || 'Untitled Diagram'
+      diagramName: diagram.name || 'Untitled Diagram',
+      isDocUnlocked: diagram.is_doc_unlocked === true || diagram.is_doc_unlocked === 'true' || diagram.is_doc_unlocked === 1
     };
   }
 
@@ -1866,7 +1868,16 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     setTimeout(() => {
       this.deleteDiagramConfirm.diagramId = null;
       this.deleteDiagramConfirm.deleteSuccess = false;
+      this.deleteDiagramConfirm.isDocUnlocked = false;
     }, 200);
+  }
+
+  onEditDiagramInstead(): void {
+    const diagramId = this.deleteDiagramConfirm.diagramId;
+    this.closeDeleteDiagramConfirm();
+    if (diagramId) {
+      this.onSelectDiagram(diagramId);
+    }
   }
 
   confirmDeleteDiagram(): void {
