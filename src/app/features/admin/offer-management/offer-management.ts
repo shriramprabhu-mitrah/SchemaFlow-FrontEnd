@@ -292,11 +292,47 @@ export class OfferManagementComponent implements OnInit {
   copyCode(code: string, event: Event): void {
     event.stopPropagation();
     if (!code) return;
-    navigator.clipboard.writeText(code).then(() => {
-      this.dashService.showToast(`Coupon code '${code}' copied!`, 2000, 'success');
-    }).catch(() => {
+
+    // 1. Try modern navigator.clipboard if available (in secure HTTPS context)
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(code).then(() => {
+        this.dashService.showToast(`Coupon code '${code}' copied!`, 2000, 'success');
+      }).catch(() => {
+        this.fallbackCopyText(code);
+      });
+      return;
+    }
+
+    // 2. Normal copy (works across HTTP, QA IP addresses, and browsers without clipboard API)
+    this.fallbackCopyText(code);
+  }
+
+  private fallbackCopyText(code: string): void {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = code;
+      textArea.setAttribute('readonly', '');
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '-9999px';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      textArea.setSelectionRange(0, code.length);
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        this.dashService.showToast(`Coupon code '${code}' copied!`, 2000, 'success');
+      } else {
+        this.dashService.showToast('Failed to copy coupon code', 2000, 'error');
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
       this.dashService.showToast('Failed to copy coupon code', 2000, 'error');
-    });
+    }
   }
 
   // ── Status Toggle ──

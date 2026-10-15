@@ -18,12 +18,32 @@ import { SeoService } from '../../../core/services/seo.service';
 })
 export class StudentOfferComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
+  @ViewChild('profileInput') profileInputRef?: ElementRef<HTMLInputElement>;
 
   private emailSub?: Subscription;
+  private formSub?: Subscription;
 
   studentForm: FormGroup;
   selectedFile: File | null = null;
+  selectedFileDataUrl: string = '';
   fileError: string = '';
+
+  // Stepper state
+  currentStep = signal<1 | 2>(1);
+
+  // Step 2 profile upload state
+  selectedProfileFile: File | null = null;
+  profilePreview = signal<string>('');
+  profileError = signal<string>('');
+
+  // Password visibility
+  showPassword = signal<boolean>(false);
+  showConfirmPassword = signal<boolean>(false);
+
+  // Autofill prevention flags
+  isUserNameReadonly = signal<boolean>(true);
+  isPasswordReadonly = signal<boolean>(true);
+  isConfirmPasswordReadonly = signal<boolean>(true);
   
   showOtpModal = signal(false);
   otp: string[] = ['', '', '', '', '', ''];
@@ -38,6 +58,9 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
   instituteError = signal('');
   joinedYearError = signal('');
   passedOutYearError = signal('');
+  userNameError = signal('');
+  passwordError = signal('');
+  confirmPasswordError = signal('');
   confirmEnrolledError = signal('');
 
   // Customized Year Picker state
@@ -71,6 +94,9 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       institute: ['', Validators.required],
       joinedYear: ['', [Validators.required, Validators.pattern(/^(19|20)\d{2}$/)]],
       passedOutYear: ['', [Validators.required, Validators.pattern(/^(19|20)\d{2}$/)]],
+      userName: ['', [Validators.required, Validators.minLength(3)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', Validators.required],
       confirmEnrolled: [false, Validators.requiredTrue]
     });
 
@@ -120,6 +146,71 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       "description": "Apply for the free dbNexus student plan. Get complete access to visual database design and schema modeling tools.",
       "url": "https://www.dbnexus.io/student-offer"
     });
+  
+
+    const navEntries = typeof performance !== 'undefined' && typeof performance.getEntriesByType === 'function'
+      ? (performance.getEntriesByType('navigation') as PerformanceNavigationTiming[])
+      : [];
+    const isReload = (navEntries.length > 0 && navEntries[0]?.type === 'reload') ||
+      (typeof performance !== 'undefined' && (performance as any)?.navigation?.type === 1);
+
+    if (isReload) {
+      this.clearDraftFromStorage();
+      this.resetForm();
+    } else {
+      this.restoreDraftFromStorage();
+    }
+
+    this.formSub = this.studentForm.valueChanges.subscribe(() => {
+      this.saveDraftToStorage();
+    });
+
+    this.studentSettings.loadFromPlansApi().subscribe({
+      next: () => {
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  get passwordVal(): string {
+    return this.studentForm?.get('password')?.value || '';
+  }
+
+  get hasLowercase(): boolean {
+    return /[a-z]/.test(this.passwordVal);
+  }
+
+  get hasUppercase(): boolean {
+    return /[A-Z]/.test(this.passwordVal);
+  }
+
+  get hasNumber(): boolean {
+    return /[0-9]/.test(this.passwordVal);
+  }
+
+  get hasSpecialChar(): boolean {
+    return /[^a-zA-Z0-9\s]/.test(this.passwordVal);
+  }
+
+  get hasMinLength(): boolean {
+    return this.passwordVal.length >= 8;
+  }
+
+  get hasNoWhitespace(): boolean {
+    return !/\s/.test(this.passwordVal);
+  }
+
+  get isPasswordValid(): boolean {
+    return this.hasLowercase &&
+      this.hasUppercase &&
+      this.hasNumber &&
+      this.hasSpecialChar &&
+      this.hasMinLength &&
+      this.hasNoWhitespace;
+  }
+
+  get dynamicFeatures(): string[] {
+    return this.studentSettings.getDisplayFeatures();
   }
 
   getStudentApiUrl(endpoint: string): string {
@@ -374,12 +465,14 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     this.stopOtpTimer();
     this.otp = ['', '', '', '', '', ''];
     this.otpVerifyError.set('');
+    this.saveDraftToStorage();
     this.cdr.markForCheck();
   }
 
   ngOnDestroy(): void {
     this.stopOtpTimer();
     this.emailSub?.unsubscribe();
+    this.formSub?.unsubscribe();
   }
 
   onOtpInput(event: any, index: number) {
@@ -518,11 +611,19 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         this.fileError = 'File size should not exceed 5MB';
         this.selectedFile = null;
+        this.selectedFileDataUrl = '';
         if (event.target) event.target.value = '';
       } else {
         this.selectedFile = file;
         this.fileError = '';
+        const reader = new FileReader();
+        reader.onload = () => {
+          this.selectedFileDataUrl = reader.result as string;
+          this.saveDraftToStorage();
+        };
+        reader.readAsDataURL(file);
       }
+      this.saveDraftToStorage();
       this.cdr.markForCheck();
     }
   }
@@ -532,10 +633,12 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       event.stopPropagation();
     }
     this.selectedFile = null;
+    this.selectedFileDataUrl = '';
     this.fileError = '';
     if (this.fileInputRef?.nativeElement) {
       this.fileInputRef.nativeElement.value = '';
     }
+    this.saveDraftToStorage();
     this.cdr.markForCheck();
   }
 
@@ -603,6 +706,54 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       this.activeYearPicker.set(null);
       this.cdr.markForCheck();
     }
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  @HostListener('window:pagehide')
+  onPageHide(): void {
+    if (this.hasUnsavedChanges()) {
+      this.clearDraftFromStorage();
+    }
+  }
+
+  hasUnsavedChanges(): boolean {
+    if (this.submitSuccess()) {
+      return false;
+    }
+    if (this.studentForm?.dirty) {
+      return true;
+    }
+    const values = this.studentForm?.getRawValue() || {};
+    const hasAnyFieldFilled = Object.keys(values).some(key => {
+      const val = values[key];
+      if (typeof val === 'boolean') {
+        return val === true;
+      }
+      return val !== null && val !== undefined && String(val).trim() !== '';
+    });
+    if (hasAnyFieldFilled) {
+      return true;
+    }
+    if (this.selectedFile || this.selectedFileDataUrl) {
+      return true;
+    }
+    if (this.selectedProfileFile || this.profilePreview()) {
+      return true;
+    }
+    if (this.isEmailVerified()) {
+      return true;
+    }
+    if (this.currentStep() === 2) {
+      return true;
+    }
+    return false;
   }
 
   getDecadeTitle(picker: 'joined' | 'passedOut'): string {
@@ -838,6 +989,22 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     if (field === 'institute') this.instituteError.set('');
     if (field === 'joinedYear') this.joinedYearError.set('');
     if (field === 'passedOutYear') this.passedOutYearError.set('');
+    if (field === 'userName') this.userNameError.set('');
+    if (field === 'password') {
+      this.passwordError.set('');
+      const confirmVal = this.studentForm.get('confirmPassword')?.value;
+      if (confirmVal && confirmVal === this.studentForm.get('password')?.value) {
+        this.confirmPasswordError.set('');
+      }
+    }
+    if (field === 'confirmPassword') {
+      this.confirmPasswordError.set('');
+      const pVal = this.studentForm.get('password')?.value;
+      const cpVal = this.studentForm.get('confirmPassword')?.value;
+      if (pVal && cpVal && pVal !== cpVal) {
+        this.confirmPasswordError.set('Passwords do not match');
+      }
+    }
     if (field === 'confirmEnrolled') this.confirmEnrolledError.set('');
     this.studentForm.get(field)?.markAsUntouched();
     this.cdr.markForCheck();
@@ -940,9 +1107,8 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     });
   }
 
-  async onSubmit(): Promise<void> {
-    if (this.isSubmitting()) return;
-
+  // Stepper navigation methods
+  goToNextStep(): void {
     this.submitError.set('');
     this.fullNameError.set('');
     this.phoneError.set('');
@@ -950,32 +1116,316 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     this.instituteError.set('');
     this.joinedYearError.set('');
     this.passedOutYearError.set('');
-    this.confirmEnrolledError.set('');
 
-    if (!this.studentForm.valid || !this.selectedFile || !this.isEmailVerified()) {
-      this.studentForm.markAllAsTouched();
-      if (!this.selectedFile) {
-        this.fileError = 'Please upload your student ID card';
+    const step1Controls = ['fullName', 'email', 'phone', 'city', 'institute', 'joinedYear', 'passedOutYear'];
+    let hasStep1Error = false;
+
+    step1Controls.forEach(k => {
+      const c = this.studentForm.get(k);
+      c?.markAsTouched();
+      if (c?.invalid) {
+        hasStep1Error = true;
       }
-      if (!this.isEmailVerified()) {
-        this.emailVerifyError.set('Please verify your email first');
-      }
-      if (this.studentForm.get('confirmEnrolled')?.invalid) {
-        this.confirmEnrolledError.set('Please confirm your student enrollment');
-      }
+    });
+
+    if (!this.studentForm.get('fullName')?.value?.trim()) {
+      this.fullNameError.set('Full name is required');
+      hasStep1Error = true;
+    }
+
+    const emailVal = this.studentForm.get('email')?.value?.trim();
+    if (!emailVal) {
+      this.emailVerifyError.set('A valid student email is required');
+      hasStep1Error = true;
+    } else if (!this.isEmailVerified()) {
+      this.emailVerifyError.set('Please verify your email first');
+      hasStep1Error = true;
+    }
+
+    const phoneVal = this.studentForm.get('phone')?.value?.trim();
+    if (!phoneVal) {
+      this.phoneError.set('Phone number is required');
+      hasStep1Error = true;
+    } else if (!/^[6-9]\d{9}$/.test(phoneVal)) {
+      this.phoneError.set(this.getPhoneErrorMessage());
+      hasStep1Error = true;
+    }
+
+    if (!this.studentForm.get('city')?.value?.trim()) {
+      this.cityError.set('City is required');
+      hasStep1Error = true;
+    }
+
+    if (!this.studentForm.get('institute')?.value?.trim()) {
+      this.instituteError.set('Institution name is required');
+      hasStep1Error = true;
+    }
+
+    const joinedVal = this.studentForm.get('joinedYear')?.value?.trim();
+    if (!joinedVal) {
+      this.joinedYearError.set('Joined year is required');
+      hasStep1Error = true;
+    } else if (!/^(19|20)\d{2}$/.test(joinedVal)) {
+      this.joinedYearError.set('Please enter a valid 4-digit year');
+      hasStep1Error = true;
+    }
+
+    const passedVal = this.studentForm.get('passedOutYear')?.value?.trim();
+    if (!passedVal) {
+      this.passedOutYearError.set('Pass out year is required');
+      hasStep1Error = true;
+    } else if (!/^(19|20)\d{2}$/.test(passedVal)) {
+      this.passedOutYearError.set('Please enter a valid 4-digit year');
+      hasStep1Error = true;
+    } else if (joinedVal && /^\d{4}$/.test(joinedVal) && parseInt(passedVal, 10) < parseInt(joinedVal, 10)) {
+      this.passedOutYearError.set('Pass out year cannot be earlier than joined year');
+      hasStep1Error = true;
+    }
+
+    if (!this.selectedFile) {
+      this.fileError = 'Please upload your student ID card';
+      hasStep1Error = true;
+    }
+
+    if (hasStep1Error) {
       this.cdr.markForCheck();
       return;
     }
 
+    this.currentStep.set(2);
+    this.saveDraftToStorage();
+    this.cdr.markForCheck();
+  }
+
+  goToPrevStep(): void {
+    this.currentStep.set(1);
+    this.submitError.set('');
+    this.saveDraftToStorage();
+    this.cdr.markForCheck();
+  }
+
+  onCredentialFocus(field: 'userName' | 'password' | 'confirmPassword'): void {
+    if (field === 'userName') this.isUserNameReadonly.set(false);
+    if (field === 'password') this.isPasswordReadonly.set(false);
+    if (field === 'confirmPassword') this.isConfirmPasswordReadonly.set(false);
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword.update(v => !v);
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword.update(v => !v);
+  }
+
+  // Profile photo handlers (optional)
+  onProfileSelected(event: any): void {
+    const file = event.target?.files?.[0];
+    if (file) {
+      this.profileError.set('');
+      if (file.size > 5 * 1024 * 1024) {
+        this.profileError.set('Profile photo size should not exceed 5MB');
+        this.selectedProfileFile = null;
+        this.profilePreview.set('');
+        if (event.target) event.target.value = '';
+      } else {
+        this.selectedProfileFile = file;
+        this.profileError.set('');
+        const reader = new FileReader();
+        reader.onload = () => {
+          this.profilePreview.set(reader.result as string);
+          this.saveDraftToStorage();
+          this.cdr.markForCheck();
+        };
+        reader.readAsDataURL(file);
+      }
+      this.saveDraftToStorage();
+      this.cdr.markForCheck();
+    }
+  }
+
+  removeProfilePhoto(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.selectedProfileFile = null;
+    this.profilePreview.set('');
+    this.profileError.set('');
+    if (this.profileInputRef?.nativeElement) {
+      this.profileInputRef.nativeElement.value = '';
+    }
+    this.saveDraftToStorage();
+    this.cdr.markForCheck();
+  }
+
+  saveDraftToStorage(): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      const rawValues = this.studentForm.getRawValue();
+      const draft: any = {
+        formValues: rawValues,
+        currentStep: this.currentStep(),
+        isEmailVerified: this.isEmailVerified(),
+        profilePreview: this.profilePreview(),
+        selectedFileName: this.selectedFile?.name,
+        selectedFileData: this.selectedFileDataUrl
+      };
+      sessionStorage.setItem('student_offer_draft', JSON.stringify(draft));
+    } catch (_) {}
+  }
+
+  restoreDraftFromStorage(): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      const raw = sessionStorage.getItem('student_offer_draft');
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.formValues) {
+        this.studentForm.patchValue(draft.formValues, { emitEvent: false });
+        if (draft.formValues.userName) {
+          this.isUserNameReadonly.set(false);
+        }
+        if (draft.formValues.password) {
+          this.isPasswordReadonly.set(false);
+        }
+        if (draft.formValues.confirmPassword) {
+          this.isConfirmPasswordReadonly.set(false);
+        }
+      }
+      if (typeof draft.isEmailVerified === 'boolean') {
+        this.isEmailVerified.set(draft.isEmailVerified);
+      }
+      if (draft.currentStep === 1 || draft.currentStep === 2) {
+        this.currentStep.set(draft.currentStep);
+      }
+      if (draft.profilePreview) {
+        this.profilePreview.set(draft.profilePreview);
+        try {
+          this.selectedProfileFile = this.dataURLtoFile(draft.profilePreview, 'profile_photo.png');
+        } catch (_) {}
+      }
+      if (draft.selectedFileData && draft.selectedFileName) {
+        try {
+          this.selectedFile = this.dataURLtoFile(draft.selectedFileData, draft.selectedFileName);
+          this.selectedFileDataUrl = draft.selectedFileData;
+        } catch (_) {}
+      }
+      this.cdr.markForCheck();
+    } catch (_) {}
+  }
+
+  clearDraftFromStorage(): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      sessionStorage.removeItem('student_offer_draft');
+    } catch (_) {}
+  }
+
+  private dataURLtoFile(dataurl: string, filename: string): File {
+    const arr = dataurl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  }
+
+  getProfileInitials(): string {
+    const name = (this.studentForm.get('fullName')?.value || this.studentForm.get('userName')?.value || 'Student').trim();
+    const clean = name.replace(/[@._-]+/g, ' ');
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return (name.charAt(0) || 'S').toUpperCase();
+  }
+
+  async onSubmit(): Promise<void> {
+    if (this.isSubmitting()) return;
+
+    this.submitError.set('');
+    this.userNameError.set('');
+    this.passwordError.set('');
+    this.confirmPasswordError.set('');
+    this.confirmEnrolledError.set('');
+
+    // Ensure Step 1 is valid
     const rawJoined = this.studentForm.get('joinedYear')?.value;
     const rawPassed = this.studentForm.get('passedOutYear')?.value;
-    if (rawJoined && rawPassed && /^\d{4}$/.test(String(rawJoined).trim()) && /^\d{4}$/.test(String(rawPassed).trim())) {
-      if (parseInt(String(rawPassed).trim(), 10) < parseInt(String(rawJoined).trim(), 10)) {
-        this.passedOutYearError.set('Pass out year cannot be earlier than joined year');
-        this.studentForm.get('passedOutYear')?.markAsTouched();
-        this.cdr.markForCheck();
-        return;
-      }
+    const isStep1Missing = !this.studentForm.get('fullName')?.value?.trim() ||
+      !this.studentForm.get('email')?.value?.trim() ||
+      !this.isEmailVerified() ||
+      !this.studentForm.get('phone')?.value?.trim() ||
+      !this.studentForm.get('city')?.value?.trim() ||
+      !this.studentForm.get('institute')?.value?.trim() ||
+      !rawJoined ||
+      !rawPassed ||
+      !this.selectedFile;
+
+    if (isStep1Missing) {
+      this.currentStep.set(1);
+      this.goToNextStep();
+      return;
+    }
+
+    // Step 2 validations
+    let hasStep2Error = false;
+
+    const rawUserName = this.studentForm.get('userName')?.value;
+    const userNameVal = (rawUserName || '').trim();
+    if (!userNameVal) {
+      this.userNameError.set('Username is required');
+      this.studentForm.get('userName')?.markAsTouched();
+      hasStep2Error = true;
+    } else if (userNameVal.length < 3) {
+      this.userNameError.set('Username must be at least 3 characters');
+      this.studentForm.get('userName')?.markAsTouched();
+      hasStep2Error = true;
+    } else if (/\s/.test(userNameVal)) {
+      this.userNameError.set('Username cannot contain whitespace');
+      this.studentForm.get('userName')?.markAsTouched();
+      hasStep2Error = true;
+    }
+
+    const passwordVal = this.studentForm.get('password')?.value || '';
+    if (!passwordVal) {
+      this.passwordError.set('Password is required');
+      this.studentForm.get('password')?.markAsTouched();
+      hasStep2Error = true;
+    } else if (/\s/.test(passwordVal)) {
+      this.passwordError.set('Password cannot contain whitespace');
+      this.studentForm.get('password')?.markAsTouched();
+      hasStep2Error = true;
+    } else if (!this.isPasswordValid) {
+      this.passwordError.set('Password does not meet the requirements');
+      this.studentForm.get('password')?.markAsTouched();
+      hasStep2Error = true;
+    }
+
+    const confirmPasswordVal = this.studentForm.get('confirmPassword')?.value || '';
+    if (!confirmPasswordVal) {
+      this.confirmPasswordError.set('Please confirm your password');
+      this.studentForm.get('confirmPassword')?.markAsTouched();
+      hasStep2Error = true;
+    } else if (passwordVal !== confirmPasswordVal) {
+      this.confirmPasswordError.set('Passwords do not match');
+      this.studentForm.get('confirmPassword')?.markAsTouched();
+      hasStep2Error = true;
+    }
+
+    if (!this.studentForm.get('confirmEnrolled')?.value) {
+      this.confirmEnrolledError.set('Please confirm your student enrollment');
+      this.studentForm.get('confirmEnrolled')?.markAsTouched();
+      hasStep2Error = true;
+    }
+
+    if (hasStep2Error) {
+      this.cdr.markForCheck();
+      return;
     }
 
     this.isSubmitting.set(true);
@@ -988,6 +1438,7 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
         imageUrl = await this.readFileAsDataUrl(this.selectedFile);
       } catch (err: any) {
         this.isSubmitting.set(false);
+        this.currentStep.set(1);
         this.fileError = 'Could not read the uploaded ID card image. Please re-upload.';
         this.cdr.markForCheck();
         return;
@@ -997,7 +1448,8 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     const joinedYearNum = rawJoined ? (isNaN(Number(rawJoined)) ? rawJoined : Number(rawJoined)) : null;
     const passedOutYearNum = rawPassed ? (isNaN(Number(rawPassed)) ? rawPassed : Number(rawPassed)) : null;
 
-    const payload = {
+    // Send credentials payload with user_name alone, confirm_password, and omit profile picture per requirements
+    const payload: any = {
       full_name: this.studentForm.get('fullName')?.value || '',
       email: this.studentForm.get('email')?.value || '',
       phone_number: this.studentForm.get('phone')?.value || '',
@@ -1005,7 +1457,10 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       institution_name: this.studentForm.get('institute')?.value || '',
       image_url: imageUrl,
       joined_year: joinedYearNum,
-      passed_out_year: passedOutYearNum
+      passed_out_year: passedOutYearNum,
+      user_name: userNameVal,
+      password: passwordVal,
+      confirm_password: confirmPasswordVal
     };
 
     const url = this.getStudentApiUrl('credentials');
@@ -1093,32 +1548,56 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     }
 
     // 2. Parse errorMsg string against field keywords
-    if (lower.includes('phone') || lower.includes('mobile') || lower.includes('digit')) {
+    if (lower.includes('username') || lower.includes('user_name')) {
+      this.userNameError.set(rawMsg);
+      this.studentForm.get('userName')?.markAsTouched();
+      this.currentStep.set(2);
+    } else if (lower.includes('confirm_password') || lower.includes('confirm password') || lower.includes('confirmpassword')) {
+      this.confirmPasswordError.set(rawMsg);
+      this.studentForm.get('confirmPassword')?.markAsTouched();
+      this.currentStep.set(2);
+    } else if (lower.includes('password')) {
+      this.passwordError.set(rawMsg);
+      this.studentForm.get('password')?.markAsTouched();
+      this.currentStep.set(2);
+    } else if (lower.includes('profile')) {
+      this.profileError.set(rawMsg);
+      this.currentStep.set(2);
+    } else if (lower.includes('phone') || lower.includes('mobile') || lower.includes('digit')) {
       this.phoneError.set(rawMsg);
       this.studentForm.get('phone')?.markAsTouched();
+      this.currentStep.set(1);
     } else if (lower.includes('email') || lower.includes('mail')) {
       this.emailVerifyError.set(rawMsg);
       this.studentForm.get('email')?.markAsTouched();
+      this.currentStep.set(1);
     } else if (lower.includes('full_name') || lower.includes('full name') || (lower.includes('name') && !lower.includes('institution') && !lower.includes('institute'))) {
       this.fullNameError.set(rawMsg);
       this.studentForm.get('fullName')?.markAsTouched();
+      this.currentStep.set(1);
     } else if (lower.includes('institution') || lower.includes('institute') || lower.includes('college') || lower.includes('school')) {
       this.instituteError.set(rawMsg);
       this.studentForm.get('institute')?.markAsTouched();
+      this.currentStep.set(1);
     } else if (lower.includes('joined_year') || lower.includes('joined year') || lower.includes('join year')) {
       this.joinedYearError.set(rawMsg);
       this.studentForm.get('joinedYear')?.markAsTouched();
+      this.currentStep.set(1);
     } else if (lower.includes('passed_out_year') || lower.includes('pass out year') || lower.includes('passout year') || lower.includes('passout') || lower.includes('passed out')) {
       this.passedOutYearError.set(rawMsg);
       this.studentForm.get('passedOutYear')?.markAsTouched();
+      this.currentStep.set(1);
     } else if (lower.includes('city')) {
       this.cityError.set(rawMsg);
       this.studentForm.get('city')?.markAsTouched();
+      this.currentStep.set(1);
     } else if (lower.includes('image') || lower.includes('id card') || lower.includes('id_card') || lower.includes('file') || lower.includes('upload') || lower.includes('document')) {
       this.fileError = rawMsg;
+      this.currentStep.set(1);
     } else if (lower.includes('enrolled') || lower.includes('confirm')) {
       this.confirmEnrolledError.set(rawMsg);
       this.studentForm.get('confirmEnrolled')?.markAsTouched();
+      this.currentStep.set(2);
     } else {
       // General error fallback only if no field matches
       this.submitError.set(rawMsg);
@@ -1127,9 +1606,29 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
 
   private setFieldError(field: string, msg: string): boolean {
     const f = field.toLowerCase();
-    if (f.includes('phone') || f.includes('mobile')) {
+    if (f.includes('user_name') || f.includes('username')) {
+      this.userNameError.set(msg);
+      this.studentForm.get('userName')?.markAsTouched();
+      this.currentStep.set(2);
+      return true;
+    } else if (f.includes('confirm_password') || f.includes('confirmpassword') || f.includes('confirm password')) {
+      this.confirmPasswordError.set(msg);
+      this.studentForm.get('confirmPassword')?.markAsTouched();
+      this.currentStep.set(2);
+      return true;
+    } else if (f.includes('password')) {
+      this.passwordError.set(msg);
+      this.studentForm.get('password')?.markAsTouched();
+      this.currentStep.set(2);
+      return true;
+    } else if (f.includes('profile')) {
+      this.profileError.set(msg);
+      this.currentStep.set(2);
+      return true;
+    } else if (f.includes('phone') || f.includes('mobile')) {
       this.phoneError.set(msg);
       this.studentForm.get('phone')?.markAsTouched();
+      this.currentStep.set(1);
       return true;
     } else if (f.includes('email')) {
       if (msg.toLowerCase().includes('already exists')) {
@@ -1139,39 +1638,49 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       }
       this.emailVerifyError.set(msg);
       this.studentForm.get('email')?.markAsTouched();
+      this.currentStep.set(1);
       return true;
-    } else if (f.includes('full_name') || f.includes('fullname') || f.includes('name')) {
+    } else if (f.includes('full_name') || f.includes('fullname') || (f.includes('name') && !f.includes('institute') && !f.includes('institution'))) {
       this.fullNameError.set(msg);
       this.studentForm.get('fullName')?.markAsTouched();
+      this.currentStep.set(1);
       return true;
     } else if (f.includes('city')) {
       this.cityError.set(msg);
       this.studentForm.get('city')?.markAsTouched();
+      this.currentStep.set(1);
       return true;
     } else if (f.includes('institute') || f.includes('institution')) {
       this.instituteError.set(msg);
       this.studentForm.get('institute')?.markAsTouched();
+      this.currentStep.set(1);
       return true;
     } else if (f.includes('joined_year') || f.includes('joinedyear') || f.includes('join_year') || f.includes('joined')) {
       this.joinedYearError.set(msg);
       this.studentForm.get('joinedYear')?.markAsTouched();
+      this.currentStep.set(1);
       return true;
     } else if (f.includes('passed_out_year') || f.includes('passout') || f.includes('pass_out') || f.includes('passedout')) {
       this.passedOutYearError.set(msg);
       this.studentForm.get('passedOutYear')?.markAsTouched();
+      this.currentStep.set(1);
       return true;
     } else if (f.includes('image') || f.includes('file') || f.includes('card')) {
       this.fileError = msg;
+      this.currentStep.set(1);
       return true;
     } else if (f.includes('enroll') || f.includes('confirm')) {
       this.confirmEnrolledError.set(msg);
       this.studentForm.get('confirmEnrolled')?.markAsTouched();
+      this.currentStep.set(2);
       return true;
     }
     return false;
   }
 
   resetForm(): void {
+    this.clearDraftFromStorage();
+    this.selectedFileDataUrl = '';
     this.studentForm.reset({
       fullName: '',
       email: '',
@@ -1180,6 +1689,9 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
       institute: '',
       joinedYear: '',
       passedOutYear: '',
+      userName: '',
+      password: '',
+      confirmPassword: '',
       confirmEnrolled: false
     });
     this.studentForm.markAsPristine();
@@ -1190,6 +1702,23 @@ export class StudentOfferComponent implements OnInit, OnDestroy {
     if (this.fileInputRef?.nativeElement) {
       this.fileInputRef.nativeElement.value = '';
     }
+
+    this.selectedProfileFile = null;
+    this.profilePreview.set('');
+    this.profileError.set('');
+    if (this.profileInputRef?.nativeElement) {
+      this.profileInputRef.nativeElement.value = '';
+    }
+
+    this.currentStep.set(1);
+    this.userNameError.set('');
+    this.passwordError.set('');
+    this.confirmPasswordError.set('');
+    this.showPassword.set(false);
+    this.showConfirmPassword.set(false);
+    this.isUserNameReadonly.set(true);
+    this.isPasswordReadonly.set(true);
+    this.isConfirmPasswordReadonly.set(true);
 
     this.isEmailVerified.set(false);
     this.isVerifyingEmail.set(false);

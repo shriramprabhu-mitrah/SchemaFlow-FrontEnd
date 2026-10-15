@@ -678,9 +678,11 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             /rate limit or quota was exceeded/i.test(raw) ||
             /Provider HTTP 429/i.test(raw) ||
             /Rate limit reached for model/i.test(raw) ||
+            /usage limit/i.test(raw) ||
+            (statusCode === 429) ||
             (statusCode === 502 && (/rate limit/i.test(raw) || /quota/i.test(raw) || /429/i.test(raw)))
         ) {
-            return 'The provider rate limit or quota was exceeded. Try again later or check your quota.';
+            return 'AI usage limit reached (100%). Quota resets at 06:00 UTC.';
         }
         return raw || 'Failed to process message with AI model.';
     }
@@ -700,8 +702,8 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     cleanDisplayText(text: string | null | undefined): string {
         if (!text) return '';
-        if (/rate limit or quota was exceeded/i.test(text) || /Provider HTTP 429/i.test(text) || /Rate limit reached for model/i.test(text)) {
-            return 'The provider rate limit or quota was exceeded. Try again later or check your quota.';
+        if (/rate limit or quota was exceeded/i.test(text) || /Provider HTTP 429/i.test(text) || /Rate limit reached for model/i.test(text) || /usage limit/i.test(text)) {
+            return 'AI usage limit reached (100%). Quota resets at 06:00 UTC.';
         }
         // If text starts with "No existing DBML." or similar non-code preamble, strip it if there is further description
         const stripped = text.replace(/^No existing DBML\.?\s*/i, '').trim();
@@ -1242,6 +1244,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
                 return;
             }
+            if (this.isNoApiKeyRequired(this.selectedModel()) && this.isUsageLimitReached()) {
+                this.svc.showToast('AI usage limit reached (100%). Quota resets at 06:00 UTC.', 4000, 'error');
+                return;
+            }
             this.sendMessage();
         }
     }
@@ -1249,6 +1255,10 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     onSendClick(): void {
         if (this.svc.aiDiffReviewActive()) {
             this.svc.showToast('Please accept or reject the applied code before giving the next prompt.', 3000, 'info');
+            return;
+        }
+        if (this.isNoApiKeyRequired(this.selectedModel()) && this.isUsageLimitReached()) {
+            this.svc.showToast('AI usage limit reached (100%). Quota resets at 06:00 UTC.', 4000, 'error');
             return;
         }
         if (this.isSendDisabled()) {
@@ -1261,7 +1271,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         return !this.promptText().trim() ||
             this.isThinking() ||
             this.svc.aiDiffReviewActive() ||
-            (this.isNoApiKeyRequired(this.selectedModel()) && (!this.hasRemainingQuota() || (this.getMaxTokens() > 0 && this.usedTokens() >= this.getMaxTokens())));
+            (this.isNoApiKeyRequired(this.selectedModel()) && this.isUsageLimitReached());
     }
 
     sendMessage(): void {
@@ -1312,8 +1322,8 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             }
         }
 
-        if (this.isNoApiKeyRequired(currentModel) && (!this.hasRemainingQuota() || (this.getMaxTokens() > 0 && this.usedTokens() >= this.getMaxTokens()))) {
-            this.svc.showToast('Monthly token usage limit reached for dbnexus AI. Please switch to another model or configure an API key.', 4000, 'error');
+        if (this.isNoApiKeyRequired(currentModel) && this.isUsageLimitReached()) {
+            this.svc.showToast('AI usage limit reached (100%). Quota resets at 06:00 UTC. Please switch to another model or try again after 06:00 UTC.', 4000, 'error');
             return;
         }
 
@@ -1646,6 +1656,15 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         // Update token usage and limit if provided in the error response (e.g. token limit reached)
         this.updateUsageFromApiResponse(err);
 
+        const isQuotaErr = err?.status === 429 || err?.statusCode === 429 ||
+            /rate limit|quota|usage limit|429/i.test(JSON.stringify(err)) ||
+            (typeof err === 'string' && /rate limit|quota|usage limit|429/i.test(err));
+        if (isQuotaErr && this.isNoApiKeyRequired(currentModel)) {
+            const max = this.getMaxTokens() || 100;
+            this.updateUsedTokens(max);
+            this.hasRemainingQuota.set(false);
+        }
+
         const errMsg = this.formatAiErrorMessage(err);
         this.svc.showToast(errMsg, 4000, 'error');
 
@@ -1817,7 +1836,21 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         return 0;
     }
 
+    isUsageLimitReached(): boolean {
+        if (!this.hasRemainingQuota()) {
+            return true;
+        }
+        const max = this.getMaxTokens();
+        if (max > 0 && this.usedTokens() >= max) {
+            return true;
+        }
+        return this.getUsagePercentage() >= 100;
+    }
+
     getUsagePercentage(): number {
+        if (!this.hasRemainingQuota()) {
+            return 100;
+        }
         const max = this.getMaxTokens();
         if (!max || max <= 0) return 0;
         if (this.usedTokens() >= max) {
@@ -1828,13 +1861,17 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     getResetDate(): string {
-        const now = new Date();
-        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const monthNames = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        return `1 ${monthNames[nextMonth.getMonth()]} ${nextMonth.getFullYear()}`;
+        return '06:00 UTC';
+    }
+
+    getSendButtonTitle(): string | undefined {
+        if (this.svc.aiDiffReviewActive()) {
+            return 'Please accept or reject the applied code before giving the next prompt';
+        }
+        if (this.isNoApiKeyRequired(this.selectedModel()) && this.isUsageLimitReached()) {
+            return 'AI usage limit reached (100%). Resets at 06:00 UTC';
+        }
+        return undefined;
     }
 
     formatNumber(val: number): string {

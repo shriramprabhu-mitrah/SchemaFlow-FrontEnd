@@ -61,7 +61,7 @@ export class AiGeneratedComponent implements OnInit {
       title: 'AI Database Schema Generator - Prompt to DBML - dbNexus',
       description: 'Generate production-ready DBML and database schemas instantly from natural language prompts using dbNexus AI Schema Generator.',
       url: 'https://www.dbnexus.io/features/ai-generated',
-      keywords: 'AI database generator, AI schema generator, text to database, prompt to DBML, AI ERD generator, natural language database design'
+      keywords: 'AI database generator, AI schema generator, text to database, prompt to DBML, AI ERD generator, natural language database design, AI database schema generator, text to database schema, AI database diagram tool'
     });
 
     this.seoService.setStructuredData({
