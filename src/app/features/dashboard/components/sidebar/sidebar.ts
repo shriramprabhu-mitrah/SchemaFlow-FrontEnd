@@ -336,7 +336,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.exporting = true;
     this.exportError = null;
 
+    const dialectNames: Record<string, string> = {
+      postgres: 'PostgreSQL',
+      mysql: 'MySQL',
+      mariadb: 'MariaDB',
+      sqlserver: 'SQL Server',
+      sqlite: 'SQLite',
+      oracle: 'Oracle',
+      snowflake: 'Snowflake',
+      mongodb: 'MongoDB'
+    };
+    const dialectName = dialectNames[dialect] || dialect.toUpperCase();
+
     this.exportSvc.convert(id, dialect, this.svc.code).pipe(
+      this.svc.trackHttpProgress(
+        'export',
+        `Exporting ${dialectName} Query`,
+        `Generating ${dialectName} ${dialect === 'mongodb' ? 'NoSQL' : 'SQL'} schema statements...`
+      ),
       finalize(() => {
         this.exporting = false;
         this.cdr.markForCheck();

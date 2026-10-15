@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpEvent, HttpEventType } from '@angular/common/http';
 import { BehaviorSubject, EMPTY, Observable, Subject, catchError, debounceTime, finalize, map, switchMap, tap, throwError, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { AppConfigService } from './app-config.service';
@@ -23,6 +23,14 @@ export interface DiffReviewLine {
   newLineNum?: number;
   text: string;
   hunkId?: number;
+}
+
+export interface QueryProgressInfo {
+  active: boolean;
+  type: 'import' | 'export';
+  title: string;
+  subtitle?: string;
+  progress: number;
 }
 
 export interface Column {
@@ -1532,6 +1540,150 @@ export class DashboardService {
   }
 
   readonly isDiagramLoading = signal(false);
+  readonly queryProgress = signal<QueryProgressInfo | null>(null);
+  private queryProgressInterval: any = null;
+
+  startQueryProgress(type: 'import' | 'export', title: string, subtitle?: string): void {
+    if (this.queryProgressInterval) {
+      clearInterval(this.queryProgressInterval);
+      this.queryProgressInterval = null;
+    }
+
+    this.queryProgress.set({
+      active: true,
+      type,
+      title,
+      subtitle,
+      progress: 10
+    });
+
+    let current = 10;
+    this.queryProgressInterval = setInterval(() => {
+      const state = this.queryProgress();
+      if (!state || !state.active) {
+        clearInterval(this.queryProgressInterval);
+        this.queryProgressInterval = null;
+        return;
+      }
+      if (current < 85) {
+        current += Math.floor(Math.random() * 4) + 2;
+        if (current > 85) current = 85;
+        this.queryProgress.set({
+          ...state,
+          progress: Math.max(state.progress, current)
+        });
+      }
+    }, 250);
+  }
+
+  updateQueryProgress(progress: number, subtitle?: string): void {
+    const state = this.queryProgress();
+    if (!state || !state.active) return;
+    const clamped = Math.max(state.progress, Math.min(99, Math.round(progress)));
+    this.queryProgress.set({
+      ...state,
+      progress: clamped,
+      subtitle: subtitle ?? state.subtitle
+    });
+  }
+
+  trackHttpProgress<T>(
+    type: 'import' | 'export',
+    title: string,
+    initialSubtitle?: string
+  ): (source$: Observable<HttpEvent<T>>) => Observable<T> {
+    return (source$: Observable<HttpEvent<T>>) => {
+      return new Observable<T>((subscriber) => {
+        this.startQueryProgress(type, title, initialSubtitle || (type === 'import' ? 'Preparing query import...' : 'Preparing query export...'));
+
+        const sub = source$.subscribe({
+          next: (event: HttpEvent<T>) => {
+            switch (event.type) {
+              case HttpEventType.Sent: {
+                this.updateQueryProgress(15, 'Request sent to server...');
+                break;
+              }
+              case HttpEventType.UploadProgress: {
+                if (event.total && event.total > 0) {
+                  const uploadPct = Math.round((event.loaded / event.total) * 100);
+                  const progressVal = 15 + Math.round((uploadPct / 100) * 45);
+                  this.updateQueryProgress(progressVal, `Uploading schema data (${uploadPct}%)...`);
+                } else {
+                  this.updateQueryProgress(35, 'Uploading schema data...');
+                }
+                break;
+              }
+              case HttpEventType.ResponseHeader: {
+                this.updateQueryProgress(68, 'Server processing schema...');
+                break;
+              }
+              case HttpEventType.DownloadProgress: {
+                if (event.total && event.total > 0) {
+                  const downloadPct = Math.round((event.loaded / event.total) * 100);
+                  const progressVal = 68 + Math.round((downloadPct / 100) * 25);
+                  this.updateQueryProgress(progressVal, `Receiving response (${downloadPct}%)...`);
+                } else {
+                  this.updateQueryProgress(85, 'Receiving response...');
+                }
+                break;
+              }
+              case HttpEventType.Response: {
+                this.completeQueryProgress(() => {
+                  subscriber.next(event.body as T);
+                  subscriber.complete();
+                });
+                break;
+              }
+              default:
+                break;
+            }
+          },
+          error: (err: any) => {
+            this.stopQueryProgress();
+            subscriber.error(err);
+          },
+          complete: () => {
+            if (this.queryProgress()?.active) {
+              this.stopQueryProgress();
+            }
+          }
+        });
+
+        return () => {
+          sub.unsubscribe();
+          this.stopQueryProgress();
+        };
+      });
+    };
+  }
+
+  completeQueryProgress(callback?: () => void): void {
+    if (this.queryProgressInterval) {
+      clearInterval(this.queryProgressInterval);
+      this.queryProgressInterval = null;
+    }
+    const state = this.queryProgress();
+    if (state && state.active) {
+      this.queryProgress.set({
+        ...state,
+        progress: 100
+      });
+      setTimeout(() => {
+        this.queryProgress.set(null);
+        if (callback) callback();
+      }, 350);
+    } else {
+      if (callback) callback();
+    }
+  }
+
+  stopQueryProgress(): void {
+    if (this.queryProgressInterval) {
+      clearInterval(this.queryProgressInterval);
+      this.queryProgressInterval = null;
+    }
+    this.queryProgress.set(null);
+  }
   readonly isSaving = signal(false);
   readonly diagramWorkspaceType = signal<string>('Personal');
   readonly isDocUnlocked = signal<boolean>(false);

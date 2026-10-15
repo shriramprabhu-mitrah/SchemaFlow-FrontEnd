@@ -135,7 +135,7 @@
       </div>
 
       <button class="personal-menu-item" style="position: relative;"
-        (click)="entitlementService.canUseFeature('share_diagram') ? openWorkspaceModal('shared') : openUpgradeModal('share_diagram')">
+        (click)="entitlementService.canUseFeature('share_diagram') ? openWorkspaceModal('shared') : openUpgradeModal('share_diagram'); closePersonalMenu()">
         <span class="item-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
             with Me</span>

@@ -113,7 +113,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     isDeleting: false,
     deleteSuccess: false,
     diagramId: null as number | null,
-    diagramName: ''
+    diagramName: '',
+    isDocUnlocked: false
   };
   activeDiagramDeleted = false;
 
@@ -237,6 +238,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       this.diagramsSearch = '';
       this.workspacesSearch = '';
       this.membersSearch = '';
+      this.sharedDiagramsSearch = '';
       this.openMenuId = null;
       this.openWorkspaceMenuId = null;
       this.activeMemberDropdownIndex = null;
@@ -248,10 +250,12 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       }
       if (
         ((this.activeTab === 'my-workspaces') && !this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces')) ||
-        ((this.activeTab === 'create-workspace') && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces')))
+        ((this.activeTab === 'create-workspace') && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces'))) ||
+        ((this.activeTab === 'shared') && !this.entitlementService.canUseFeature('share_diagram'))
       ) {
+        const feature = this.activeTab === 'shared' ? 'share_diagram' : 'create_workspaces';
         this.activeTab = 'my-diagrams';
-        this.svc.showUpgradeModal('create_workspaces');
+        this.svc.showUpgradeModal(feature);
         return;
       }
       if (this.activeTab === 'my-diagrams') {
@@ -260,6 +264,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       } else if (this.activeTab === 'my-workspaces') {
         this.selectedWorkspace = null;
         this.loadWorkspaces(1);
+      } else if (this.activeTab === 'shared') {
+        this.selectedWorkspace = null;
+        this.loadSharedDiagrams(1);
       } else if (this.activeTab === 'create-workspace') {
         this.createWorkspaceError = '';
         this.workspaceName = '';
@@ -426,16 +433,24 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
   }
 
   openSharedTab(): void {
+    if (!this.entitlementService.canUseFeature('share_diagram')) {
+      this.svc.showUpgradeModal('share_diagram');
+      return;
+    }
     this.clearSearches();
+    const tabChanged = this._activeTab !== 'shared';
+    this.selectedWorkspace = null;
     this.activeTab = 'shared';
-    this.loadSharedDiagrams();
+    if (!tabChanged) {
+      this.loadSharedDiagrams(1);
+    }
     this.cdr.detectChanges();
   }
 
   loadSharedDiagrams(page: any = this.sharedDiagramsPage): void {
     this.sharedDiagramsPage = Number(page);
     this.isLoadingSharedDiagrams = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
 
     const params = {
       page: this.sharedDiagramsPage,
@@ -451,13 +466,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
           this.sharedDiagrams = res?.data || [];
           this.sharedDiagramsTotal = res?.total || 0;
           this.isLoadingSharedDiagrams = false;
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
       },
       error: () => {
         this.ngZone.run(() => {
           this.isLoadingSharedDiagrams = false;
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
       }
     });
@@ -1842,7 +1857,8 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       isDeleting: false,
       deleteSuccess: false,
       diagramId: diagram.id,
-      diagramName: diagram.name || 'Untitled Diagram'
+      diagramName: diagram.name || 'Untitled Diagram',
+      isDocUnlocked: diagram.is_doc_unlocked === true || diagram.is_doc_unlocked === 'true' || diagram.is_doc_unlocked === 1
     };
   }
 
@@ -1852,7 +1868,16 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
     setTimeout(() => {
       this.deleteDiagramConfirm.diagramId = null;
       this.deleteDiagramConfirm.deleteSuccess = false;
+      this.deleteDiagramConfirm.isDocUnlocked = false;
     }, 200);
+  }
+
+  onEditDiagramInstead(): void {
+    const diagramId = this.deleteDiagramConfirm.diagramId;
+    this.closeDeleteDiagramConfirm();
+    if (diagramId) {
+      this.onSelectDiagram(diagramId);
+    }
   }
 
   confirmDeleteDiagram(): void {

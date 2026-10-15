@@ -2811,7 +2811,7 @@ body.light-theme {
 
   .form-input,
   .form-textarea,
-  input:not([type="checkbox"]):not([type="radio"]):not(.sticky-note-name-input):not(.hex-text):not(.hex-color):not(.chatbot-search-input),
+  input:not([type="checkbox"]):not([type="radio"]):not(.sticky-note-name-input):not(.hex-text):not(.hex-color):not(.chatbot-search-input):not(.faq-search-input),
   textarea:not(#codearea):not(.sticky-note-body):not(.code-textarea):not(.border-area):not(.ai-input-textarea) {
     color-scheme: light !important;
     background-color: #ffffff !important;
