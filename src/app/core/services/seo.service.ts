@@ -8,10 +8,14 @@ import { DOCUMENT } from '@angular/common';
 export class SeoService {
   constructor(private title: Title, private meta: Meta, @Inject(DOCUMENT) private document: Document) {}
 
-  updateTags(config: { title: string; description: string; image?: string; url?: string }) {
+  updateTags(config: { title: string; description: string; image?: string; url?: string; keywords?: string }) {
     this.title.setTitle(config.title);
 
     this.meta.updateTag({ name: 'description', content: config.description });
+
+    if (config.keywords) {
+      this.meta.updateTag({ name: 'keywords', content: config.keywords });
+    }
 
     // Open Graph
     this.meta.updateTag({ property: 'og:title', content: config.title });
@@ -33,6 +37,10 @@ export class SeoService {
     if (config.url) {
       this.setCanonicalUrl(config.url);
     }
+  }
+
+  updateKeywords(keywords: string): void {
+    this.meta.updateTag({ name: 'keywords', content: keywords });
   }
 
   setCanonicalUrl(url: string) {

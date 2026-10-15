@@ -80,7 +80,7 @@ export class ContactComponent implements OnInit {
     this.seoService.updateTags({
       title: 'Contact the dbNexus Team - dbNexus',
       description: 'Contact the dbNexus team for sales inquiries, enterprise solutions, technical help, or documentation.',
-      url: 'https://dbnexus.up.railway.app/contact'
+      url: 'https://www.dbnexus.io/contact'
     });
 
     if (typeof window !== 'undefined') {

@@ -136,7 +136,8 @@ export class PricingComponent implements OnInit {
     this.seoService.updateTags({
       title: 'Pricing - DBNexus',
       description: 'Choose the best plan for your database diagramming needs. Flexible pricing for individuals and organizations.',
-      url: 'https://dbnexus.up.railway.app/pricing'
+      url: 'https://www.dbnexus.io/pricing',
+      keywords: 'dbNexus pricing, database tool pricing, database schema plans, team subscription, database diagram tool pricing'
     });
 
     this.seoService.setStructuredData({

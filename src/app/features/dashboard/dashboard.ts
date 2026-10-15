@@ -13,6 +13,7 @@ import { EntitlementService } from '../../core/services/entitlement.service';
 import { DiffCheckerComponent } from './components/diff-checker/diff-checker';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { SeoService } from '../../core/services/seo.service';
 import { Subscription, Observable } from 'rxjs';
 
 @Component({
@@ -59,13 +60,20 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     public auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
     public entitlementService: EntitlementService,
-    private titleService: Title
+    private titleService: Title,
+    private seoService: SeoService
   ) {
     this.splitViewSubscription = this.svc.splitViewRequested$.subscribe(() => this.restoreSplitView());
 
     effect(() => {
       if (this.svc.showDiffChecker()) {
-        this.titleService.setTitle('Diff Checker - DBNexus');
+        this.titleService.setTitle('SQL Compare - DBNexus');
+        this.seoService.updateTags({
+          title: 'SQL Compare - Database Schema Diff & Migration Generator - DBNexus',
+          description: 'Compare SQL schemas, generate database migration diff scripts, and synchronize database structures visually with DBNexus SQL Compare.',
+          url: 'https://www.dbnexus.io/diff',
+          keywords: 'SQL schema compare tool, SQL schema diff tool, database migration script generator'
+        });
         return;
       }
       const name = this.svc.diagramNameSignal()?.trim();

@@ -114,7 +114,8 @@ export class HomeComponent implements OnInit {
     this.seoService.updateTags({
       title: 'DBNexus - Database Schema Design Tool',
       description: 'Design, document, and collaborate on database schemas with ease. A simple and powerful tool for developers and teams.',
-      url: 'https://dbnexus.up.railway.app/'
+      url: 'https://www.dbnexus.io/',
+      keywords: 'database schema design tool, collaborative database modeler, visual database design software, db diagram, Schema diagram, ER diagram, draw SQL'
     });
 
     this.seoService.setStructuredData({
