@@ -31,7 +31,7 @@ export class GoogleAnalyticsService {
   private cachedIpAddress: string | null = null;
   private ipLookupPromise: Promise<string> | null = null;
   private isScriptInjected = false;
-  private appVersion: string = '1.4.0';
+  private appVersion: string = '1.5.0';
 
   constructor(
     @Inject(PLATFORM_ID) platformId: Object,
