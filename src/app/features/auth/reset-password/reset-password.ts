@@ -47,7 +47,7 @@ export class ResetPasswordComponent implements OnInit {
     this.seoService.updateTags({
       title: 'Reset Password - DBNexus',
       description: 'Reset your DBNexus account password.',
-      url: 'https://dbnexus.up.railway.app/reset-password'
+      url: 'https://www.dbnexus.io/reset-password'
     });
 
     this.route.queryParams.subscribe(params => {

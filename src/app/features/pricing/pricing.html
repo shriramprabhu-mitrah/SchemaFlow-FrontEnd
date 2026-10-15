@@ -420,4 +420,15 @@
     </div>
   </div>
 
+  <!-- Coupon Checkout Confirmation Modal -->
+  <app-coupon-checkout-modal
+    [visible]="showCouponModal"
+    [plan]="pendingPlan"
+    [isAnnual]="isAnnual"
+    [currency]="selectedCurrency"
+    [processingPayment]="processingPayment"
+    (close)="closeCouponModal()"
+    (proceed)="onProceedWithCoupon($event)">
+  </app-coupon-checkout-modal>
+
 </div>

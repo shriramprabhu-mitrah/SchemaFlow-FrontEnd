@@ -99,6 +99,96 @@
 }
 
 /* ==========================================
+   PROMOTIONAL OFFER EXPIRATION ALERT
+   ========================================== */
+.profile-offer-alert {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.06) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+  animation: profileFadeIn 0.35s ease-out;
+
+  .alert-icon-wrap {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+
+    .alert-emoji {
+      font-size: 18px;
+      line-height: 1;
+    }
+  }
+
+  .alert-content {
+    flex: 1;
+    min-width: 0;
+
+    .alert-title {
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #f59e0b;
+      letter-spacing: -0.01em;
+    }
+
+    .alert-desc {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #cbd5e1;
+
+      .renewal-date-highlight {
+        color: #f8fafc;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .alert-link-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: rgba(245, 158, 11, 0.6);
+      color: #fef08a;
+      transform: translateY(-1px);
+    }
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    .alert-link-btn {
+      align-self: flex-end;
+    }
+  }
+}
+
+/* ==========================================
    HERO PROFILE CARD
    ========================================== */
 .profile-hero-card {
@@ -1839,6 +1929,43 @@ html.light-theme {
 
       .crumb-current {
         color: #0f172a;
+      }
+    }
+  }
+
+  .profile-offer-alert {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border-color: #fcd34d;
+    box-shadow: 0 4px 16px rgba(217, 119, 6, 0.1);
+
+    .alert-icon-wrap {
+      background: #fde68a;
+      border-color: #f59e0b;
+    }
+
+    .alert-content {
+      .alert-title {
+        color: #b45309;
+      }
+
+      .alert-desc {
+        color: #78350f;
+
+        .renewal-date-highlight {
+          color: #451a03;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .alert-link-btn {
+      background: #ffffff;
+      border-color: #f59e0b;
+      color: #b45309;
+
+      &:hover {
+        background: #fef3c7;
+        color: #92400e;
       }
     }
   }

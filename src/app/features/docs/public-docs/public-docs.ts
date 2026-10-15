@@ -10,6 +10,7 @@ import { DashboardService } from '../../../core/services/dashboard.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { DocPage, DocSection, TocItem } from '../../../core/models/cms-docs.model';
 import { Icons } from '../../../core/component/icons/icons';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   selector: 'app-public-docs',
@@ -28,6 +29,7 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
   private titleService = inject(Title);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private seoService = inject(SeoService);
   private sub = new Subscription();
 
   searchQuery = '';
@@ -187,7 +189,24 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
 
     this.currentPage = target;
     if (target) {
-      this.titleService.setTitle(`${target.title} - Documentation - dbNexus`);
+      const pageTitle = `${target.title} - Documentation - dbNexus`;
+      const pageDesc = target.description || 'Comprehensive documentation, guides, and tutorials for dbNexus database schema designer.';
+      const pageUrl = slug ? `https://www.dbnexus.io/docs/${slug}` : 'https://www.dbnexus.io/docs';
+
+      this.titleService.setTitle(pageTitle);
+      this.seoService.updateTags({
+        title: pageTitle,
+        description: pageDesc,
+        url: pageUrl,
+        keywords: 'dbNexus documentation, database schema docs, DBML guide, schema designer tutorial, SQL compare guide, database modeling documentation'
+      });
+      this.seoService.setStructuredData({
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": target.title,
+        "description": pageDesc,
+        "url": pageUrl
+      });
     }
     if (target && target.sectionId) {
       this.collapsedSections.delete(target.sectionId);

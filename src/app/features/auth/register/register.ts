@@ -72,7 +72,7 @@ export class RegisterComponent implements OnInit {
     this.seoService.updateTags({
       title: 'Sign Up - DBNexus',
       description: 'Create a new DBNexus account to start designing, documenting, and sharing your database schemas.',
-      url: 'https://dbnexus.up.railway.app/auth/register'
+      url: 'https://www.dbnexus.io/auth/register'
     });
   }
 

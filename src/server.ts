@@ -13,7 +13,7 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const extraHosts = process.env['ALLOWED_HOSTS']?.split(',').map(h => h.trim()).filter(Boolean) ?? [];
 const allowedHosts = extraHosts.includes('*')
   ? ['*']
-  : ['*.railway.app', 'localhost', '127.0.0.1', ...extraHosts];
+  : ['*.railway.app', 'localhost', '127.0.0.1', 'dbnexus.io', '*.dbnexus.io', ...extraHosts];
 
 const app = express();
 

@@ -1,0 +1,159 @@
+<div class="coupon-modal-backdrop" *ngIf="visible" (click)="onClose()">
+  <div class="coupon-modal-container" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="header-title-wrap">
+        <div class="icon-sparkle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </div>
+        <div>
+          <h3>Upgrade to {{ plan?.name }}</h3>
+          <p class="subtitle">{{ isAnnual ? 'Annual Billing' : 'Monthly Billing' }} · Instant Activation</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="onClose()" title="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Plan Summary Card -->
+    <div class="checkout-plan-card">
+      <div class="checkout-plan-left">
+        <div class="checkout-plan-header-row">
+          <span class="checkout-plan-title">{{ plan?.name }} Plan</span>
+          <span class="checkout-tier-tag">{{ isAnnual ? 'Annual Billing' : 'Monthly Billing' }}</span>
+        </div>
+        <p class="checkout-plan-desc">{{ planDescription }}</p>
+      </div>
+      <div class="checkout-plan-price">
+        <span class="price-val">{{ currencySymbol }}{{ basePrice }}</span>
+        <span class="price-period">/ {{ isAnnual ? 'year' : 'month' }}</span>
+      </div>
+    </div>
+
+    <!-- Coupon Input Form -->
+    <div class="coupon-section">
+      <label class="coupon-label">Have a coupon code?</label>
+      
+      <!-- Input form when no coupon is applied -->
+      <div class="coupon-input-group" *ngIf="!appliedCoupon">
+        <div class="input-wrap">
+          <svg class="tag-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+            <line x1="7" y1="7" x2="7.01" y2="7"></line>
+          </svg>
+          <input type="text" 
+                 class="coupon-input" 
+                 placeholder="Enter coupon code (e.g. NEW10)" 
+                 [(ngModel)]="couponInput"
+                 (input)="onInputChange()"
+                 (keyup.enter)="validateAndApplyCoupon()"
+                 [disabled]="validating || processingPayment">
+        </div>
+        <button class="btn-apply-coupon" 
+                (click)="validateAndApplyCoupon()" 
+                [disabled]="!couponInput.trim() || validating">
+          <span *ngIf="validating" class="spinner-small"></span>
+          <span *ngIf="!validating">Apply</span>
+        </button>
+      </div>
+
+      <!-- Applied Coupon Banner with Max Usage info -->
+      <div class="applied-coupon-card" *ngIf="appliedCoupon">
+        <div class="coupon-card-header">
+          <div class="applied-chip">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>{{ appliedCoupon.coupon_code }}</span>
+          </div>
+          <span class="coupon-cycle-tag tag-amber" *ngIf="appliedCoupon.applicable_cycles === 'FIRST_CYCLE'">
+            ⚡ 1st Cycle
+          </span>
+          <span class="coupon-cycle-tag tag-blue" *ngIf="appliedCoupon.applicable_cycles === 'ALL_CYCLES'">
+            🔄 Recurring
+          </span>
+          <span class="discount-saved-pill" *ngIf="discountAmount > 0">
+            Save {{ currencySymbol }}{{ discountAmount }}
+          </span>
+          <button type="button" class="btn-remove-coupon" (click)="removeCoupon()" title="Remove coupon">
+            &times;
+          </button>
+        </div>
+
+        <div class="coupon-card-body">
+          <div class="coupon-desc-line">
+            {{ appliedCoupon.display_name || appliedCoupon.description || 'Promotional Offer Applied' }}
+          </div>
+
+          <!-- Member Limits Notice Badge -->
+          <div class="usage-limit-indicator" *ngIf="appliedCoupon.remaining_redemptions !== undefined">
+            <div class="indicator-header">
+              <div class="indicator-left">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+                <span>Member Spot Limit</span>
+              </div>
+              <span class="spots-count">
+                <strong>{{ appliedCoupon.remaining_redemptions }}</strong> of {{ appliedCoupon.max_redemptions || 10 }} spots left
+              </span>
+            </div>
+            <div class="policy-note">
+              Strictly limited to 1 redemption per member email address.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation Error -->
+      <div class="coupon-error" *ngIf="validationError">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ validationError }}</span>
+      </div>
+    </div>
+
+    <!-- Pricing Summary -->
+    <div class="pricing-breakdown">
+      <div class="breakdown-row">
+        <span>Regular Price</span>
+        <span>{{ currencySymbol }}{{ basePrice }}</span>
+      </div>
+      <div class="breakdown-row discount-row" *ngIf="appliedCoupon && discountAmount > 0">
+        <span>Coupon Discount ({{ appliedCoupon.coupon_code }})</span>
+        <span class="discount-value">-{{ currencySymbol }}{{ discountAmount }}</span>
+      </div>
+      <div class="breakdown-divider"></div>
+      <div class="breakdown-row total-row">
+        <span>Total Payable</span>
+        <span class="total-value">{{ currencySymbol }}{{ finalPrice }}</span>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="onClose()" [disabled]="processingPayment">
+        Cancel
+      </button>
+      <button class="btn-proceed" (click)="onProceed()" [disabled]="processingPayment">
+        <span *ngIf="processingPayment" class="spinner-small" style="margin-right:8px;"></span>
+        <svg *ngIf="!processingPayment" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>{{ processingPayment ? 'Connecting to Payment...' : (appliedCoupon ? 'Pay with Discount' : 'Proceed to Payment') }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+

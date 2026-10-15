@@ -35,27 +35,34 @@ export class UserSubscriptionComponent implements OnInit {
   }
 
   loadSubscription(): void {
-    // Try to load from a user subscription endpoint if it exists
-    const base = this.appConfig.environment?.pricingApiUrls?.plans;
-    const userSubUrl = base ? base.replace('/plans', '/user/subscription') : null;
-
-    if (userSubUrl) {
-      this.http.get<any>(userSubUrl, { withCredentials: true }).subscribe({
-        next: (res) => {
-          this.subscription = res?.data || res;
-          this.loading = false;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          // Not a hard failure — user may simply be on a free plan
+    this.loading = true;
+    this.auth.getUserFeatures().subscribe({
+      next: (res: any) => {
+        const p = res?.data?.purchasedPlan;
+        if (p) {
+          this.subscription = {
+            ...p,
+            plan: { name: p.name, slug: p.slug },
+            status: p.status || 'active',
+            billing_cycle: p.billing_cycle || 'monthly',
+            current_period_end: p.current_period_end,
+            next_billing_regular: p.next_billing_regular,
+            offer_expired_notice: p.offer_expired_notice,
+            price_monthly: p.price_monthly,
+            price_annual: p.price_annual
+          };
+        } else {
           this.subscription = null;
-          this.loading = false;
-          this.cdr.detectChanges();
         }
-      });
-    } else {
-      this.loading = false;
-    }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.subscription = null;
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   upgradeToPremium(): void {
@@ -107,8 +114,9 @@ export class UserSubscriptionComponent implements OnInit {
   }
 
   get renewalDate(): string {
-    if (!this.subscription?.end_date) return '—';
-    return new Date(this.subscription.end_date).toLocaleDateString('en-IN', {
+    const end = this.subscription?.current_period_end || this.subscription?.end_date;
+    if (!end) return '—';
+    return new Date(end).toLocaleDateString('en-IN', {
       day: 'numeric', month: 'long', year: 'numeric'
     });
   }

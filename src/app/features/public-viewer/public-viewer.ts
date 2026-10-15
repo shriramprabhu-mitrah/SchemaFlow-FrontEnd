@@ -203,7 +203,7 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
     this.seoService.updateTags({
       title: `${this.diagramName} - DBNexus`,
       description: `View the public database diagram for ${this.diagramName}. Designed with DBNexus.`,
-      url: `https://dbnexus.up.railway.app/public-diagram/${this.token}`
+      url: `https://www.dbnexus.io/public-diagram/${this.token}`
     });
 
     this.seoService.setStructuredData({
@@ -211,7 +211,7 @@ export class PublicViewerComponent implements OnInit, OnDestroy {
       "@type": "ImageObject",
       "name": this.diagramName,
       "description": `Database diagram schema for ${this.diagramName}`,
-      "contentUrl": `https://dbnexus.up.railway.app/public-diagram/${this.token}`
+      "contentUrl": `https://www.dbnexus.io/public-diagram/${this.token}`
     });
     
     let rawCode = data.diagramDbml || data.diagram_dbml || data.diagramdbml || data.diagramdbnl || data.dbml || data.code || '';

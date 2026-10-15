@@ -3,10 +3,11 @@ Allow: /
 Allow: /pricing
 Allow: /login
 Allow: /auth/register
+Allow: /student-offer
 Allow: /public-diagram/
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /organization/
 Disallow: /profile/
 
-Sitemap: https://dbnexus.up.railway.app/sitemap.xml
+Sitemap: https://www.dbnexus.io/sitemap.xml
