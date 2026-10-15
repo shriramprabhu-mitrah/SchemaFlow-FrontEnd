@@ -237,6 +237,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       this.diagramsSearch = '';
       this.workspacesSearch = '';
       this.membersSearch = '';
+      this.sharedDiagramsSearch = '';
       this.openMenuId = null;
       this.openWorkspaceMenuId = null;
       this.activeMemberDropdownIndex = null;
@@ -260,6 +261,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       } else if (this.activeTab === 'my-workspaces') {
         this.selectedWorkspace = null;
         this.loadWorkspaces(1);
+      } else if (this.activeTab === 'shared') {
+        this.selectedWorkspace = null;
+        this.loadSharedDiagrams(1);
       } else if (this.activeTab === 'create-workspace') {
         this.createWorkspaceError = '';
         this.workspaceName = '';
@@ -427,15 +431,19 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   openSharedTab(): void {
     this.clearSearches();
+    const tabChanged = this._activeTab !== 'shared';
+    this.selectedWorkspace = null;
     this.activeTab = 'shared';
-    this.loadSharedDiagrams();
+    if (!tabChanged) {
+      this.loadSharedDiagrams(1);
+    }
     this.cdr.detectChanges();
   }
 
   loadSharedDiagrams(page: any = this.sharedDiagramsPage): void {
     this.sharedDiagramsPage = Number(page);
     this.isLoadingSharedDiagrams = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
 
     const params = {
       page: this.sharedDiagramsPage,
@@ -451,13 +459,13 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
           this.sharedDiagrams = res?.data || [];
           this.sharedDiagramsTotal = res?.total || 0;
           this.isLoadingSharedDiagrams = false;
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
       },
       error: () => {
         this.ngZone.run(() => {
           this.isLoadingSharedDiagrams = false;
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
       }
     });

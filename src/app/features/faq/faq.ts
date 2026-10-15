@@ -500,5 +500,23 @@ export class FaqComponent implements OnInit {
       url: 'https://www.dbnexus.io/faq',
       keywords: 'dbNexus FAQ, database schema questions, DBML FAQ, SQL Compare FAQ, DB Connect documentation, database modeling answers'
     });
+
+    const faqSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      'mainEntity': this.faqSections.flatMap(section =>
+        section.subcategories.flatMap(sub =>
+          sub.items.map(item => ({
+            '@type': 'Question',
+            'name': item.question,
+            'acceptedAnswer': {
+              '@type': 'Answer',
+              'text': item.answer
+            }
+          }))
+        )
+      )
+    };
+    this.seoService.setStructuredData(faqSchema);
   }
 }
