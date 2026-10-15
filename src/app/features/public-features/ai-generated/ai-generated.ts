@@ -7,6 +7,7 @@ import { Icons } from '../../../core/component/icons/icons';
 import { ButtonComponent } from '../../../shared/button/button';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { Footer } from '../../../shared/components/footer/footer';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   selector: 'app-ai-generated',
@@ -51,10 +52,25 @@ export class AiGeneratedComponent implements OnInit {
   constructor(
     private auth: AuthService,
     private router: Router,
-    public svc: DashboardService
+    public svc: DashboardService,
+    private seoService: SeoService
   ) { }
 
   ngOnInit(): void {
+    this.seoService.updateTags({
+      title: 'AI Database Schema Generator - Prompt to DBML - dbNexus',
+      description: 'Generate production-ready DBML and database schemas instantly from natural language prompts using dbNexus AI Schema Generator.',
+      url: 'https://www.dbnexus.io/features/ai-generated',
+      keywords: 'AI database generator, AI schema generator, text to database, prompt to DBML, AI ERD generator, natural language database design'
+    });
+
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "dbNexus AI Database Schema Generator",
+      "applicationCategory": "DeveloperApplication",
+      "url": "https://www.dbnexus.io/features/ai-generated"
+    });
   }
 
   isMobileFeaturesDropdownOpen = false;

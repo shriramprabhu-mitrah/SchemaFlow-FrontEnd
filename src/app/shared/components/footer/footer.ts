@@ -44,4 +44,17 @@ export class Footer {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
+
+  onFaqClick(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  onAiGeneratorClick(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 }
+

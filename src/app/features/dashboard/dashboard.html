@@ -219,4 +219,50 @@
 
   <!-- Full-page Diagram Loader Component -->
   <app-loader *ngIf="svc.isDiagramLoading()" text="Loading Diagram..."></app-loader>
+
+  <!-- Query Import/Export Progress Loader -->
+  <div class="query-progress-backdrop" *ngIf="svc.queryProgress() as qp">
+    <div class="query-progress-card" [class.import-mode]="qp.type === 'import'" [class.export-mode]="qp.type === 'export'">
+      <div class="query-progress-visual">
+        <div class="query-progress-spinner-ring"></div>
+        <div class="query-progress-icon-badge">
+          <!-- Import Icon: Arrow Down Tray -->
+          <svg *ngIf="qp.type === 'import'" class="query-progress-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <!-- Export Icon: Arrow Up Tray -->
+          <svg *ngIf="qp.type === 'export'" class="query-progress-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </div>
+      </div>
+
+      <div class="query-progress-badge">
+        <span class="pulsing-dot"></span>
+        <span class="badge-text">{{ qp.type === 'import' ? 'IMPORTING QUERY' : 'EXPORTING QUERY' }}</span>
+      </div>
+
+      <h3 class="query-progress-title">{{ qp.title }}</h3>
+      <p class="query-progress-subtitle" *ngIf="qp.subtitle">{{ qp.subtitle }}</p>
+
+      <div class="query-progress-bar-container">
+        <div class="query-progress-track">
+          <div class="query-progress-fill" [style.width.%]="qp.progress">
+            <div class="query-progress-shimmer"></div>
+          </div>
+        </div>
+        <div class="query-progress-status-row">
+          <span class="status-state">
+            <ng-container *ngIf="qp.progress < 100">Processing schema...</ng-container>
+            <ng-container *ngIf="qp.progress >= 100">Ready!</ng-container>
+          </span>
+          <span class="progress-percent-label">{{ qp.progress }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

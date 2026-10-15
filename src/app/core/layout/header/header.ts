@@ -742,7 +742,25 @@ export class HeaderComponent implements OnInit {
     this.exporting = true;
     this.exportError = null;
 
+    const dialectNames: Record<string, string> = {
+      postgres: 'PostgreSQL',
+      mysql: 'MySQL',
+      mariadb: 'MariaDB',
+      sqlserver: 'SQL Server',
+      mssql: 'SQL Server',
+      sqlite: 'SQLite',
+      oracle: 'Oracle',
+      snowflake: 'Snowflake',
+      mongodb: 'MongoDB'
+    };
+    const dialectName = dialectNames[exportDialect] || String(exportDialect).toUpperCase();
+
     this.exportSvc.convert(id, exportDialect, this.svc.code).pipe(
+      this.svc.trackHttpProgress(
+        'export',
+        `Exporting ${dialectName} Query`,
+        `Generating ${dialectName} ${exportDialect === 'mongodb' ? 'NoSQL' : 'SQL'} schema statements...`
+      ),
       finalize(() => {
         this.exporting = false;
         this.cdr.markForCheck();
@@ -1323,6 +1341,11 @@ openConnectionStringModal(): void {
       this.connStringError = null;
 
       this.importSvc.generateFromSqlite(this.selectedSqliteFile).pipe(
+        this.svc.trackHttpProgress(
+          'import',
+          'Importing SQLite Database File',
+          'Uploading SQLite database and extracting tables...'
+        ),
         finalize(() => {
           this.connStringImporting = false;
           this.cdr.markForCheck();
@@ -1366,7 +1389,24 @@ openConnectionStringModal(): void {
     this.connStringImporting = true;
     this.connStringError = null;
 
+    const dbNames: Record<string, string> = {
+      postgres: 'PostgreSQL',
+      mysql: 'MySQL',
+      mariadb: 'MariaDB',
+      mssql: 'SQL Server',
+      sqlserver: 'SQL Server',
+      oracle: 'Oracle',
+      snowflake: 'Snowflake',
+      sqlite: 'SQLite'
+    };
+    const dbName = dbNames[this.connStringDatabaseType] || this.connStringDatabaseType.toUpperCase();
+
     this.importSvc.generateFromConnectionString(this.connStringDatabaseType, finalConnString).pipe(
+      this.svc.trackHttpProgress(
+        'import',
+        `Importing from ${dbName} Connection`,
+        `Extracting database tables, columns, and relationships from ${dbName}...`
+      ),
       finalize(() => {
         this.connStringImporting = false;
         this.cdr.markForCheck();
@@ -1517,8 +1557,26 @@ openConnectionStringModal(): void {
     this.importing = true;
     this.importError = null;
 
+    const dialectNames: Record<string, string> = {
+      postgres: 'PostgreSQL',
+      mysql: 'MySQL',
+      mariadb: 'MariaDB',
+      sqlserver: 'SQL Server',
+      mssql: 'SQL Server',
+      sqlite: 'SQLite',
+      oracle: 'Oracle',
+      snowflake: 'Snowflake',
+      mongodb: 'MongoDB'
+    };
+    const dialectName = dialectNames[this.importDialect || ''] || (this.importDialect ? this.importDialect.toUpperCase() : 'SQL');
+
     const performImport = (id: number) => {
       this.importSvc.convert(id, this.importDialect!, this.importSqlText).pipe(
+        this.svc.trackHttpProgress(
+          'import',
+          `Importing ${dialectName} Query`,
+          `Converting ${dialectName} statements to DBML schema...`
+        ),
         finalize(() => {
           this.importing = false;
           this.cdr.markForCheck();
@@ -1671,6 +1729,10 @@ openConnectionStringModal(): void {
       this.svc.showUpgradeModal('create_workspaces');
       return;
     }
+    if (tab === 'shared' && !this.entitlementService.canUseFeature('share_diagram')) {
+      this.openUpgradeModal('share_diagram');
+      return;
+    }
     this.workspaceModalTab = tab;
     this.workspaceModalOpen = true;
     this.personalMenuOpen = false;
@@ -1751,6 +1813,7 @@ openConnectionStringModal(): void {
   openUpgradeModal(featureKey?: string): void {
     this.upgradeFeatureKey = featureKey || 'premium_plan';
     this.upgradeModalOpen = true;
+    this.personalMenuOpen = false;
     this.closeChatbot();
   }
 
