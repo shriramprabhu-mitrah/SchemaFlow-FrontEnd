@@ -241,16 +241,16 @@ export class AdminService {
 
   // ── Global AI System Settings (Super Admin) ──
   getAiSystemSettings(): Observable<any> {
-    console.log('AdminService: getAiSystemSettings called', this.urls.aiSystemSettings);
+    // console.log('AdminService: getAiSystemSettings called', this.urls.aiSystemSettings);
     const url = this.urls.aiSystemSettings || 'http://localhost:4007/api/ai/admin/system-settings';
-    console.log(url);    
+    // console.log(url);    
     return this.http.get(url, { withCredentials: true });
   }
 
   updateAiSystemSettings(data: { ai_app_url?: string; max_tokens?: number; free_model_id?: number }): Observable<any> {
-    console.log('AdminService: updateAiSystemSettings called', this.urls.aiSystemSettings);
+    // console.log('AdminService: updateAiSystemSettings called', this.urls.aiSystemSettings);
     const url = this.urls.aiSystemSettings || 'http://localhost:4007/api/ai/admin/system-settings';
-    console.log(url);
+    // console.log(url);
     
     return this.http.put(url, data, { withCredentials: true });
   }

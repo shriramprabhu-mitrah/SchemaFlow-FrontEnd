@@ -93,7 +93,7 @@ export class AcceptInvitationComponent implements OnInit {
         this.isChecking = true;
         this.svc.checkOrgInvitation(this.inviteToken || null, this.orgId).subscribe({
           next: (res: any) => {
-            console.log('DEBUG FRONTEND: checkOrgInvitation response:', res);
+            // console.log('DEBUG FRONTEND: checkOrgInvitation response:', res);
             this.isChecking = false;
             if (res.invitation && res.invitation.email) {
               this.invitedEmail = res.invitation.email;

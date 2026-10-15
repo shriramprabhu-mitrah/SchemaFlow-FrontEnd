@@ -94,6 +94,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             const currentUrl = router.url || (typeof window !== 'undefined' ? window.location.pathname : '');
             const isPublicRoute =
               currentUrl.includes('/pricing') ||
+              currentUrl.includes('/student-registration') ||
               currentUrl.includes('/student-offer') ||
               currentUrl.includes('/contact') ||
               currentUrl.includes('/login') ||

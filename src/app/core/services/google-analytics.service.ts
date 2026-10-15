@@ -104,9 +104,9 @@ export class GoogleAnalyticsService {
       return;
     }
 
-    if (this.enableForLocalTesting && !this.isRealProduction()) {
-      console.log(`[GoogleAnalyticsService] GA4 enabled for local testing with Measurement ID: ${this.gTagId}`);
-    }
+    // if (this.enableForLocalTesting && !this.isRealProduction()) {
+    //   console.log(`[GoogleAnalyticsService] GA4 enabled for local testing with Measurement ID: ${this.gTagId}`);
+    // }
 
     if (!this.isScriptInjected) {
       const existingScript = document.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${this.gTagId}"]`);
@@ -332,9 +332,9 @@ export class GoogleAnalyticsService {
         ...(this.enableForLocalTesting && !this.isRealProduction() ? { debug_mode: true } : {})
       });
 
-      if (this.enableForLocalTesting && !this.isRealProduction()) {
-        console.log(`[GoogleAnalyticsService] [Local Test] Event: "${eventName}" (Category: "${eventCategory}")`, eventInformation);
-      }
+      // if (this.enableForLocalTesting && !this.isRealProduction()) {
+      //   // console.log(`[GoogleAnalyticsService] [Local Test] Event: "${eventName}" (Category: "${eventCategory}")`, eventInformation);
+      // }
     } catch (error) {
       console.error('[GoogleAnalyticsService] Error tracking event:', error);
     }
@@ -361,7 +361,7 @@ export class GoogleAnalyticsService {
     });
 
     if (this.enableForLocalTesting && !this.isRealProduction()) {
-      console.log(`[GoogleAnalyticsService] [Local Test] PageView: "${path}" (${title})`);
+      // console.log(`[GoogleAnalyticsService] [Local Test] PageView: "${path}" (${title})`);
     }
   }
 

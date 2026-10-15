@@ -3,9 +3,10 @@ Allow: /
 Allow: /pricing
 Allow: /login
 Allow: /auth/register
+Allow: /student-registration
 Allow: /student-offer
 Allow: /faq
-Allow: /features/ai-generated
+Allow: /features/ai-schema-generator
 Allow: /public-diagram/
 Disallow: /dashboard/
 Disallow: /admin/
