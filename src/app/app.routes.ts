@@ -64,6 +64,11 @@ export const routes: Routes = [
     title: 'Student Application Form - Free Student Plan - dbNexus',
     loadComponent: () => import('./features/pricing/student-offer/student-offer').then(m => m.StudentOfferComponent)
   },
+  {
+    path: 'faq',
+    title: 'Frequently Asked Questions - DBNexus',
+    loadComponent: () => import('./features/faq/faq').then(m => m.FaqComponent)
+  },
   // Super Admin Panel
   {
     path: 'admin',
