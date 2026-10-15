@@ -93,6 +93,110 @@
   }
 }
 
+.ai-hero-actions {
+  margin-top: 16px !important;
+  margin-bottom: 24px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0 16px !important;
+  box-sizing: border-box !important;
+
+  @media (max-width: 520px) {
+    width: 100% !important;
+    padding: 0 !important;
+    margin-bottom: 20px !important;
+  }
+}
+
+.ai-hero-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 14px 28px !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+  transition: all 0.2s ease !important;
+  width: auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  text-align: center !important;
+
+  &:hover {
+    background: #1d4ed8 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45) !important;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  .btn-text-wrap {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    white-space: normal !important;
+    word-break: normal;
+  }
+
+  .btn-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #ffffff;
+  }
+
+  .btn-note {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.9;
+    color: #eff6ff;
+  }
+
+  .btn-arrow {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover .btn-arrow {
+    transform: translateX(3px);
+  }
+
+  @media (max-width: 640px) {
+    width: 100% !important;
+    padding: 14px 16px !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+
+    .btn-text-wrap {
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .btn-title {
+      font-size: 15px;
+    }
+
+    .btn-note {
+      font-size: 12px;
+      opacity: 0.85;
+    }
+  }
+}
+
 .ai-mockup-caption {
   margin-top: 14px;
   display: inline-flex;
