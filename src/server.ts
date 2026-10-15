@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -31,22 +32,36 @@ app.use((req, res, next) => {
   next();
 });
 
+/**
+ * Reverse proxy for backend API and WebSocket endpoints (/api, /socket.io)
+ */
+const backendTarget =
+  process.env['BACKEND_API_URL'] ||
+  process.env['API_PROXY_TARGET'] ||
+  'https://db-nexus-backend-production.up.railway.app';
+
+const apiProxy = createProxyMiddleware({
+  target: backendTarget,
+  changeOrigin: true,
+  pathFilter: ['/api', '/socket.io'],
+  ws: true,
+  on: {
+    error: (err, req, res) => {
+      console.error(`[Proxy Error] failed to proxy ${req.url} to ${backendTarget}:`, err.message);
+      if ('writeHead' in res && typeof res.writeHead === 'function' && !res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ statusCode: 502, message: 'Backend service unavailable' }));
+      }
+    },
+  },
+});
+
+app.use(apiProxy);
+
 const angularApp = new AngularNodeAppEngine({
   allowedHosts,
   trustProxyHeaders: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto'],
 });
-
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
 
 /**
  * Serve static files from /browser
@@ -76,9 +91,12 @@ app.use((req, res, next) => {
  */
 if (isMainModule(import.meta.url) || process.env['pm_id'] || process.env['RAILWAY_ENVIRONMENT']) {
   const port = process.env['PORT'] || 4000;
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     // console.log(`Node Express server listening on http://localhost:${port}`);
   });
+  if (typeof apiProxy.upgrade === 'function') {
+    server.on('upgrade', apiProxy.upgrade);
+  }
 }
 
 /**

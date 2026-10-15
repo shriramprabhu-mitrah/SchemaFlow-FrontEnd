@@ -15,11 +15,12 @@ const possibleRoots = [
 ];
 
 let injected = false;
+const sanitizedApiUrl = apiUrl.replace(/\/+$/, '');
 for (const distRoot of possibleRoots) {
     const configPath = path.join(distRoot, 'assets', 'config', `config.${envName}.json`);
     if (fs.existsSync(configPath)) {
         let content = fs.readFileSync(configPath, 'utf-8');
-        content = content.replaceAll('API_URL', apiUrl);
+        content = content.replaceAll('API_URL', sanitizedApiUrl);
         fs.writeFileSync(configPath, content);
         injected = true;
     }
