@@ -4,6 +4,8 @@ Allow: /pricing
 Allow: /login
 Allow: /auth/register
 Allow: /student-offer
+Allow: /faq
+Allow: /features/ai-generated
 Allow: /public-diagram/
 Disallow: /dashboard/
 Disallow: /admin/

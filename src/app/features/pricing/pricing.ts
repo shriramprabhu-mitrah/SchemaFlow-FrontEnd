@@ -265,6 +265,7 @@ export class PricingComponent implements OnInit {
           const loadedPlans = res?.data && res.data.length > 0 ? res.data : [];
           const studentPlan = loadedPlans.find((p: any) => this.studentSettings.isStudentPlan(p));
           if (studentPlan) {
+            this.studentSettings.setStudentPlan(studentPlan);
             const m = this.studentSettings.extractPlanMonth(studentPlan);
             if (m > 0) {
               this.studentSettings.setMonth(m);
@@ -298,11 +299,11 @@ export class PricingComponent implements OnInit {
     }
   }
 
-  /** Plans to display (all except enterprise by default, sorted by display_order) */
+  /** Plans to display (all except enterprise and student plan, sorted by display_order) */
   get displayedPlans(): any[] {
-    // Hide enterprise plan and sort by display_order
+    // Hide enterprise plan and student plan from pricing page display
     return this.plans
-      .filter(p => p.slug !== 'enterprise')
+      .filter(p => p.slug !== 'enterprise' && !this.studentSettings.isStudentPlan(p))
       .sort((a, b) => {
         const orderA = this.getPlanOrder(a);
         const orderB = this.getPlanOrder(b);
