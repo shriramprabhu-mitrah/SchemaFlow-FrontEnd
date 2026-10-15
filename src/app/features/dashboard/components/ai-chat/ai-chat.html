@@ -273,6 +273,24 @@
 
   <!-- Bottom Input Box -->
   <div class="ai-chat-footer">
+    <!-- AI Usage Limit Reached Banner -->
+    <div class="ai-limit-error-banner" *ngIf="isNoApiKeyRequired(selectedModel()) && isUsageLimitReached()">
+      <div class="limit-banner-left">
+        <div class="limit-icon-wrap">
+          <svg class="limit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="limit-text-wrap">
+          <span class="limit-badge">Limit Reached</span>
+          <span class="limit-text">AI usage limit reached (100%). Daily quota resets at 06:00 UTC.</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Model Switch Disclaimer Banner -->
     <div class="model-switch-disclaimer" *ngIf="showModelDisclaimer()">
       <div class="disclaimer-left">
@@ -383,9 +401,9 @@
 
           <button type="button" class="send-btn"
             [class.disabled]="isSendDisabled()"
-            [disabled]="isSendDisabled() && !svc.aiDiffReviewActive()"
+            [disabled]="isSendDisabled() && !svc.aiDiffReviewActive() && !isUsageLimitReached()"
             [attr.aria-disabled]="isSendDisabled()"
-            [attr.title]="svc.aiDiffReviewActive() ? 'Please accept or reject the applied code before giving the next prompt' : undefined"
+            [attr.title]="getSendButtonTitle()"
             (click)="onSendClick()" aria-label="Send message">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
               stroke-linecap="round" stroke-linejoin="round">
@@ -398,47 +416,61 @@
     </div>
 
     <!-- Usage Limit Row (Displayed only when dbnexus AI default model is selected and chat response contains usage and limit) -->
-    <div class="ai-usage-limit-container" *ngIf="isNoApiKeyRequired(selectedModel()) && showUsageLimit()">
+    <div class="ai-usage-limit-container" *ngIf="isNoApiKeyRequired(selectedModel()) && showUsageLimit()"
+      [class.has-limit-error]="isUsageLimitReached()">
       <!-- Pop-up Card when clicked -->
       <div class="ai-usage-popup-card" *ngIf="isUsagePopupOpen()" (click)="$event.stopPropagation()">
         <div class="usage-popup-header">
-          <span class="usage-popup-title">Used: {{ getUsagePercentage() }}%</span>
-          <span class="usage-info-icon"
-            [attr.title]="'Monthly usage limit for ' + (selectedModel()?.model_name || 'dbnexus AI')">
-            <!-- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg> -->
-          </span>
+          <span class="usage-popup-title" [class.text-danger]="isUsageLimitReached()">Used: {{ getUsagePercentage() }}%</span>
+          <span class="usage-limit-badge" *ngIf="isUsageLimitReached()">Limit Reached</span>
         </div>
         <div class="usage-progress-track">
           <div class="usage-progress-bar"
             [class.near-limit]="getUsagePercentage() >= 80 && getUsagePercentage() < 100"
-            [class.limit-reached]="getUsagePercentage() >= 100 || !hasRemainingQuota()"
+            [class.limit-reached]="isUsageLimitReached()"
             [style.width.%]="getUsagePercentage()"></div>
         </div>
-        <!-- <div class="usage-reset-row">
-          <span>Reset on: {{ getResetDate() }}</span>
-        </div> -->
+        <div class="usage-reset-row">
+          <span>Resets daily at 06:00 UTC</span>
+        </div>
+        <div class="usage-popup-error-alert" *ngIf="isUsageLimitReached()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>AI usage limit reached (100%). Daily quota resets at 06:00 UTC.</span>
+        </div>
       </div>
 
       <!-- Trigger Button -->
-      <button type="button" class="ai-usage-trigger-btn" (click)="toggleUsagePopup($event)"
+      <button type="button" class="ai-usage-trigger-btn" [class.is-limit-reached]="isUsageLimitReached()" (click)="toggleUsagePopup($event)"
+        [attr.title]="isUsageLimitReached() ? 'Usage limit reached (100%). Resets at 06:00 UTC' : 'Click to view usage details'"
         aria-label="Toggle usage limit details">
-        <svg class="usage-gauge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3.34 19a10 10 0 1 1 17.32 0"></path>
-          <path d="m12 14-3.5-3.5"></path>
-          <circle cx="12" cy="14" r="1.5" fill="currentColor"></circle>
-        </svg>
-        <span class="usage-trigger-text" *ngIf="hasRemainingQuota()">
-          You have used {{ getUsagePercentage() }}% of your usage limit
-        </span>
-        <span class="usage-trigger-text text-danger" *ngIf="!hasRemainingQuota()">
-          Usage limit reached ({{ getUsagePercentage() }}%)
-        </span>
+        <ng-container *ngIf="!isUsageLimitReached()">
+          <svg class="usage-gauge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.34 19a10 10 0 1 1 17.32 0"></path>
+            <path d="m12 14-3.5-3.5"></path>
+            <circle cx="12" cy="14" r="1.5" fill="currentColor"></circle>
+          </svg>
+          <span class="usage-trigger-text">
+            You have used {{ getUsagePercentage() }}% of your usage limit
+          </span>
+        </ng-container>
+
+        <ng-container *ngIf="isUsageLimitReached()">
+          <svg class="usage-error-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span class="usage-trigger-text text-danger">
+            Usage limit reached (100%). Resets at 06:00 UTC
+          </span>
+        </ng-container>
       </button>
     </div>
   </div>
