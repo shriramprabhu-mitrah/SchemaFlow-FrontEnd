@@ -4,13 +4,29 @@ import { Observable, tap, catchError, of } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
 const CACHE_KEY = 'cachedStudentOfferMonth';
+const CACHE_FEATURES_KEY = 'cachedStudentOfferFeatures';
 const DEFAULT_MONTH = 6;
+export const DEFAULT_STUDENT_FEATURES: string[] = [
+  'Upto 20 Diagrams',
+  'Table Relationships',
+  'Sql Compare',
+  'Customize Canvas',
+  'Diagram Notes',
+  'Table Group',
+  'Import SQL',
+  'Export as PNG/SVG/PDF',
+  'Export as SQL & NoSQL',
+  'Share Diagrams',
+  'Database Connection'
+];
 
 @Injectable({
   providedIn: 'root'
 })
 export class StudentSettingsService {
   readonly studentMonth = signal<number>(this.getInitialMonth());
+  readonly studentPlan = signal<any>(null);
+  readonly studentFeatures = signal<string[]>(this.getInitialFeatures());
 
   constructor(
     private http: HttpClient,
@@ -32,6 +48,115 @@ export class StudentSettingsService {
       } catch {}
     }
     return DEFAULT_MONTH;
+  }
+
+  private getInitialFeatures(): string[] {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(CACHE_FEATURES_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.filter((f: string) => f !== 'Table Color & Connection Color');
+          }
+        }
+      } catch {}
+    }
+    return DEFAULT_STUDENT_FEATURES;
+  }
+
+  setStudentPlan(plan: any): void {
+    if (!plan) return;
+    this.studentPlan.set(plan);
+    const feats = this.extractFeaturesFromPlan(plan);
+    if (feats && feats.length > 0) {
+      this.studentFeatures.set(feats);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(CACHE_FEATURES_KEY, JSON.stringify(feats));
+        } catch {}
+      }
+    }
+  }
+
+  getDisplayFeatures(): string[] {
+    const list = this.studentFeatures();
+    if (list && list.length > 0) {
+      return list;
+    }
+    return DEFAULT_STUDENT_FEATURES;
+  }
+
+  extractFeaturesFromPlan(plan: any): string[] {
+    if (!plan || !Array.isArray(plan.entitlements)) {
+      return [];
+    }
+
+    const isTrue = (val: any) => val === true || val === 'true' || val === 1 || val === '1';
+
+    const validEnts = plan.entitlements.filter((ent: any) => {
+      // Both value and show_in_pricing must be true
+      const isValueTrue = isTrue(ent.value);
+      const isShowInPricingTrue = isTrue(ent.show_in_pricing);
+      if (!isValueTrue || !isShowInPricingTrue) return false;
+
+      if (ent.display_text === '-' || ent.display_text === '—') return false;
+      return true;
+    }).sort((a: any, b: any) => {
+      const orderA = a.display_order ?? a.feature_order ?? a.order ?? 999999;
+      const orderB = b.display_order ?? b.feature_order ?? b.order ?? 999999;
+      if (orderA !== orderB) return Number(orderA) - Number(orderB);
+      return (Number(a.feature_id || 0) - Number(b.feature_id || 0));
+    });
+
+    const labels: string[] = [];
+
+    for (const ent of validEnts) {
+      // Diagram limit spec
+      if (ent.feature_key === 'create_diagrams') {
+        if (ent.display_text && ent.display_text.trim()) {
+          labels.push(ent.display_text.trim());
+        } else if (Number(ent.limit_value) === -1) {
+          labels.push('Unlimited active diagrams');
+        } else if (ent.limit_value && Number(ent.limit_value) > 0) {
+          labels.push(`Up to ${ent.limit_value} active diagrams`);
+        } else {
+          labels.push('Diagram projects');
+        }
+        continue;
+      }
+
+      // Workspace members spec
+      if (ent.feature_key === 'workspace_members') {
+        if (ent.display_text && ent.display_text.trim()) {
+          labels.push(ent.display_text.trim());
+        } else {
+          const seats = Number(ent.limit_value || plan.included_seats || 1);
+          labels.push(seats > 1 ? `${seats} workspace members` : 'Single user access');
+        }
+        continue;
+      }
+
+      // Display text
+      if (ent.display_text && !['true', 'false', '-', '—'].includes(String(ent.display_text).trim().toLowerCase())) {
+        labels.push(ent.display_text.trim());
+        continue;
+      }
+
+      // Feature name
+      if (ent.feature_name && ent.feature_name.trim()) {
+        labels.push(ent.feature_name.trim());
+        continue;
+      }
+
+      // Feature key formatted
+      if (ent.feature_key) {
+        const formatted = ent.feature_key.replace(/_/g, ' ');
+        labels.push(formatted.charAt(0).toUpperCase() + formatted.slice(1));
+      }
+    }
+
+    return labels.filter((item, idx, self) => item && self.indexOf(item) === idx);
   }
 
   setMonth(val: number | string): void {
@@ -76,6 +201,17 @@ export class StudentSettingsService {
     if (!plansUrl) return of(null);
     return this.http.get<any>(plansUrl).pipe(
       tap((res) => {
+        const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : null);
+        if (list) {
+          const studentPlan = list.find((p: any) => this.isStudentPlan(p));
+          if (studentPlan) {
+            this.setStudentPlan(studentPlan);
+            const m = this.extractPlanMonth(studentPlan);
+            if (m > 0) {
+              this.setMonth(m);
+            }
+          }
+        }
         const val = this.parseMonthValue(res);
         if (val > 0) {
           this.setMonth(val);
@@ -197,30 +333,23 @@ export class StudentSettingsService {
   }
 
   getValidityText(plan?: any): string {
-    const m = plan ? this.extractPlanMonth(plan) : this.studentMonth();
-    return m === 1 ? 'Valid for 1 month' : `Valid for ${m} months`;
+    return 'No credit card required';
   }
 
   getDurationText(plan?: any): string {
-    const m = plan ? this.extractPlanMonth(plan) : this.studentMonth();
-    return m === 1 ? 'for 1 month' : `for ${m} months`;
+    return '';
   }
 
   getHeadingText(plan?: any): string {
-    const m = plan ? this.extractPlanMonth(plan) : this.studentMonth();
-    const word = m === 1 ? '1 month' : `${m} months`;
-    return `${word} of DBNexus,<br>free for students.`;
+    return `dbNexus,<br>free for students.`;
   }
 
   getFormSubtitle(plan?: any): string {
-    const m = plan ? this.extractPlanMonth(plan) : this.studentMonth();
-    const word = m === 1 ? '1 month' : `${m} months`;
-    return `Complete the details below to claim your free ${word}. Fields marked <span class="req">*</span> are required.`;
+    return `Complete the details below to claim your free student offer. Fields marked <span class="req">*</span> are required.`;
   }
 
   getClaimButtonText(isSubmitting: boolean, plan?: any): string {
     if (isSubmitting) return 'Submitting...';
-    const m = plan ? this.extractPlanMonth(plan) : this.studentMonth();
-    return m === 1 ? 'Claim 1 month free' : `Claim ${m} months free`;
+    return 'Claim Student Offer';
   }
 }
