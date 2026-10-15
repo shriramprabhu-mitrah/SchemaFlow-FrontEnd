@@ -29,10 +29,15 @@ export class UserManagementComponent implements OnInit {
   showOrgDropdown = false;
   organizationsList: any[] = [];
 
+  openStatusDropdownId: any = null;
+  openStatusDropdownUpward = false;
+
   @HostListener('document:click')
   onDocumentClick() {
     this.showLimitDropdown = false;
     this.showOrgDropdown = false;
+    this.openStatusDropdownId = null;
+    this.openStatusDropdownUpward = false;
   }
   sortColumn = 'userid';
   sortAsc = false;
@@ -147,6 +152,46 @@ export class UserManagementComponent implements OnInit {
   confirmButtonText = '';
   confirmActionType: 'deactivate' | 'activate' = 'deactivate';
   pendingUserAction: any = null;
+
+  toggleStatusDropdown(id: any, event: Event, index?: number): void {
+    event.stopPropagation();
+    this.showLimitDropdown = false;
+    this.showOrgDropdown = false;
+
+    if (this.openStatusDropdownId === id) {
+      this.openStatusDropdownId = null;
+      this.openStatusDropdownUpward = false;
+      return;
+    }
+
+    this.openStatusDropdownId = id;
+
+    const total = this.displayUsers.length;
+    const hasEnoughRowsAbove = index !== undefined && index >= 3;
+    if (!hasEnoughRowsAbove) {
+      this.openStatusDropdownUpward = false;
+      return;
+    }
+
+    const isNearTableBottom = index >= total - 3;
+    const target = event.currentTarget as HTMLElement;
+    let isNearViewportBottom = false;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      isNearViewportBottom = spaceBelow < 150 && spaceAbove >= 180;
+    }
+
+    this.openStatusDropdownUpward = isNearTableBottom || isNearViewportBottom;
+  }
+
+  selectUserStatus(user: any, newActiveState: boolean): void {
+    this.openStatusDropdownId = null;
+    this.openStatusDropdownUpward = false;
+    if ((user.isactive !== false) === newActiveState) return;
+    this.toggleActive(user);
+  }
 
   toggleActive(user: any): void {
     this.pendingUserAction = { type: 'active', user };

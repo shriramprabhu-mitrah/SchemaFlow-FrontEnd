@@ -13,6 +13,7 @@ import { EntitlementService } from '../../core/services/entitlement.service';
 import { DiffCheckerComponent } from './components/diff-checker/diff-checker';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { SeoService } from '../../core/services/seo.service';
 import { Subscription, Observable } from 'rxjs';
 
 @Component({
@@ -49,6 +50,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   private trialExpiredSubscription!: Subscription;
   private socketConnectSubscription!: Subscription;
   private socketErrorSubscription!: Subscription;
+  private aiChatSub?: Subscription;
   private isInitialLoad = true;
 
   constructor(
@@ -58,13 +60,20 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     public auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
     public entitlementService: EntitlementService,
-    private titleService: Title
+    private titleService: Title,
+    private seoService: SeoService
   ) {
     this.splitViewSubscription = this.svc.splitViewRequested$.subscribe(() => this.restoreSplitView());
 
     effect(() => {
       if (this.svc.showDiffChecker()) {
-        this.titleService.setTitle('Diff Checker - DBNexus');
+        this.titleService.setTitle('SQL Compare - DBNexus');
+        this.seoService.updateTags({
+          title: 'SQL Compare - Database Schema Diff & Migration Generator - DBNexus',
+          description: 'Compare SQL schemas, generate database migration diff scripts, and synchronize database structures visually with DBNexus SQL Compare.',
+          url: 'https://www.dbnexus.io/diff',
+          keywords: 'SQL schema compare tool, SQL schema diff tool, database migration script generator'
+        });
         return;
       }
       const name = this.svc.diagramNameSignal()?.trim();
@@ -77,6 +86,14 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('pending_accept_invitation_id');
+      localStorage.removeItem('pending_accept_invitation_url');
+      localStorage.removeItem('pending_accept_invitation_type');
+      localStorage.removeItem('pending_accept_invitation_token');
+      localStorage.removeItem('pending_invite_email');
+    }
+
     this.trialExpiredSubscription = this.svc.socketService.onTrialExpired().subscribe(() => {
       this.svc.isSubscriptionExpired.set(true);
       // Clear collaboration indicators immediately
@@ -103,6 +120,23 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     });
     if (typeof window !== 'undefined') {
       this.svc.syncThemeFromStorage();
+      if (this.svc.pendingOpenAiChat) {
+        this.svc.pendingOpenAiChat = false;
+        setTimeout(() => {
+          this.svc.openAiChat();
+          this.cdr.detectChanges();
+        }, 150);
+      }
+      if (this.svc.pendingOpenSidebarImportMenu) {
+        this.svc.pendingOpenSidebarImportMenu = false;
+        setTimeout(() => {
+          this.svc.openSidebarImportMenu();
+          this.cdr.detectChanges();
+        }, 150);
+      }
+      this.aiChatSub = this.svc.openAiChat$.subscribe(() => {
+        this.cdr.detectChanges();
+      });
       this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
         const id = params['id'];
         const sampleParam = params['sample'];
@@ -250,6 +284,7 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     if (this.trialExpiredSubscription) this.trialExpiredSubscription.unsubscribe();
     if (this.socketConnectSubscription) this.socketConnectSubscription.unsubscribe();
     if (this.socketErrorSubscription) this.socketErrorSubscription.unsubscribe();
+    if (this.aiChatSub) this.aiChatSub.unsubscribe();
   }
 
   showEditorFullScreen(): void {

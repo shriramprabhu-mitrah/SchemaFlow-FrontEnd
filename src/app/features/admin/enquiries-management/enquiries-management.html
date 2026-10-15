@@ -5,7 +5,7 @@
       <p class="text-muted" style="margin:4px 0 0">View and manage contact sales enquiries.</p>
     </div>
     <div class="header-actions">
-      <div class="custom-status-dropdown-container dropdown-container-rel" style="margin-right: 12px;">
+      <div class="custom-status-dropdown-container dropdown-container-rel">
         <button class="custom-status-dropdown-trigger" style="min-width: 120px; padding: 6px 12px; height: 38px; border-radius: 8px;"
           (click)="showTypeDropdown = !showTypeDropdown; $event.stopPropagation()">
           <span>{{ filterType || 'All Types' }}</span>
@@ -31,7 +31,7 @@
     <div class="spinner"></div><span>Loading enquiries...</span>
   </div>
 
-  <div class="data-table-wrap" *ngIf="!loading">
+  <div class="data-table-wrap" [class.has-open-dropdown]="openStatusDropdownId !== null" *ngIf="!loading">
     <table class="data-table">
       <thead>
         <tr>
@@ -40,7 +40,7 @@
               <span>S.NO</span>
             </span>
           </th>
-          <th style="width:15%">
+          <th style="width:14%">
             <span class="sort-header-clickable" (click)="sortBy('first_name')">
               <span>NAME</span>
               <span class="sort-icon" [class.active]="sortColumn === 'first_name'">
@@ -48,7 +48,7 @@
               </span>
             </span>
           </th>
-          <th style="width:20%">
+          <th style="width:18%">
             <span class="sort-header-clickable" (click)="sortBy('company_email')">
               <span>EMAIL</span>
               <span class="sort-icon" [class.active]="sortColumn === 'company_email'">
@@ -56,7 +56,7 @@
               </span>
             </span>
           </th>
-          <th style="width:15%">
+          <th style="width:14%">
             <span>PHONE / COUNTRY</span>
           </th>
 
@@ -68,7 +68,15 @@
               </span>
             </span>
           </th>
-          <th style="width:15%">
+          <th style="width:13%">
+            <span class="sort-header-clickable" (click)="sortBy('status')">
+              <span>STATUS</span>
+              <span class="sort-icon" [class.active]="sortColumn === 'status'">
+                <app-icons name="sort" size="14"></app-icons>
+              </span>
+            </span>
+          </th>
+          <th style="width:12%">
             <span class="sort-header-clickable" (click)="sortBy('created_at')">
               <span>SUBMITTED</span>
               <span class="sort-icon" [class.active]="sortColumn === 'created_at'">
@@ -76,11 +84,11 @@
               </span>
             </span>
           </th>
-          <th style="width:15%">DETAILS</th>
+          <th style="width:14%">DETAILS</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let eq of displayEnquiries; let i = index">
+        <tr *ngFor="let eq of displayEnquiries; let i = index" [class.has-open-dropdown]="openStatusDropdownId === (eq.id || i)">
           <td>{{ paginationStartIndex + i }}</td>
           <td><strong class="user-name-text">{{ eq.first_name }} {{ eq.last_name }}</strong></td>
           <td><span class="user-email-text">{{ eq.company_email }}</span></td>
@@ -103,15 +111,55 @@
             </span>
             <span *ngIf="!eq.enquiry_type" class="text-muted">N/A</span>
           </td>
+          <td>
+            <ng-container *ngIf="isSupportEnquiry(eq); else nonSupportStatus">
+              <div class="custom-status-dropdown-container dropdown-container-rel"
+                [class.open]="!isClosed(eq) && openStatusDropdownId === (eq.id || i)">
+
+                <!-- If Closed: Not editable (Static badge, disabled, centered, no chevron) -->
+                <button *ngIf="isClosed(eq)" type="button"
+                  class="custom-status-dropdown-trigger enquiry-status-trigger status-closed disabled"
+                  disabled
+                  title="Closed enquiries cannot be edited">
+                  <span>{{ getStatusLabel(eq.status) }}</span>
+                </button>
+
+                <!-- If Not Closed: Interactive dropdown trigger with chevron -->
+                <button *ngIf="!isClosed(eq)" type="button"
+                  class="custom-status-dropdown-trigger enquiry-status-trigger"
+                  [ngClass]="getStatusBadgeClass(eq.status)"
+                  (click)="toggleStatusDropdown(eq.id || i, $event, i, eq)">
+                  <span>{{ getStatusLabel(eq.status) }}</span>
+                  <app-icons name="chevron-down" size="12"></app-icons>
+                </button>
+
+                <div class="custom-status-dropdown-menu enquiry-status-menu"
+                  [class.dropdown-up]="openStatusDropdownUpward"
+                  *ngIf="!isClosed(eq) && openStatusDropdownId === (eq.id || i)"
+                  (click)="$event.stopPropagation()">
+                  <button type="button" class="custom-status-dropdown-option"
+                    *ngFor="let opt of statusOptions"
+                    [class.selected]="isStatusSelected(eq.status, opt.value)"
+                    (click)="updateStatus(eq, opt.value)">
+                    <span class="status-option-dot" [ngClass]="opt.value"></span>
+                    <span>{{ opt.label }}</span>
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #nonSupportStatus>
+              <span class="text-muted">-</span>
+            </ng-template>
+          </td>
           <td><span class="text-muted">{{ eq.created_at | date:'mediumDate' }}</span></td>
           <td>
-            <div class="action-btns" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <div class="details-cell-wrap" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span class="text-muted" [title]="eq.project_details">{{ eq.project_details || 'No Details' }}</span>
             </div>
           </td>
         </tr>
         <tr *ngIf="displayEnquiries.length === 0">
-          <td colspan="7" class="empty-table-cell">No enquiries found</td>
+          <td colspan="8" class="empty-table-cell">No enquiries found</td>
         </tr>
       </tbody>
     </table>

@@ -240,11 +240,11 @@ export class VersionHistoryComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log(`[VersionHistory] Requesting compare for diagram ${currentId} and version ${versionId}...`);
+    // console.log(`[VersionHistory] Requesting compare for diagram ${currentId} and version ${versionId}...`);
     this.svc.showToast('Fetching comparison...', 2000, 'info');
     this.svc.compareDiagramVersion(currentId, versionId).subscribe({
       next: (res: any) => {
-        console.log('[VersionHistory] Compare version API response:', res);
+        // console.log('[VersionHistory] Compare version API response:', res);
         const data = res?.data ?? res;
         const historyDbml = data?.historyDbml ?? data?.history_dbml ?? data?.historyCode ?? version?.diagramDbml ?? version?.diagram_dbml ?? version?.dbml ?? version?.code ?? '';
         const latestDbml = data?.latestDbml ?? data?.latest_dbml ?? data?.latestCode ?? this.originalState?.code ?? this.svc.code ?? '';

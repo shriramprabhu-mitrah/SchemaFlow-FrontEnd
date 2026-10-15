@@ -28,14 +28,22 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     name: string;
     x: number;
     y: number;
+    desktopX?: number;
+    desktopY?: number;
+    mobileX?: number;
+    mobileY?: number;
     zIndex: number;
     fields: { name: string; type: string; isPk: boolean; isFk: boolean; }[];
   }[] = [
     {
       id: 'departments',
       name: 'departments',
-      x: 30,
+      x: 155,
       y: 120,
+      desktopX: 155,
+      desktopY: 120,
+      mobileX: 185,
+      mobileY: 100,
       zIndex: 2,
       fields: [
         { name: 'id', type: 'int', isPk: true, isFk: false },
@@ -46,8 +54,12 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     {
       id: 'employees',
       name: 'employees',
-      x: 300,
+      x: 425,
       y: 50,
+      desktopX: 425,
+      desktopY: 50,
+      mobileX: 185,
+      mobileY: 265,
       zIndex: 2,
       fields: [
         { name: 'id', type: 'int', isPk: true, isFk: false },
@@ -59,8 +71,12 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
     {
       id: 'projects',
       name: 'projects',
-      x: 300,
+      x: 425,
       y: 250,
+      desktopX: 425,
+      desktopY: 250,
+      mobileX: 185,
+      mobileY: 460,
       zIndex: 2,
       fields: [
         { name: 'id', type: 'int', isPk: true, isFk: false },
@@ -77,6 +93,7 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
   ];
 
   diffLines = new Array(35);
+  isMobile = false;
 
   // Drag state
   draggingTable: any = null;
@@ -140,42 +157,24 @@ export class InteractivePreviewComponent implements AfterViewInit, OnDestroy {
   @HostListener('window:resize')
   onResize() {
     if (!isPlatformBrowser(this.platformId)) return;
-    
-    // Defer to let layout update and CSS zoom take effect
-    setTimeout(() => {
-      const container = (this.el.nativeElement as HTMLElement).querySelector('.ip-canvas-container') as HTMLElement;
-      if (!container) return;
-      
-      this.cachedContainerRect = container.getBoundingClientRect();
-      
-      let zoomFactor = 1;
-      const computedZoom = window.getComputedStyle(container).zoom;
-      if (computedZoom && computedZoom !== 'normal') {
-        zoomFactor = parseFloat(computedZoom) || 1;
-      }
-      
-      const effectiveWidth = this.cachedContainerRect.width / zoomFactor;
-      const effectiveHeight = this.cachedContainerRect.height / zoomFactor;
-      
-      const tableWidth = 200;
-      const tableHeight = 135;
-      
-      const maxX = Math.max(300, effectiveWidth - tableWidth);
-      const maxY = Math.max(200, effectiveHeight - tableHeight);
-
-      let changed = false;
+    const mobile = window.innerWidth <= 576;
+    if (mobile !== this.isMobile) {
+      this.isMobile = mobile;
       this.tables.forEach(table => {
-        // Bounds checking
-        if (table.x > maxX) { table.x = maxX; changed = true; }
-        if (table.y > maxY) { table.y = maxY; changed = true; }
-        if (table.x < 0) { table.x = 0; changed = true; }
-        if (table.y < 0) { table.y = 0; changed = true; }
+        if (mobile) {
+          table.desktopX = table.x;
+          table.desktopY = table.y;
+          table.x = table.mobileX!;
+          table.y = table.mobileY!;
+        } else {
+          table.mobileX = table.x;
+          table.mobileY = table.y;
+          table.x = table.desktopX!;
+          table.y = table.desktopY!;
+        }
       });
-
-      if (changed) {
-        this.cdr.detectChanges();
-      }
-    });
+      this.cdr.detectChanges();
+    }
   }
 
   getLabelPos(rel: any): {x: number, y: number} {
@@ -328,10 +327,13 @@ Table projects {
         });
 
         // Keywords
-        const keywords = ['Table', 'Ref:', 'Enum', 'Project', 'TableGroup', 'Note'];
+        const keywords = ['Table', 'Ref:', 'Enum', 'Project', 'TableGroup', 'Note', 'indexes', 'checks'];
         keywords.forEach(kw => {
           htmlCode = htmlCode.replace(new RegExp(`\\b${kw.replace(':', '')}:?`, 'g'), `<span class="ip-syntax-dbml-kw">$&</span>`);
         });
+
+        // Column attributes/constraints
+        htmlCode = htmlCode.replace(/\b(default|check)\b(:)?/gi, (match, p1, p2) => `<span class="ip-syntax-attr">${p1}${p2 || ''}</span>`);
         
         // Brackets and attributes
         htmlCode = htmlCode.replace(/\[(.*?)\]/g, '<span class="ip-syntax-attr">[$1]</span>');
@@ -397,6 +399,15 @@ Table projects {
     if (isPlatformBrowser(this.platformId)) {
       document.addEventListener('mousemove', this.boundMouseMove);
       document.addEventListener('mouseup', this.boundMouseUp);
+      
+      this.isMobile = window.innerWidth <= 576;
+      if (this.isMobile) {
+        this.tables.forEach(table => {
+          table.x = table.mobileX!;
+          table.y = table.mobileY!;
+        });
+        this.cdr.detectChanges();
+      }
     }
   }
 
@@ -478,6 +489,13 @@ Table projects {
 
     this.draggingTable.x = newX;
     this.draggingTable.y = newY;
+    if (this.isMobile) {
+      this.draggingTable.mobileX = newX;
+      this.draggingTable.mobileY = newY;
+    } else {
+      this.draggingTable.desktopX = newX;
+      this.draggingTable.desktopY = newY;
+    }
     this.cdr.detectChanges();
   }
 

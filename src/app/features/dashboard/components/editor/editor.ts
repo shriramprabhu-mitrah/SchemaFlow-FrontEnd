@@ -37,6 +37,7 @@ export class EditorComponent implements OnInit, OnDestroy {
   private aiResizerStartWidth = 380;
 
   private codeSub?: Subscription;
+  private aiChatSub?: Subscription;
 
   get showErrorsCard(): boolean {
     return this.svc.showErrorsCard();
@@ -143,7 +144,10 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-
+    this.aiChatSub = this.svc.openAiChat$.subscribe(() => {
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    });
   }
   ngAfterViewInit(): void {
     this.codeSub = this.svc.code$.subscribe(val => {
@@ -175,6 +179,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.codeSub?.unsubscribe();
+    this.aiChatSub?.unsubscribe();
     if (typeof document !== 'undefined') {
       document.removeEventListener('click', this.onDocumentClickCapture, true);
     }
@@ -423,7 +428,7 @@ export class EditorComponent implements OnInit, OnDestroy {
     text = this.escapeHtmlBasic(text);
 
     text = text.replace(
-      /\b(TableGroup|Table|Ref|Note)\b/gi,
+      /\b(TableGroup|Table|Ref|Note|Project|Enum|indexes|checks)\b/gi,
       '<span class="keyword">$1</span>'
     );
 
@@ -439,6 +444,12 @@ export class EditorComponent implements OnInit, OnDestroy {
       '<span class="attribute">$1</span>'
     );
 
+    // Highlight column-level constraint and setting keywords in orange (even across multiple lines or before bracket closing)
+    text = text.replace(
+      /\b(not\s+null|null|pk|primary\s+key|unique|increment|default|check)\b(:)?/gi,
+      (match, p1, p2) => `<span class="attribute">${p1}${p2 || ''}</span>`
+    );
+
     // Highlight datatypes only when they appear as column types (after column name), not when used as column or table names
     text = text.replace(
       /^(\s*(?:["'`][^"'`]+["'`]|[A-Za-z0-9_.]+)\s+)("timestamp with time zone"|"timestamp without time zone"|'timestamp with time zone'|'timestamp without time zone'|`timestamp with time zone`|`timestamp without time zone`|timestamp with time zone|timestamp without time zone|time with time zone|time without time zone|double precision|character varying|bit varying|integer|varchar|text|timestamp|timestamptz|timetz|date|decimal|numeric|real|boolean|bool|float|double|datetime|time|int|bigint|smallint|tinyint|serial|bigserial|smallserial|objectid|json|jsonb|bson|uuid|blob|bytea|nvarchar|varchar2|char|enum|set|array|map|mixed)\b/gim,
@@ -451,8 +462,9 @@ export class EditorComponent implements OnInit, OnDestroy {
       '<span class="number">$1</span>'
     );
 
+    // Highlight attributes in square brackets (supporting multi-line definitions)
     text = text.replace(
-      /\[(.*?)\]/g,
+      /\[([\s\S]*?)\]/g,
       '<span class="attribute">[$1]</span>'
     );
 

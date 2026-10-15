@@ -1,0 +1,746 @@
+<div class="student-offer-container">
+  <div class="split-layout">
+    <!-- Left Pane -->
+    <div class="left-pane">
+      <img src="assets/student-id-template.svg?v=2" class="bg-illustration light-img" alt="">
+      <img src="assets/dbnexus-student-id-dark-fit.svg" class="bg-illustration dark-img" alt="">
+      <div class="offer-content">
+        <div class="logo-wrapper" routerLink="/" style="cursor: pointer;">
+          <img src="assets/db-diagram-logo.svg" alt="dbNexus" class="brand-logo" onerror="this.style.display='none'">
+          <span class="brand-text">dbNexus</span>
+        </div>
+        <div class="student-badge">Student offer</div>
+        <h1 class="offer-heading">dbNexus,<br>free for students.</h1>
+        <p class="offer-desc">Verify your student status once and get full access with no card and no payment.</p>
+        
+        <div class="pricing-card">
+          <div class="price-row">
+            <div class="price-amt">₹0</div>
+            <div class="no-card-badge">No card required</div>
+          </div>
+          <ul class="feature-list">
+            <li *ngFor="let feat of dynamicFeatures">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>{{ feat }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Pane (Form) -->
+    <div class="right-pane">
+      <!-- Stepper Indicator Header -->
+      <div class="stepper-indicator-header">
+        <div class="step-nav-btn" [class.active]="currentStep() === 1" [class.completed]="currentStep() > 1" (click)="goToPrevStep()">
+          <span class="step-badge-num">
+            <span *ngIf="currentStep() === 1">1</span>
+            <svg *ngIf="currentStep() > 1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span class="step-badge-text">
+            <span class="step-badge-sub">Step 1</span>
+            <span class="step-badge-main">Student details</span>
+          </span>
+        </div>
+
+        <div class="stepper-connector-line" [class.completed]="currentStep() > 1"></div>
+
+        <div class="step-nav-btn" [class.active]="currentStep() === 2" [class.disabled]="currentStep() < 2" (click)="currentStep() === 1 ? goToNextStep() : null">
+          <span class="step-badge-num">
+            <span>2</span>
+          </span>
+          <span class="step-badge-text">
+            <span class="step-badge-sub">Step 2</span>
+            <span class="step-badge-main">Account setup</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="form-header-intro">
+        <h2 class="form-title">{{ currentStep() === 1 ? 'Student verification' : 'Account setup' }}</h2>
+        <p class="form-subtitle" *ngIf="currentStep() === 1">Complete the details below to claim your free student offer. Fields marked <span class="req">*</span> are required.</p>
+        <p class="form-subtitle" *ngIf="currentStep() === 2">Set up your login credentials to access your student account. Fields marked <span class="req">*</span> are required.</p>
+      </div>
+
+      <form [formGroup]="studentForm" (ngSubmit)="onSubmit()" class="student-form" autocomplete="off">
+        <!-- Decoy hidden fields to trap browser password managers -->
+        <input type="text" name="fake_username_autofill_absorb" style="display:none; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <input type="password" name="fake_password_autofill_absorb" style="display:none; position:absolute; left:-9999px;" tabindex="-1" autocomplete="new-password" aria-hidden="true">
+
+        <!-- STEP 1: Student Details -->
+        <div class="step-panel" *ngIf="currentStep() === 1">
+          <div class="form-group">
+            <label>Full name <span class="req">*</span></label>
+            <div class="input-with-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <input type="text" formControlName="fullName" [class.has-error]="fullNameError() || (studentForm.get('fullName')?.touched && studentForm.get('fullName')?.invalid)" placeholder="As shown on your ID card" (input)="onFieldInput('fullName')" (blur)="onFieldBlur('fullName')">
+            </div>
+            <div class="error-slot">
+              <div class="error-msg" *ngIf="fullNameError()">{{ fullNameError() }}</div>
+              <div class="error-msg" *ngIf="!fullNameError() && studentForm.get('fullName')?.touched && studentForm.get('fullName')?.invalid">Full name is required</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Student email <span class="req">*</span></label>
+            <div class="email-verify-row">
+              <div class="input-with-icon email-input-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <input type="email" 
+                       formControlName="email" 
+                       [readonly]="isEmailVerified()"
+                       [class.readonly-field]="isEmailVerified()"
+                       [class.has-error]="emailVerifyError() || (studentForm.get('email')?.touched && studentForm.get('email')?.invalid)"
+                       [tabindex]="isEmailVerified() ? -1 : 0"
+                       placeholder="name@college.edu" 
+                       (input)="onEmailInput()" 
+                       (blur)="onEmailBlur()"
+                       (keydown)="onEmailKeyDown($event)">
+              </div>
+              <button type="button" class="btn-verify" (click)="sendOtp()" *ngIf="!isEmailVerified()" [disabled]="isVerifyingEmail()">
+                {{ isVerifyingEmail() ? 'Verifying...' : 'Verify' }}
+              </button>
+              <div class="verified-badge readonly-badge" 
+                   *ngIf="isEmailVerified()" 
+                   aria-readonly="true"
+                   tabindex="-1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                Verified
+              </div>
+            </div>
+            <div class="error-slot">
+              <div class="error-msg" *ngIf="emailVerifyError()">{{ emailVerifyError() }}</div>
+              <div class="error-msg" *ngIf="!emailVerifyError() && studentForm.get('email')?.touched && studentForm.get('email')?.invalid">
+                <span *ngIf="studentForm.get('email')?.errors?.['required']">A valid student email is required</span>
+                <span *ngIf="studentForm.get('email')?.errors?.['email']">Please enter a valid email address</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="form-group half-width">
+              <label>Phone number <span class="req">*</span></label>
+              <div class="input-with-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <input 
+                  type="tel" 
+                  formControlName="phone" 
+                  [class.has-error]="isPhoneInvalid()" 
+                  placeholder="9876543210" 
+                  maxlength="10"
+                  inputmode="numeric"
+                  (keypress)="onlyNumericInput($event)"
+                  (input)="onPhoneInput($event)"
+                  (paste)="onPhonePaste($event)"
+                  (blur)="onFieldBlur('phone')">
+              </div>
+              <div class="error-slot">
+                <div class="error-msg" *ngIf="phoneError()">{{ phoneError() }}</div>
+                <div class="error-msg" *ngIf="!phoneError() && studentForm.get('phone')?.touched && studentForm.get('phone')?.invalid">
+                  <span *ngIf="studentForm.get('phone')?.errors?.['required']">Phone number is required</span>
+                  <span *ngIf="studentForm.get('phone')?.errors?.['pattern']">{{ getPhoneErrorMessage() }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-group half-width">
+              <label>City <span class="req">*</span></label>
+              <div class="input-with-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <input type="text" formControlName="city" [class.has-error]="cityError() || (studentForm.get('city')?.touched && studentForm.get('city')?.invalid)" placeholder="Chennai" (input)="onFieldInput('city')" (blur)="onFieldBlur('city')">
+              </div>
+              <div class="error-slot">
+                <div class="error-msg" *ngIf="cityError()">{{ cityError() }}</div>
+                <div class="error-msg" *ngIf="!cityError() && studentForm.get('city')?.touched && studentForm.get('city')?.invalid">City is required</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Institute / college / school <span class="req">*</span></label>
+            <div class="input-with-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+              <input type="text" formControlName="institute" [class.has-error]="instituteError() || (studentForm.get('institute')?.touched && studentForm.get('institute')?.invalid)" placeholder="Name of your institution" (input)="onFieldInput('institute')" (blur)="onFieldBlur('institute')">
+            </div>
+            <div class="error-slot">
+              <div class="error-msg" *ngIf="instituteError()">{{ instituteError() }}</div>
+              <div class="error-msg" *ngIf="!instituteError() && studentForm.get('institute')?.touched && studentForm.get('institute')?.invalid">Institution name is required</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Joined Year -->
+            <div class="form-group half-width">
+              <label>Joined year <span class="req">*</span></label>
+              <div class="input-with-icon custom-year-picker-wrapper" (click)="$event.stopPropagation()">
+                <svg 
+                  class="calendar-icon-btn" 
+                  (click)="toggleYearPicker('joined', $event)" 
+                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  title="Open year picker">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  inputmode="numeric" 
+                  maxlength="4" 
+                  formControlName="joinedYear" 
+                  [class.has-error]="joinedYearError()" 
+                  [class.picker-open]="activeYearPicker() === 'joined'"
+                  placeholder="YYYY e.g. 2022" 
+                  (click)="toggleYearPicker('joined', $event)"
+                  (input)="onYearInputChange('joinedYear')" 
+                  (blur)="onFieldBlur('joinedYear')"
+                  autocomplete="off">
+                <button 
+                  type="button" 
+                  class="year-picker-toggle-btn"
+                  [class.open]="activeYearPicker() === 'joined'"
+                  (click)="toggleYearPicker('joined', $event)"
+                  aria-label="Toggle joined year picker"
+                  tabindex="-1">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                <!-- Customized Year Picker Dropdown for Joined Year -->
+                <div class="custom-year-picker-dropdown" *ngIf="activeYearPicker() === 'joined'" (click)="$event.stopPropagation()">
+                  <div class="picker-header">
+                    <button type="button" class="picker-nav-btn" (click)="prevDecade('joined', $event)" title="Previous 12 years">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                    <span class="picker-decade-title">{{ getDecadeTitle('joined') }}</span>
+                    <button type="button" class="picker-nav-btn" (click)="nextDecade('joined', $event)" title="Next 12 years">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="picker-years-grid">
+                    <button
+                      type="button"
+                      *ngFor="let year of getDecadeYears('joined')"
+                      class="year-cell"
+                      [class.selected]="isJoinedYearSelected(year)"
+                      [class.current-year]="year === currentYear"
+                      [class.is-disabled]="isJoinedYearDisabled(year)"
+                      [disabled]="isJoinedYearDisabled(year)"
+                      [title]="getJoinedYearTooltip(year)"
+                      (click)="selectJoinedYear(year, $event)">
+                      <span>{{ year }}</span>
+                      <span class="now-dot" *ngIf="year === currentYear" title="Current Year"></span>
+                    </button>
+                  </div>
+
+                  <div class="picker-footer">
+                    <div class="condition-hint" *ngIf="studentForm.get('passedOutYear')?.value">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                      <span>Must be &le; {{ studentForm.get('passedOutYear')?.value }}</span>
+                    </div>
+                    <div class="condition-hint" *ngIf="!studentForm.get('passedOutYear')?.value">
+                      <span>Select enrollment year</span>
+                    </div>
+                    <button type="button" class="btn-today-chip" (click)="jumpToCurrentYear('joined', $event)">
+                      This Year ({{ currentYear }})
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="error-slot">
+                <div class="error-msg" *ngIf="joinedYearError()">{{ joinedYearError() }}</div>
+                <div class="error-msg" *ngIf="!joinedYearError() && studentForm.get('joinedYear')?.touched && studentForm.get('joinedYear')?.invalid">
+                  <span *ngIf="studentForm.get('joinedYear')?.errors?.['required']">Joined year is required</span>
+                  <span *ngIf="studentForm.get('joinedYear')?.errors?.['pattern']">Please enter a valid 4-digit year</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Pass Out Year -->
+            <div class="form-group half-width">
+              <label>Pass out year <span class="req">*</span></label>
+              <div class="input-with-icon custom-year-picker-wrapper" (click)="$event.stopPropagation()">
+                <svg 
+                  class="calendar-icon-btn" 
+                  (click)="toggleYearPicker('passedOut', $event)" 
+                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  title="Open year picker">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  inputmode="numeric" 
+                  maxlength="4" 
+                  formControlName="passedOutYear" 
+                  [class.has-error]="passedOutYearError()" 
+                  [class.picker-open]="activeYearPicker() === 'passedOut'"
+                  placeholder="YYYY e.g. 2026" 
+                  (click)="toggleYearPicker('passedOut', $event)"
+                  (input)="onYearInputChange('passedOutYear')" 
+                  (blur)="onFieldBlur('passedOutYear')"
+                  autocomplete="off">
+                <button 
+                  type="button" 
+                  class="year-picker-toggle-btn"
+                  [class.open]="activeYearPicker() === 'passedOut'"
+                  (click)="toggleYearPicker('passedOut', $event)"
+                  aria-label="Toggle pass out year picker"
+                  tabindex="-1">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                <!-- Customized Year Picker Dropdown for Pass Out Year -->
+                <div class="custom-year-picker-dropdown" *ngIf="activeYearPicker() === 'passedOut'" (click)="$event.stopPropagation()">
+                  <div class="picker-header">
+                    <button type="button" class="picker-nav-btn" (click)="prevDecade('passedOut', $event)" title="Previous 12 years">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                    <span class="picker-decade-title">{{ getDecadeTitle('passedOut') }}</span>
+                    <button type="button" class="picker-nav-btn" (click)="nextDecade('passedOut', $event)" title="Next 12 years">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="picker-years-grid">
+                    <button
+                      type="button"
+                      *ngFor="let year of getDecadeYears('passedOut')"
+                      class="year-cell"
+                      [class.selected]="isPassedOutYearSelected(year)"
+                      [class.current-year]="year === currentYear"
+                      [class.is-disabled]="isPassedOutYearDisabled(year)"
+                      [disabled]="isPassedOutYearDisabled(year)"
+                      [title]="getPassedOutYearTooltip(year)"
+                      (click)="selectPassedOutYear(year, $event)">
+                      <span>{{ year }}</span>
+                      <span class="now-dot" *ngIf="year === currentYear" title="Current Year"></span>
+                    </button>
+                  </div>
+
+                  <div class="picker-footer">
+                    <div class="condition-hint" *ngIf="studentForm.get('joinedYear')?.value">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                      <span>Must be &ge; {{ studentForm.get('joinedYear')?.value }}</span>
+                    </div>
+                    <div class="condition-hint" *ngIf="!studentForm.get('joinedYear')?.value">
+                      <span>Select graduation year</span>
+                    </div>
+                    <button type="button" class="btn-today-chip" (click)="jumpToCurrentYear('passedOut', $event)">
+                      This Year ({{ currentYear }})
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="error-slot">
+                <div class="error-msg" *ngIf="passedOutYearError()">{{ passedOutYearError() }}</div>
+                <div class="error-msg" *ngIf="!passedOutYearError() && studentForm.get('passedOutYear')?.touched && studentForm.get('passedOutYear')?.invalid">
+                  <span *ngIf="studentForm.get('passedOutYear')?.errors?.['required']">Pass out year is required</span>
+                  <span *ngIf="studentForm.get('passedOutYear')?.errors?.['pattern']">Please enter a valid 4-digit year</span>
+                  <span *ngIf="studentForm.get('passedOutYear')?.errors?.['invalidOrder']">Pass out year cannot be earlier than joined year</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Student ID card <span class="req">*</span></label>
+            <div class="file-upload-box" 
+                 (dragover)="onDragOver($event)" 
+                 (drop)="onDrop($event)"
+                 (click)="fileInput.click()">
+              <input type="file" #fileInput (change)="onFileSelected($event)" accept=".jpg,.jpeg,.png,.pdf" style="display: none;">
+              
+              <div *ngIf="!selectedFile" class="upload-placeholder">
+                <div class="upload-icon-wrapper">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </div>
+                <p><strong>Click to upload</strong> or drag and drop</p>
+                <p class="file-hint">JPG, PNG or PDF, up to 5 MB</p>
+              </div>
+              
+              <div *ngIf="selectedFile" class="upload-success">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <p>{{ selectedFile.name }}</p>
+                <button type="button" class="btn-remove-file" (click)="removeSelectedFile($event)">Remove</button>
+              </div>
+            </div>
+            <div class="error-slot">
+              <div class="error-msg" *ngIf="fileError">{{ fileError }}</div>
+            </div>
+          </div>
+
+          <div class="error-msg submit-error" *ngIf="submitError()" style="margin-bottom: 8px; text-align: center;">
+            {{ submitError() }}
+          </div>
+
+          <div class="stepper-actions-single-right">
+            <button type="button" class="btn-next-step" (click)="goToNextStep()">
+              <span>Next</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: Account Setup & Submission -->
+        <div class="step-panel step-panel-step2" *ngIf="currentStep() === 2">
+          <!-- Profile Photo (Optional) -->
+          <div class="form-group profile-card-group">
+            <label>Profile photo <span class="optional-badge">(Optional)</span></label>
+            <div class="profile-hero-preview">
+              <div class="profile-main-row">
+                <div class="profile-left-col">
+                  <div class="avatar-ring-wrap" (click)="profileInput.click()" title="Click to upload profile picture">
+                    <div class="avatar-display">
+                      <img *ngIf="profilePreview()" [src]="profilePreview()" alt="Profile Preview" class="avatar-img" />
+                      <svg *ngIf="!profilePreview()" viewBox="0 0 100 100" class="default-avatar-svg">
+                        <defs>
+                          <clipPath id="defaultAvatarClip">
+                            <circle cx="50" cy="50" r="50"/>
+                          </clipPath>
+                        </defs>
+                        <circle cx="50" cy="50" r="50" fill="#b1b1b1"/>
+                        <g clip-path="url(#defaultAvatarClip)">
+                          <circle cx="50" cy="41" r="17" fill="#ececec"/>
+                          <path d="M50 71 C43 71 36 67 28 72 C20 80 14 90 12 100 L88 100 C86 90 80 80 72 72 C64 67 57 71 50 71 Z" fill="#ececec"/>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <input type="file" #profileInput (change)="onProfileSelected($event)" class="sr-only" style="display: none;"
+                    accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" />
+
+                  <div class="hero-details">
+                    <div class="hero-name-row">
+                      <h2 class="hero-display-name">{{ studentForm.get('fullName')?.value || studentForm.get('userName')?.value || 'Student' }}</h2>
+                    </div>
+
+                    <div class="hero-badges-row">
+                      <span class="badge badge-role">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        Student
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons: Upload Photo at Right -->
+                <div class="profile-actions-right">
+                  <button type="button" class="btn-hero-action primary" (click)="profileInput.click()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Upload Photo</span>
+                  </button>
+
+                  <button type="button" *ngIf="profilePreview()" class="btn-hero-action secondary text-danger" (click)="removeProfilePhoto($event)" title="Remove photo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Remove</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Verified Student Email (Disabled Field) -->
+          <div class="form-group">
+            <label>Verified student email</label>
+            <div class="input-with-icon disabled-input-wrapper">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <input 
+                type="email" 
+                [value]="studentForm.get('email')?.value" 
+                disabled 
+                readonly 
+                class="disabled-email-input" 
+                placeholder="Verified student email">
+              <div class="verified-inline-tag" title="Verified student email">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>Verified</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Username -->
+          <div class="form-group">
+            <label>Username <span class="req">*</span></label>
+            <div class="input-with-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <input 
+                type="text" 
+                formControlName="userName" 
+                name="student_custom_username"
+                id="student_custom_username"
+                [readonly]="isUserNameReadonly()"
+                (mousedown)="onCredentialFocus('userName')"
+                (focus)="onCredentialFocus('userName')"
+                [class.has-error]="userNameError() || (studentForm.get('userName')?.touched && studentForm.get('userName')?.invalid)" 
+                placeholder="Choose a username" 
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="none"
+                spellcheck="false"
+                (input)="onFieldInput('userName')" 
+                (blur)="onFieldBlur('userName')">
+            </div>
+            <div class="error-slot">
+              <div class="error-msg" *ngIf="userNameError()">{{ userNameError() }}</div>
+              <div class="error-msg" *ngIf="!userNameError() && studentForm.get('userName')?.touched && studentForm.get('userName')?.invalid">
+                <span *ngIf="studentForm.get('userName')?.errors?.['required']">Username is required</span>
+                <span *ngIf="studentForm.get('userName')?.errors?.['minlength']">Username must be at least 3 characters</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row password-row">
+            <!-- Password -->
+            <div class="form-group half-width">
+              <label>Password <span class="req">*</span></label>
+              <div class="input-with-icon password-input-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <input 
+                  [type]="showPassword() ? 'text' : 'password'" 
+                  formControlName="password" 
+                  name="student_custom_password"
+                  id="student_custom_password"
+                  [readonly]="isPasswordReadonly()"
+                  (mousedown)="onCredentialFocus('password')"
+                  (focus)="onCredentialFocus('password')"
+                  [class.has-error]="passwordError() || (studentForm.get('password')?.touched && studentForm.get('password')?.invalid)" 
+                  placeholder="At least 8 characters" 
+                  autocomplete="new-password"
+                  (input)="onFieldInput('password')" 
+                  (blur)="onFieldBlur('password')">
+                <button 
+                  type="button" 
+                  class="pwd-toggle-btn" 
+                  (click)="togglePasswordVisibility()" 
+                  tabindex="-1"
+                  [title]="showPassword() ? 'Hide password' : 'Show password'">
+                  <svg *ngIf="!showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <svg *ngIf="showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                </button>
+              </div>
+
+              <!-- Real-time Password Rules Checklist matching Image 2 -->
+              <div class="password-rules" *ngIf="studentForm.get('password')?.value && !isPasswordValid">
+                <div class="rule-item" [class.valid]="hasLowercase" [class.invalid]="!hasLowercase">
+                  <svg *ngIf="hasLowercase" class="rule-icon check" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <svg *ngIf="!hasLowercase" class="rule-icon cross" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  <span>At least one lowercase letter</span>
+                </div>
+                <div class="rule-item" [class.valid]="hasUppercase" [class.invalid]="!hasUppercase">
+                  <svg *ngIf="hasUppercase" class="rule-icon check" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <svg *ngIf="!hasUppercase" class="rule-icon cross" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  <span>At least one uppercase letter</span>
+                </div>
+                <div class="rule-item" [class.valid]="hasNumber" [class.invalid]="!hasNumber">
+                  <svg *ngIf="hasNumber" class="rule-icon check" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <svg *ngIf="!hasNumber" class="rule-icon cross" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  <span>At least one number</span>
+                </div>
+                <div class="rule-item" [class.valid]="hasSpecialChar" [class.invalid]="!hasSpecialChar">
+                  <svg *ngIf="hasSpecialChar" class="rule-icon check" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <svg *ngIf="!hasSpecialChar" class="rule-icon cross" width="14" height="14" viewBox="0 0 24 24"
+                    fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  <span>At least one special character</span>
+                </div>
+                <div class="rule-item" [class.valid]="hasMinLength" [class.invalid]="!hasMinLength">
+                  <svg *ngIf="hasMinLength" class="rule-icon check" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <svg *ngIf="!hasMinLength" class="rule-icon cross" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  <span>Minimum 8 characters</span>
+                </div>
+              </div>
+
+              <div class="error-slot">
+                <div class="error-msg" *ngIf="passwordError()">{{ passwordError() }}</div>
+                <div class="error-msg" *ngIf="!passwordError() && studentForm.get('password')?.touched && studentForm.get('password')?.invalid">
+                  <span *ngIf="studentForm.get('password')?.errors?.['required']">Password is required</span>
+                  <span *ngIf="studentForm.get('password')?.errors?.['minlength']">Must be at least 8 characters</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="form-group half-width">
+              <label>Confirm password <span class="req">*</span></label>
+              <div class="input-with-icon password-input-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <input 
+                  [type]="showConfirmPassword() ? 'text' : 'password'" 
+                  formControlName="confirmPassword" 
+                  name="student_custom_confirm_password"
+                  id="student_custom_confirm_password"
+                  [readonly]="isConfirmPasswordReadonly()"
+                  (mousedown)="onCredentialFocus('confirmPassword')"
+                  (focus)="onCredentialFocus('confirmPassword')"
+                  [class.has-error]="confirmPasswordError() || (studentForm.get('confirmPassword')?.touched && studentForm.get('confirmPassword')?.invalid)" 
+                  placeholder="Re-enter password" 
+                  autocomplete="new-password"
+                  (input)="onFieldInput('confirmPassword')" 
+                  (blur)="onFieldBlur('confirmPassword')">
+                <button 
+                  type="button" 
+                  class="pwd-toggle-btn" 
+                  (click)="toggleConfirmPasswordVisibility()" 
+                  tabindex="-1"
+                  [title]="showConfirmPassword() ? 'Hide password' : 'Show password'">
+                  <svg *ngIf="!showConfirmPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <svg *ngIf="showConfirmPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                </button>
+              </div>
+              <div class="error-slot">
+                <div class="error-msg" *ngIf="confirmPasswordError()">{{ confirmPasswordError() }}</div>
+                <div class="error-msg" *ngIf="!confirmPasswordError() && studentForm.get('confirmPassword')?.touched && studentForm.get('confirmPassword')?.invalid">
+                  Confirm password is required
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checkbox from Image 2 -->
+          <div class="form-group checkbox-group">
+            <label class="custom-checkbox">
+              <input type="checkbox" formControlName="confirmEnrolled" (change)="onFieldInput('confirmEnrolled')">
+              <span class="checkmark"></span>
+              <span class="checkbox-label">I confirm the information above is accurate and that I am currently enrolled as a student.</span>
+            </label>
+            <div class="error-slot">
+              <div class="error-msg" *ngIf="confirmEnrolledError()">{{ confirmEnrolledError() }}</div>
+              <div class="error-msg" *ngIf="!confirmEnrolledError() && studentForm.get('confirmEnrolled')?.touched && studentForm.get('confirmEnrolled')?.invalid">
+                Please confirm your student enrollment
+              </div>
+            </div>
+          </div>
+
+          <div class="error-msg submit-error" *ngIf="submitError()" style="margin-bottom: 6px; text-align: center;">
+            {{ submitError() }}
+          </div>
+
+          <!-- Step 2 Actions -->
+          <div class="stepper-actions-row">
+            <button type="button" class="btn-back-step" (click)="goToPrevStep()">
+              <span>Back</span>
+            </button>
+            <button type="submit" class="btn-claim-step" [disabled]="isSubmitting()">
+              <span *ngIf="isSubmitting()">Submitting...</span>
+              <span *ngIf="!isSubmitting()">Claim</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- OTP Modal -->
+<div class="otp-modal-overlay" *ngIf="showOtpModal()">
+  <div class="otp-modal">
+    <h3>Verify Email</h3>
+    <p>Enter the 6-digit code sent to your email.</p>
+    
+    <div class="otp-inputs" (paste)="onOtpPaste($event, 0)">
+      <input *ngFor="let digit of otp; let i = index; trackBy: trackByIndex" 
+             type="text" 
+             maxlength="1" 
+             [id]="'otp-' + i"
+             [value]="otp[i]"
+             (input)="onOtpInput($event, i)"
+             (keyup)="onOtpKeyUp($event, i)"
+             (keydown)="onOtpKeyDown($event, i)"
+             (paste)="onOtpPaste($event, i)"
+             (copy)="onOtpCopy($event)"
+             class="otp-input">
+    </div>
+
+    <div class="otp-resend-row">
+      <button type="button" class="btn-resend-link" (click)="resendOtp()" [disabled]="otpTimer() > 0 || isResendingOtp()">
+        <span *ngIf="isResendingOtp()">Sending OTP...</span>
+        <span *ngIf="!isResendingOtp()">Resend OTP</span>
+      </button>
+    </div>
+
+    <div class="otp-timer-container">
+      <span class="timer-text" *ngIf="otpTimer() > 0">Time remaining: {{ otpTimer() }}s</span>
+    </div>
+
+    <div class="otp-error-slot">
+      <div class="error-msg" *ngIf="otpVerifyError()">{{ otpVerifyError() }}</div>
+    </div>
+    
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" (click)="closeOtpModal()">Cancel</button>
+      <button type="button" class="btn-verify-otp" (click)="verifyOtp()">Verify OTP</button>
+    </div>
+  </div>
+</div>

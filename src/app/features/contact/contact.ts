@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewEncapsulation, HostListener, signal, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, HostListener, signal, inject, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { EnquiryService } from '../../core/services/enquiry.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SignOutService } from '../../core/services/sign-out.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { SeoService } from '../../core/services/seo.service';
 import { Icons } from '../../core/component/icons/icons';
@@ -43,7 +44,14 @@ export class ContactComponent implements OnInit {
 
   @ViewChild('fileUploadInput') fileUploadInput?: ElementRef<HTMLInputElement>;
 
-  isLoggedIn = false;
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
+
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
   isMobileMenuOpen = false;
 
   contactForm!: FormGroup;
@@ -72,12 +80,11 @@ export class ContactComponent implements OnInit {
     this.seoService.updateTags({
       title: 'Contact the dbNexus Team - dbNexus',
       description: 'Contact the dbNexus team for sales inquiries, enterprise solutions, technical help, or documentation.',
-      url: 'https://dbnexus.up.railway.app/contact'
+      url: 'https://www.dbnexus.io/contact'
     });
 
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'instant' });
-      this.isLoggedIn = this.auth.isLoggedIn();
     }
 
     const typeParam = this.route.snapshot.queryParamMap.get('type');
@@ -122,10 +129,15 @@ export class ContactComponent implements OnInit {
     }
   }
 
+  private signOutService = inject(SignOutService);
+  private cdr = inject(ChangeDetectorRef);
+
   logout(): void {
-    this.auth.logout();
-    this.isLoggedIn = false;
-    this.svc.showToast('Logged out successfully.', 2500, 'success');
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.svc.showToast('Logged out successfully.', 2500, 'success');
+      this.cdr.detectChanges();
+    });
   }
 
   resetForm() {

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { SignOutService } from '../../../core/services/sign-out.service';
+import { ChatbotService } from '../../../core/services/chatbot.service';
 import { Icons } from '../../../core/component/icons/icons';
 
 @Component({
@@ -15,6 +17,14 @@ export class AdminLayoutComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
   public dashService = inject(DashboardService);
+  private signOutService = inject(SignOutService);
+  public chatbotSvc = inject(ChatbotService);
+
+  toggleChatbot(): void {
+    const isHidden = !this.chatbotSvc.isHidden;
+    this.chatbotSvc.setHidden(isHidden);
+    this.dashService.showToast(isHidden ? 'Support bot hidden.' : 'Support bot restored.', 2000, 'info');
+  }
 
   sidebarCollapsed = false;
   mobileSidebarOpen = false;
@@ -22,6 +32,8 @@ export class AdminLayoutComponent {
   navItems = [
     { path: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
     { path: '/admin/plans', icon: 'plans', label: 'Plans' },
+    { path: '/admin/student-plan', icon: 'student-plan', label: 'Student Plan' },
+    { path: '/admin/offers', icon: 'offers', label: 'Offers' },
     { path: '/admin/features', icon: 'features', label: 'Features' },
     { path: '/admin/ai-configs', icon: 'ai-configs', label: 'AI configs' },
     { path: '/admin/organizations', icon: 'organizations', label: 'Organizations' },
@@ -63,7 +75,9 @@ export class AdminLayoutComponent {
   }
 
   logout(): void {
-    this.auth.logout();
-    this.router.navigate(['/login']);
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.router.navigate(['/login']);
+    });
   }
 }

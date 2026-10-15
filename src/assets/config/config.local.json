@@ -59,8 +59,8 @@
   },
   "paymentApiUrls": {
     "createSubscription": "http://localhost:4000/api/payments/create-subscription",
-    "verifySubscription": "http://localhost:4000/api/payments/verify-subscription"
-    
+    "verifySubscription": "http://localhost:4000/api/payments/verify-subscription",
+    "validateCoupon": "http://localhost:4000/api/payments/validate-coupon"
   },
   "organizationApiUrls": {
     "organizations": "http://localhost:4000/api/organizations",
@@ -112,10 +112,36 @@
     "aiChatModels": "http://localhost:4000/api/ai/models/",
     "aiChat": "http://localhost:4000/api/ai/chat",
     "aiChatHistoryById": "http://localhost:4000/api/ai/chat/history/{id}",
-    "aiChatHistoryApplied": "http://localhost:4000/api/ai/chat/history/applied",
     "aiSessions": "http://localhost:4000/api/ai/sessions",
     "aiSessionHistory": "http://localhost:4000/api/ai/sessions/{sessionId}/history",
-    "aiModelConfig": "http://localhost:4000/api/ai/models/{modelId}/config"
-
+    "aiModelConfig": "http://localhost:4000/api/ai/models/{modelId}/config",
+    "aiSystemSettings": "http://localhost:4000/api/ai/admin/system-settings",
+    "monthSettings": "http://localhost:4000/api/admin/month-settings",
+    "globalMonth": "http://localhost:4000/api/admin/students/global-month",
+    "studentCredentials": "http://localhost:4000/api/student/credentials",
+    "studentCredentialsById": "http://localhost:4000/api/student/credentials/{id}",
+    "deleteStudentCredential": "http://localhost:4000/api/student/credentials/{id}" ,
+    "offers": "http://localhost:4000/api/admin/offers",
+    "linkOffer": "http://localhost:4000/api/admin/offers/link"   
+  },
+  "studentPlanApiUrls": {
+    "sendOtp": "http://localhost:4000/api/student/send-otp",
+    "verifyOtp": "http://localhost:4000/api/student/verify-otp"
+    
+  },
+  "chatbotApiUrls": {
+    "session": "http://localhost:4000/api/chatbot/sessions",
+    "categories": "http://localhost:4000/api/chatbot/categories",
+    "categoryNodes": "http://localhost:4000/api/chatbot/categories/{id}/nodes",
+    "nodeById": "http://localhost:4000/api/chatbot/nodes/{id}",
+    "search": "http://localhost:4000/api/chatbot/search",
+    "interaction": "http://localhost:4000/api/chatbot/interactions",
+    "escalate": "http://localhost:4000/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "http://localhost:4000/api/enquiry",
+    "myEnquiries": "http://localhost:4000/api/enquiry/my-enquiries",
+    "updateEnquiry": "http://localhost:4000/api/enquiry/{id}",
+     "enquiryById": "http://localhost:4000/api/enquiry/{id}"
   }
 }

@@ -36,6 +36,15 @@
                 <span class="desc">Connect securely directly to your live database</span>
               </div>
             </a>
+            <a routerLink="/features/ai-schema-generator" class="dropdown-item" (click)="isFeaturesDropdownOpen = false">
+              <div class="dropdown-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
+              </div>
+              <div class="dropdown-text">
+                <span class="title">AI Schema Generator</span>
+                <span class="desc">Prompt to DBML: generate tables and map relationships instantly</span>
+              </div>
+            </a>
           </div>
         </div>
         <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
@@ -80,6 +89,7 @@
         <div class="mobile-dropdown-menu" *ngIf="isMobileFeaturesDropdownOpen" style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px; align-items: center; width: 100%;">
           <a routerLink="/features/db-docs" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">DB Docs</a>
           <a routerLink="/features/db-connect" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">DB Connect</a>
+          <a routerLink="/features/ai-schema-generator" class="mobile-nav-link" (click)="toggleMobileMenu()" style="font-size: 14px; opacity: 0.9;">AI Schema Generator</a>
         </div>
       </div>
       <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link"
@@ -99,6 +109,25 @@
 
   <!-- HERO SECTION -->
   <section class="pricing-hero">
+    <!-- STUDENT PLAN ADVERTISEMENT -->
+    <div class="pricing-ad-wrapper">
+      <a routerLink="/student-registration" target="_blank" rel="noopener noreferrer" class="pricing-student-ad" aria-label="Student Plan Offer">
+        <span class="ad-sparkle">🎓</span>
+        <span class="ad-badge">Student Offer</span>
+        <span class="ad-divider"></span>
+        <span class="ad-desc">
+          <span class="ad-desc-prefix">Are you a student? </span>Get dbNexus Pro for Free
+        </span>
+        <span class="ad-arrow">
+          <span>Apply Now</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+            <path d="m12 5 7 7-7 7"></path>
+          </svg>
+        </span>
+      </a>
+    </div>
+
     <span class="accent-title">PRICING BLUEPRINTS</span>
     <h1 class="hero-headline">Choose the right plan for your database designs</h1>
     <p class="hero-subtext">Scale up as you need more diagram capacity, team workspaces, or version history.</p>
@@ -106,10 +135,12 @@
     <div class="billing-toggle-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
       <div class="billing-toggle-container">
         <button id="btn-toggle-monthly" class="toggle-btn" [class.active]="!isAnnual" (click)="toggleBilling(false)">
-          Monthly billing
+          <span class="toggle-label-full">Monthly billing</span>
+          <span class="toggle-label-short">Monthly</span>
         </button>
         <button id="btn-toggle-annual" class="toggle-btn" [class.active]="isAnnual" (click)="toggleBilling(true)">
-          Annual billing
+          <span class="toggle-label-full">Annual billing</span>
+          <span class="toggle-label-short">Annual</span>
           <span class="discount-badge">Save up to {{ overallPercentage }}%</span>
         </button>
       </div>
@@ -123,19 +154,20 @@
       <!-- Plan Card -->
       <div *ngFor="let plan of displayedPlans" class="plan-card" [class.free-card]="plan.slug === 'free'"
         [class.premium-card]="plan.slug === 'premium'" [class.team-card]="plan.slug === 'team'"
-        [class.recommended]="plan.badge_text || plan.slug === 'team'"
+        [class.student-card]="studentSettings.isStudentPlan(plan)"
+        [class.recommended]="plan.badge_text || plan.slug === 'team' || studentSettings.isStudentPlan(plan)"
         [class.enterprise-card]="plan.slug === 'enterprise'" [id]="'card-plan-' + plan.slug">
-        <div class="recommended-badge" *ngIf="plan.badge_text || plan.slug === 'team'">
-          {{ plan.badge_text || 'POPULAR COLLABORATION' }}
+        <div class="recommended-badge" *ngIf="plan.badge_text || plan.slug === 'team' || studentSettings.isStudentPlan(plan)">
+          {{ studentSettings.getBadgeText(plan) }}
         </div>
         <div class="card-glow"
-          [style.background]="plan.highlight_color ? 'radial-gradient(circle, ' + plan.highlight_color + '22 0%, transparent 70%)' : ''">
+          >
         </div>
         <div class="card-header">
           <div class="plan-icon">
             <svg *ngIf="plan.slug === 'free'" class="plan-icon-svg" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <rect x="3" width="18" height="18" rx="2"></rect>
               <line x1="3" y1="9" x2="21" y2="9"></line>
               <line x1="9" y1="9" x2="9" y2="21"></line>
             </svg>
@@ -157,6 +189,10 @@
               stroke="currentColor" stroke-width="2">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
               <rect x="9" y="8" width="6" height="6" rx="1"></rect>
+            </svg>
+            <svg *ngIf="studentSettings.isStudentPlan(plan)" class="plan-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
             </svg>
           </div>
           <h3 class="plan-title">{{ plan.name }}</h3>
@@ -180,7 +216,7 @@
 
         <div class="card-price">
           <!-- Paid Plan -->
-          <ng-container *ngIf="plan.price_monthly > 0 && plan.slug !== 'enterprise'">
+          <ng-container *ngIf="plan.price_monthly > 0 && plan.slug !== 'enterprise' && !studentSettings.isStudentPlan(plan)">
             <div style="display: flex; align-items: baseline; gap: 4px;">
               <div class="price-val-row">
                 <span class="currency">{{ getCurrencySymbol() }}</span>
@@ -195,7 +231,7 @@
             </div>
           </ng-container>
 
-          <ng-container *ngIf="(plan.price_monthly === 0 || plan.slug === 'free') && plan.slug !== 'enterprise'">
+          <ng-container *ngIf="(plan.price_monthly === 0 || plan.slug === 'free') && plan.slug !== 'enterprise' && !studentSettings.isStudentPlan(plan)">
             <div style="display: flex; align-items: baseline;gap: 6px;">
               <div class="price-val-row">
                 <span class="price-amount">Free</span>
@@ -203,6 +239,18 @@
             </div>
             <div class="annual-billed-label" style="color: #64748b; font-size: 11px;">
               and it's forever
+            </div>
+          </ng-container>
+
+          <!-- Student Plan -->
+          <ng-container *ngIf="studentSettings.isStudentPlan(plan)">
+            <div style="display: flex; align-items: baseline; gap: 6px; min-height: 40px;">
+              <div class="price-val-row" style="align-items: flex-end; margin-bottom: 0;">
+                <span class="price-amount" style="font-size: 24px !important; line-height: 1.2 !important;">Free for students</span>
+              </div>
+            </div>
+            <div class="annual-billed-label" style="color: #ec4899; font-size: 11px; font-weight: 500;">
+              {{ studentSettings.getValidityText(plan) }}
             </div>
           </ng-container>
 
@@ -217,7 +265,7 @@
 
         <div class="card-action" style="margin-bottom: 15px;">
           <app-button *ngIf="!hideFreePlanButton(plan)" variant="none"
-            [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient'))))"
+            [customClass]="'btn-card-cta ' + (isCtaDisabled(plan) ? 'btn-disabled' : (studentSettings.isStudentPlan(plan) ? 'btn-student-gradient' : (plan.slug === 'free' ? 'btn-free-gradient' : (plan.slug === 'premium' ? 'btn-premium-gradient' : (plan.slug === 'team' ? 'btn-team-gradient' : 'btn-enterprise-gradient')))))"
             [disabled]="isCtaDisabled(plan)" (onClick)="selectPlan(plan)">
             {{ getCtaLabel(plan) }}
           </app-button>
@@ -253,7 +301,7 @@
           </div>
         </div>
 
-        <div class="card-divider"></div>
+        <div class="card-divider" *ngIf="getVisibleEntitlements(plan).length > 0"></div>
 
         <div class="card-features">
           <ul>
@@ -265,7 +313,7 @@
         </div>
 
         <!-- ADD-ONS SECTION -->
-        <div class="card-addons-section" *ngIf="plan.slug !== 'free' && plan.slug !== 'enterprise'">
+        <div class="card-addons-section" *ngIf="plan.slug !== 'free' && plan.slug !== 'enterprise' && !studentSettings.isStudentPlan(plan)">
           <div class="card-addons-divider"></div>
           <div class="addons-header">Add-ons:</div>
           <div class="addons-list">
@@ -344,28 +392,44 @@
   <!-- FAQ SECTION -->
   <section class="faq-section">
     <div class="faq-header">
-      <h2>Frequently Asked Questions</h2>
+      <h2 class="faq-title">Frequently Asked Questions</h2>
+      <p class="faq-subtitle">Everything you need to know about dbNexus, subscriptions, and how it fits into your workflow.</p>
     </div>
-    <div class="faq-grid">
-      <div class="faq-item">
-        <h4>Can I switch between monthly and annual plans?</h4>
-        <p>Yes, you can upgrade or downgrade your billing frequency at any time from your account settings.
-          Subscriptions will adjust automatically.</p>
+
+    <div class="faq-accordion">
+      <div 
+        class="faq-accordion-item" 
+        *ngFor="let item of faqs; let i = index" 
+        [class.is-open]="activeFaqIndex === i"
+      >
+        <button 
+          type="button"
+          class="faq-question-btn" 
+          (click)="toggleFaq(i)"
+          [attr.aria-expanded]="activeFaqIndex === i"
+        >
+          <span class="faq-question-text">{{ item.question }}</span>
+          <span class="faq-icon-indicator" [class.is-open]="activeFaqIndex === i">
+            <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line class="faq-icon-h" x1="5" y1="12" x2="19" y2="12"></line>
+              <line class="faq-icon-v" x1="12" y1="5" x2="12" y2="19"></line>
+            </svg>
+          </span>
+        </button>
+
+        <div class="faq-answer-panel">
+          <div class="faq-answer-inner">
+            <p class="faq-answer-text">
+              {{ item.answer }}<ng-container *ngIf="item.hasRefundLink"><a routerLink="/docs/refund-policy" class="faq-link">Refund Policy</a>.</ng-container>
+            </p>
+          </div>
+        </div>
       </div>
-      <div class="faq-item">
-        <h4>What happens when a diagram is shared?</h4>
-        <p>Under the Free tier, shared diagrams are public and viewable by anyone with the link. Premium and Team tiers
-          allow you to password-protect shared layouts or restrict access to specified workspace members.</p>
-      </div>
-      <div class="faq-item">
-        <h4>How do team user licenses work?</h4>
-        <p>The Team plan includes pro-rated developer licenses. Additional seats can be purchased dynamically at a
-          pro-rated price based on your current billing cycle duration.</p>
-      </div>
-      <div class="faq-item">
-        <h4>Do you offer refunds?</h4>
-        <p>All subscription purchases, upgrades, seat additions, and renewals are strictly final and non-refundable. You can disable auto-renewal in your account settings at any time to prevent future billing. For details, please review our <a routerLink="/docs/refund-policy">Refund Policy</a>.</p>
-      </div>
+    </div>
+
+    <div class="faq-footer-cta">
+      <p class="faq-cta-prompt">Didn't find your answer?</p>
+      <a routerLink="/faq" class="btn-see-faq">See the full FAQ</a>
     </div>
   </section>
 
@@ -402,5 +466,16 @@
       </div>
     </div>
   </div>
+
+  <!-- Coupon Checkout Confirmation Modal -->
+  <app-coupon-checkout-modal
+    [visible]="showCouponModal"
+    [plan]="pendingPlan"
+    [isAnnual]="isAnnual"
+    [currency]="selectedCurrency"
+    [processingPayment]="processingPayment"
+    (close)="closeCouponModal()"
+    (proceed)="onProceedWithCoupon($event)">
+  </app-coupon-checkout-modal>
 
 </div>

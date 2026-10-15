@@ -46,7 +46,8 @@
     "import": "API_URL/api/import",
     "export": "API_URL/api/export/{id}",
     "generateDbml": "API_URL/api/dbml/generate",
-    "generateDbmlSqlite": "API_URL/api/dbml/generate-sqllite"
+    "generateDbmlSqlite": "API_URL/api/dbml/generate-sqllite",
+    "testConnection": "API_URL/api/db/test-connection"
   },
   "pricingApiUrls": {
     "plans": "API_URL/api/pricing/plans",
@@ -54,7 +55,8 @@
   },
   "paymentApiUrls": {
     "createSubscription": "API_URL/api/payments/create-subscription",
-    "verifySubscription": "API_URL/api/payments/verify-subscription"
+    "verifySubscription": "API_URL/api/payments/verify-subscription",
+    "validateCoupon": "API_URL/api/payments/validate-coupon"
   },
   "organizationApiUrls": {
     "organizations": "API_URL/api/organizations",
@@ -108,6 +110,34 @@
     "aiSessions": "API_URL/api/ai/sessions",
     "aiSessionHistory": "API_URL/api/ai/sessions/{sessionId}/history",
     "deleteSessionHistory": "API_URL/api/ai/sessions/:sessionId/history",
-    "aiModelConfig": "API_URL/api/ai/models/:modelId/config"
+    "aiModelConfig": "API_URL/api/ai/models/:modelId/config",
+    "aiSystemSettings": "API_URL/api/ai/admin/system-settings",
+    "monthSettings": "API_URL/api/admin/month-settings",
+    "globalMonth": "API_URL/api/admin/students/global-month",
+    "studentCredentials": "API_URL/api/student/credentials",
+    "studentCredentialsById": "API_URL/api/student/credentials/{id}",
+    "deleteStudentCredential": "API_URL/api/student/credentials/{id}",
+    "offers": "API_URL/api/admin/offers",
+    "linkOffer": "API_URL/api/admin/offers/link"
+  },
+  "studentPlanApiUrls": {
+    "sendOtp": "API_URL/api/student/send-otp",
+    "verifyOtp": "API_URL/api/student/verify-otp"
+   
+  },
+  "chatbotApiUrls": {
+    "session": "API_URL/api/chatbot/sessions",
+    "categories": "API_URL/api/chatbot/categories",
+    "categoryNodes": "API_URL/api/chatbot/categories/{id}/nodes",
+    "nodeById": "API_URL/api/chatbot/nodes/{id}",
+    "search": "API_URL/api/chatbot/search",
+    "interaction": "API_URL/api/chatbot/interactions",
+    "escalate": "API_URL/api/chatbot/escalate"
+  },
+  "enquiryApiUrls": {
+    "submitEnquiry": "API_URL/api/enquiry",
+    "myEnquiries": "API_URL/api/enquiry/my-enquiries",
+    "updateEnquiry": "API_URL/api/enquiry/{id}",
+    "enquiryById": "API_URL/api/enquiry/{id}"
   }
 }

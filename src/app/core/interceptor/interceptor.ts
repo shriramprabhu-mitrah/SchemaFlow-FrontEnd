@@ -20,6 +20,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   /** URLs that must NOT carry an Authorization header (public endpoints) */
   const publicUrls = [
     '/api/pricing/plans',
+    '/student/',
+    '/api/student/'
   ];
   const isPublicUrl = publicUrls.some(p => req.url.includes(p));
 
@@ -73,7 +75,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         req.url.includes('/auth/reset-password') ||
         req.url.includes('/auth/forget-password') ||
         req.url.includes('/api/diagrams/public') ||
-        req.url.includes('/api/pricing');
+        req.url.includes('/api/pricing') ||
+        req.url.includes('/student/') ||
+        req.url.includes('/month-settings');
 
       if (error.status === 401 && !isBypassedUrl) {
         return auth.refreshToken().pipe(
@@ -87,7 +91,19 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           }),
           catchError((refreshErr) => {
             auth.clearLocalState();
-            router.navigate(['/login']);
+            const currentUrl = router.url || (typeof window !== 'undefined' ? window.location.pathname : '');
+            const isPublicRoute =
+              currentUrl.includes('/pricing') ||
+              currentUrl.includes('/student-registration') ||
+              currentUrl.includes('/student-offer') ||
+              currentUrl.includes('/contact') ||
+              currentUrl.includes('/login') ||
+              currentUrl.includes('/register') ||
+              currentUrl === '/' ||
+              currentUrl === '';
+            if (!isPublicRoute) {
+              router.navigate(['/login']);
+            }
             return throwError(() => refreshErr);
           })
         );

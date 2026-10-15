@@ -1,0 +1,11 @@
+S.No,Dimension Name,Scope,Event Parameter Name,Description,Example Value
+1,Event Category,Event,event_category,High-level module / feature category,"Authentication, Diagram, Monetization, Diagnostics"
+2,Event Custom Data,Event,event_custom_data,Contextual JSON string payload for the event,"{""diagram_name"":""users_schema"",""source"":""blank""}"
+3,Page Screen View,Event,page_screen_view,Current route view name or path,"/dashboard, /pricing, Canvas"
+4,App Version,Event,app_version,SchemaFlow application version,1.4.0
+5,Network Effective Type,Event,network_effective_type,Browser detected network connection quality tier,4g / 3g / 2g / wifi
+6,Battery Status,Event,battery,JSON representation of device battery info,"{""charging"":true,""level"":85}"
+7,Screen Resolution,Event,screen_resolution,Display width and height in pixels,1920x1080 / 1440x900
+8,Application Channel,Event,channel,Platform client channel,web
+9,API Request Duration,Event,api_request_duration,Latency of API calls formatted with ms unit,120ms / 350ms
+10,Client IP Address,Event,client_ip,Public IP address of client at event trigger time,103.212.145.22

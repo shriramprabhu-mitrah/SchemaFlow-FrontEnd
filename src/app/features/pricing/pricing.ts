@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { SignOutService } from '../../core/services/sign-out.service';
 import { AppConfigService } from '../../core/services/app-config.service';
 import { Icons } from '../../core/component/icons/icons';
 import { ButtonComponent } from '../../shared/button/button';
@@ -11,15 +12,22 @@ import { OrganizationService } from '../organization/services/organization.servi
 import { EntitlementService } from '../../core/services/entitlement.service';
 import { SeoService } from '../../core/services/seo.service';
 import { Footer } from '../../shared/components/footer/footer';
+import { CouponCheckoutModalComponent } from '../../shared/components/modals/coupon-checkout-modal/coupon-checkout-modal';
 import { environment } from '../../../environment/environment';
+import { StudentSettingsService } from '../../core/services/student-settings.service';
 
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer],
+  imports: [CommonModule, RouterModule, Icons, ButtonComponent, Footer, CouponCheckoutModalComponent],
   templateUrl: './pricing.html',
 })
 export class PricingComponent implements OnInit {
+
+  showCouponModal = false;
+  pendingSubId: string | null = null;
+  pendingPlan: any = null;
+  processingPayment = false;
 
   isFeaturesDropdownOpen = false;
 
@@ -42,7 +50,20 @@ export class PricingComponent implements OnInit {
   }
 
 
-  isLoggedIn = false;
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
+
+  set isLoggedIn(value: boolean) {
+    if (!value) {
+      this.auth.clearLocalState();
+    }
+  }
+
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
   isMobileMenuOpen = false;
 
   
@@ -69,12 +90,40 @@ export class PricingComponent implements OnInit {
 
   selectedCurrency = 'INR';
 
+  // FAQ Accordion State & Content
+  activeFaqIndex: number | null = 0;
+
+  faqs = [
+    {
+      question: 'Can I switch between monthly and annual plans?',
+      answer: 'Yes, you can upgrade or downgrade your billing frequency at any time from your account settings. Subscriptions will adjust automatically.'
+    },
+    {
+      question: 'What happens when a diagram is shared?',
+      answer: 'Under the Free tier, shared diagrams are public and viewable by anyone with the link. Premium and Team tiers allow you to password-protect shared layouts or restrict access to specified workspace members.'
+    },
+    {
+      question: 'How do team user licenses work?',
+      answer: 'The Team plan includes pro-rated developer licenses. Additional seats can be purchased dynamically at a pro-rated price based on your current billing cycle duration.'
+    },
+    {
+      question: 'Do you offer refunds?',
+      answer: 'All subscription purchases, upgrades, seat additions, and renewals are strictly final and non-refundable. You can disable auto-renewal in your account settings at any time to prevent future billing. For details, please review our ',
+      hasRefundLink: true
+    }
+  ];
+
+  toggleFaq(index: number): void {
+    this.activeFaqIndex = this.activeFaqIndex === index ? null : index;
+  }
+
   private http = inject(HttpClient);
   private appConfig = inject(AppConfigService);
   private cdr = inject(ChangeDetectorRef);
   private orgService = inject(OrganizationService);
   private entitlementService = inject(EntitlementService);
   private seoService = inject(SeoService);
+  public studentSettings = inject(StudentSettingsService);
 
   constructor(
     private auth: AuthService,
@@ -109,6 +158,9 @@ export class PricingComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to fetch user features on visibility change:', err);
+        if (err?.status === 401) {
+          this.auth.clearLocalState();
+        }
       }
     });
   }
@@ -117,7 +169,8 @@ export class PricingComponent implements OnInit {
     this.seoService.updateTags({
       title: 'Pricing - DBNexus',
       description: 'Choose the best plan for your database diagramming needs. Flexible pricing for individuals and organizations.',
-      url: 'https://dbnexus.up.railway.app/pricing'
+      url: 'https://www.dbnexus.io/pricing',
+      keywords: 'dbNexus pricing, database tool pricing, database schema plans, team subscription, database diagram tool pricing'
     });
 
     this.seoService.setStructuredData({
@@ -128,7 +181,6 @@ export class PricingComponent implements OnInit {
     });
 
     if (typeof window !== 'undefined') {
-      this.isLoggedIn = this.auth.isLoggedIn();
       // Account type loaded check
       if (this.isLoggedIn) {
         const accountType = this.auth.getAccountType();
@@ -164,6 +216,9 @@ export class PricingComponent implements OnInit {
           },
           error: (err) => {
             console.error('Failed to fetch user features:', err);
+            if (err?.status === 401) {
+              this.auth.clearLocalState();
+            }
             setTimeout(() => {
               this.cdr.detectChanges();
             });
@@ -208,6 +263,14 @@ export class PricingComponent implements OnInit {
             }
           }
           const loadedPlans = res?.data && res.data.length > 0 ? res.data : [];
+          const studentPlan = loadedPlans.find((p: any) => this.studentSettings.isStudentPlan(p));
+          if (studentPlan) {
+            this.studentSettings.setStudentPlan(studentPlan);
+            const m = this.studentSettings.extractPlanMonth(studentPlan);
+            if (m > 0) {
+              this.studentSettings.setMonth(m);
+            }
+          }
           this.plans = [...loadedPlans].sort((a, b) => {
             const orderA = this.getPlanOrder(a);
             const orderB = this.getPlanOrder(b);
@@ -236,11 +299,11 @@ export class PricingComponent implements OnInit {
     }
   }
 
-  /** Plans to display (all except enterprise by default, sorted by display_order) */
+  /** Plans to display (all except enterprise and student plan, sorted by display_order) */
   get displayedPlans(): any[] {
-    // Hide enterprise plan and sort by display_order
+    // Hide enterprise plan and student plan from pricing page display
     return this.plans
-      .filter(p => p.slug !== 'enterprise')
+      .filter(p => p.slug !== 'enterprise' && !this.studentSettings.isStudentPlan(p))
       .sort((a, b) => {
         const orderA = this.getPlanOrder(a);
         const orderB = this.getPlanOrder(b);
@@ -257,10 +320,14 @@ export class PricingComponent implements OnInit {
     }
   }
 
+  private signOutService = inject(SignOutService);
+
   logout(): void {
-    this.auth.logout();
-    this.isLoggedIn = false;
-    this.svc.showToast('Logged out successfully.', 2500, 'success');
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.svc.showToast('Logged out successfully.', 2500, 'success');
+      this.cdr.detectChanges();
+    });
   }
 
   toggleBilling(annual: boolean): void {
@@ -624,6 +691,7 @@ export class PricingComponent implements OnInit {
 
   /** CTA button label depending on audience + plan type + login state */
   getCtaLabel(plan: any): string {
+    if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
     if (this.auth.isSuperAdmin()) return 'Super Admin';
     if (plan.slug === 'enterprise') return 'Contact Sales';
 
@@ -633,6 +701,7 @@ export class PricingComponent implements OnInit {
     // --- Public (not logged in) ---
     if (!this.isLoggedIn) {
       if (plan.slug !== 'free' && plan.slug !== 'enterprise') {
+        if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
         return `Start free trial for ${trialDuration}`;
       }
       if (plan.cta_text) return plan.cta_text;
@@ -663,7 +732,10 @@ export class PricingComponent implements OnInit {
       return 'Business Only';
     }
 
-    if (this.isEligibleForTrial() && plan.slug !== 'free') return `Start free trial for ${trialDuration}`;
+    if (this.isEligibleForTrial() && plan.slug !== 'free') {
+      if (this.studentSettings.isStudentPlan(plan)) return 'Apply Offer';
+      return `Start free trial for ${trialDuration}`;
+    }
 
 
     if (monthlyPrice === 0) return 'Start for Free';
@@ -741,6 +813,11 @@ export class PricingComponent implements OnInit {
   }
 
   isCtaDisabled(plan: any): boolean {
+    // Student plan button must always remain enabled for any user (free, premium, team, etc.)
+    if (this.studentSettings.isStudentPlan(plan)) {
+      return false;
+    }
+
     if (this.auth.isSuperAdmin()) return true;
     if (!this.isLoggedIn) return false;
     if (this.currentPlanStatus === 'expired') return false;
@@ -782,6 +859,16 @@ export class PricingComponent implements OnInit {
   }
 
   selectPlan(plan: any): void {
+    if (this.studentSettings.isStudentPlan(plan)) {
+      if (typeof window !== 'undefined') {
+        const url = this.router.serializeUrl(this.router.createUrlTree(['/student-registration']));
+        window.open(url, '_blank');
+      } else {
+        this.router.navigate(['/student-registration']);
+      }
+      return;
+    }
+
     if (this.auth.isSuperAdmin()) {
       return;
     }
@@ -834,12 +921,16 @@ export class PricingComponent implements OnInit {
       this.cdr.detectChanges();
       this.orgService.upgrade(orgId, plan.slug).subscribe({
         next: (res) => {
-          console.log('ORG UPGRADE RESPONSE:', res);
+          // console.log('ORG UPGRADE RESPONSE:', res);
           const localSubId = res.data?.subscription_id || res.subscription_id;
 
           // Check if the plan requires payment (status will be 'expired' or pending)
           if (res.data?.status === 'expired' && localSubId) {
-            this.initiateRazorpayPayment(localSubId, plan);
+            this.upgrading = false;
+            this.pendingSubId = localSubId;
+            this.pendingPlan = plan;
+            this.showCouponModal = true;
+            this.cdr.detectChanges();
             return;
           }
 
@@ -876,7 +967,11 @@ export class PricingComponent implements OnInit {
 
         // Check if the plan is paid (no trial) and requires Razorpay
         if (res.data?.status === 'expired' && localSubId) {
-          this.initiateRazorpayPayment(localSubId, plan);
+          this.upgrading = false;
+          this.pendingSubId = localSubId;
+          this.pendingPlan = plan;
+          this.showCouponModal = true;
+          this.cdr.detectChanges();
           return;
         }
 
@@ -914,6 +1009,20 @@ export class PricingComponent implements OnInit {
     });
   }
 
+  closeCouponModal(): void {
+    this.showCouponModal = false;
+    this.pendingSubId = null;
+    this.pendingPlan = null;
+    this.processingPayment = false;
+    this.cdr.detectChanges();
+  }
+
+  onProceedWithCoupon(event: { couponCode?: string; offerId?: string; discount?: any }): void {
+    if (!this.pendingSubId || !this.pendingPlan) return;
+    this.processingPayment = true;
+    this.initiateRazorpayPayment(this.pendingSubId, this.pendingPlan, event.couponCode);
+  }
+
   private loadRazorpayScript(): Promise<boolean> {
     return new Promise(resolve => {
       if (typeof window === 'undefined') {
@@ -930,19 +1039,26 @@ export class PricingComponent implements OnInit {
     });
   }
 
-  private initiateRazorpayPayment(localSubId: string, plan: any): void {
+  private initiateRazorpayPayment(localSubId: string, plan: any, couponCode?: string): void {
     const baseUrl = this.appConfig.environment?.apiConfig?.baseUrl || 'http://localhost:4000';
     const createSubUrl = this.appConfig.environment?.paymentApiUrls?.createSubscription || `${baseUrl}/api/payments/create-subscription`;
     const verifySubUrl = this.appConfig.environment?.paymentApiUrls?.verifySubscription || `${baseUrl}/api/payments/verify-subscription`;
 
     const planType = `${plan.slug}_${this.isAnnual ? 'annual' : 'monthly'}`;
 
-    this.http.post<any>(createSubUrl, {
+    const payload: any = {
       planType: planType,
       currency: this.selectedCurrency,
       subscriptionId: localSubId
-    }, { withCredentials: true }).subscribe({
+    };
+    if (couponCode) {
+      payload.couponCode = couponCode;
+    }
+
+    this.http.post<any>(createSubUrl, payload, { withCredentials: true }).subscribe({
       next: async (res) => {
+        this.showCouponModal = false;
+        this.processingPayment = false;
         const rpSubId = res.subscription_id;
         if (!rpSubId) {
           this.upgrading = false;
@@ -1022,7 +1138,9 @@ export class PricingComponent implements OnInit {
       },
       error: (err) => {
         this.upgrading = false;
-        this.svc.showToast('Error initiating checkout. Please try again.', 4000, 'error');
+        this.processingPayment = false;
+        const msg = err?.error?.error || err?.error?.message || 'Error initiating checkout. Please try again.';
+        this.svc.showToast(msg, 4000, 'error');
         this.cdr.detectChanges();
       }
     });

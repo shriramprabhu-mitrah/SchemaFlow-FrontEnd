@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpEvent, HttpEventType } from '@angular/common/http';
 import { BehaviorSubject, EMPTY, Observable, Subject, catchError, debounceTime, finalize, map, switchMap, tap, throwError, of } from 'rxjs';
 import { AuthService } from './auth.service';
 import { AppConfigService } from './app-config.service';
@@ -25,6 +25,14 @@ export interface DiffReviewLine {
   hunkId?: number;
 }
 
+export interface QueryProgressInfo {
+  active: boolean;
+  type: 'import' | 'export';
+  title: string;
+  subtitle?: string;
+  progress: number;
+}
+
 export interface Column {
   name: string;
   type: string;
@@ -42,6 +50,8 @@ export interface Column {
   note?: string;
   fkTable?: string;
   fkCol?: string;
+  acceptedValues?: string[];
+  acceptedValuesCount?: number;
 }
 
 export interface TableDef {
@@ -54,6 +64,8 @@ export interface TableDef {
   height: number;
   colY: Record<string, number>;
   color?: string;
+  indexes?: string[];
+  checks?: string[];
 }
 
 export interface PathPoint {
@@ -438,7 +450,7 @@ export class DashboardService {
   getTableHeight(columns: Column[]): number {
     let visibleCount = columns.length;
     if (this.isKeyOnly) {
-      visibleCount = columns.filter(c => c.pk || c.fk || (c as any).isRelTarget).length;
+      visibleCount = columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource).length;
     } else if (this.isColumnNameOnly) {
       visibleCount = 0;
     }
@@ -1407,6 +1419,16 @@ export class DashboardService {
   selectedVersion = signal<any>(null);
   revertRequested$ = new Subject<void>();
   closeVersionHistory$ = new Subject<void>();
+  readonly closeChatbot$ = new Subject<void>();
+  readonly closeHeaderMenus$ = new Subject<void>();
+
+  closeChatbot(): void {
+    this.closeChatbot$.next();
+  }
+
+  closeHeaderMenus(): void {
+    this.closeHeaderMenus$.next();
+  }
 
   showUpgradeModal$ = new Subject<string>();
 
@@ -1414,12 +1436,14 @@ export class DashboardService {
     if (this.auth.isSuperAdmin()) {
       return;
     }
+    this.closeChatbot();
     this.showUpgradeModal$.next(featureKey);
   }
 
   openShareModal$ = new Subject<void>();
 
   openShareModal(): void {
+    this.closeChatbot();
     if (this.editorErrors().length > 0 || this.getValidationErrors().length > 0 || this.dbmlValidationError != null) {
       this.showToast('Cannot share diagram with syntax errors. Please fix errors first.', 3000, 'error');
       return;
@@ -1436,15 +1460,57 @@ export class DashboardService {
   }
 
   openImportModal$ = new Subject<string>();
+  pendingOpenImportModal: string | boolean = false;
 
-  openImportModal(dialect: string): void {
+  openImportModal(dialect: string = 'mysql'): void {
+    this.closeChatbot();
     this.openImportModal$.next(dialect);
   }
 
+  openSidebarImportMenu$ = new Subject<void>();
+  pendingOpenSidebarImportMenu = false;
+
+  openSidebarImportMenu(): void {
+    this.closeChatbot();
+    this.openSidebarImportMenu$.next();
+  }
+
   openConnectionStringModal$ = new Subject<void>();
+  pendingOpenConnectionStringModal = false;
 
   openConnectionStringModal(): void {
+    this.closeChatbot();
     this.openConnectionStringModal$.next();
+  }
+
+  openAiChat$ = new Subject<void>();
+  pendingOpenAiChat = false;
+
+  openAiChat(): void {
+    this.closeChatbot();
+    this.closeErrorsCard();
+    if (!this.auth.isLoggedIn()) {
+      this.authModalVisible.set(true);
+      return;
+    }
+    if (this.isSampleDiagram()) {
+      return;
+    }
+    if (!this.entitlementService.canUseFeature('ai_chat')) {
+      if (!this.entitlementService.orgHasFeature('ai_chat')) {
+        this.showUpgradeModal('ai_chat');
+      }
+      return;
+    }
+    if (this.showDiffChecker()) {
+      this.closeDiffChecker();
+    }
+    this.showDocs = false;
+    if (this.sidebarInspectorTab()) {
+      this.sidebarInspectorTab.set(null);
+    }
+    this.toggleAiChat(true);
+    this.openAiChat$.next();
   }
 
   formatVersionDate(dateStr: string | Date): string {
@@ -1474,6 +1540,150 @@ export class DashboardService {
   }
 
   readonly isDiagramLoading = signal(false);
+  readonly queryProgress = signal<QueryProgressInfo | null>(null);
+  private queryProgressInterval: any = null;
+
+  startQueryProgress(type: 'import' | 'export', title: string, subtitle?: string): void {
+    if (this.queryProgressInterval) {
+      clearInterval(this.queryProgressInterval);
+      this.queryProgressInterval = null;
+    }
+
+    this.queryProgress.set({
+      active: true,
+      type,
+      title,
+      subtitle,
+      progress: 10
+    });
+
+    let current = 10;
+    this.queryProgressInterval = setInterval(() => {
+      const state = this.queryProgress();
+      if (!state || !state.active) {
+        clearInterval(this.queryProgressInterval);
+        this.queryProgressInterval = null;
+        return;
+      }
+      if (current < 85) {
+        current += Math.floor(Math.random() * 4) + 2;
+        if (current > 85) current = 85;
+        this.queryProgress.set({
+          ...state,
+          progress: Math.max(state.progress, current)
+        });
+      }
+    }, 250);
+  }
+
+  updateQueryProgress(progress: number, subtitle?: string): void {
+    const state = this.queryProgress();
+    if (!state || !state.active) return;
+    const clamped = Math.max(state.progress, Math.min(99, Math.round(progress)));
+    this.queryProgress.set({
+      ...state,
+      progress: clamped,
+      subtitle: subtitle ?? state.subtitle
+    });
+  }
+
+  trackHttpProgress<T>(
+    type: 'import' | 'export',
+    title: string,
+    initialSubtitle?: string
+  ): (source$: Observable<HttpEvent<T>>) => Observable<T> {
+    return (source$: Observable<HttpEvent<T>>) => {
+      return new Observable<T>((subscriber) => {
+        this.startQueryProgress(type, title, initialSubtitle || (type === 'import' ? 'Preparing query import...' : 'Preparing query export...'));
+
+        const sub = source$.subscribe({
+          next: (event: HttpEvent<T>) => {
+            switch (event.type) {
+              case HttpEventType.Sent: {
+                this.updateQueryProgress(15, 'Request sent to server...');
+                break;
+              }
+              case HttpEventType.UploadProgress: {
+                if (event.total && event.total > 0) {
+                  const uploadPct = Math.round((event.loaded / event.total) * 100);
+                  const progressVal = 15 + Math.round((uploadPct / 100) * 45);
+                  this.updateQueryProgress(progressVal, `Uploading schema data (${uploadPct}%)...`);
+                } else {
+                  this.updateQueryProgress(35, 'Uploading schema data...');
+                }
+                break;
+              }
+              case HttpEventType.ResponseHeader: {
+                this.updateQueryProgress(68, 'Server processing schema...');
+                break;
+              }
+              case HttpEventType.DownloadProgress: {
+                if (event.total && event.total > 0) {
+                  const downloadPct = Math.round((event.loaded / event.total) * 100);
+                  const progressVal = 68 + Math.round((downloadPct / 100) * 25);
+                  this.updateQueryProgress(progressVal, `Receiving response (${downloadPct}%)...`);
+                } else {
+                  this.updateQueryProgress(85, 'Receiving response...');
+                }
+                break;
+              }
+              case HttpEventType.Response: {
+                this.completeQueryProgress(() => {
+                  subscriber.next(event.body as T);
+                  subscriber.complete();
+                });
+                break;
+              }
+              default:
+                break;
+            }
+          },
+          error: (err: any) => {
+            this.stopQueryProgress();
+            subscriber.error(err);
+          },
+          complete: () => {
+            if (this.queryProgress()?.active) {
+              this.stopQueryProgress();
+            }
+          }
+        });
+
+        return () => {
+          sub.unsubscribe();
+          this.stopQueryProgress();
+        };
+      });
+    };
+  }
+
+  completeQueryProgress(callback?: () => void): void {
+    if (this.queryProgressInterval) {
+      clearInterval(this.queryProgressInterval);
+      this.queryProgressInterval = null;
+    }
+    const state = this.queryProgress();
+    if (state && state.active) {
+      this.queryProgress.set({
+        ...state,
+        progress: 100
+      });
+      setTimeout(() => {
+        this.queryProgress.set(null);
+        if (callback) callback();
+      }, 350);
+    } else {
+      if (callback) callback();
+    }
+  }
+
+  stopQueryProgress(): void {
+    if (this.queryProgressInterval) {
+      clearInterval(this.queryProgressInterval);
+      this.queryProgressInterval = null;
+    }
+    this.queryProgress.set(null);
+  }
   readonly isSaving = signal(false);
   readonly diagramWorkspaceType = signal<string>('Personal');
   readonly isDocUnlocked = signal<boolean>(false);
@@ -1672,6 +1882,23 @@ export class DashboardService {
   refColors: Record<string, string> = {};
   groupColors: Record<string, string> = {};
   tableColorsMap: Record<string, string> = {};
+  readonly SCHEMA_COLORS: string[] = [
+    '#2563eb', // Royal Blue
+    '#059669', // Emerald Green
+    '#7c3aed', // Purple
+    '#b45309', // Amber / Gold
+    '#db2777', // Rose / Pink
+    '#0891b2', // Cyan
+    '#c2410c', // Orange
+    '#4f46e5', // Indigo
+    '#0d9488', // Dark Teal
+    '#dc2626', // Red
+    '#4d7c0f', // Lime
+    '#9333ea', // Violet
+    '#0369a1', // Sky Blue
+    '#a21caf', // Fuchsia
+    '#475569'  // Slate
+  ];
 
   isAllFields = true;
   isKeyOnly = false;
@@ -2650,8 +2877,8 @@ export class DashboardService {
 
   /* ============ DBML PARSER ============ */
 
-  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
-    const tables: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
+  parseDBML(text: string): { tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string; indexes?: string[]; checks?: string[] }[]; refs: RefDef[]; groups?: any[]; notes?: { name: string; text: string }[] } {
+    const tables: { name: string; columns: Column[]; width?: number; height?: number; color?: string; indexes?: string[]; checks?: string[] }[] = [];
     const refs: RefDef[] = [];
     const groups: { name: string; color: string; tables: string[] }[] = [];
 
@@ -2663,30 +2890,146 @@ export class DashboardService {
       .replace(/^(\s*)ref(\s*:)/gim, '$1Ref$2')
       .replace(/^(\s*)note(\s)/gim, '$1Note$2');
 
-    const tableRe = /Table\s+([A-Za-z0-9_.]+)\s*\{([\s\S]*?)\}/gi;
+    const tableStartRe = /Table\s+([^{\r\n]+?)\s*\{/gi;
     let m: RegExpExecArray | null;
     const seenTables = new Set<string>();
-    while ((m = tableRe.exec(text)) !== null) {
-      const name = m[1];
+    while ((m = tableStartRe.exec(text)) !== null) {
+      const header = m[1].trim();
+      const startIndex = tableStartRe.lastIndex;
+      let braceCount = 1;
+      let i = startIndex;
+      let inSingleQuote = false;
+      let inDoubleQuote = false;
+      let inBacktick = false;
+      let inLineComment = false;
+
+      while (i < text.length && braceCount > 0) {
+        const char = text[i];
+        const prevChar = i > 0 ? text[i - 1] : '';
+
+        if (inLineComment) {
+          if (char === '\n' || char === '\r') inLineComment = false;
+        } else if (inSingleQuote) {
+          if (char === "'" && prevChar !== '\\') inSingleQuote = false;
+        } else if (inDoubleQuote) {
+          if (char === '"' && prevChar !== '\\') inDoubleQuote = false;
+        } else if (inBacktick) {
+          if (char === '`' && prevChar !== '\\') inBacktick = false;
+        } else {
+          if (char === '/' && text[i + 1] === '/') {
+            inLineComment = true;
+            i++;
+          } else if (char === "'") {
+            inSingleQuote = true;
+          } else if (char === '"') {
+            inDoubleQuote = true;
+          } else if (char === '`') {
+            inBacktick = true;
+          } else if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+          }
+        }
+        i++;
+      }
+      const body = text.substring(startIndex, i > startIndex ? i - 1 : startIndex);
+      tableStartRe.lastIndex = i;
+
+      let rawAttrs = '';
+      let namePart = header;
+      const bracketMatch = header.match(/^(.*?)\s*\[(.*?)\]\s*$/);
+      if (bracketMatch) {
+        namePart = bracketMatch[1].trim();
+        rawAttrs = bracketMatch[2].trim();
+      }
+      namePart = namePart.replace(/\s+as\s+[A-Za-z0-9_]+/i, '').trim();
+      const name = namePart.replace(/["'`]/g, '');
+      const colorMatch = rawAttrs.match(/(?:headercolor|color):\s*([#A-Za-z0-9]+)/i);
+      const headerColor = colorMatch ? colorMatch[1] : undefined;
+
       const nameLower = name.toLowerCase();
       if (seenTables.has(nameLower)) {
         continue;
       }
       seenTables.add(nameLower);
-      const body = m[2];
+
+      const tableIndexes: string[] = [];
+      const tableChecks: string[] = [];
+
+      // Extract indexes block
+      const indexesMatch = body.match(/indexes\s*\{([\s\S]*?)\}/i);
+      if (indexesMatch) {
+        indexesMatch[1].split('\n').forEach(line => {
+          line = line.trim();
+          if (!line || line.startsWith('//') || line === '}') return;
+          const bMatch = line.match(/^([\s\S]*?)\s*\[/);
+          let expr = (bMatch ? bMatch[1] : line).trim();
+          if (!expr.startsWith('(') && (
+            (expr.startsWith('`') && expr.endsWith('`')) ||
+            (expr.startsWith("'") && expr.endsWith("'")) ||
+            (expr.startsWith('"') && expr.endsWith('"'))
+          )) {
+            expr = expr.slice(1, -1).trim();
+          }
+          if (expr && !tableIndexes.includes(expr)) {
+            tableIndexes.push(expr);
+          }
+        });
+      }
+
+      // Extract checks block
+      const checksMatch = body.match(/checks\s*\{([\s\S]*?)\}/i);
+      if (checksMatch) {
+        checksMatch[1].split('\n').forEach(line => {
+          line = line.trim();
+          if (!line || line.startsWith('//') || line === '}') return;
+          const bMatch = line.match(/^([\s\S]*?)\s*\[/);
+          let expr = (bMatch ? bMatch[1] : line).trim();
+          if (
+            (expr.startsWith('`') && expr.endsWith('`')) ||
+            (expr.startsWith("'") && expr.endsWith("'")) ||
+            (expr.startsWith('"') && expr.endsWith('"'))
+          ) {
+            expr = expr.slice(1, -1).trim();
+          }
+          if (expr && !tableChecks.includes(expr)) {
+            tableChecks.push(expr);
+          }
+        });
+      }
+
+      // Strip nested blocks before column parsing
+      let cleanBody = body
+        .replace(/indexes\s*\{[\s\S]*?\}/gi, '')
+        .replace(/checks\s*\{[\s\S]*?\}/gi, '')
+        .replace(/Note\s*\{[\s\S]*?\}/gi, '');
+
+      // Collapse newlines inside square brackets [ ... ] so multi-line column definitions stay on one line
+      cleanBody = cleanBody.replace(/\[([^\]]*)\]/g, (match) => {
+        return match.replace(/\r?\n\s*/g, ' ');
+      });
+
       const cols: Column[] = [];
-      body.split('\n').forEach((line) => {
+      cleanBody.split('\n').forEach((line) => {
         line = line.trim();
-        if (!line || line.indexOf('//') === 0 || /^Note\b/i.test(line) || /^indexes\b/i.test(line) || line === '}') return;
+        if (!line || line.indexOf('//') === 0 || /^Note\b/i.test(line) || /^indexes\b/i.test(line) || /^checks\b/i.test(line) || line === '}') return;
 
         let rawAttrs = '';
         let mainPart = line;
 
-        // Extract settings in [...] at the end of the line
-        const bracketMatch = line.match(/^([\s\S]*?)\s*\[([\s\S]*)\]\s*$/);
-        if (bracketMatch) {
-          mainPart = bracketMatch[1].trim();
-          rawAttrs = bracketMatch[2].trim();
+        // Extract settings in [...] (support single or multiple bracket groups)
+        const allBracketMatches = line.match(/\[([\s\S]*?)\]/g);
+        if (allBracketMatches) {
+          rawAttrs = allBracketMatches.map(b => b.slice(1, -1).trim()).join(', ');
+          mainPart = line.replace(/\[[\s\S]*?\]/g, '').trim();
+        } else {
+          // If an unclosed bracket [ exists on the line, separate attributes to avoid leaking into colType
+          const unclosedBracketIdx = line.indexOf('[');
+          if (unclosedBracketIdx !== -1) {
+            mainPart = line.substring(0, unclosedBracketIdx).trim();
+            rawAttrs = line.substring(unclosedBracketIdx + 1).trim();
+          }
         }
 
         // Match column name (identifier or quoted) and column type (the rest of mainPart)
@@ -2704,9 +3047,34 @@ export class DashboardService {
             colType = colType.slice(1, -1).trim();
           }
 
-          let cleanType = colType.trim();
-          if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+          // Strip any residual bracket markup from colType
+          colType = colType.replace(/\s*\[[\s\S]*$/, '').trim();
+
+          let cleanType = colType;
+          let acceptedValues: string[] = [];
+
+          // 1. If cleanType is enum(...) with literal values: enum('A', 'B') -> enum(2)
+          const enumMatch = cleanType.match(/^enum\s*\(\s*(?:['"][^'"]+['"](?:\s*,\s*['"][^'"]+['"])*)\s*\)/i);
+          if (enumMatch) {
+            const rawVals = cleanType.match(/('[^']*'|"[^"]*")/g);
+            if (rawVals && rawVals.length > 0) {
+              acceptedValues = rawVals.map((v: string) => v.slice(1, -1));
+              cleanType = `enum(${acceptedValues.length})`;
+            }
+          }
+
+          if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double|enum|set)\b/i.test(cleanType)) {
             cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
+          }
+
+          // 2. Extract accepted values if present in rawAttrs (e.g. check: IN ('A', 'B') or ('A', 'B'))
+          const allowedValuesMatch = rawAttrs.match(/(?:\bin\s*)?(\(\s*(?:['"][^'"]+['"](?:\s*,\s*['"][^'"]+['"])*)\s*\))/i);
+          if (allowedValuesMatch) {
+            const rawVals = allowedValuesMatch[1].match(/('[^']*'|"[^"]*")/g);
+            if (rawVals && rawVals.length > 0) {
+              acceptedValues = rawVals.map((v: string) => v.slice(1, -1));
+              cleanType = `${cleanType} (${acceptedValues.length})`;
+            }
           }
           const attrsLower = rawAttrs.toLowerCase();
 
@@ -2736,6 +3104,9 @@ export class DashboardService {
               val = val.slice(1, -1);
             }
             checkVal = val;
+            if (checkVal && !tableChecks.includes(checkVal)) {
+              tableChecks.push(checkVal);
+            }
           }
 
           const noteMatch = rawAttrs.match(/note:\s*('[^']*'|"[^"]*"|`[^`]*`)/i);
@@ -2764,7 +3135,9 @@ export class DashboardService {
             defaultVal,
             check: hasCheck,
             checkVal,
-            note: noteVal
+            note: noteVal,
+            acceptedValues: acceptedValues.length > 0 ? acceptedValues : undefined,
+            acceptedValuesCount: acceptedValues.length > 0 ? acceptedValues.length : undefined
           });
 
           const inlineRefMatch = rawAttrs.match(/ref:\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_]+)"?\."?([A-Za-z0-9_]+)"?/i);
@@ -2792,7 +3165,7 @@ export class DashboardService {
           }
         }
       });
-      tables.push({ name, columns: cols });
+      tables.push({ name, columns: cols, color: headerColor, indexes: tableIndexes, checks: tableChecks });
     }
 
    const refRe = /Ref(?:\s+[A-Za-z0-9_]+)?\s*:\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?\s*(<->|<>|>|<|-)\s*"?([A-Za-z0-9_.]+)"?\."?([A-Za-z0-9_]+)"?/gi;
@@ -2877,6 +3250,51 @@ export class DashboardService {
 
   parseAndLayout(): void {
     const parsed = this.parseDBML(this.code);
+
+    const fkMap = new Map<string, { targetTable: string; targetCol: string }>();
+    parsed.refs.forEach((r) => {
+      const fromTab = parsed.tables.find(t => t.name === r.fromTable);
+      const toTab = parsed.tables.find(t => t.name === r.toTable);
+      const fromCol = fromTab?.columns.find(c => c.name === r.fromCol);
+      const toCol = toTab?.columns.find(c => c.name === r.toCol);
+
+      const fromPk = fromCol?.pk;
+      const toPk = toCol?.pk;
+
+      if (r.relType === '-') {
+        // One-to-one: only mark FK if one side is not a PK
+        if (!fromPk && toPk) {
+          fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+        } else if (fromPk && !toPk) {
+          fkMap.set(`${r.toTable}.${r.toCol}`, { targetTable: r.fromTable, targetCol: r.fromCol });
+        } else if (!fromPk && !toPk) {
+          fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+        }
+      } else if (r.relType === '<>' || r.relType === '<->') {
+        // Many-to-many: neither column is a direct FK
+      } else {
+        // In DBML, '>' means fromTable is child/FK referencing toTable.
+        // For '<', parseDBML already normalized fromTable to be the child/FK.
+        // Therefore, r.fromTable is always the foreign key.
+        fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
+      }
+    });
+
+    parsed.tables.forEach((t) => {
+      t.columns.forEach((c) => {
+        const refInfo = fkMap.get(`${t.name}.${c.name}`);
+        c.fk = !!refInfo;
+        if (refInfo) {
+          c.fkTable = refInfo.targetTable;
+          c.fkCol = refInfo.targetCol;
+        } else {
+          c.fkTable = undefined;
+          c.fkCol = undefined;
+        }
+        (c as any).isRelTarget = parsed.refs.some(r => (r.toTable === t.name && r.toCol === c.name) || (r.fromTable === t.name && r.fromCol === c.name));
+        (c as any).isRelSource = parsed.refs.some(r => r.fromTable === t.name && r.fromCol === c.name);
+      });
+    });
 
     // --- Sync Note blocks from DBML into svc.notes (editor → canvas) ---
     if (!this._syncingNotesToCode) {
@@ -3022,6 +3440,20 @@ export class DashboardService {
         color
       };
     }) : [];
+
+    // Build schema colors map so tables of each schema are visually differentiated
+    const schemaToColor = new Map<string, string>();
+    let schemaColorIdx = 0;
+    parsed.tables.forEach(t => {
+      const schema = this.extractTableSchema(t.name);
+      if (schema) {
+        const lower = schema.toLowerCase();
+        if (!schemaToColor.has(lower)) {
+          schemaToColor.set(lower, this.getSchemaColor(schemaColorIdx));
+          schemaColorIdx++;
+        }
+      }
+    });
 
     let deletedTablesForDiff: { name: string; columns: Column[]; width?: number; height?: number }[] = [];
     if (this.aiDiffReviewActive()) {
@@ -3208,7 +3640,7 @@ export class DashboardService {
       if (this.isAllFields) {
         visibleColumns = t.columns;
       } else if (this.isKeyOnly) {
-        visibleColumns = t.columns.filter(c => c.pk || c.fk);
+        visibleColumns = t.columns.filter(c => c.pk || c.fk || (c as any).isRelTarget || (c as any).isRelSource);
       } else if (this.isColumnNameOnly) {
         visibleColumns = [];
       }
@@ -3221,6 +3653,14 @@ export class DashboardService {
         colY[c.name] = yVal;
         colY[c.name.toLowerCase()] = yVal;
       });
+      const schema = this.extractTableSchema(t.name);
+      const schemaColor = schema ? schemaToColor.get(schema.toLowerCase()) : undefined;
+      const userCustomColor = t.color || this.getTableCustomColor(t.name);
+      const finalColor = userCustomColor || tableColors.get(t.name) || schemaColor;
+      if (t.color) {
+        this.tableColorsMap[t.name] = t.color;
+      }
+
       return {
         name: t.name,
         columns: t.columns,
@@ -3229,7 +3669,9 @@ export class DashboardService {
         width: this.getTableWidth(t.name, t.columns),
         height,
         colY,
-        color: tableColors.get(t.name) || this.tableColorsMap[t.name]
+        color: finalColor,
+        indexes: t.indexes || [],
+        checks: t.checks || []
       };
     });
 
@@ -3266,57 +3708,6 @@ export class DashboardService {
         { waypoints: r.waypoints, color: r.color }
       ])
     );
-    const fkMap = new Map<string, { targetTable: string; targetCol: string }>();
-    parsed.refs.forEach((r) => {
-      const fromTab = parsed.tables.find(t => t.name === r.fromTable);
-      const toTab = parsed.tables.find(t => t.name === r.toTable);
-      const fromCol = fromTab?.columns.find(c => c.name === r.fromCol);
-      const toCol = toTab?.columns.find(c => c.name === r.toCol);
-
-      const fromPk = fromCol?.pk;
-      const toPk = toCol?.pk;
-
-      if (r.relType === '-') {
-        // One-to-one: only mark FK if one side is not a PK
-        if (!fromPk && toPk) {
-          fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
-        } else if (fromPk && !toPk) {
-          fkMap.set(`${r.toTable}.${r.toCol}`, { targetTable: r.fromTable, targetCol: r.fromCol });
-        }
-      } else if (r.relType === '<>' || r.relType === '<->') {
-        // Many-to-many: neither column is a direct FK
-      } else {
-        // In DBML, '>' means fromTable is child/FK referencing toTable.
-        // For '<', parseDBML already normalized fromTable to be the child/FK.
-        // Therefore, r.fromTable is always the foreign key.
-        fkMap.set(`${r.fromTable}.${r.fromCol}`, { targetTable: r.toTable, targetCol: r.toCol });
-      }
-    });
-    this.tables.forEach((t) => {
-      t.columns.forEach((c) => {
-        const refInfo = fkMap.get(`${t.name}.${c.name}`);
-
-        // Also ensure any column involved in a relation is considered a foreign key for visibility purposes
-        const isSource = parsed.refs.some(r => r.fromTable === t.name && r.fromCol === c.name);
-
-        c.fk = !!refInfo || isSource;
-
-        if (refInfo) {
-          c.fkTable = refInfo.targetTable;
-          c.fkCol = refInfo.targetCol;
-        } else if (isSource) {
-          const ref = parsed.refs.find(r => r.fromTable === t.name && r.fromCol === c.name);
-          c.fkTable = ref?.toTable;
-          c.fkCol = ref?.toCol;
-        } else {
-          c.fkTable = undefined;
-          c.fkCol = undefined;
-        }
-
-        // Track if it's a target so we can include it in Keys Only view even if not a PK/FK
-        (c as any).isRelTarget = parsed.refs.some(r => r.toTable === t.name && r.toCol === c.name);
-      });
-    });
     this.refs = parsed.refs.map((r) => {
       const key = `${r.fromTable}.${r.fromCol}>${r.toTable}.${r.toCol}`;
       const prev = prevByKey.get(key);
@@ -3516,7 +3907,7 @@ export class DashboardService {
 
   addColumnInCode(tableName: string): void {
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const re = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?)(\\r?\\n?\\s*\\})`, 'i');
+    const re = new RegExp(`(Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?)(\\r?\\n?\\s*\\})`, 'i');
     if (!re.test(this.code)) return;
 
     // Generate a unique column name
@@ -3536,7 +3927,7 @@ export class DashboardService {
 
   renameColumnInCode(tableName: string, oldColName: string, newColName: string): void {
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const tableRe = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
+    const tableRe = new RegExp(`(Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
     const match = this.code.match(tableRe);
     if (!match) return;
 
@@ -3547,12 +3938,12 @@ export class DashboardService {
 
   deleteColumnInCode(tableName: string, colName: string): void {
     const escName = tableName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const tableRe = new RegExp(`(Table\\s+${escName}\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
+    const tableRe = new RegExp(`(Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\r?\\n?\\s*\\})`, 'i');
     const match = this.code.match(tableRe);
     if (!match) return;
 
     // Get only the inner block contents of the Table block
-    const bodyRe = new RegExp(`^Table\\s+${escName}\\s*\\{([\\s\\S]*?)\\}\\s*$`, 'i');
+    const bodyRe = new RegExp(`^Table\\s+(?:["'\`]?${escName}["'\`]?|${escName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{([\\s\\S]*?)\\}\\s*$`, 'i');
     const bodyMatch = match[0].match(bodyRe);
     if (!bodyMatch) return;
 
@@ -3628,7 +4019,7 @@ export class DashboardService {
 
   deleteTableInCode(tableName: string): void {
     const safeName = tableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeName}(?:["'])?\\s*\\{[\\s\\S]*?\\}\\n?`, 'gi');
+    const tableRe = new RegExp(`Table\\s+(?:["'\`]?${safeName}["'\`]?|${safeName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\}\\n?`, 'gi');
     this.code = this.code.replace(tableRe, '');
 
     this.code = this.code
@@ -3649,7 +4040,7 @@ export class DashboardService {
 
   updateTableInCode(oldName: string, newName: string, columns: Column[]): void {
     const safeOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const tableRe = new RegExp(`Table\\s+(?:["'])?${safeOldName}(?:["'])?\\s*\\{[\\s\\S]*?\\}`, 'gi');
+    const tableRe = new RegExp(`Table\\s+(?:["'\`]?${safeOldName}["'\`]?|${safeOldName})\\s*(?:\\[[^\\]]*\\])?\\s*\\{[\\s\\S]*?\\}`, 'gi');
     if (!tableRe.test(this.code)) return;
 
     // Parse existing references BEFORE changing code
@@ -3669,14 +4060,21 @@ export class DashboardService {
     parsed.refs.forEach((r) => {
       if (r.fromTable === oldName) {
         const col = colMap.get(r.fromCol);
-        if (col && col.fk && col.fkTable && col.fkCol) {
+        if (col && (r.relType === '<>' || r.relType === '<->')) {
+          newRefs.push({
+            ...r,
+            fromTable: newName,
+            fromCol: col.name
+          });
+        } else if (col && col.fk && col.fkTable && col.fkCol) {
           newRefs.push({
             fromTable: newName,
             fromCol: col.name,
             toTable: col.fkTable,
             toCol: col.fkCol,
             waypoints: r.waypoints,
-            color: r.color
+            color: r.color,
+            relType: r.relType
           });
         }
       } else if (r.toTable === oldName) {
@@ -3729,10 +4127,15 @@ export class DashboardService {
       return values.length ? ` [${values.join(', ')}]` : '';
     };
 
-    const tableBlock = `Table ${newName} {\n${columns
+    const color = this.tableColorsMap[newName] || this.tableColorsMap[oldName];
+    const colorAttr = color ? ` [headercolor: ${color}] ` : ' ';
+    const tableBlock = `Table ${newName}${colorAttr}{\n${columns
       .map((column) => {
-        let cleanType = column.type.trim().toLowerCase();
-        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+        let cleanType = column.type.trim();
+        if (!cleanType.includes("'") && !cleanType.includes('"')) {
+          cleanType = cleanType.toLowerCase();
+        }
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double|enum|set)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
         return `  ${column.name} ${cleanType}${attributes(column)}`;
@@ -3751,7 +4154,7 @@ export class DashboardService {
     // Append the updated list of references
     if (newRefs.length > 0) {
       const refLines = newRefs
-        .map((ref) => `Ref: ${ref.fromTable}.${ref.fromCol} > ${ref.toTable}.${ref.toCol}`)
+        .map((ref) => `Ref: ${ref.fromTable}.${ref.fromCol} ${ref.relType || '>'} ${ref.toTable}.${ref.toCol}`)
         .join('\n');
       this.code = this.code.trimEnd() ? `${this.code.trimEnd()}\n\n${refLines}` : refLines;
     }
@@ -4041,15 +4444,56 @@ export class DashboardService {
     this.parseAndLayout();
   }
 
+  getTableCustomColor(tableName: string): string | undefined {
+    if (!tableName) return undefined;
+    if (this.tableColorsMap[tableName]) {
+      return this.tableColorsMap[tableName];
+    }
+    const lower = tableName.toLowerCase();
+    for (const [key, val] of Object.entries(this.tableColorsMap)) {
+      if (key.toLowerCase() === lower) {
+        return val;
+      }
+    }
+    return undefined;
+  }
+
+  updateTableHeaderColorInCode(tableName: string, color: string): void {
+    if (!this.code) return;
+    const safeName = tableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const tableRe = new RegExp(`(Table\\s+(?:["'\`]?${safeName}["'\`]?|${safeName}))(\\s*(?:\\[([^\\]]*)\\])?)(\\s*\\{)`, 'i');
+    const match = this.code.match(tableRe);
+    if (!match) return;
+
+    const prefix = match[1];
+    const existingAttrs = match[3] || '';
+    const suffix = match[4];
+
+    let newAttrs = '';
+    if (existingAttrs) {
+      if (/(?:headercolor|color):\s*[^,\]]+/i.test(existingAttrs)) {
+        newAttrs = existingAttrs.replace(/(?:headercolor|color):\s*[^,\]]+/i, `headercolor: ${color}`);
+      } else {
+        newAttrs = `${existingAttrs.trim()}, headercolor: ${color}`;
+      }
+    } else {
+      newAttrs = `headercolor: ${color}`;
+    }
+
+    this.code = this.code.replace(tableRe, `${prefix} [${newAttrs}]${suffix}`);
+  }
+
   setTableColor(tableName: string, color: string): void {
     this.tableColorsMap[tableName] = color;
+    const t = this.tables.find(tbl => tbl.name.toLowerCase() === tableName.toLowerCase() || tbl.name === tableName);
+    if (t) {
+      this.tableColorsMap[t.name] = color;
+      t.color = color;
+    }
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
     }
-    const t = this.tables.find(tbl => tbl.name === tableName);
-    if (t) {
-      t.color = color;
-    }
+    this.updateTableHeaderColorInCode(tableName, color);
     this.scheduleDraw();
   }
 
@@ -4061,6 +4505,94 @@ export class DashboardService {
 
     this.parseAndLayout();
     this.scheduleDraw();
+  }
+
+  /**
+   * Extracts schema name from a qualified table name (e.g. "differnt_schema.categories" -> "differnt_schema").
+   */
+  extractTableSchema(fullName: string): string | null {
+    if (!fullName) return null;
+    const trimmed = fullName.trim();
+    const dotIndex = trimmed.indexOf('.');
+    if (dotIndex <= 0 || dotIndex >= trimmed.length - 1) return null;
+
+    const rawSchema = trimmed.substring(0, dotIndex).trim();
+    const cleanSchema = rawSchema.replace(/^["'`\[]+|["'`\]]+$/g, '').trim();
+    return cleanSchema || null;
+  }
+
+  /**
+   * Converts HSL color values to a standard 6-digit hex string (#rrggbb).
+   */
+  private hslToHex(h: number, s: number, l: number): string {
+    l /= 100;
+    const a = (s * Math.min(l, 1 - l)) / 100;
+    const f = (n: number) => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  }
+
+  /**
+   * Returns a schema color. For the first 15 schemas, uses the curated high-contrast palette.
+   * For schema 16 and beyond, dynamically calculates a unique color using the golden angle
+   * distribution with optimal lightness and saturation for contrast against white header text.
+   */
+  getSchemaColor(index: number): string {
+    if (index < this.SCHEMA_COLORS.length) {
+      return this.SCHEMA_COLORS[index];
+    }
+    const extraIndex = index - this.SCHEMA_COLORS.length;
+    const hue = Math.round((extraIndex * 137.508) % 360);
+    const lightness = 38 + ((extraIndex % 3) * 4);
+    return this.hslToHex(hue, 65, lightness);
+  }
+
+  /**
+   * Assigns distinct colors to tables grouped by their schema so tables from different schemas are differentiated.
+   */
+  applySchemaColors(code: string, resetExisting: boolean = true): void {
+    if (!code) return;
+    const parsed = this.parseDBML(code);
+    if (!parsed || !parsed.tables || parsed.tables.length === 0) return;
+
+    if (resetExisting) {
+      this.tableColorsMap = {};
+    }
+
+    const uniqueSchemas: string[] = [];
+    parsed.tables.forEach(t => {
+      const schema = this.extractTableSchema(t.name);
+      if (schema) {
+        const lower = schema.toLowerCase();
+        if (!uniqueSchemas.includes(lower)) {
+          uniqueSchemas.push(lower);
+        }
+      }
+    });
+
+    if (uniqueSchemas.length === 0) return;
+
+    const schemaColorMap = new Map<string, string>();
+    uniqueSchemas.forEach((schema, idx) => {
+      schemaColorMap.set(schema, this.getSchemaColor(idx));
+    });
+
+    parsed.tables.forEach(t => {
+      const schema = this.extractTableSchema(t.name);
+      if (schema) {
+        const color = schemaColorMap.get(schema.toLowerCase());
+        if (color) {
+          this.tableColorsMap[t.name] = color;
+        }
+      }
+    });
+
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('table_colors_map', this.deterministicStringify(this.tableColorsMap));
+    }
   }
 
   generateNextTableName(): string {
@@ -4105,8 +4637,11 @@ export class DashboardService {
 
     const tableBlock = `Table ${name} {\n${columns
       .map((column) => {
-        let cleanType = column.type.trim().toLowerCase();
-        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double)\b/i.test(cleanType)) {
+        let cleanType = column.type.trim();
+        if (!cleanType.includes("'") && !cleanType.includes('"')) {
+          cleanType = cleanType.toLowerCase();
+        }
+        if (!/^(varchar|nvarchar|char|nchar|decimal|numeric|float|double|enum|set)\b/i.test(cleanType)) {
           cleanType = cleanType.replace(/\s*\([^)]*\)/g, '').trim();
         }
         return `  ${column.name} ${cleanType}${attributes(column)}`;
@@ -5739,6 +6274,7 @@ export class DashboardService {
     });
 
     parsed.refs.forEach((r) => {
+      if (r.relType === '<>' || r.relType === '<->') return;
       const constraintName = `fk_${r.fromTable}_${r.fromCol}`;
       sql += `ALTER TABLE ${this.quoteIdent(dialect, r.fromTable)} ADD CONSTRAINT ${constraintName} FOREIGN KEY (${this.quoteIdent(dialect, r.fromCol)}) REFERENCES ${this.quoteIdent(dialect, r.toTable)}(${this.quoteIdent(dialect, r.toCol)});\n`;
     });

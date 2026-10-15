@@ -5,6 +5,9 @@ export interface ConnectionDetails {
   username: string;
   password: string;
   schema: string;
+  account?: string;
+  warehouse?: string;
+  role?: string;
 }
 
 const SQL_SERVER_KEY_PATTERN = /(?:^|;)(?:Server|Data Source|ServerName|DataSource)\s*=\s*([^;]+)(?=;|$)/i;
@@ -37,7 +40,7 @@ function parseSqlServerConnectionString(value: string): ConnectionDetails | null
     database,
     username,
     password,
-    schema: 'public'
+    schema: ''
   };
 }
 
@@ -54,7 +57,7 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
       database: decodeValue(groups['database']),
       username,
       password: decodeValue(groups['password'] ?? ''),
-      schema: username || 'public'
+      schema: username || ''
     };
   }
 
@@ -62,7 +65,7 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
     const details = parseUriConnectionString(value);
     if (details) {
       details.port = details.port || 1521;
-      details.schema = details.username || 'public';
+      details.schema = details.username || '';
     }
     return details;
   }
@@ -70,31 +73,54 @@ function parseOracleConnectionString(value: string): ConnectionDetails | null {
   return null;
 }
 
-function parseUriConnectionString(value: string, defaultSchema = 'public'): ConnectionDetails | null {
-  const urlValue = value.replace(/^jdbc:/i, '');
-  const schemeMatch = urlValue.match(/^([a-z][a-z0-9+.-]*):\/\//i);
+function parseUriConnectionString(value: string, defaultSchema = ''): ConnectionDetails | null {
+  const urlValue = value.replace(/^jdbc:/i, '').trim();
+  const schemeMatch = urlValue.match(/^([a-z][a-z0-9+.-]*):\/\/(.*)$/i);
   if (!schemeMatch) return null;
 
-  let url: URL;
-  try {
-    url = new URL(urlValue);
-  } catch {
-    return null;
+  const scheme = schemeMatch[1].toLowerCase();
+  const authorityAndPath = schemeMatch[2];
+
+  const pathStart = authorityAndPath.search(/[/?#]/);
+  const authority = pathStart === -1 ? authorityAndPath : authorityAndPath.slice(0, pathStart);
+  const restPath = pathStart === -1 ? '' : authorityAndPath.slice(pathStart);
+
+  let username = '';
+  let password = '';
+  let hostPort = authority;
+
+  const lastAtIndex = authority.lastIndexOf('@');
+  if (lastAtIndex !== -1) {
+    const userInfo = authority.slice(0, lastAtIndex);
+    hostPort = authority.slice(lastAtIndex + 1);
+    const colonIndex = userInfo.indexOf(':');
+    if (colonIndex !== -1) {
+      username = decodeValue(userInfo.slice(0, colonIndex));
+      password = decodeValue(userInfo.slice(colonIndex + 1));
+    } else {
+      username = decodeValue(userInfo);
+    }
   }
 
-  const host = url.hostname;
-  const port = url.port ? Number(url.port) : (url.protocol === 'mysql:' || url.protocol === 'mariadb:' ? 3306 : url.protocol === 'oracle:' ? 1521 : 5432);
-  const pathParts = url.pathname.split('/').filter(Boolean);
-  const database = pathParts[0] ? decodeValue(pathParts[0]) : '';
+  const [host, portStr] = hostPort.split(':');
   if (!host) return null;
 
-  const username = url.username ? decodeValue(url.username) : '';
-  const password = url.password ? decodeValue(url.password) : '';
-  const schema = url.searchParams.get('schemas') || url.searchParams.get('schema') || defaultSchema;
+  const defaultPort = (scheme === 'mysql' || scheme === 'mariadb') ? 3306 : (scheme === 'oracle' ? 1521 : 5432);
+  const port = portStr ? parseInt(portStr, 10) : defaultPort;
+
+  const queryIndex = restPath.indexOf('?');
+  const pathPart = queryIndex === -1 ? restPath : restPath.slice(0, queryIndex);
+  const queryString = queryIndex === -1 ? '' : restPath.slice(queryIndex + 1);
+
+  const pathSegments = pathPart.split('/').filter(Boolean);
+  const database = pathSegments[0] ? decodeValue(pathSegments[0]) : '';
+
+  const searchParams = new URLSearchParams(queryString);
+  const schema = searchParams.get('schemas') || searchParams.get('schema') || defaultSchema;
 
   return {
     host,
-    port,
+    port: Number.isFinite(port) ? port : defaultPort,
     database,
     username,
     password,
@@ -102,11 +128,218 @@ function parseUriConnectionString(value: string, defaultSchema = 'public'): Conn
   };
 }
 
-export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle'): ConnectionDetails | null {
+function parseSnowflakeConnectionString(value: string): ConnectionDetails | null {
+  let cleaned = value.trim();
+  if (/^snowflake\s*['"]/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^snowflake\s*['"]/i, '').replace(/['"]\s*$/, '').trim();
+  } else if (/^snowflake\s+/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^snowflake\s+/i, '').trim();
+  } else if (/^['"].*['"]$/.test(cleaned)) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+
+  if (cleaned.toLowerCase().startsWith('snowflake://')) {
+    const details = parseUriConnectionString(cleaned, '');
+    if (details) {
+      let warehouse = '';
+      let role = '';
+      try {
+        const urlObj = new URL(cleaned);
+        warehouse = urlObj.searchParams.get('warehouse') || '';
+        role = urlObj.searchParams.get('role') || '';
+      } catch {
+        // ignore
+      }
+      return {
+        ...details,
+        account: details.host,
+        warehouse,
+        role
+      };
+    }
+  }
+
+  const extract = (pattern: RegExp): string => {
+    const match = cleaned.match(pattern);
+    return match ? match[1].trim() : '';
+  };
+
+  const account = extract(/(?:^|;)\s*(?:SERVER|ACCOUNT|HOST)\s*=\s*([^;]+)/i);
+  const username = extract(/(?:^|;)\s*(?:UID|USER|USERNAME|USER_ID)\s*=\s*([^;]+)/i);
+  const password = extract(/(?:^|;)\s*(?:PWD|PASSWORD)\s*=\s*([^;]+)/i);
+  const database = extract(/(?:^|;)\s*(?:DATABASE|DB)\s*=\s*([^;]+)/i);
+  const warehouse = extract(/(?:^|;)\s*WAREHOUSE\s*=\s*([^;]+)/i);
+  const role = extract(/(?:^|;)\s*ROLE\s*=\s*([^;]+)/i);
+  const schema = extract(/(?:^|;)\s*(?:SCHEMAS|SCHEMA)\s*=\s*([^;]+)/i);
+
+  if (!account && !username && !password && !database && !warehouse && !role) {
+    return null;
+  }
+
+  return {
+    host: account,
+    port: 0,
+    database,
+    username,
+    password,
+    schema,
+    account,
+    warehouse,
+    role
+  };
+}
+
+export const DB_TYPE_LABELS: Record<string, string> = {
+  postgres: 'PostgreSQL',
+  mysql: 'MySQL',
+  mariadb: 'MariaDB',
+  mssql: 'SQL Server (MSSQL)',
+  oracle: 'Oracle',
+  snowflake: 'Snowflake',
+  sqlite: 'SQLite'
+};
+
+export function detectUrlSchemeInfo(value: string): {
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'other' | null;
+  displayScheme: string | null;
+} {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { detectedType: null, displayScheme: null };
+  }
+
+  // Check Snowflake key-value or wrapper format (snowflake '...', snowflake://, or UID=/PWD=/WAREHOUSE=/ROLE=)
+  if (
+    /^snowflake\b/i.test(trimmed) ||
+    /(?:^|;)\s*(?:WAREHOUSE|ROLE)\s*=/i.test(trimmed) ||
+    (/(?:^|;)\s*(?:SERVER|ACCOUNT)\s*=/i.test(trimmed) && /(?:^|;)\s*(?:UID|PWD)\s*=/i.test(trimmed))
+  ) {
+    return { detectedType: 'snowflake', displayScheme: 'Snowflake' };
+  }
+
+  // Check SQL Server ADO.NET / key-value format (Server=... or Data Source=...)
+  if (/(?:^|;)\s*(?:Server|Data Source|ServerName|DataSource)\s*=/i.test(trimmed)) {
+    return { detectedType: 'mssql', displayScheme: 'SQL Server' };
+  }
+
+  // Check Oracle JDBC thin URL (jdbc:oracle:thin:...)
+  if (/^jdbc:oracle:/i.test(trimmed)) {
+    return { detectedType: 'oracle', displayScheme: 'Oracle' };
+  }
+
+  // Check generic URI scheme: scheme://... (with optional jdbc: prefix)
+  const normalized = trimmed.replace(/^jdbc:/i, '');
+  const match = normalized.match(/^([a-z][a-z0-9+.-]*):\/\//i);
+  if (!match) {
+    return { detectedType: null, displayScheme: null };
+  }
+
+  const scheme = match[1].toLowerCase();
+
+  if (scheme === 'databasetype') {
+    return { detectedType: null, displayScheme: null };
+  }
+
+  if (scheme === 'snowflake') {
+    return { detectedType: 'snowflake', displayScheme: 'Snowflake' };
+  }
+
+  if (scheme === 'postgresql' || scheme === 'postgres') {
+    return { detectedType: 'postgres', displayScheme: 'PostgreSQL' };
+  }
+
+  if (scheme === 'mysql') {
+    return { detectedType: 'mysql', displayScheme: 'MySQL' };
+  }
+
+  if (scheme === 'mariadb') {
+    return { detectedType: 'mariadb', displayScheme: 'MariaDB' };
+  }
+
+  if (scheme === 'mssql' || scheme === 'sqlserver') {
+    return { detectedType: 'mssql', displayScheme: 'SQL Server' };
+  }
+
+  if (scheme === 'oracle') {
+    return { detectedType: 'oracle', displayScheme: 'Oracle' };
+  }
+
+  return { detectedType: 'other', displayScheme: scheme.toUpperCase() };
+}
+
+export function isSchemeCompatibleWithDatabaseType(
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'other' | null,
+  selectedType: string
+): boolean {
+  if (!detectedType) {
+    return true;
+  }
+
+  if (selectedType === 'snowflake') {
+    return detectedType === 'snowflake';
+  }
+
+  if (selectedType === 'postgres') {
+    return detectedType === 'postgres';
+  }
+
+  if (selectedType === 'mysql') {
+    return detectedType === 'mysql';
+  }
+
+  if (selectedType === 'mariadb') {
+    return detectedType === 'mariadb' || detectedType === 'mysql';
+  }
+
+  if (selectedType === 'mssql') {
+    return detectedType === 'mssql';
+  }
+
+  if (selectedType === 'oracle') {
+    return detectedType === 'oracle';
+  }
+
+  return false;
+}
+
+export function getConnectionUrlMismatchError(
+  value: string,
+  selectedType: string
+): string | null {
+  const { detectedType, displayScheme } = detectUrlSchemeInfo(value);
+  if (!detectedType) return null;
+
+  if (!isSchemeCompatibleWithDatabaseType(detectedType, selectedType)) {
+    const selectedLabel = DB_TYPE_LABELS[selectedType] || selectedType;
+    if (displayScheme) {
+      return `The connection URL scheme (${displayScheme}) does not match the selected database type (${selectedLabel}).`;
+    }
+    return `The connection URL does not match the selected database type (${selectedLabel}).`;
+  }
+
+  return null;
+}
+
+export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake'): ConnectionDetails | null {
   const raw = value.trim();
   if (!raw || databaseType === 'sqlite') return null;
 
+  if (databaseType === 'snowflake') {
+    return parseSnowflakeConnectionString(raw);
+  }
+
   if (databaseType === 'mssql' || raw.toLowerCase().startsWith('server=') || raw.toLowerCase().startsWith('data source=')) {
+    if (raw.toLowerCase().startsWith('server=') || raw.toLowerCase().startsWith('data source=')) {
+      return parseSqlServerConnectionString(raw);
+    }
+    const uriMatch = raw.replace(/^jdbc:/i, '').toLowerCase();
+    if (uriMatch.startsWith('mssql://') || uriMatch.startsWith('sqlserver://') || uriMatch.startsWith('databasetype://')) {
+      const details = parseUriConnectionString(raw, '');
+      if (details) {
+        details.port = details.port || 1433;
+      }
+      return details;
+    }
     return parseSqlServerConnectionString(raw);
   }
 
@@ -116,18 +349,18 @@ export function parseConnectionDetails(value: string, databaseType: 'postgres' |
 
   const uriValue = raw.replace(/^jdbc:/i, '');
   if (databaseType === 'postgres') {
-    if (!uriValue.toLowerCase().startsWith('postgresql://') && !uriValue.toLowerCase().startsWith('postgres://')) {
+    if (!uriValue.toLowerCase().startsWith('postgresql://') && !uriValue.toLowerCase().startsWith('postgres://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
       return null;
     }
   } else if (databaseType === 'mysql') {
-    if (!uriValue.toLowerCase().startsWith('mysql://')) {
+    if (!uriValue.toLowerCase().startsWith('mysql://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
       return null;
     }
   } else if (databaseType === 'mariadb') {
-    if (!uriValue.toLowerCase().startsWith('mariadb://') && !uriValue.toLowerCase().startsWith('mysql://')) {
+    if (!uriValue.toLowerCase().startsWith('mariadb://') && !uriValue.toLowerCase().startsWith('mysql://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
       return null;
     }
   }
 
-  return parseUriConnectionString(raw, databaseType === 'mariadb' ? '' : 'public');
+  return parseUriConnectionString(raw, '');
 }

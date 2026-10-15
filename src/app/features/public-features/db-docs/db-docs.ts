@@ -1,12 +1,14 @@
 
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { SignOutService } from '../../../core/services/sign-out.service';
 import { Icons } from '../../../core/component/icons/icons';
 import { ButtonComponent } from '../../../shared/button/button';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { Footer } from '../../../shared/components/footer/footer';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   selector: 'app-db-docs',
@@ -37,20 +39,39 @@ export class DbDocsComponent implements OnInit {
     }
   }
 
+  get isLoggedIn(): boolean {
+    return this.auth.isLoggedIn();
+  }
 
-  isLoggedIn = false;
+  @HostListener('window:userLogout')
+  onUserLogout(): void {
+    this.cdr.detectChanges();
+  }
+
   isMobileMenuOpen = false;
 
   constructor(
     private auth: AuthService,
     private router: Router,
-    public svc: DashboardService
+    public svc: DashboardService,
+    private seoService: SeoService
   ) { }
 
   ngOnInit(): void {
-    if (typeof window !== 'undefined') {
-      this.isLoggedIn = this.auth.isLoggedIn();
-    }
+    this.seoService.updateTags({
+      title: 'DB Docs - Database Schema Documentation Tool - dbNexus',
+      description: 'Generate beautiful, interactive, and searchable documentation for your database schemas with dbNexus DB Docs.',
+      url: 'https://www.dbnexus.io/features/db-docs',
+      keywords: 'database documentation tool, db docs, schema documentation generator, interactive data dictionary, SQL documentation'
+    });
+
+    this.seoService.setStructuredData({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "dbNexus DB Docs",
+      "applicationCategory": "DeveloperApplication",
+      "url": "https://www.dbnexus.io/features/db-docs"
+    });
   }
 
   
@@ -74,9 +95,14 @@ export class DbDocsComponent implements OnInit {
     }
   }
 
+  private signOutService = inject(SignOutService);
+  private cdr = inject(ChangeDetectorRef);
+
   logout(): void {
-    this.auth.logout();
-    this.isLoggedIn = false;
-    this.svc.showToast('Logged out successfully.', 2500, 'success');
+    this.signOutService.prompt(() => {
+      this.auth.logout();
+      this.svc.showToast('Logged out successfully.', 2500, 'success');
+      this.cdr.detectChanges();
+    });
   }
 }

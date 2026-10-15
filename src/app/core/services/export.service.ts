@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'sqlite' | 'oracle' | 'mongodb';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'sqlite' | 'oracle' | 'snowflake' | 'mongodb';
 
 export interface ExportRequest {
   databaseType: string;
@@ -22,13 +22,14 @@ export class ExportService {
     sqlserver: 'SqlServer',
     sqlite: 'Sqlite',
     oracle: 'Oracle',
+    snowflake: 'Snowflake',
     mongodb: 'MongoDB'
   };
 
   constructor(private http: HttpClient, private appConfig: AppConfigService) {}
 
   
-  convert(diagramId: string | number, dialect: SqlDialect, dbmlScript: string): Observable<string> {
+  convert(diagramId: string | number, dialect: SqlDialect, dbmlScript: string): Observable<HttpEvent<string>> {
     const url = this.appConfig.environment?.importExportApiUrls?.export?.replace('{id}', diagramId.toString()) ?? '';
 
     const body: ExportRequest = {
@@ -37,12 +38,20 @@ export class ExportService {
     };
 
     if (dialect === 'mongodb') {
-      return this.http.post(url, body, { responseType: 'text' }).pipe(
-        catchError(() => of(this.generateMongooseModels(dbmlScript)))
+      return this.http.post(url, body, {
+        reportProgress: true,
+        observe: 'events',
+        responseType: 'text'
+      }).pipe(
+        catchError(() => of(new HttpResponse<string>({ body: this.generateMongooseModels(dbmlScript), status: 200 })))
       );
     }
 
-    return this.http.post(url, body, { responseType: 'text' });
+    return this.http.post(url, body, {
+      reportProgress: true,
+      observe: 'events',
+      responseType: 'text'
+    });
   }
 
   downloadSqlFile(sql: string, dialect: SqlDialect): void {

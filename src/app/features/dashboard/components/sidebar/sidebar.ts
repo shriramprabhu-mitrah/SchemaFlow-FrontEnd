@@ -5,7 +5,8 @@ import {
   HostListener,
   OnInit,
   OnDestroy,
-  effect
+  effect,
+  inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -15,6 +16,7 @@ import { DashboardService } from '../../../../core/services/dashboard.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { EntitlementService } from '../../../../core/services/entitlement.service';
 import { ExportService, SqlDialect } from '../../../../core/services/export.service';
+import { SignOutService } from '../../../../core/services/sign-out.service';
 import { Icons } from '../../../../core/component/icons/icons';
 
 @Component({
@@ -32,6 +34,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   importing = false;
   exportError: string | null = null;
   private destroy$ = new Subject<void>();
+  private signOutService = inject(SignOutService);
 
   constructor(
     public svc: DashboardService,
@@ -82,6 +85,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.cdr.markForCheck();
+      });
+
+    this.svc.openSidebarImportMenu$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.openImportFlyout();
+      });
+
+    if (this.svc.pendingOpenSidebarImportMenu) {
+      this.svc.pendingOpenSidebarImportMenu = false;
+      this.openImportFlyout();
+    }
+
+    this.svc.openAiChat$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
   }
 
@@ -158,6 +179,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   isMemberRestricted(featureKeys: string[]): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    if (this.auth.getCurrentPlanStatus() === 'cancelled') return false;
     // If the feature is not there in memberFeatureAccess just disable the button in ui
     return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k));
   }
@@ -178,6 +200,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.exportMenuOpen = false;
     }
     this.cdr.markForCheck();
+  }
+
+  openImportFlyout(): void {
+    if (this.isMemberRestricted(['import_sql'])) return;
+    this.svc.closeErrorsCard();
+    if (!this.isLoggedIn || this.isSampleDiagram()) {
+      if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
+      return;
+    }
+    this.exportMenuOpen = false;
+    if (this.svc.showVersionHistory()) {
+      this.svc.closeVersionHistory$.next();
+      this.svc.showVersionHistory.set(false);
+    }
+    setTimeout(() => {
+      this.importMenuOpen = true;
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    }, 50);
   }
 
   openImportDialect(dialect: SqlDialect, e?: Event): void {
@@ -204,6 +245,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
 
   openConnectionStringModal(e?: Event): void {
+    if (this.isMemberRestricted(['db_connect'])) return;
+
     if (e) e.stopPropagation();
     this.svc.closeErrorsCard();
     this.importMenuOpen = false;
@@ -212,10 +255,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.entitlementService.canUseFeature('db_connect')) {
-      if (!this.entitlementService.orgHasFeature('db_connect')) {
-        this.svc.showUpgradeModal('db_connect');
+      const status = this.auth.getCurrentPlanStatus();
+      if (status !== 'cancelled') {
+        if (!this.entitlementService.orgHasFeature('db_connect')) {
+          this.svc.showUpgradeModal('db_connect');
+        }
+        return;
       }
-      return;
     }
     this.svc.openConnectionStringModal();
     this.cdr.markForCheck();
@@ -290,7 +336,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.exporting = true;
     this.exportError = null;
 
+    const dialectNames: Record<string, string> = {
+      postgres: 'PostgreSQL',
+      mysql: 'MySQL',
+      mariadb: 'MariaDB',
+      sqlserver: 'SQL Server',
+      sqlite: 'SQLite',
+      oracle: 'Oracle',
+      snowflake: 'Snowflake',
+      mongodb: 'MongoDB'
+    };
+    const dialectName = dialectNames[dialect] || dialect.toUpperCase();
+
     this.exportSvc.convert(id, dialect, this.svc.code).pipe(
+      this.svc.trackHttpProgress(
+        'export',
+        `Exporting ${dialectName} Query`,
+        `Generating ${dialectName} ${dialect === 'mongodb' ? 'NoSQL' : 'SQL'} schema statements...`
+      ),
       finalize(() => {
         this.exporting = false;
         this.cdr.markForCheck();
@@ -467,9 +530,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     if (!this.isLoggedIn || this.isSampleDiagram()) {
       if (!this.isLoggedIn) this.svc.authModalVisible.set(true);
-      if (this.isSampleDiagram()) {
-        this.svc.showToast('DBNexus AI is disabled for sample diagrams.', 3000, 'info');
-      }
+      // if (this.isSampleDiagram()) {
+      //   this.svc.showToast('DBNexus AI is disabled for sample diagrams.', 3000, 'info');
+      // }
       return;
     }
     if (!this.entitlementService.canUseFeature('ai_chat')) {
@@ -618,18 +681,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ AUTH / SIGNOUT ============
 
   handleSignOut(e?: Event): void {
-    
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (!this.isLoggedIn) {
       this.router.navigate(['/login']);
       return;
     }
-    this.svc.askForConfirmation(() => {
-      this.auth.logout();
-      this.svc.clearDiagram(false);
-      this.svc.showToast('Logged out successfully.', 2500, 'success');
-      this.router.navigate(['/login']);
+    this.signOutService.prompt(() => {
+      this.svc.askForConfirmation(() => {
+        this.auth.logout();
+        this.svc.clearDiagram(false);
+        this.svc.showToast('Logged out successfully.', 2500, 'success');
+        this.router.navigate(['/login']);
+      });
     });
   }
 

@@ -24,6 +24,28 @@
   </div>
 
   <div *ngIf="!loading && subscription">
+    <!-- Promotional Offer Notice / Regular Plan Transition Alert -->
+    <div class="offer-notice-banner" *ngIf="subscription?.next_billing_regular || subscription?.offer_expired_notice" style="margin-bottom: 20px; padding: 16px 20px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); display: flex; align-items: flex-start; gap: 14px;">
+      <div style="color: #f59e0b; margin-top: 2px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div style="flex: 1;">
+        <div style="font-weight: 700; font-size: 14px; color: #f59e0b; margin-bottom: 4px;">
+          Promotional Offer Expired — Standard Billing Applies
+        </div>
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+          {{ subscription?.offer_expired_notice || 'Your promotional discount has concluded. Your next renewal will automatically be charged at standard plan rates.' }}
+        </div>
+        <div *ngIf="subscription?.current_period_end" style="margin-top: 6px; font-size: 12px; color: #94a3b8;">
+          Effective renewal date: <strong style="color: #f8fafc;">{{ subscription.current_period_end | date:'mediumDate' }}</strong>
+        </div>
+      </div>
+    </div>
+
     <!-- Current Plan Summary Hero Card -->
     <div class="data-table-wrap sub-hero-card">
       <div class="sub-hero-flex">
@@ -127,33 +149,24 @@
               <th>
                 <span class="sort-header-clickable" (click)="sortBy('feature_name')">
                   <span>Feature</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'feature_name'">
+                  <span class="sort-icon" [class.active]="sortColumn === 'feature_name'" [class.desc]="sortColumn === 'feature_name' && !sortAsc">
                     <app-icons name="sort" size="14"></app-icons>
                   </span>
                 </span>
               </th>
               <th>
-                <span class="sort-header-clickable" (click)="sortBy('enabled')">
+                <span class="sort-header-clickable sort-header-default">
                   <span>Status</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'enabled'">
-                    <app-icons name="sort" size="14"></app-icons>
-                  </span>
                 </span>
               </th>
               <th>
-                <span class="sort-header-clickable" (click)="sortBy('effective_limit')">
+                <span class="sort-header-clickable sort-header-default">
                   <span>Limit</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'effective_limit'">
-                    <app-icons name="sort" size="14"></app-icons>
-                  </span>
                 </span>
               </th>
               <th>
-                <span class="sort-header-clickable" (click)="sortBy('used')">
+                <span class="sort-header-clickable sort-header-default">
                   <span>Used</span>
-                  <span class="sort-icon" [class.active]="sortColumn === 'used'">
-                    <app-icons name="sort" size="14"></app-icons>
-                  </span>
                 </span>
               </th>
             </tr>
@@ -166,7 +179,7 @@
                   ?
                   'Enabled' : 'Disabled' }}</span></td>
               <td>{{ e.effective_limit === -1 ? '∞' : (e.effective_limit || '—') }}</td>
-              <td><span class="info-value">{{ e.used ?? '—' }}</span></td>
+              <td><span class="info-value">{{ e.used ? e.used : '—' }}</span></td>
             </tr>
             <tr *ngIf="entitlements.length === 0">
               <td colspan="5" class="empty-table-cell">No matching feature entitlements found.</td>
