@@ -125,14 +125,14 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Coupon Code</th>
-          <th>Details</th>
-          <th>Discount</th>
-          <th>Status</th>
-          <th>Redemptions</th>
-          <th>Duration / Expiry</th>
-          <th>Linked Plans</th>
-          <th style="text-align: right;">Actions</th>
+          <th style="width: 140px;">Coupon Code</th>
+          <th style="min-width: 200px; width: 260px;">Details</th>
+          <th style="width: 130px;">Discount</th>
+          <th style="width: 100px;">Status</th>
+          <th style="width: 140px;">Redemptions</th>
+          <th style="width: 170px;">Duration / Expiry</th>
+          <th style="width: 130px;">Linked Plans</th>
+          <th style="width: 110px; text-align: right;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -150,9 +150,9 @@
           </td>
 
           <!-- Details -->
-          <td>
-            <div class="offer-title">{{ offer.display_name || offer.name }}</div>
-            <div class="offer-desc" *ngIf="offer.description">
+          <td class="offer-details-cell" [title]="getOfferDetailsTooltip(offer)">
+            <div class="offer-title" [title]="offer.display_name || offer.name">{{ offer.display_name || offer.name }}</div>
+            <div class="offer-desc" *ngIf="offer.description" [title]="offer.description">
               {{ offer.description }}
             </div>
           </td>
@@ -298,8 +298,8 @@
 <!-- =========================================================
      CREATE / EDIT COUPON MODAL
      ========================================================= -->
-<div class="offer-modal-backdrop" *ngIf="createModalOpen" (click)="closeCreateModal()">
-  <div class="offer-modal-container modal-wide" (click)="$event.stopPropagation()">
+<div class="offer-modal-backdrop" *ngIf="createModalOpen">
+  <div class="offer-modal-container modal-wide" (click)="$event.stopPropagation(); onModalContainerClick($event)">
     <!-- Modal Header -->
     <div class="modal-header">
       <div style="display: flex; align-items: center; gap: 12px;">
@@ -346,13 +346,20 @@
         <div class="form-grid-2">
           <div class="form-group">
             <label>Coupon Code <span class="req">*</span></label>
-            <div class="input-with-icon">
+            <div class="input-with-icon" [class.has-error]="formErrors.code">
               <span class="input-icon-prefix">🏷️</span>
               <input type="text"
                      class="form-control code-input"
+                     [class.is-invalid]="formErrors.code"
                      placeholder="e.g. PARTNER30"
                      [(ngModel)]="offerForm.code"
+                     (input)="onCodeChange()"
+                     (blur)="validateForm('code')"
                      style="text-transform: uppercase; font-family: monospace; font-weight: 700; letter-spacing: 0.5px;">
+            </div>
+            <div class="field-error-hint" *ngIf="formErrors.code">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.code }}</span>
             </div>
           </div>
           <div class="form-group">
@@ -415,36 +422,71 @@
           <!-- Discount Value (% at the end) -->
           <div class="form-group" style="margin-bottom:0;">
             <label>Discount Value <span class="req">*</span></label>
-            <div class="input-with-suffix" *ngIf="offerForm.discount_type === 'PERCENTAGE'">
+            <div class="input-with-suffix" [class.has-error]="formErrors.discount_value" *ngIf="offerForm.discount_type === 'PERCENTAGE'">
               <input type="number"
                      min="1"
                      max="100"
                      class="form-control"
+                     [class.is-invalid]="formErrors.discount_value"
                      placeholder="e.g. 20"
-                     [(ngModel)]="offerForm.discount_value">
+                     [(ngModel)]="offerForm.discount_value"
+                     (keydown)="preventNegative($event)"
+                     (input)="onDiscountValueInput($event)"
+                     (blur)="validateForm('discount_value')">
               <span class="input-suffix">%</span>
             </div>
-            <div class="input-with-icon" *ngIf="offerForm.discount_type !== 'PERCENTAGE'">
+            <div class="input-with-icon" [class.has-error]="formErrors.discount_value" *ngIf="offerForm.discount_type !== 'PERCENTAGE'">
               <span class="input-icon-prefix">₹</span>
               <input type="number"
                      min="1"
                      class="form-control"
+                     [class.is-invalid]="formErrors.discount_value"
                      placeholder="e.g. 500"
-                     [(ngModel)]="offerForm.discount_value">
+                     [(ngModel)]="offerForm.discount_value"
+                     (keydown)="preventNegative($event)"
+                     (input)="onDiscountValueInput($event)"
+                     (blur)="validateForm('discount_value')">
+            </div>
+            <div class="field-error-hint" *ngIf="formErrors.discount_value">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.discount_value }}</span>
             </div>
           </div>
 
           <!-- Max Cap (₹, Optional) -->
           <div class="form-group" style="margin-bottom:0;" *ngIf="offerForm.discount_type === 'PERCENTAGE'">
             <label>Max Cap (₹, Optional)</label>
-            <div class="input-with-icon">
+            <div class="input-with-icon" [class.has-error]="formErrors.max_discount_cap">
               <span class="input-icon-prefix">₹</span>
               <input type="number"
                      min="1"
                      class="form-control"
+                     [class.is-invalid]="formErrors.max_discount_cap"
                      placeholder="e.g. 2000"
-                     [(ngModel)]="offerForm.max_discount_cap">
+                     [(ngModel)]="offerForm.max_discount_cap"
+                     (keydown)="preventNegative($event)"
+                     (input)="onMaxCapInput($event)"
+                     (blur)="validateForm('max_discount_cap')">
             </div>
+            <div class="field-error-hint" *ngIf="formErrors.max_discount_cap">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.max_discount_cap }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notice banner when discount or max cap modified in edit mode -->
+        <div class="edit-notice-banner warning-banner" *ngIf="isDiscountModified">
+          <div class="notice-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div class="notice-content">
+            <span class="notice-title">Discount benefit modified</span>
+            <span class="notice-desc">This change will not affect existing users. A separate plan will be created for new subscribers.</span>
           </div>
         </div>
       </div>
@@ -523,14 +565,255 @@
             </label>
           </div>
 
-          <div class="duration-inputs-wrap" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="duration-inputs-wrap" style="display:flex;flex-direction:column;gap:12px;">
+            <!-- Starts At Field -->
             <div class="form-group" style="margin-bottom:0;">
-              <label>Starts At</label>
-              <input type="datetime-local" class="form-control" [(ngModel)]="offerForm.starts_at">
+              <label>Starts At <span class="req">*</span></label>
+              <div class="custom-datepicker-container">
+                <button type="button"
+                        class="custom-datepicker-trigger"
+                        [class.open]="activeDatePicker === 'start'"
+                        [class.is-invalid]="formErrors.dates"
+                        (click)="toggleDatePicker('start', $event)">
+                  <div class="trigger-left">
+                    <svg class="trigger-calendar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span class="trigger-display-text" [class.placeholder]="!offerForm.starts_at">
+                      {{ formatDisplayDateTime(offerForm.starts_at) || 'Select start date & time' }}
+                    </span>
+                  </div>
+                  <svg class="trigger-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                <!-- Backdrop to close when clicking outside -->
+                <div class="datepicker-fixed-backdrop" *ngIf="activeDatePicker === 'start'" (click)="closeDatePicker($event)"></div>
+
+                <!-- Custom Calendar Dropdown for Starts At -->
+                <div class="custom-datepicker-dropdown" *ngIf="activeDatePicker === 'start'" (click)="$event.stopPropagation()">
+                  <!-- Header: Month & Year navigation -->
+                  <div class="picker-nav-header">
+                    <button type="button" class="p-nav-btn" (click)="prevPickerMonth($event)" title="Previous Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                    <div class="p-nav-title">
+                      {{ monthNames[pickerMonth] }} {{ pickerYear }}
+                    </div>
+                    <button type="button" class="p-nav-btn" (click)="nextPickerMonth($event)" title="Next Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Days of Week Header -->
+                  <div class="picker-weekdays-row">
+                    <span *ngFor="let w of weekDayNames" class="picker-weekday">{{ w }}</span>
+                  </div>
+
+                  <!-- Calendar Days Grid -->
+                  <div class="picker-calendar-grid">
+                    <button type="button"
+                            *ngFor="let cell of pickerDays"
+                            class="p-day-cell"
+                            [class.other-month]="!cell.isCurrentMonth"
+                            [class.is-today]="cell.isToday"
+                            [class.is-selected]="cell.isSelected"
+                            [class.is-disabled]="cell.isDisabled"
+                            [disabled]="cell.isDisabled"
+                            (click)="selectPickerDate(cell, $event)">
+                      <span>{{ cell.dayNum }}</span>
+                      <span class="p-today-dot" *ngIf="cell.isToday"></span>
+                    </button>
+                  </div>
+
+                  <!-- Time Selector Row -->
+                  <div class="picker-time-section">
+                    <div class="time-section-label">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>Time</span>
+                    </div>
+                    <div class="time-controls-row">
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="1"
+                               max="12"
+                               class="time-num-input"
+                               [ngModel]="pickerHour"
+                               (ngModelChange)="setPickerHour($event)">
+                        <span class="time-unit-label">H</span>
+                      </div>
+                      <span class="time-colon">:</span>
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="0"
+                               max="59"
+                               class="time-num-input"
+                               [ngModel]="pickerMinute"
+                               (ngModelChange)="setPickerMinute($event)">
+                        <span class="time-unit-label">M</span>
+                      </div>
+                      <div class="time-period-switch">
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'AM'"
+                                (click)="setPickerPeriod('AM', $event)">AM</button>
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'PM'"
+                                (click)="setPickerPeriod('PM', $event)">PM</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="form-group" style="margin-bottom:0;" [style.opacity]="offerForm.never_expires ? '0.4' : '1'">
-              <label>Expires At</label>
-              <input type="datetime-local" class="form-control" [(ngModel)]="offerForm.ends_at" [disabled]="offerForm.never_expires">
+
+            <!-- Expires At Field -->
+            <div class="form-group" style="margin-bottom:0;" [style.opacity]="offerForm.never_expires ? '0.45' : '1'">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <label style="margin:0;">Expires At <span class="req" *ngIf="!offerForm.never_expires">*</span></label>
+                <span class="never-expires-badge" *ngIf="offerForm.never_expires">Disabled</span>
+              </div>
+              <div class="custom-datepicker-container">
+                <button type="button"
+                        class="custom-datepicker-trigger"
+                        [class.open]="activeDatePicker === 'end'"
+                        [class.is-invalid]="formErrors.dates && !offerForm.never_expires"
+                        [disabled]="offerForm.never_expires"
+                        (click)="toggleDatePicker('end', $event)">
+                  <div class="trigger-left">
+                    <svg class="trigger-calendar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <span class="trigger-display-text" [class.placeholder]="!offerForm.ends_at">
+                      {{ offerForm.never_expires ? 'Never expires (indefinite)' : (formatDisplayDateTime(offerForm.ends_at) || 'Select expiration date & time') }}
+                    </span>
+                  </div>
+                  <svg class="trigger-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" *ngIf="!offerForm.never_expires">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                <!-- Backdrop to close when clicking outside -->
+                <div class="datepicker-fixed-backdrop" *ngIf="activeDatePicker === 'end'" (click)="closeDatePicker($event)"></div>
+
+                <!-- Custom Calendar Dropdown for Expires At -->
+                <div class="custom-datepicker-dropdown" *ngIf="activeDatePicker === 'end'" (click)="$event.stopPropagation()">
+                  <!-- Header: Month & Year navigation -->
+                  <div class="picker-nav-header">
+                    <button type="button" class="p-nav-btn" (click)="prevPickerMonth($event)" [disabled]="!canGoToPrevMonth()" [style.opacity]="canGoToPrevMonth() ? '1' : '0.35'" title="Previous Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                      </svg>
+                    </button>
+                    <div class="p-nav-title">
+                      {{ monthNames[pickerMonth] }} {{ pickerYear }}
+                    </div>
+                    <button type="button" class="p-nav-btn" (click)="nextPickerMonth($event)" title="Next Month">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Days of Week Header -->
+                  <div class="picker-weekdays-row">
+                    <span *ngFor="let w of weekDayNames" class="picker-weekday">{{ w }}</span>
+                  </div>
+
+                  <!-- Calendar Days Grid -->
+                  <div class="picker-calendar-grid">
+                    <button type="button"
+                            *ngFor="let cell of pickerDays"
+                            class="p-day-cell"
+                            [class.other-month]="!cell.isCurrentMonth"
+                            [class.is-today]="cell.isToday"
+                            [class.is-selected]="cell.isSelected"
+                            [class.is-disabled]="cell.isDisabled"
+                            [disabled]="cell.isDisabled"
+                            (click)="selectPickerDate(cell, $event)">
+                      <span>{{ cell.dayNum }}</span>
+                      <span class="p-today-dot" *ngIf="cell.isToday"></span>
+                    </button>
+                  </div>
+
+                  <!-- Time Selector Row -->
+                  <div class="picker-time-section">
+                    <div class="time-section-label">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      <span>Time</span>
+                    </div>
+                    <div class="time-controls-row">
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="1"
+                               max="12"
+                               class="time-num-input"
+                               [ngModel]="pickerHour"
+                               (ngModelChange)="setPickerHour($event)">
+                        <span class="time-unit-label">H</span>
+                      </div>
+                      <span class="time-colon">:</span>
+                      <div class="time-unit-box">
+                        <input type="number"
+                               min="0"
+                               max="59"
+                               class="time-num-input"
+                               [ngModel]="pickerMinute"
+                               (ngModelChange)="setPickerMinute($event)">
+                        <span class="time-unit-label">M</span>
+                      </div>
+                      <div class="time-period-switch">
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'AM'"
+                                (click)="setPickerPeriod('AM', $event)">AM</button>
+                        <button type="button"
+                                class="period-btn"
+                                [class.active]="pickerPeriod === 'PM'"
+                                (click)="setPickerPeriod('PM', $event)">PM</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-error-hint" *ngIf="formErrors.dates">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span>{{ formErrors.dates }}</span>
+            </div>
+
+            <!-- Notice banner when expiration modified in edit mode -->
+            <div class="edit-notice-banner info-banner" *ngIf="isExpirationModified">
+              <div class="notice-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              <div class="notice-content">
+                <span class="notice-title">Expiration date modified</span>
+                <span class="notice-desc">This change will not affect existing subscribed users.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -551,12 +834,20 @@
           </div>
 
           <div class="limits-control-row" style="margin-top: 10px;">
-            <div class="stepper-wrap">
-              <button type="button" class="stepper-btn" (click)="stepFormRedemptionLimit(-1)" [disabled]="offerForm.max_redemptions <= 1" title="Decrease">
+            <div class="stepper-wrap" [class.is-invalid]="formErrors.max_redemptions">
+              <button type="button" class="stepper-btn" (click)="stepFormRedemptionLimit(-1)" [disabled]="offerForm.max_redemptions <= minRedemptionsAllowed" title="Decrease">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               </button>
               <div class="stepper-input-container">
-                <input type="number" min="1" max="10000" class="stepper-input" [(ngModel)]="offerForm.max_redemptions">
+                <input type="number"
+                       min="1"
+                       max="100000"
+                       class="stepper-input"
+                       [class.is-invalid]="formErrors.max_redemptions"
+                       [(ngModel)]="offerForm.max_redemptions"
+                       (keydown)="preventNegative($event)"
+                       (input)="onRedemptionsInput($event)"
+                       (blur)="validateForm('max_redemptions')">
                 <span class="stepper-unit">members</span>
               </div>
               <button type="button" class="stepper-btn" (click)="stepFormRedemptionLimit(1)" title="Increase">
@@ -565,12 +856,27 @@
             </div>
 
             <div class="limit-presets-row">
-              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 10" (click)="setFormRedemptionLimitPreset(10)">10</button>
-              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 25" (click)="setFormRedemptionLimitPreset(25)">25</button>
-              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 50" (click)="setFormRedemptionLimitPreset(50)">50</button>
-              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 100" (click)="setFormRedemptionLimitPreset(100)">100</button>
-              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 500" (click)="setFormRedemptionLimitPreset(500)">500</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 10" [disabled]="10 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(10)">10</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 25" [disabled]="25 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(25)">25</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 50" [disabled]="50 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(50)">50</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 100" [disabled]="100 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(100)">100</button>
+              <button type="button" class="preset-pill" [class.active]="offerForm.max_redemptions === 500" [disabled]="500 < minRedemptionsAllowed" (click)="setFormRedemptionLimitPreset(500)">500</button>
             </div>
+          </div>
+
+          <!-- Current used count note in edit mode -->
+          <div class="used-count-info" *ngIf="isEditing && currentUsedCount > 0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span><strong>{{ currentUsedCount }}</strong> already claimed — limit cannot be reduced below this.</span>
+          </div>
+
+          <div class="field-error-hint" *ngIf="formErrors.max_redemptions" style="margin-top: 8px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span>{{ formErrors.max_redemptions }}</span>
           </div>
         </div>
       </div>
@@ -589,6 +895,11 @@
             <button type="button" class="btn-text-action" (click)="selectAllFormPlans()">Select All</button>
             <button type="button" class="btn-text-action" (click)="deselectAllFormPlans()">Clear All</button>
           </div>
+        </div>
+
+        <div class="field-error-hint" *ngIf="formErrors.plans" style="margin-top: 10px; margin-bottom: 2px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span>{{ formErrors.plans }}</span>
         </div>
 
         <div class="plans-selection-list" style="margin-top:12px; margin-bottom: 0;">
@@ -635,7 +946,7 @@
 <!-- =========================================================
      LINK PLANS MODAL (Quick Modal)
      ========================================================= -->
-<div class="offer-modal-backdrop" *ngIf="modalOpen" (click)="closeModal()">
+<div class="offer-modal-backdrop" *ngIf="modalOpen">
   <div class="offer-modal-container" (click)="$event.stopPropagation()">
     <!-- Modal Header -->
     <div class="modal-header">
@@ -812,7 +1123,7 @@
 <!-- =========================================================
      DELETE CONFIRMATION MODAL
      ========================================================= -->
-<div class="offer-modal-backdrop" *ngIf="deleteConfirmOpen" (click)="closeDeleteModal()">
+<div class="offer-modal-backdrop" *ngIf="deleteConfirmOpen">
   <div class="offer-modal-container" style="max-width: 420px;" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div style="display:flex;align-items:center;gap:10px;">
