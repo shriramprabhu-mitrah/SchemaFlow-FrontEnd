@@ -133,7 +133,13 @@ export class EntitlementService {
           this.auth.setSuperAdmin(data.isSuperAdmin);
         }
 
-        return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(res)) return res;
+        if (Array.isArray(data?.features)) return data.features;
+        if (Array.isArray(data?.entitlements)) return data.entitlements;
+        if (Array.isArray(res?.features)) return res.features;
+        if (Array.isArray(res?.entitlements)) return res.entitlements;
+        return [];
       }),
       tap(data => {
         this.loadedOrgId = orgId;
@@ -145,6 +151,36 @@ export class EntitlementService {
       shareReplay(1)
     );
     return this.inflightRequest$;
+  }
+
+  findFeatureInList(list: any[], featureKey: string): any | undefined {
+    if (!list || !Array.isArray(list) || list.length === 0) return undefined;
+
+    let ent = list.find((e: any) => e.feature_key === featureKey);
+    if (ent) return ent;
+
+    if (featureKey === 'create_diagrams' || featureKey === 'max_diagrams' || featureKey === 'diagram_creation' || featureKey === 'create_diagram') {
+      return list.find((e: any) => e.feature_key === 'create_diagrams' || e.feature_key === 'max_diagrams' || e.feature_key === 'diagram_creation' || e.feature_key === 'create_diagram');
+    } else if (featureKey === 'ai_chat' || featureKey === 'ai' || featureKey === 'ai_assistant') {
+      return list.find((e: any) => e.feature_key === 'ai_chat' || e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
+    } else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
+      return list.find((e: any) => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
+    } else if (featureKey === 'code_compare' || featureKey === 'sql_compare' || featureKey === 'compare') {
+      return list.find((e: any) => e.feature_key === 'code_compare' || e.feature_key === 'sql_compare' || e.feature_key === 'compare');
+    } else if (featureKey === 'table_relationships' || featureKey === 'table_relations' || featureKey === 'tables' || featureKey === 'refs' || featureKey === 'relationships' || featureKey === 'table_group') {
+      return list.find((e: any) => e.feature_key === 'table_relationships' || e.feature_key === 'table_relations' || e.feature_key === 'table_group' || e.feature_key === 'tables' || e.feature_key === 'relationships' || (e.long_description && e.long_description.toLowerCase().includes('relationship')) || (e.feature_name && e.feature_name.toLowerCase().includes('relationship')));
+    } else if (featureKey === 'document_view' || featureKey === 'docs' || featureKey === 'doc_view' || featureKey === 'docs_view' || featureKey === 'document') {
+      return list.find((e: any) => e.feature_key === 'document_view' || e.feature_key === 'docs' || e.feature_key === 'docs_view' || e.feature_key === 'doc_view' || e.feature_key === 'document');
+    } else if (featureKey === 'version_history' || featureKey === 'versions' || featureKey === 'version') {
+      return list.find((e: any) => e.feature_key === 'version_history' || e.feature_key === 'versions' || e.feature_key === 'version');
+    } else if (featureKey === 'share_diagram' || featureKey === 'share' || featureKey === 'advanced_sharing') {
+      return list.find((e: any) => e.feature_key === 'share_diagram' || e.feature_key === 'share' || e.feature_key === 'advanced_sharing');
+    } else if (featureKey === 'import_sql' || featureKey === 'import' || featureKey === 'sql_import') {
+      return list.find((e: any) => e.feature_key === 'import_sql' || e.feature_key === 'import' || e.feature_key === 'sql_import');
+    } else if (featureKey === 'export_sql' || featureKey === 'export_image' || featureKey === 'export' || featureKey === 'pdf_export' || featureKey === 'sql_export') {
+      return list.find((e: any) => e.feature_key === 'export_sql' || e.feature_key === 'export_image' || e.feature_key === 'export' || e.feature_key === 'pdf_export' || e.feature_key === 'sql_export');
+    }
+    return undefined;
   }
 
   getEntitlement(featureKey: string): any | undefined {
@@ -159,17 +195,21 @@ export class EntitlementService {
         used: 0
       };
     }
-    let ent = this.entitlementsSubject.value.find(e => e.feature_key === featureKey);
-    if (!ent) {
-      if (featureKey === 'create_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'max_diagrams');
-      else if (featureKey === 'max_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'create_diagrams');
-      else if (featureKey === 'ai_chat') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
-      else if (featureKey === 'ai') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
-      else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
-        ent = this.entitlementsSubject.value.find(e => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
+
+    const listsToSearch = [
+      this.entitlementsSubject.value,
+      this.orgEntitlementsSubject.value,
+      this.auth.getEntitlements()
+    ];
+
+    for (const list of listsToSearch) {
+      if (list && Array.isArray(list) && list.length > 0) {
+        const ent = this.findFeatureInList(list, featureKey);
+        if (ent) return ent;
       }
     }
-    return ent;
+
+    return undefined;
   }
 
   decrementUsage(featureKey: string, amount: number = 1): void {
@@ -280,25 +320,13 @@ export class EntitlementService {
     // which results in the button being visually disabled rather than showing an upgrade modal.
     if (!this.hasMemberAccess(featureKey)) return true;
 
-    // Check org entitlements if available
-    const orgEnts = this.orgEntitlementsSubject.value;
-    if (orgEnts && orgEnts.length > 0) {
-        let orgEnt = orgEnts.find(e => e.feature_key === featureKey);
-        if (!orgEnt) {
-          if (featureKey === 'create_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'max_diagrams');
-          else if (featureKey === 'max_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'create_diagrams');
-          else if (featureKey === 'ai_chat') orgEnt = orgEnts.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
-          else if (featureKey === 'ai') orgEnt = orgEnts.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
-          else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
-            orgEnt = orgEnts.find(e => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
-          }
-        }
-        if (orgEnt) {
-            return orgEnt.enabled === true || (orgEnt as any).value === 'true' || (orgEnt as any).value === true;
-        }
+    // Check loaded user/org entitlements directly from api/user-features
+    const ent = this.getEntitlement(featureKey);
+    if (ent) {
+      return ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
     }
-    
-    // Fallback to canUseFeature if orgEntitlements are not available yet
+
+    // Fallback to canUseFeature if entitlements are not available yet
     return this.canUseFeature(featureKey);
   }
 
@@ -339,16 +367,7 @@ export class EntitlementService {
     // 2. Fallback: retrieve user entitlements cached in local storage directly
     const cachedEnts = this.auth.getEntitlements();
     if (cachedEnts && cachedEnts.length > 0) {
-      let userEnt = cachedEnts.find((e: any) => e.feature_key === featureKey);
-      if (!userEnt) {
-        if (featureKey === 'create_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'max_diagrams');
-        else if (featureKey === 'max_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'create_diagrams');
-        else if (featureKey === 'ai_chat') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
-        else if (featureKey === 'ai') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
-        else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
-          userEnt = cachedEnts.find((e: any) => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
-        }
-      }
+      const userEnt = this.findFeatureInList(cachedEnts, featureKey);
       if (userEnt) {
         const isTrue = userEnt.enabled === true || userEnt.value === 'true' || userEnt.value === true;
         const isFalse = userEnt.enabled === false || userEnt.value === 'false' || userEnt.value === false;
