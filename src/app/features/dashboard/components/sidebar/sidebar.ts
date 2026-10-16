@@ -344,7 +344,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
       sqlite: 'SQLite',
       oracle: 'Oracle',
       snowflake: 'Snowflake',
-      mongodb: 'MongoDB'
+      mongodb: 'MongoDB',
+      cockroach: 'CockroachDB'
     };
     const dialectName = dialectNames[dialect] || dialect.toUpperCase();
 

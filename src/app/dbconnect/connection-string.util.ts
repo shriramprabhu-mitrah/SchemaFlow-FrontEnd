@@ -105,7 +105,7 @@ function parseUriConnectionString(value: string, defaultSchema = ''): Connection
   const [host, portStr] = hostPort.split(':');
   if (!host) return null;
 
-  const defaultPort = (scheme === 'mysql' || scheme === 'mariadb') ? 3306 : (scheme === 'oracle' ? 1521 : 5432);
+  const defaultPort = (scheme === 'mysql' || scheme === 'mariadb') ? 3306 : (scheme === 'oracle' ? 1521 : (scheme === 'cockroach' || scheme === 'cockroachdb' ? 26257 : 5432));
   const port = portStr ? parseInt(portStr, 10) : defaultPort;
 
   const queryIndex = restPath.indexOf('?');
@@ -320,7 +320,7 @@ export function getConnectionUrlMismatchError(
   return null;
 }
 
-export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake'): ConnectionDetails | null {
+export function parseConnectionDetails(value: string, databaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake' | 'cockroach'): ConnectionDetails | null {
   const raw = value.trim();
   if (!raw || databaseType === 'sqlite') return null;
 
@@ -348,8 +348,8 @@ export function parseConnectionDetails(value: string, databaseType: 'postgres' |
   }
 
   const uriValue = raw.replace(/^jdbc:/i, '');
-  if (databaseType === 'postgres') {
-    if (!uriValue.toLowerCase().startsWith('postgresql://') && !uriValue.toLowerCase().startsWith('postgres://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
+  if (databaseType === 'postgres' || databaseType === 'cockroach') {
+    if (!uriValue.toLowerCase().startsWith('postgresql://') && !uriValue.toLowerCase().startsWith('postgres://') && !uriValue.toLowerCase().startsWith('cockroachdb://') && !uriValue.toLowerCase().startsWith('cockroach://') && !uriValue.toLowerCase().startsWith('databasetype://')) {
       return null;
     }
   } else if (databaseType === 'mysql') {

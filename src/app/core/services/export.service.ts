@@ -3,7 +3,7 @@ import { HttpClient, HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable, of, catchError } from 'rxjs';
 import { AppConfigService } from './app-config.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'sqlite' | 'oracle' | 'snowflake' | 'mongodb';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'sqlite' | 'oracle' | 'snowflake' | 'mongodb' | 'cockroach';
 
 export interface ExportRequest {
   databaseType: string;
@@ -23,7 +23,8 @@ export class ExportService {
     sqlite: 'Sqlite',
     oracle: 'Oracle',
     snowflake: 'Snowflake',
-    mongodb: 'MongoDB'
+    mongodb: 'MongoDB',
+    cockroach: 'CockroachDB'
   };
 
   constructor(private http: HttpClient, private appConfig: AppConfigService) {}
@@ -32,8 +33,13 @@ export class ExportService {
   convert(diagramId: string | number, dialect: SqlDialect, dbmlScript: string): Observable<HttpEvent<string>> {
     const url = this.appConfig.environment?.importExportApiUrls?.export?.replace('{id}', diagramId.toString()) ?? '';
 
+    const normalizedDialect = String(dialect || '').toLowerCase();
+    const dbType = (normalizedDialect === 'cockroach' || normalizedDialect === 'cockroachdb')
+      ? 'CockroachDB'
+      : (this.databaseTypeMap[dialect] || this.databaseTypeMap[normalizedDialect as SqlDialect] || 'Postgres');
+
     const body: ExportRequest = {
-      databaseType: this.databaseTypeMap[dialect] || 'Postgres',
+      databaseType: dbType,
       dbmlScript
     };
 

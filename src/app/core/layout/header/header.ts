@@ -87,7 +87,7 @@ export class HeaderComponent implements OnInit {
   // Connection String import modal state
   connStringModalOpen = false;
   connStringConnectMode: 'host' | 'url' = 'host';
-  connStringDatabaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake' = 'postgres';
+  connStringDatabaseType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake' | 'cockroach' = 'postgres';
   selectedSqliteFile: File | null = null;
   isSqliteDraggingOver = false;
 
@@ -107,12 +107,13 @@ export class HeaderComponent implements OnInit {
   connStringValue = '';
   connStringUrlMismatchError: string | null = null;
   dbTypeDropdownOpen = false;
-  dbTypeOptions: Array<{ value: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'snowflake'; label: string }> = [
+  dbTypeOptions: Array<{ value: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'snowflake' | 'cockroach'; label: string }> = [
     { value: 'postgres', label: 'PostgreSQL' },
     { value: 'mysql', label: 'MySQL' },
     { value: 'mariadb', label: 'MariaDB' },
     { value: 'mssql', label: 'SQL Server (MSSQL)' },
-    { value: 'snowflake', label: 'Snowflake' }
+    { value: 'snowflake', label: 'Snowflake' },
+    { value: 'cockroach', label: 'CockroachDB' }
   ];
 
   connStringImporting = false;
@@ -751,7 +752,8 @@ export class HeaderComponent implements OnInit {
       sqlite: 'SQLite',
       oracle: 'Oracle',
       snowflake: 'Snowflake',
-      mongodb: 'MongoDB'
+      mongodb: 'MongoDB',
+      cockroach: 'CockroachDB'
     };
     const dialectName = dialectNames[exportDialect] || String(exportDialect).toUpperCase();
 
@@ -955,7 +957,7 @@ openConnectionStringModal(): void {
     this.cdr.markForCheck();
   }
 
-  selectDatabaseType(type: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'snowflake', event?: MouseEvent): void {
+  selectDatabaseType(type: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'snowflake' | 'cockroach', event?: MouseEvent): void {
     if (event) {
       event.stopPropagation();
     }
@@ -971,7 +973,7 @@ openConnectionStringModal(): void {
   onDatabaseTypeChange(event?: Event): void {
     const selectedType = (event?.target as HTMLSelectElement | null)?.value;
     if (selectedType) {
-      this.connStringDatabaseType = selectedType as 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake';
+      this.connStringDatabaseType = selectedType as 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'sqlite' | 'oracle' | 'snowflake' | 'cockroach';
     }
 
     this.connStringError = null;
@@ -988,19 +990,23 @@ openConnectionStringModal(): void {
       this.connSchema = '';
       this.connPort = null;
     } else if (this.connStringDatabaseType === 'postgres') {
-      if (!this.connPort || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 5432;
+      if (!this.connPort || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 1521 || this.connPort === 26257) this.connPort = 5432;
       if (!this.connUsername || this.connUsername === 'root' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'postgres';
+    } else if (this.connStringDatabaseType === 'cockroach') {
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 26257;
+      if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
+      if (!this.connDatabase) this.connDatabase = 'defaultdb';
     } else if (this.connStringDatabaseType === 'mysql') {
-      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521 || this.connPort === 26257) this.connPort = 3306;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
     } else if (this.connStringDatabaseType === 'mariadb') {
-      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521) this.connPort = 3306;
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 1433 || this.connPort === 1521 || this.connPort === 26257) this.connPort = 3306;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'sa' || this.connUsername === 'system') this.connUsername = 'root';
     } else if (this.connStringDatabaseType === 'mssql') {
-      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1521) this.connPort = 1433;
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1521 || this.connPort === 26257) this.connPort = 1433;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root' || this.connUsername === 'system') this.connUsername = 'sa';
     } else if (this.connStringDatabaseType === 'oracle') {
-      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1433) this.connPort = 1521;
+      if (!this.connPort || this.connPort === 5432 || this.connPort === 3306 || this.connPort === 1433 || this.connPort === 26257) this.connPort = 1521;
       if (!this.connUsername || this.connUsername === 'postgres' || this.connUsername === 'root' || this.connUsername === 'sa') this.connUsername = 'system';
     }
     if (this.connStringConnectMode === 'url' && this.connStringValue.trim()) {
@@ -1103,7 +1109,7 @@ openConnectionStringModal(): void {
         const userPass = details.username
           ? (details.password ? `${encodeURIComponent(details.username)}:${encodeURIComponent(details.password)}@` : `${encodeURIComponent(details.username)}@`)
           : '';
-        if (this.connStringDatabaseType === 'postgres') {
+        if (this.connStringDatabaseType === 'postgres' || this.connStringDatabaseType === 'cockroach') {
           return `postgresql://${userPass}${details.host}:${details.port}/${details.database}${details.schema ? `?schema=${details.schema}` : ''}`;
         } else if (this.connStringDatabaseType === 'mysql') {
           return `mysql://${userPass}${details.host}:${details.port}/${details.database}`;
@@ -1142,7 +1148,7 @@ openConnectionStringModal(): void {
     }
 
     const host = this.connHost.trim() || 'localhost';
-    const port = this.connPort || (this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' || this.connStringDatabaseType === 'mariadb' ? 3306 : this.connStringDatabaseType === 'oracle' ? 1521 : 1433);
+    const port = this.connPort || (this.connStringDatabaseType === 'cockroach' ? 26257 : this.connStringDatabaseType === 'postgres' ? 5432 : this.connStringDatabaseType === 'mysql' || this.connStringDatabaseType === 'mariadb' ? 3306 : this.connStringDatabaseType === 'oracle' ? 1521 : 1433);
     const db = this.connDatabase.trim();
     const user = this.connUsername.trim();
     const pass = this.connPassword;
@@ -1160,7 +1166,7 @@ openConnectionStringModal(): void {
       return `jdbc:oracle:thin:${credentials}//${host}:${port}/${db}`;
     }
 
-    if (this.connStringDatabaseType === 'postgres') {
+    if (this.connStringDatabaseType === 'postgres' || this.connStringDatabaseType === 'cockroach') {
       return `postgresql://${userPass}${host}:${port}/${db}${schema ? `?schema=${encodeURIComponent(schema)}` : ''}`;
     } else if (this.connStringDatabaseType === 'mysql') {
       return `mysql://${userPass}${host}:${port}/${db}`;
@@ -1175,6 +1181,9 @@ openConnectionStringModal(): void {
   getConnStringPlaceholder(): string {
     if (this.connStringDatabaseType === 'snowflake') {
       return 'SERVER=your_server_name;UID=your_username;PWD=your_password;DATABASE=your_database_name;WAREHOUSE=your_warehouse_name;ROLE=your_role_name;SCHEMAS=your_schema_names;';
+    }
+    if (this.connStringDatabaseType === 'cockroach') {
+      return 'postgresql://root@localhost:26257/defaultdb?sslmode=disable';
     }
     if (this.connStringDatabaseType === 'mssql') {
       return 'Server=host,port;Database=database;User Id=username;Password=password;Encrypt=false;TrustServerCertificate=true;';
@@ -1397,7 +1406,8 @@ openConnectionStringModal(): void {
       sqlserver: 'SQL Server',
       oracle: 'Oracle',
       snowflake: 'Snowflake',
-      sqlite: 'SQLite'
+      sqlite: 'SQLite',
+      cockroach: 'CockroachDB'
     };
     const dbName = dbNames[this.connStringDatabaseType] || this.connStringDatabaseType.toUpperCase();
 
@@ -1566,7 +1576,8 @@ openConnectionStringModal(): void {
       sqlite: 'SQLite',
       oracle: 'Oracle',
       snowflake: 'Snowflake',
-      mongodb: 'MongoDB'
+      mongodb: 'MongoDB',
+      cockroach: 'CockroachDB'
     };
     const dialectName = dialectNames[this.importDialect || ''] || (this.importDialect ? this.importDialect.toUpperCase() : 'SQL');
 

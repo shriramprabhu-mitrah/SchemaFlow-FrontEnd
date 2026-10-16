@@ -335,9 +335,9 @@
         </svg>
         Import from
         <span class="dialect-badge"
-          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'mariadb' ? 'mariadb-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : importDialect === 'mongodb' ? 'mongodb-badge' : importDialect === 'oracle' ? 'oracle-badge' : importDialect === 'snowflake' ? 'snowflake-badge' : 'sqlserver-badge'">
+          [ngClass]="importDialect === 'postgres' ? 'postgres-badge' : importDialect === 'mysql' ? 'mysql-badge' : importDialect === 'mariadb' ? 'mariadb-badge' : importDialect === 'sqlite' ? 'sqlite-badge' : importDialect === 'mongodb' ? 'mongodb-badge' : importDialect === 'oracle' ? 'oracle-badge' : importDialect === 'snowflake' ? 'snowflake-badge' : importDialect === 'cockroach' ? 'cockroach-badge' : 'sqlserver-badge'">
           {{ importDialect === 'postgres' ? 'PostgreSQL' : importDialect === 'mysql' ? 'MySQL' : importDialect === 'mariadb' ? 'MariaDB' : importDialect ===
-          'sqlite' ? 'SQLite' : importDialect === 'mongodb' ? 'MongoDB (NoSQL)' : importDialect === 'oracle' ? 'Oracle' : importDialect === 'snowflake' ? 'Snowflake' : 'SQL Server' }}
+          'sqlite' ? 'SQLite' : importDialect === 'mongodb' ? 'MongoDB (NoSQL)' : importDialect === 'oracle' ? 'Oracle' : importDialect === 'snowflake' ? 'Snowflake' : importDialect === 'cockroach' ? 'CockroachDB' : 'SQL Server' }}
         </span>
       </div>
       <button class="close-modal-btn" id="import-modal-close-btn" (click)="closeImportModal()">&times;</button>
@@ -366,7 +366,7 @@
 
       <div class="import-editor-wrap" [class.validated]="importValidated" [class.error]="!!importValidationError">
         <textarea id="import-sql-textarea" class="import-sql-textarea"
-          [placeholder]="importDialect === 'mongodb' ? '// Paste MongoDB / Mongoose schema, validator, or JSON here...' : '-- Paste your CREATE TABLE statements here...'" [value]="importSqlText"
+          [placeholder]="importDialect === 'mongodb' ? '// Paste MongoDB / Mongoose schema, validator, or JSON here...' : importDialect === 'cockroach' ? '-- Paste your CockroachDB CREATE TABLE statements here...' : '-- Paste your CREATE TABLE statements here...'" [value]="importSqlText"
           (input)="onSqlInput($event)" spellcheck="false" autocomplete="off"></textarea>
 
         <!-- Validation badge inside editor -->
@@ -663,7 +663,7 @@
               <!-- Port -->
               <div class="modal-form-group flex-1">
                 <label class="import-modal-label" for="conn-port">Port <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-                <input type="number" id="conn-port" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? '1521' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? '3306' : (connStringDatabaseType === 'mssql' ? '1433' : '5432'))" [(ngModel)]="connPort" autocomplete="off" />
+                <input type="number" id="conn-port" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? '1521' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? '3306' : (connStringDatabaseType === 'mssql' ? '1433' : (connStringDatabaseType === 'cockroach' ? '26257' : '5432')))" [(ngModel)]="connPort" autocomplete="off" />
               </div>
             </div>
 
@@ -671,11 +671,11 @@
               <!-- Database -->
               <div class="modal-form-group flex-1">
                 <label class="import-modal-label" for="conn-database">Database <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-                <input type="text" id="conn-database" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'FREEPDB1' : 'my_database'" [(ngModel)]="connDatabase" spellcheck="false" autocomplete="off" />
+                <input type="text" id="conn-database" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'FREEPDB1' : (connStringDatabaseType === 'cockroach' ? 'defaultdb' : 'my_database')" [(ngModel)]="connDatabase" spellcheck="false" autocomplete="off" />
               </div>
 
               <!-- Schema (for Postgres) -->
-              <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb'">
+              <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb' || connStringDatabaseType === 'cockroach'">
                 <label class="import-modal-label" for="conn-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
                 <input type="text" id="conn-schema" class="modal-input-field" [placeholder]="connStringDatabaseType === 'postgres' ? 'e.g. public (optional)' : 'Optional schema'" [(ngModel)]="connSchema" spellcheck="false" autocomplete="off" />
               </div>
@@ -685,7 +685,7 @@
               <!-- Username -->
               <div class="modal-form-group flex-1">
                 <label class="import-modal-label" for="conn-username">Username <span class="required-asterisk" style="color: #ef4444; margin-left: 2px;">*</span></label>
-                <input type="text" id="conn-username" name="db_host_username" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'system' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? 'root' : (connStringDatabaseType === 'mssql' ? 'sa' : 'postgres'))" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" data-lpignore="true" />
+                <input type="text" id="conn-username" name="db_host_username" class="modal-input-field" [placeholder]="connStringDatabaseType === 'oracle' ? 'system' : (connStringDatabaseType === 'mysql' || connStringDatabaseType === 'mariadb' ? 'root' : (connStringDatabaseType === 'mssql' ? 'sa' : (connStringDatabaseType === 'cockroach' ? 'root' : 'postgres')))" [(ngModel)]="connUsername" spellcheck="false" autocomplete="off" data-lpignore="true" />
               </div>
 
               <!-- Password -->
@@ -794,7 +794,7 @@
                 <label class="import-modal-label" for="conn-url-database">Database</label>
                 <input type="text" id="conn-url-database" class="modal-input-field" placeholder="database" [(ngModel)]="connDatabase" readonly spellcheck="false" autocomplete="off" />
               </div>
-              <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb'">
+              <div class="modal-form-group flex-1" *ngIf="connStringDatabaseType === 'postgres' || connStringDatabaseType === 'mariadb' || connStringDatabaseType === 'cockroach'">
                 <label class="import-modal-label" for="conn-url-schema">Schema <span style="text-transform: none; font-weight: normal; font-size: 11px; opacity: 0.7;">(optional)</span></label>
                 <input type="text" id="conn-url-schema" class="modal-input-field" placeholder="schema (optional)" [(ngModel)]="connSchema" readonly spellcheck="false" autocomplete="off" />
               </div>

@@ -2209,6 +2209,18 @@ canvas {
   border: 1px solid rgba(41, 181, 232, 0.25);
 }
 
+.cockroach-badge {
+  background: rgba(105, 51, 255, 0.15);
+  color: #6933ff;
+  border: 1px solid rgba(105, 51, 255, 0.25);
+}
+
+.sqlite-badge {
+  background: rgba(2, 132, 199, 0.15);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.25);
+}
+
 .mongodb-badge {
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;

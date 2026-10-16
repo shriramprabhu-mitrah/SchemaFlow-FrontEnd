@@ -145,7 +145,7 @@ export interface PaginatedResult<T> {
 
 export type Tool = 'select' | 'pan';
 export type ContextMenuTarget = '' | 'column' | 'table' | 'connection' | 'empty' | 'tableHeader' | 'groupHeader';
-export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'mssql';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'cockroach';
 
 
 export const SAMPLE = `Table Department {
@@ -6214,6 +6214,17 @@ export class DashboardService {
       float: 'FLOAT',
       decimal: 'DECIMAL(10,2)',
       date: 'DATE'
+    },
+    cockroach: {
+      int: 'INT8',
+      varchar: 'VARCHAR(255)',
+      text: 'STRING',
+      datetime: 'TIMESTAMPTZ',
+      boolean: 'BOOL',
+      bool: 'BOOL',
+      float: 'FLOAT8',
+      decimal: 'DECIMAL(10,2)',
+      date: 'DATE'
     }
   };
 
@@ -6250,7 +6261,7 @@ export class DashboardService {
         let line = `  ${this.quoteIdent(dialect, c.name)} ${this.mapType(dialect, c.type)}`;
 
         if (c.pk && c.increment) {
-          if (dialect === 'postgres') {
+          if (dialect === 'postgres' || dialect === 'cockroach') {
             line = `  ${this.quoteIdent(dialect, c.name)} SERIAL`;
           } else if (dialect === 'mysql' || dialect === 'mariadb') {
             line += ' AUTO_INCREMENT';

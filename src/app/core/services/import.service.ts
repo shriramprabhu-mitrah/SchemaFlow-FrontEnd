@@ -5,7 +5,7 @@ import { AppConfigService } from './app-config.service';
 
 import { AuthService } from './auth.service';
 
-export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'snowflake' | 'sqlite' | 'mongodb';
+export type SqlDialect = 'postgres' | 'mysql' | 'mariadb' | 'sqlserver' | 'oracle' | 'snowflake' | 'sqlite' | 'mongodb' | 'cockroach';
 
 export interface ImportRequest {
   databaseType: string;
@@ -30,7 +30,8 @@ export class ImportService {
     sqlite: 'Sqlite',
     oracle: 'Oracle',
     snowflake: 'Snowflake',
-    mongodb: 'MongoDB'
+    mongodb: 'MongoDB',
+    cockroach: 'CockroachDB'
   };
 
   constructor(
@@ -45,8 +46,13 @@ export class ImportService {
   validate(dialect: SqlDialect, sqlScript: string): Observable<string> {
     const url = this.appConfig.environment?.importExportApiUrls?.validateSql ?? '';
 
+    const normalizedDialect = String(dialect || '').toLowerCase();
+    const dbType = (normalizedDialect === 'cockroach' || normalizedDialect === 'cockroachdb')
+      ? 'CockroachDB'
+      : (this.databaseTypeMap[dialect] || this.databaseTypeMap[normalizedDialect as SqlDialect] || 'Postgres');
+
     const body: ValidateRequest = {
-      databaseType: this.databaseTypeMap[dialect] || 'Postgres',
+      databaseType: dbType,
       sqlQuery: sqlScript
     };
 
@@ -65,8 +71,13 @@ export class ImportService {
   convert(diagramId: string | number, dialect: SqlDialect, sqlScript: string): Observable<HttpEvent<string>> {
     const url = this.appConfig.environment?.importExportApiUrls?.import ?? '';
 
+    const normalizedDialect = String(dialect || '').toLowerCase();
+    const dbType = (normalizedDialect === 'cockroach' || normalizedDialect === 'cockroachdb')
+      ? 'CockroachDB'
+      : (this.databaseTypeMap[dialect] || this.databaseTypeMap[normalizedDialect as SqlDialect] || 'Postgres');
+
     const body: ImportRequest = {
-      databaseType: this.databaseTypeMap[dialect] || 'Postgres',
+      databaseType: dbType,
       sqlQuery: sqlScript
     };
 
@@ -102,7 +113,10 @@ export class ImportService {
 
     const isMariaDb = databaseType.toLowerCase() === 'mariadb';
     const isSnowflake = databaseType.toLowerCase() === 'snowflake';
-    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType));
+    const isCockroach = databaseType.toLowerCase() === 'cockroach' || databaseType.toLowerCase() === 'cockroachdb';
+    const dbType = isCockroach
+      ? 'cockroachdb'
+      : (databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType)));
 
     let finalConnectionString = connectionString;
     if (isSnowflake) {
@@ -168,7 +182,10 @@ export class ImportService {
 
     const isMariaDb = databaseType.toLowerCase() === 'mariadb';
     const isSnowflake = databaseType.toLowerCase() === 'snowflake';
-    const dbType = databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType));
+    const isCockroach = databaseType.toLowerCase() === 'cockroach' || databaseType.toLowerCase() === 'cockroachdb';
+    const dbType = isCockroach
+      ? 'cockroachdb'
+      : (databaseType.toLowerCase() === 'oracle' ? 'Oracle' : (isSnowflake ? 'snowflake' : (isMariaDb ? 'mariadb' : databaseType)));
 
     let finalConnectionString = connectionString;
     if (isSnowflake) {
@@ -188,7 +205,11 @@ export class ImportService {
       connectionString: finalConnectionString
     };
 
-    const url = this.appConfig.environment?.importExportApiUrls?.testConnection;
+    const generateUrl = (this.appConfig.environment?.importExportApiUrls as any)?.generateDbml;
+    const defaultTestUrl = generateUrl
+      ? generateUrl.replace(/\/api\/dbml\/generate\/?$/i, '/api/db/test-connection').replace(/\/dbml\/generate\/?$/i, '/db/test-connection')
+      : 'http://localhost:4000/api/db/test-connection';
+    const url = (this.appConfig.environment?.importExportApiUrls as any)?.testConnection || defaultTestUrl;
 
     if (isMariaDb) {
       return this.http.post(url!, body, { headers, responseType: 'text' }).pipe(
