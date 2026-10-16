@@ -249,8 +249,8 @@ export class StudentSettingsService {
 
   isStudentPlan(plan: any): boolean {
     if (!plan) return false;
-    const slug = (plan.slug || '').toLowerCase();
-    const name = (plan.name || '').toLowerCase();
+    const slug = (typeof plan === 'string' ? plan : (plan.slug || '')).toLowerCase();
+    const name = (typeof plan === 'string' ? '' : (plan.name || '')).toLowerCase();
     return slug === 'student' || slug === 'student-plan' || slug.includes('student') || name.includes('student');
   }
 

@@ -100,6 +100,10 @@ export class EditorComponent implements OnInit, OnDestroy {
     return this.svc.isSampleDiagram();
   }
 
+  isStudentUnapproved(): boolean {
+    return this.auth.isStudentPlan() && !this.auth.isStudentApproved();
+  }
+
   goToLogin(): void {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       if (this.svc.code.trim()) {

@@ -1388,6 +1388,9 @@ export class DashboardService {
   }
 
   isSampleDiagram(): boolean {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      return true;
+    }
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -5226,6 +5229,9 @@ export class DashboardService {
   }
 
   loadDiagram(id: number, fallbackWorkspace?: { id: number; name?: string } | null): Observable<any> {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      return EMPTY;
+    }
     const headers = this.getAuthHeaders();
     const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', id.toString()) ?? "";
     this.isDiagramLoading.set(true);
@@ -5806,7 +5812,7 @@ export class DashboardService {
   }
 
   saveDiagram(): Observable<any> {
-    if (this.isSaving() || this.showVersionHistory() || this.aiDiffReviewActive()) {
+    if (this.isSaving() || this.showVersionHistory() || this.aiDiffReviewActive() || (this.auth.isStudentPlan() && !this.auth.isStudentApproved())) {
       return EMPTY;
     }
 

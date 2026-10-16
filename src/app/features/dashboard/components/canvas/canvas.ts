@@ -274,6 +274,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.svc.isSampleDiagram();
   }
 
+  isStudentUnapproved(): boolean {
+    return this.auth.isStudentPlan() && !this.auth.isStudentApproved();
+  }
+
   get isReadOnly(): boolean {
     return this.svc.isReadOnly;
   }
@@ -6659,5 +6663,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.deleteNoteConfirm.visible = false;
     this.cdr.detectChanges();
+  }
+
+  isFeatureVisible(featureKey: string): boolean {
+    if (!this.auth.isStudentPlan()) {
+      return true;
+    }
+    if (this.isSampleDiagram() || !this.auth.isStudentApproved()) {
+      return true;
+    }
+    const ent = this.entitlementService.getEntitlement(featureKey);
+    if (ent) {
+      const isEnabled = ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
+      const isDisabled = ent.enabled === false || (ent as any).value === 'false' || (ent as any).value === false;
+      if (isDisabled) return false;
+      if (isEnabled) return true;
+    }
+    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
   }
 }

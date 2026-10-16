@@ -255,7 +255,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       ) {
         const feature = this.activeTab === 'shared' ? 'share_diagram' : 'create_workspaces';
         this.activeTab = 'my-diagrams';
-        this.svc.showUpgradeModal(feature);
+        if (!this.auth.isStudentPlan()) {
+          this.svc.showUpgradeModal(feature);
+        }
         return;
       }
       if (this.activeTab === 'my-diagrams') {
@@ -276,6 +278,23 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         this.editingWorkspace = null;
       }
     }
+  }
+
+  isFeatureVisible(featureKey: string): boolean {
+    if (!this.auth.isStudentPlan()) {
+      return true;
+    }
+    if (!this.auth.isStudentApproved()) {
+      return false;
+    }
+    const ent = this.entitlementService.getEntitlement(featureKey);
+    if (ent) {
+      const isEnabled = ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
+      const isDisabled = ent.enabled === false || (ent as any).value === 'false' || (ent as any).value === false;
+      if (isDisabled) return false;
+      if (isEnabled) return true;
+    }
+    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
   }
 
   get userEmail(): string {
