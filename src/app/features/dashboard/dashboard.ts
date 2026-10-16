@@ -51,6 +51,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   private socketConnectSubscription!: Subscription;
   private socketErrorSubscription!: Subscription;
   private aiChatSub?: Subscription;
+  private entitlementSub?: Subscription;
+  private studentApprovalSub?: Subscription;
   private isInitialLoad = true;
 
   constructor(
@@ -120,6 +122,12 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     });
     if (typeof window !== 'undefined') {
       this.svc.syncThemeFromStorage();
+      if (this.auth.isStudentPlan()) {
+        const uEmail = this.auth.getUserEmail();
+        this.auth.checkStudentApproval(uEmail || undefined).subscribe(() => {
+          this.cdr.detectChanges();
+        });
+      }
       if (this.svc.pendingOpenAiChat) {
         this.svc.pendingOpenAiChat = false;
         setTimeout(() => {
@@ -137,10 +145,34 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
       this.aiChatSub = this.svc.openAiChat$.subscribe(() => {
         this.cdr.detectChanges();
       });
+      this.studentApprovalSub = this.auth.studentApprovalStatus$.subscribe(() => {
+        this.cdr.detectChanges();
+      });
+      this.entitlementSub = this.entitlementService.entitlements$.subscribe(() => {
+        if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+          this.isInitialLoad = false;
+          this.svc.closeAiChat();
+          this.svc.clearDiagram(false);
+          this.svc.code = this.svc.getSampleCode('normal');
+          this.svc.diagramName = 'Sample Diagram';
+          this.svc.diagramId.set(null);
+          this.svc.showCanvasPlaceholder = false;
+          this.svc.updateGutter();
+          this.svc.parseAndLayout();
+          this.svc.requestCanvasFit();
+          this.svc.updateOriginalState();
+          const qParams = this.route.snapshot.queryParams;
+          if (qParams['id'] || qParams['sample'] !== 'true') {
+            this.router.navigate([], { queryParams: { sample: 'true', id: null }, queryParamsHandling: 'merge' });
+          }
+          this.cdr.detectChanges();
+        }
+      });
       this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
         const id = params['id'];
         const sampleParam = params['sample'];
-        const isSample = sampleParam === 'true' || sampleParam === 'normal' || sampleParam === 'group';
+        const isStudentUnapproved = this.auth.isStudentPlan() && !this.auth.isStudentApproved();
+        const isSample = sampleParam === 'true' || sampleParam === 'normal' || sampleParam === 'group' || isStudentUnapproved;
         const isDiff = params['view'] === 'diff' || this.router.url.includes('/diff');
 
         if (isDiff) {
@@ -156,11 +188,15 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
           const sampleType = sampleParam === 'group' ? 'group' : 'normal';
           this.svc.code = this.svc.getSampleCode(sampleType);
           this.svc.diagramName = 'Sample Diagram';
+          this.svc.diagramId.set(null);
           this.svc.showCanvasPlaceholder = false;
           this.svc.updateGutter();
           this.svc.parseAndLayout();
           this.svc.requestCanvasFit();
           this.svc.updateOriginalState();
+          if (isStudentUnapproved && (id || sampleParam !== 'true')) {
+            this.router.navigate([], { queryParams: { sample: 'true', id: null }, queryParamsHandling: 'merge' });
+          }
         } else if (id && this.auth.isLoggedIn()) {
           const numId = Number(id);
           if (this.isInitialLoad || this.svc.diagramId() !== numId) {
@@ -285,6 +321,8 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
     if (this.socketConnectSubscription) this.socketConnectSubscription.unsubscribe();
     if (this.socketErrorSubscription) this.socketErrorSubscription.unsubscribe();
     if (this.aiChatSub) this.aiChatSub.unsubscribe();
+    if (this.entitlementSub) this.entitlementSub.unsubscribe();
+    if (this.studentApprovalSub) this.studentApprovalSub.unsubscribe();
   }
 
   showEditorFullScreen(): void {
@@ -304,6 +342,18 @@ export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
 
   restoreSplitView(): void {
     this.paneMode = 'split';
+  }
+
+  isStudentPending(): boolean {
+    return this.auth.isStudentPlan() && this.auth.isStudentPending();
+  }
+
+  isStudentRejected(): boolean {
+    return this.auth.isStudentPlan() && this.auth.isStudentRejected();
+  }
+
+  isStudentUnapproved(): boolean {
+    return this.auth.isStudentPlan() && !this.auth.isStudentApproved();
   }
 
   private resizingRafPending = false;

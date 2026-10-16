@@ -198,7 +198,7 @@ export class PublicDocsComponent implements OnInit, OnDestroy {
         title: pageTitle,
         description: pageDesc,
         url: pageUrl,
-        keywords: 'dbNexus documentation, database schema docs, DBML guide, schema designer tutorial, SQL compare guide, database modeling documentation'
+        keywords: 'dbNexus documentation, database schema docs, DBML guide, schema designer tutorial, SQL compare guide, database modeling documentation, SQL export, DBML'
       });
       this.seoService.setStructuredData({
         "@context": "https://schema.org",

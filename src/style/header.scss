@@ -1056,9 +1056,12 @@ app-docs {
       }
     }
 
-    &.not-logged-in {
+    &.not-logged-in,
+    &.disabled,
+    &:disabled {
       cursor: not-allowed !important;
-      opacity: 0.65;
+      opacity: 0.55;
+      pointer-events: auto !important;
 
       &:hover {
         background: transparent !important;
@@ -3189,6 +3192,23 @@ html.light-theme {
         &.active {
           background: rgba(0, 0, 0, 0.05);
           color: #0f172a;
+        }
+
+        &.not-logged-in,
+        &.disabled,
+        &:disabled {
+          cursor: not-allowed !important;
+          opacity: 0.55;
+          pointer-events: auto !important;
+
+          &:hover {
+            background: transparent !important;
+            color: #1e293b !important;
+          }
+
+          .chevron {
+            cursor: not-allowed !important;
+          }
         }
 
         .chevron {

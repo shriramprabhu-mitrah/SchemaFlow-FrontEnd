@@ -167,7 +167,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   ngOnInit(): void {
     this.entitlementService.orgEntitlements$.subscribe(entitlements => {
-      this.availableFeatures = entitlements.filter(e => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'pdf_export' || e.feature_key === 'version_history' || e.feature_key === 'advanced_sharing' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram'));
+      this.availableFeatures = entitlements.filter(e => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'pdf_export' || e.feature_key === 'version_history' || e.feature_key === 'advanced_sharing' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram' || e.feature_key === 'db_connect' || e.feature_key === 'db_connection'));
       if (this.auth.getCurrentPlanStatus() === 'expired' || (!this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces'))) {
         if (this.activeTab === 'my-workspaces' || this.activeTab === 'edit-workspace' || this.activeTab === 'create-workspace' || this.activeTab === 'view-members') {
           this.activeTab = 'my-diagrams';
@@ -255,7 +255,9 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
       ) {
         const feature = this.activeTab === 'shared' ? 'share_diagram' : 'create_workspaces';
         this.activeTab = 'my-diagrams';
-        this.svc.showUpgradeModal(feature);
+        if (!this.auth.isStudentPlan()) {
+          this.svc.showUpgradeModal(feature);
+        }
         return;
       }
       if (this.activeTab === 'my-diagrams') {
@@ -276,6 +278,23 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
         this.editingWorkspace = null;
       }
     }
+  }
+
+  isFeatureVisible(featureKey: string): boolean {
+    if (!this.auth.isStudentPlan()) {
+      return true;
+    }
+    if (!this.auth.isStudentApproved()) {
+      return false;
+    }
+    const ent = this.entitlementService.getEntitlement(featureKey);
+    if (ent) {
+      const isEnabled = ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
+      const isDisabled = ent.enabled === false || (ent as any).value === 'false' || (ent as any).value === false;
+      if (isDisabled) return false;
+      if (isEnabled) return true;
+    }
+    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
   }
 
   get userEmail(): string {

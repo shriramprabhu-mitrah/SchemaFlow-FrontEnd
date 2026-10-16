@@ -61,7 +61,7 @@
       <!-- Account Type Toggle -->
       <div class="account-type-toggle" id="account-type-selector">
         <button id="account-type-individual" type="button" class="account-type-btn"
-          [class.active]="accountType === 'individual'" (click)="setAccountType('individual')">
+          [class.active]="accountType() === 'individual'" (click)="setAccountType('individual')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -70,7 +70,7 @@
           Individual
         </button>
         <button id="account-type-organization" type="button" class="account-type-btn"
-          [class.active]="accountType === 'organization'" (click)="setAccountType('organization')">
+          [class.active]="accountType() === 'organization'" (click)="setAccountType('organization')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
@@ -83,148 +83,181 @@
       </div>
 
       <!-- Context badge -->
-      <div class="account-type-badge" [class.org-badge]="accountType === 'organization'">
-        <svg *ngIf="accountType === 'individual'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+      <div class="account-type-badge" [class.org-badge]="accountType() === 'organization'">
+        <svg *ngIf="accountType() === 'individual'" width="14" height="14" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
           <path d="M12 8v4l3 3"></path>
         </svg>
-        <svg *ngIf="accountType === 'organization'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        <svg *ngIf="accountType() === 'organization'" width="14" height="14" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"></circle>
           <path d="M12 8v4l3 3"></path>
         </svg>
-        <span *ngIf="accountType === 'individual'">Personal account — access individual plans &amp; features</span>
-        <span *ngIf="accountType === 'organization'">Team account — manage members, roles &amp; org-wide plans</span>
+        <span *ngIf="accountType() === 'individual'">Personal account — access individual plans &amp; features</span>
+        <span *ngIf="accountType() === 'organization'">Team account — manage members, roles &amp; org-wide plans</span>
       </div>
 
       <form (submit)="onSubmit(); $event.preventDefault()">
         <!-- Error Alert -->
-        <div class="error-alert" *ngIf="errorMessage">
+        <div class="error-alert" *ngIf="errorMessage()">
           <app-icons name="error" size="20"></app-icons>
-          <span>{{ errorMessage }}</span>
+          <span>{{ errorMessage() }}</span>
         </div>
 
         <!-- Organization Name Input (only for Business) -->
-        <div class="input-group org-name-group" *ngIf="accountType === 'organization'" [@fadeSlideIn]>
+        <div class="input-group org-name-group" *ngIf="accountType() === 'organization'">
           <label for="organizationName">Company / Organization Name</label>
-          <div class="input-wrapper" [class.has-error]="organizationNameError">
+          <div class="input-wrapper" [class.has-error]="organizationNameError()">
             <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
               <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
             </svg>
             <input id="organizationName" name="organizationName" type="text"
-              placeholder="Enter your company or organization name" [(ngModel)]="organizationName"
-              (ngModelChange)="organizationNameError = ''" [disabled]="isLoading" autocomplete="organization" />
+              placeholder="Enter your company or organization name" [ngModel]="organizationName()"
+              (ngModelChange)="organizationName.set($event); organizationNameError.set('')" [disabled]="isLoading()" autocomplete="organization" />
           </div>
-          <div class="field-error-text" *ngIf="organizationNameError">
-            <span>{{ organizationNameError }}</span>
+          <div class="field-error-text" *ngIf="organizationNameError()">
+            <span>{{ organizationNameError() }}</span>
           </div>
         </div>
 
         <!-- Username Input -->
         <div class="input-group">
           <label for="username">Username</label>
-          <div class="input-wrapper" [class.has-error]="usernameError">
+          <div class="input-wrapper" [class.has-error]="usernameError()">
             <app-icons class="input-icon" name="user" size="20"></app-icons>
-            <input id="username" name="username" type="text" placeholder="Choose a username" [(ngModel)]="username"
-              (ngModelChange)="usernameError = ''" [disabled]="isLoading" required autocomplete="username" />
+            <input id="username" name="username" type="text" placeholder="Choose a username" [ngModel]="username()"
+              (ngModelChange)="username.set($event); usernameError.set('')" [disabled]="isLoading()" required autocomplete="username" />
           </div>
-          <div class="field-error-text" *ngIf="usernameError">
-            <span>{{ usernameError }}</span>
+          <div class="field-error-text" *ngIf="usernameError()">
+            <span>{{ usernameError() }}</span>
           </div>
         </div>
 
-        <!-- Email Input -->
+        <!-- Email Address Input with Seamless Inline Verify / Verified -->
         <div class="input-group">
           <label for="email">Email Address</label>
-          <div class="input-wrapper" [class.has-error]="emailError">
+          <div class="input-wrapper" 
+               [class.has-error]="emailError()"
+               [class.is-valid]="isEmailVerified()">
             <app-icons class="input-icon" name="email" size="20"></app-icons>
-            <input id="email" name="email" type="email" placeholder="Enter your email address" [(ngModel)]="email"
-              (ngModelChange)="emailError = ''" [disabled]="isLoading" required autocomplete="email" />
+            <input id="email" 
+                   name="email" 
+                   type="email" 
+                   placeholder="Enter your email address" 
+                   [ngModel]="email()"
+                   (input)="onEmailInput($event)"
+                   [disabled]="isLoading()" 
+                   [readonly]="isEmailVerified()"
+                   [class.readonly-field]="isEmailVerified()" 
+                   [class.has-action-btn]="!isEmailVerified()"
+                   [class.has-verified-badge]="isEmailVerified()"
+                   required 
+                   autocomplete="email" />
+
+            <!-- Inline Verify Button -->
+            <button type="button" 
+                    class="email-verify-btn" 
+                    (click)="sendOtp()" 
+                    *ngIf="!isEmailVerified()" 
+                    [disabled]="isVerifyingEmail() || isLoading()"
+                    title="Verify your email with OTP">
+              <span *ngIf="isVerifyingEmail()" class="inline-spinner"></span>
+              <span>{{ isVerifyingEmail() ? 'Sending...' : 'Verify' }}</span>
+            </button>
+
+            <!-- Inline Verified Badge -->
+            <div class="email-verified-badge" *ngIf="isEmailVerified()" title="Email verified">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <span>Verified</span>
+            </div>
           </div>
-          <div class="field-error-text" *ngIf="emailError">
-            <span>{{ emailError }}</span>
+          <div class="field-error-text" *ngIf="emailError()">
+            <span>{{ emailError() }}</span>
           </div>
         </div>
 
         <!-- Password Input -->
         <div class="input-group">
           <label for="password">Password</label>
-          <div class="input-wrapper" [class.has-error]="passwordError || (password && !isPasswordValid)"
-            [class.is-valid]="password && isPasswordValid">
+          <div class="input-wrapper" [class.has-error]="passwordError() || (password() && !isPasswordValid())"
+            [class.is-valid]="password() && isPasswordValid()">
             <app-icons class="input-icon" name="lock" size="20"></app-icons>
-            <input id="password" name="password" [type]="showPassword ? 'text' : 'password'"
-              placeholder="Create a strong password" [(ngModel)]="password" (keydown)="preventWhitespace($event)"
-              (paste)="onPasswordPaste($event)" (input)="onPasswordInput($event)" [disabled]="isLoading" required
+            <input id="password" name="password" [type]="showPassword() ? 'text' : 'password'"
+              placeholder="Create a strong password" [ngModel]="password()" (keydown)="preventWhitespace($event)"
+              (paste)="onPasswordPaste($event)" (input)="onPasswordInput($event)" [disabled]="isLoading()" required
               autocomplete="new-password" />
-            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [disabled]="isLoading"
+            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [disabled]="isLoading()"
               aria-label="Toggle password visibility">
-              <app-icons *ngIf="!showPassword" name="eye" size="20"></app-icons>
-              <app-icons *ngIf="showPassword" name="eye-off" size="20"></app-icons>
+              <app-icons *ngIf="!showPassword()" name="eye" size="20"></app-icons>
+              <app-icons *ngIf="showPassword()" name="eye-off" size="20"></app-icons>
             </button>
           </div>
-          <div class="field-error-text" *ngIf="passwordError">
-            <span>{{ passwordError }}</span>
+          <div class="field-error-text" *ngIf="passwordError()">
+            <span>{{ passwordError() }}</span>
           </div>
 
           <!-- Real-time Password Rules -->
-          <div class="password-rules" *ngIf="password && !isPasswordValid">
-            <div class="rule-item" [class.valid]="hasLowercase" [class.invalid]="!hasLowercase">
-              <svg *ngIf="hasLowercase" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          <div class="password-rules" *ngIf="password() && !isPasswordValid()">
+            <div class="rule-item" [class.valid]="hasLowercase()" [class.invalid]="!hasLowercase()">
+              <svg *ngIf="hasLowercase()" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <svg *ngIf="!hasLowercase" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              <svg *ngIf="!hasLowercase()" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
               <span>At least one lowercase letter</span>
             </div>
-            <div class="rule-item" [class.valid]="hasUppercase" [class.invalid]="!hasUppercase">
-              <svg *ngIf="hasUppercase" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            <div class="rule-item" [class.valid]="hasUppercase()" [class.invalid]="!hasUppercase()">
+              <svg *ngIf="hasUppercase()" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <svg *ngIf="!hasUppercase" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              <svg *ngIf="!hasUppercase()" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
               <span>At least one uppercase letter</span>
             </div>
-            <div class="rule-item" [class.valid]="hasNumber" [class.invalid]="!hasNumber">
-              <svg *ngIf="hasNumber" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            <div class="rule-item" [class.valid]="hasNumber()" [class.invalid]="!hasNumber()">
+              <svg *ngIf="hasNumber()" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <svg *ngIf="!hasNumber" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              <svg *ngIf="!hasNumber()" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
               <span>At least one number</span>
             </div>
-            <div class="rule-item" [class.valid]="hasSpecialChar" [class.invalid]="!hasSpecialChar">
-              <svg *ngIf="hasSpecialChar" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            <div class="rule-item" [class.valid]="hasSpecialChar()" [class.invalid]="!hasSpecialChar()">
+              <svg *ngIf="hasSpecialChar()" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <svg *ngIf="!hasSpecialChar" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24"
+              <svg *ngIf="!hasSpecialChar()" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24"
                 fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
               <span>At least one special character</span>
             </div>
-            <div class="rule-item" [class.valid]="hasMinLength" [class.invalid]="!hasMinLength">
-              <svg *ngIf="hasMinLength" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            <div class="rule-item" [class.valid]="hasMinLength()" [class.invalid]="!hasMinLength()">
+              <svg *ngIf="hasMinLength()" class="rule-icon check" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <svg *ngIf="!hasMinLength" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              <svg *ngIf="!hasMinLength()" class="rule-icon cross" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -238,30 +271,30 @@
         <div class="input-group">
           <label for="confirmPassword">Confirm Password</label>
           <div class="input-wrapper"
-            [class.has-error]="confirmPasswordError || (confirmPassword && confirmPassword !== password)"
-            [class.is-valid]="confirmPassword && confirmPassword === password && isPasswordValid">
+            [class.has-error]="confirmPasswordError() || (confirmPassword() && confirmPassword() !== password())"
+            [class.is-valid]="confirmPassword() && confirmPassword() === password() && isPasswordValid()">
             <app-icons class="input-icon" name="lock" size="20"></app-icons>
-            <input id="confirmPassword" name="confirmPassword" [type]="showConfirmPassword ? 'text' : 'password'"
-              placeholder="Repeat your password" [(ngModel)]="confirmPassword" (keydown)="preventWhitespace($event)"
-              (paste)="onConfirmPasswordPaste($event)" (input)="onConfirmPasswordInput($event)" [disabled]="isLoading"
+            <input id="confirmPassword" name="confirmPassword" [type]="showConfirmPassword() ? 'text' : 'password'"
+              placeholder="Repeat your password" [ngModel]="confirmPassword()" (keydown)="preventWhitespace($event)"
+              (paste)="onConfirmPasswordPaste($event)" (input)="onConfirmPasswordInput($event)" [disabled]="isLoading()"
               required autocomplete="new-password" />
             <button type="button" class="password-toggle" (click)="toggleConfirmPasswordVisibility()"
-              [disabled]="isLoading" aria-label="Toggle confirm password visibility">
-              <app-icons *ngIf="!showConfirmPassword" name="eye" size="20"></app-icons>
-              <app-icons *ngIf="showConfirmPassword" name="eye-off" size="20"></app-icons>
+              [disabled]="isLoading()" aria-label="Toggle confirm password visibility">
+              <app-icons *ngIf="!showConfirmPassword()" name="eye" size="20"></app-icons>
+              <app-icons *ngIf="showConfirmPassword()" name="eye-off" size="20"></app-icons>
             </button>
           </div>
-          <div class="field-error-text" *ngIf="confirmPasswordError">
-            <span>{{ confirmPasswordError }}</span>
+          <div class="field-error-text" *ngIf="confirmPasswordError()">
+            <span>{{ confirmPasswordError() }}</span>
           </div>
         </div>
 
         <!-- Submit Button -->
-        <app-button type="submit" variant="none" customClass="submit-btn" [disabled]="isLoading">
-          <span *ngIf="!isLoading">
-            {{ accountType === 'organization' ? 'Create Organization Account' : 'Create Account' }}
+        <app-button type="submit" variant="none" customClass="submit-btn" [disabled]="isLoading()">
+          <span *ngIf="!isLoading()">
+            {{ accountType() === 'organization' ? 'Create Organization Account' : 'Create Account' }}
           </span>
-          <div class="spinner" *ngIf="isLoading"></div>
+          <div class="spinner" *ngIf="isLoading()"></div>
         </app-button>
       </form>
 
@@ -272,4 +305,48 @@
     </div>
   </div>
 
+  <!-- OTP Verification Modal -->
+  <div class="otp-modal-overlay" *ngIf="showOtpModal()">
+    <div class="otp-modal">
+      <h3>Verify Email</h3>
+      <p>Enter the 6-digit code sent to your email.</p>
+      
+      <div class="otp-inputs" (paste)="onOtpPaste($event, 0)">
+        <input *ngFor="let digit of otp; let i = index; trackBy: trackByIndex" 
+               type="text" 
+               maxlength="1" 
+               [id]="'otp-' + i"
+               [value]="otp[i]"
+               (input)="onOtpInput($event, i)"
+               (keyup)="onOtpKeyUp($event, i)"
+               (keydown)="onOtpKeyDown($event, i)"
+               (paste)="onOtpPaste($event, i)"
+               (copy)="onOtpCopy($event)"
+               class="otp-input">
+      </div>
+
+      <div class="otp-resend-row">
+        <button type="button" class="btn-resend-link" (click)="resendOtp()" [disabled]="otpTimer() > 0 || isResendingOtp()">
+          <span *ngIf="isResendingOtp()">Sending OTP...</span>
+          <span *ngIf="!isResendingOtp()">Resend OTP</span>
+        </button>
+      </div>
+
+      <div class="otp-timer-container">
+        <span class="timer-text" *ngIf="otpTimer() > 0">Time remaining: {{ otpTimer() }}s</span>
+      </div>
+
+      <div class="otp-error-slot">
+        <div class="error-msg" *ngIf="otpVerifyError()">{{ otpVerifyError() }}</div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="closeOtpModal()">Cancel</button>
+        <button type="button" class="btn-verify-otp" (click)="verifyOtp()" [disabled]="isVerifyingOtp()">
+          <span *ngIf="!isVerifyingOtp()">Verify OTP</span>
+          <span *ngIf="isVerifyingOtp()">Verifying...</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

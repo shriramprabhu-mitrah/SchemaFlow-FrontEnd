@@ -590,7 +590,19 @@ export class UpgradeModalComponent implements OnInit {
     return `Upgrade to ${planName}`;
   }
 
+  isStudentUser(): boolean {
+    if (this.auth.isStudentPlan()) return true;
+    const slug = (this.currentPlanSlug || this.auth.getCurrentPlanSlug() || '').toLowerCase();
+    if (slug === 'student' || slug === 'student-plan' || slug.includes('student')) return true;
+    if (typeof window !== 'undefined') {
+      const storedSlug = (localStorage.getItem('current_plan_slug') || localStorage.getItem('cachedPlanSlug') || '').toLowerCase();
+      if (storedSlug === 'student' || storedSlug === 'student-plan' || storedSlug.includes('student')) return true;
+    }
+    return false;
+  }
+
   isCtaDisabled(plan: any): boolean {
+    if (this.isLoggedIn && this.isStudentUser()) return true;
     // Student plan button must always remain enabled for any user (free, premium, team, etc.)
     if (this.studentSettings.isStudentPlan(plan)) return false;
 
@@ -659,7 +671,7 @@ export class UpgradeModalComponent implements OnInit {
   }
 
   selectPlan(plan: any): void {
-    if (this.auth.isSuperAdmin()) return;
+    if (this.auth.isSuperAdmin() || (this.isLoggedIn && this.isStudentUser())) return;
 
     if (this.studentSettings.isStudentPlan(plan)) {
       this.closeModal();

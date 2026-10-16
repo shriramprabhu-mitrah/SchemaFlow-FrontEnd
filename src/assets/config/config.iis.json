@@ -12,7 +12,9 @@
     "forgetPassword": "http://192.168.1.201:3000/api/auth/forget-password",
     "resetPassword": "http://192.168.1.201:3000/api/auth/reset-password",
     "refreshToken": "http://192.168.1.201:3000/api/auth/refreshToken",
-    "logout": "http://192.168.1.201:3000/api/auth/logout"
+    "logout": "http://192.168.1.201:3000/api/auth/logout",
+    "sendOtp": "http://192.168.1.201:3000/api/auth/send-otp",
+    "verifyOtp": "http://192.168.1.201:3000/api/auth/verify-otp"
   },
   "userApiUrls": {
     "userDetails": "http://192.168.1.201:3000/api/user-details",

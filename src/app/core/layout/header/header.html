@@ -12,9 +12,10 @@
   <div class="personal-dropdown-wrap" *ngIf="!isProfilePage">
     <button class="personal-trigger-btn" (click)="togglePersonalMenu($event)"
       [class.active]="personalMenuOpen" [class.not-logged-in]="!isLoggedIn"
-      [attr.data-tt]="isLoggedIn ? 'Open Workspace' : 'Please sign in to access workspace options'">
+      [class.disabled]="isStudentUnapproved()" [disabled]="isStudentUnapproved()"
+      [attr.data-tt]="isStudentUnapproved() ? (isStudentRejected() ? 'Workspace is disabled: student request rejected' : 'Workspace is disabled for unapproved student plan') : (isLoggedIn ? 'Open Workspace' : 'Please sign in to access workspace options')">
       <span class="personal-label">{{ (svc.diagramWorkspaceType() | titlecase) || 'Personal' }}</span>
-      <svg class="chevron" [class.open]="personalMenuOpen" width="12" height="12" viewBox="0 0 24 24" fill="none"
+      <svg class="chevron" [class.open]="personalMenuOpen && !isStudentUnapproved()" width="12" height="12" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
         (click)="openPersonalDropdown($event)">
         <polyline points="6 9 12 15 18 9" />
@@ -23,7 +24,7 @@
     <span class="path-separator">/</span>
 
     <!-- Dropdown Menu Popup (Image 1) -->
-    <div class="personal-menu" [class.visible]="personalMenuOpen" (click)="$event.stopPropagation()">
+    <div class="personal-menu" [class.visible]="personalMenuOpen && !isStudentUnapproved()" (click)="$event.stopPropagation()">
       <div class="personal-menu-item-wrap">
         <button class="personal-menu-item" (click)="toggleWorkspaceSubmenu($event)">
           <span class="item-text" style="display: flex; align-items: center; gap: 4px;">
@@ -45,11 +46,11 @@
             </svg>
           </div>
 
-          <div class="submenu-item" [class.active]="(svc.diagramWorkspaceType() | titlecase) === 'Team'"
+          <div class="submenu-item" *ngIf="!auth.isStudentPlan() || isFeatureVisible('create_workspaces')" [class.active]="(svc.diagramWorkspaceType() | titlecase) === 'Team'"
             (click)="entitlementService.orgHasFeature('create_workspaces') ? openWorkspaceModal('my-workspaces') : openUpgradeModal('create_workspaces'); closePersonalMenu(); closeWorkspaceSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Team Workspace
-              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('create_workspaces')"
+              <app-icons *ngIf="isLoggedIn && !auth.isStudentPlan() && !entitlementService.orgHasFeature('create_workspaces')"
                 name="premium-crown" size="14" color="#f59e0b"></app-icons>
             </span>
             <svg *ngIf="(svc.diagramWorkspaceType() | titlecase) === 'Team'" width="14" height="14" viewBox="0 0 24 24"
@@ -59,12 +60,12 @@
             </svg>
           </div>
 
-          <div class="submenu-item" [class.disabled]="entitlementService.isMember()"
+          <div class="submenu-item" *ngIf="!auth.isStudentPlan() || isFeatureVisible('create_workspaces')" [class.disabled]="entitlementService.isMember()"
             (click)="!entitlementService.isMember() && (entitlementService.canUseFeature('create_workspaces') ? openWorkspaceModal('create-workspace') : openUpgradeModal('create_workspaces')); !entitlementService.isMember() && closePersonalMenu(); !entitlementService.isMember() && closeWorkspaceSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Create Workspace
               <app-icons
-                *ngIf="isLoggedIn && !entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')"
+                *ngIf="isLoggedIn && !auth.isStudentPlan() && !entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')"
                 name="premium-crown" size="14" color="#f59e0b"></app-icons>
             </span>
           </div>
@@ -93,10 +94,10 @@
           <div class="submenu-item" (click)="createSampleDiagram('normal'); closePersonalMenu(); closeSampleSubmenu()">
             <span class="diagram-title">Foundation Schema (Normal Diagram)</span>
           </div>
-          <div class="submenu-item" (click)="createSampleDiagram('group'); closePersonalMenu(); closeSampleSubmenu()">
+          <div class="submenu-item" *ngIf="!auth.isStudentPlan() || isFeatureVisible('table_group')" (click)="createSampleDiagram('group'); closePersonalMenu(); closeSampleSubmenu()">
             <span class="diagram-title" style="display: flex; align-items: center; gap: 4px;">
               Modular Schema (Table Group Diagram)
-              <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('table_group')" name="premium-crown"
+              <app-icons *ngIf="isLoggedIn && !auth.isStudentPlan() && !entitlementService.orgHasFeature('table_group')" name="premium-crown"
                 size="14" color="#f59e0b"></app-icons>
             </span>
           </div>
@@ -134,12 +135,12 @@
         </div>
       </div>
 
-      <button class="personal-menu-item" style="position: relative;"
+      <button class="personal-menu-item" *ngIf="!auth.isStudentPlan() || isFeatureVisible('share_diagram')" style="position: relative;"
         (click)="entitlementService.canUseFeature('share_diagram') ? openWorkspaceModal('shared') : openUpgradeModal('share_diagram'); closePersonalMenu()">
         <span class="item-text" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
             with Me</span>
-          <app-icons *ngIf="isLoggedIn && !entitlementService.orgHasFeature('share_diagram')" name="premium-crown"
+          <app-icons *ngIf="isLoggedIn && !auth.isStudentPlan() && !entitlementService.orgHasFeature('share_diagram')" name="premium-crown"
             size="14" color="#f59e0b"
             style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </span>

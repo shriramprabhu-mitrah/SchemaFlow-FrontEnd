@@ -1,0 +1,418 @@
+/* ==========================================================================
+   Register Component - Custom Styles (Inline Verification & OTP Modal)
+   ========================================================================== */
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  input {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px 0 46px;
+    box-sizing: border-box;
+
+    &.has-action-btn {
+      padding-right: 98px !important;
+    }
+
+    &.has-verified-badge {
+      padding-right: 110px !important;
+    }
+
+    &.readonly-field {
+      cursor: default;
+    }
+  }
+
+  /* Inline Verify Button inside Input Wrapper - Matches Create Account button */
+  .email-verify-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #3ec5c1;
+    border: none;
+    color: #08101f;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 0 14px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 10px rgba(62, 197, 193, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    z-index: 2;
+
+    &:hover:not(:disabled) {
+      background: #4fd8d4;
+      transform: translateY(-50%) translateY(-1px);
+      box-shadow: 0 4px 14px rgba(62, 197, 193, 0.35);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(-50%);
+    }
+
+    &:disabled {
+      background: #334155;
+      color: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: translateY(-50%);
+      opacity: 0.7;
+    }
+
+    .inline-spinner {
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(8, 16, 31, 0.25);
+      border-top-color: #08101f;
+      border-radius: 50%;
+      animation: spin-inline 0.8s linear infinite;
+    }
+  }
+
+  /* Inline Verified Badge inside Input Wrapper */
+  .email-verified-badge {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #10b981;
+    font-weight: 600;
+    font-size: 13px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    padding: 4px 10px;
+    border-radius: 8px;
+    user-select: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+    z-index: 2;
+    pointer-events: none;
+
+    svg {
+      width: 15px;
+      height: 15px;
+      stroke: #10b981;
+      stroke-width: 2.5;
+    }
+  }
+}
+
+@keyframes spin-inline {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   OTP Modal Styles
+   ========================================================================== */
+.otp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.otp-modal {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 28px 24px;
+  width: 90%;
+  max-width: 396px;
+  min-height: 310px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  p {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: #94a3b8;
+  }
+}
+
+.otp-inputs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.otp-input {
+  width: 45px;
+  height: 52px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0f172a;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f8fafc;
+  outline: none;
+  transition: all 0.2s;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: #3ec5c1;
+    box-shadow: 0 0 0 3px rgba(62, 197, 193, 0.15);
+  }
+}
+
+.otp-resend-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 6px;
+  min-height: 20px;
+  flex-shrink: 0;
+
+  .btn-resend-link {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #3ec5c1;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+
+    &:hover:not(:disabled) {
+      color: #5eead4;
+    }
+
+    &:disabled {
+      color: #3ec5c1;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+}
+
+.otp-timer-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #94a3b8;
+  min-height: 20px;
+  text-align: center;
+  width: 100%;
+  flex-shrink: 0;
+
+  .timer-text {
+    font-weight: 500;
+  }
+}
+
+.otp-error-slot {
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 14px;
+  width: 100%;
+  flex-shrink: 0;
+
+  .error-msg {
+    color: #f87171;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+    text-align: center;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 10px 16px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #334155;
+  }
+}
+
+/* Modal Verify OTP Button - Matches Create Account button */
+.btn-verify-otp {
+  padding: 10px 20px;
+  border: none;
+  background: #3ec5c1;
+  color: #08101f;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(62, 197, 193, 0.25);
+  transition: all 0.2s;
+  
+  &:hover:not(:disabled) {
+    background: #4fd8d4;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(62, 197, 193, 0.35);
+  }
+  
+  &:disabled {
+    background: #334155;
+    color: #64748b;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Light Mode Overrides - Exactly matches Light Mode Create Account (#337ab7)
+   ========================================================================== */
+:host-context([data-theme="light"]),
+:host-context(body.light-theme),
+:host-context(html[data-theme="light"]) {
+  .input-wrapper {
+    .email-verify-btn {
+      background: #337ab7 !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 10px rgba(51, 122, 183, 0.25) !important;
+
+      &:hover:not(:disabled) {
+        background: #286090 !important;
+        box-shadow: 0 4px 14px rgba(51, 122, 183, 0.35) !important;
+      }
+
+      &:disabled {
+        background: #e2e8f0 !important;
+        color: #94a3b8 !important;
+      }
+
+      .inline-spinner {
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        border-top-color: #ffffff !important;
+      }
+    }
+
+    .email-verified-badge {
+      color: #059669;
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+
+      svg {
+        stroke: #059669;
+      }
+    }
+  }
+
+  .otp-modal {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+    h3 {
+      color: #0f172a;
+    }
+
+    p {
+      color: #64748b;
+    }
+  }
+
+  .otp-input {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #1e293b;
+
+    &:focus {
+      border-color: #337ab7;
+      box-shadow: 0 0 0 3px rgba(51, 122, 183, 0.18);
+    }
+  }
+
+  .btn-cancel {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #475569;
+
+    &:hover {
+      background: #f8fafc;
+    }
+  }
+
+  .btn-verify-otp {
+    background: #337ab7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(51, 122, 183, 0.25) !important;
+
+    &:hover:not(:disabled) {
+      background: #286090 !important;
+      box-shadow: 0 6px 18px rgba(51, 122, 183, 0.35) !important;
+    }
+
+    &:disabled {
+      background: #e2e8f0 !important;
+      color: #94a3b8 !important;
+    }
+  }
+
+  .otp-resend-row .btn-resend-link {
+    color: #337ab7;
+    &:hover:not(:disabled) {
+      color: #286090;
+    }
+    &:disabled {
+      color: #337ab7;
+    }
+  }
+
+  .otp-timer-container {
+    color: #64748b;
+  }
+
+  .otp-error-slot .error-msg {
+    color: #ef4444;
+  }
+}
