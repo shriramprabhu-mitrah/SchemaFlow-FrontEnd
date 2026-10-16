@@ -432,6 +432,31 @@ export class AuthService {
     return [];
   }
 
+  setMemberFeatureAccess(access: string[] | null): void {
+    if (isPlatformBrowser(this.platformId)) {
+      if (access && Array.isArray(access)) {
+        localStorage.setItem('member_feature_access', JSON.stringify(access));
+      } else {
+        localStorage.removeItem('member_feature_access');
+      }
+    }
+  }
+
+  getMemberFeatureAccess(): string[] | null {
+    if (isPlatformBrowser(this.platformId)) {
+      const stored = localStorage.getItem('member_feature_access');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          return Array.isArray(parsed) ? parsed : null;
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
   clearLocalState(): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('auth_token');
@@ -453,6 +478,7 @@ export class AuthService {
       localStorage.removeItem('drag position');
       localStorage.removeItem('ref colors');
       localStorage.removeItem('user_entitlements');
+      localStorage.removeItem('member_feature_access');
       localStorage.removeItem('current_plan_slug');
       localStorage.removeItem('cachedHasUsedTrial');
     }

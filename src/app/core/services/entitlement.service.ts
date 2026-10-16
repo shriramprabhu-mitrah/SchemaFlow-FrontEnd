@@ -38,14 +38,22 @@ export class EntitlementService {
   private loadedOrgId: number | null = null;
   private inflightRequest$: Observable<EffectiveEntitlement[]> | null = null;
   public memberFeatureAccess: string[] | null = null;
+  public memberFeatureAccess$ = new BehaviorSubject<string[] | null>(null);
   public hasUsedTrial: boolean = false;
 
   constructor() {
+    const cachedAccess = this.auth.getMemberFeatureAccess();
+    if (cachedAccess) {
+      this.memberFeatureAccess = cachedAccess;
+      this.memberFeatureAccess$.next(cachedAccess);
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('userLogout', () => {
         this.hasUsedTrial = false;
         this.loadedOrgId = null;
         this.memberFeatureAccess = null;
+        this.memberFeatureAccess$.next(null);
         this.plansLoaded = false;
         this.inflightRequest$ = null;
         this.entitlementsSubject.next([]);
@@ -64,6 +72,11 @@ export class EntitlementService {
 
     const orgId = this.auth.getOrganizationId();
     if (!force) {
+      const cachedAccess = this.auth.getMemberFeatureAccess();
+      if (cachedAccess) {
+        this.memberFeatureAccess = cachedAccess;
+        this.memberFeatureAccess$.next(cachedAccess);
+      }
       if (this.loadedOrgId === orgId && this.entitlementsSubject.value.length > 0) {
         return of(this.entitlementsSubject.value);
       }
@@ -79,8 +92,19 @@ export class EntitlementService {
       map(res => {
         const data = res?.data || res;
         
-        if (data?.memberFeatureAccess) this.memberFeatureAccess = data.memberFeatureAccess;
-        else this.memberFeatureAccess = null;
+        let mAccess = data?.memberFeatureAccess;
+        if (typeof mAccess === 'string') {
+          try { mAccess = JSON.parse(mAccess); } catch { mAccess = null; }
+        }
+        if (Array.isArray(mAccess)) {
+          this.memberFeatureAccess = mAccess;
+          this.memberFeatureAccess$.next(mAccess);
+          this.auth.setMemberFeatureAccess(mAccess);
+        } else {
+          this.memberFeatureAccess = null;
+          this.memberFeatureAccess$.next(null);
+          this.auth.setMemberFeatureAccess(null);
+        }
 
         if (data?.purchasedPlan?.slug) {
           if (data.purchasedPlan.status === 'expired') {
@@ -141,6 +165,9 @@ export class EntitlementService {
       else if (featureKey === 'max_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'create_diagrams');
       else if (featureKey === 'ai_chat') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
       else if (featureKey === 'ai') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
+      else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
+        ent = this.entitlementsSubject.value.find(e => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
+      }
     }
     return ent;
   }
@@ -233,6 +260,8 @@ export class EntitlementService {
       if (featureKey === 'create_workspaces' && this.memberFeatureAccess.includes('create_workspace')) return true;
       if (featureKey === 'create_workspace' && this.memberFeatureAccess.includes('create_workspaces')) return true;
       if ((featureKey === 'ai_chat' || featureKey === 'ai') && (this.memberFeatureAccess.includes('ai_chat') || this.memberFeatureAccess.includes('ai') || this.memberFeatureAccess.includes('ai_assistant'))) return true;
+      if ((featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') &&
+          (this.memberFeatureAccess.includes('db_connect') || this.memberFeatureAccess.includes('db_connection') || this.memberFeatureAccess.includes('dbconnect') || this.memberFeatureAccess.includes('live_connection') || this.memberFeatureAccess.includes('connect'))) return true;
       
       return false;
     }
@@ -260,6 +289,9 @@ export class EntitlementService {
           else if (featureKey === 'max_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'create_diagrams');
           else if (featureKey === 'ai_chat') orgEnt = orgEnts.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
           else if (featureKey === 'ai') orgEnt = orgEnts.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
+          else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
+            orgEnt = orgEnts.find(e => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
+          }
         }
         if (orgEnt) {
             return orgEnt.enabled === true || (orgEnt as any).value === 'true' || (orgEnt as any).value === true;
@@ -313,6 +345,9 @@ export class EntitlementService {
         else if (featureKey === 'max_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'create_diagrams');
         else if (featureKey === 'ai_chat') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
         else if (featureKey === 'ai') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
+        else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
+          userEnt = cachedEnts.find((e: any) => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
+        }
       }
       if (userEnt) {
         const isTrue = userEnt.enabled === true || userEnt.value === 'true' || userEnt.value === true;
@@ -347,7 +382,9 @@ export class EntitlementService {
         (featureKey === 'create_diagrams' && e.feature_key === 'max_diagrams') ||
         (featureKey === 'max_diagrams' && e.feature_key === 'create_diagrams') ||
         (featureKey === 'ai_chat' && (e.feature_key === 'ai' || e.feature_key === 'ai_assistant')) ||
-        (featureKey === 'ai' && (e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant'))
+        (featureKey === 'ai' && (e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant')) ||
+        ((featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') &&
+         (e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect'))
       );
       if (fallbackEnt) {
         const isValTrue = fallbackEnt.value !== 'false' && (fallbackEnt.value as any) !== false;

@@ -72,6 +72,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           this.svc.closeAiChat();
         }
         this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
     this.entitlementService.orgEntitlements$
       .pipe(takeUntil(this.destroy$))
@@ -80,6 +81,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
           this.svc.closeAiChat();
         }
         this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      });
+    this.entitlementService.memberFeatureAccess$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
     this.svc.redraw$
       .pipe(takeUntil(this.destroy$))
@@ -149,7 +157,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     if (this.auth.getCurrentPlanStatus() === 'expired') return true;
     switch (item) {
       case 'connect':
-        return !this.entitlementService.orgHasFeature('db_connect');
+        return !this.entitlementService.orgHasFeature('db_connect') && !this.entitlementService.orgHasFeature('db_connection');
       case 'import':
         return !this.entitlementService.orgHasFeature('import_sql');
       case 'export':
@@ -180,8 +188,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   isMemberRestricted(featureKeys: string[]): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     if (this.auth.getCurrentPlanStatus() === 'cancelled') return false;
-    // If the feature is not there in memberFeatureAccess just disable the button in ui
-    return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k));
+    // If the feature is not there in memberFeatureAccess or restricted by org plan limits, disable it in UI
+    return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k) || (this.entitlementService.orgHasFeature(k) && !this.entitlementService.canUseFeature(k)));
   }
 
   // ============ IMPORT ============
@@ -245,7 +253,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
 
   openConnectionStringModal(e?: Event): void {
-    if (this.isMemberRestricted(['db_connect'])) return;
+    if (this.isMemberRestricted(['db_connect']) || (this.entitlementService.orgHasFeature('db_connect') && !this.entitlementService.canUseFeature('db_connect'))) return;
 
     if (e) e.stopPropagation();
     this.svc.closeErrorsCard();
@@ -265,6 +273,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     this.svc.openConnectionStringModal();
     this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
   hasDbmlErrors(): boolean {
     return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;

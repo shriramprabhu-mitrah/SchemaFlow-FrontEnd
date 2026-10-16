@@ -830,7 +830,7 @@ export class HeaderComponent implements OnInit {
   }
 
 openConnectionStringModal(): void {
-    if (!this.entitlementService.canUseFeature('db_connect')) {
+    if (!this.entitlementService.hasMemberAccess('db_connect') || !this.entitlementService.canUseFeature('db_connect')) {
       if (!this.entitlementService.orgHasFeature('db_connect')) {
         this.svc.showUpgradeModal('db_connect');
       }
@@ -1779,12 +1779,21 @@ openConnectionStringModal(): void {
       return;
     }
 
-    // Existing diagram: auto-save in background if there are unsaved edits, and open share modal immediately
+    // Existing diagram: auto-save if there are unsaved edits, and then open share modal
     if (this.svc.diagramId() != null) {
       if (this.svc.hasUnsavedChanges() && this.svc.canSaveDiagram(false)) {
         this.svc.saveDiagram().subscribe({
-          error: (err) => console.warn('Auto-save before share failed:', err)
+          next: () => {
+            this.shareModalOpen = true;
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            console.warn('Auto-save before share failed:', err);
+            this.shareModalOpen = true;
+            this.cdr.detectChanges();
+          }
         });
+        return;
       }
       this.shareModalOpen = true;
       this.cdr.detectChanges();

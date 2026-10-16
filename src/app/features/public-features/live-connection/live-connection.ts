@@ -62,7 +62,7 @@ export class LiveConnectionComponent implements OnInit {
       title: 'DB Connect - Live Database Connection & Reverse Engineering - dbNexus',
       description: 'Connect securely directly to PostgreSQL, MySQL, SQL Server, and SQLite databases to import and visualize schemas in real-time.',
       url: 'https://www.dbnexus.io/features/db-connect',
-      keywords: 'live database connection, reverse engineer database, db connect, database visualizer, import live schema'
+      keywords: 'live database connection, reverse engineer database, db connect, database visualizer, import live schema, postgresql visualizer, mysql schema builder'
     });
 
     this.seoService.setStructuredData({

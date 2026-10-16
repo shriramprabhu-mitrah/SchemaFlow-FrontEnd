@@ -81,10 +81,13 @@ export class MembersComponent implements OnInit {
     this.entitlementService.entitlements$.subscribe(entitlements => {
       this.zone.run(() => {
         this.availableFeatures = entitlements
-          .filter((e: any) => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'version_history' || e.feature_key === 'pdf_export' || e.feature_key === 'sql_export' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram') && e.feature_key !== 'workspace_members' && e.feature_key !== 'billing')
+          .filter((e: any) => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'version_history' || e.feature_key === 'pdf_export' || e.feature_key === 'sql_export' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram' || e.feature_key === 'db_connect' || e.feature_key === 'db_connection') && e.feature_key !== 'workspace_members' && e.feature_key !== 'billing')
           .map((e: any) => {
             if (e.feature_key === 'create_workspaces') {
               return { ...e, feature_name: 'Collaborative Workspace' };
+            }
+            if (e.feature_key === 'db_connect' || e.feature_key === 'db_connection') {
+              return { ...e, feature_name: e.feature_name || 'DB Connect' };
             }
             return e;
           });

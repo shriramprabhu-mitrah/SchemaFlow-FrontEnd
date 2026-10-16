@@ -108,10 +108,13 @@
         <!-- Share Link with Copy -->
         <p class="section-desc mb-2">Share this link with others</p>
         <div class="embed-code-box mb-3">
-          <input type="text" class="db-input code-input" [value]="getShareLink()" readonly
-            [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
+          <input type="text" class="db-input code-input"
+            [value]="isLoadingToken ? 'Generating share link...' : (getShareLink() || 'Generating share link...')"
+            readonly
+            [disabled]="hasDbmlErrors() || isDiagramEmpty() || isLoadingToken || !hasValidToken" />
           <button class="btn btn-primary copy-btn tt tt-bottom" (click)="copyToClipboard(getShareLink(), 'link')"
-            [disabled]="hasDbmlErrors() || isDiagramEmpty()" [attr.data-tt]="linkCopied ? 'Copied!' : 'Copy Link'">
+            [disabled]="hasDbmlErrors() || isDiagramEmpty() || isLoadingToken || !hasValidToken"
+            [attr.data-tt]="linkCopied ? 'Copied!' : (isLoadingToken || !hasValidToken ? 'Generating link...' : 'Copy Link')">
             <svg *ngIf="!linkCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -128,9 +131,10 @@
         <p class="section-desc mb-2">Send link via email</p>
         <div class="invite-form-row" style="margin-top: 0; background: none; border: none; padding: 0;">
           <input type="text" class="db-input flex-grow" placeholder="Email, comma or space separated"
-            [(ngModel)]="emailsInput" [disabled]="hasDbmlErrors() || isDiagramEmpty()" />
+            [(ngModel)]="emailsInput"
+            [disabled]="hasDbmlErrors() || isDiagramEmpty() || isLoadingToken || !hasValidToken" />
           <button class="btn btn-primary invite-btn" (click)="sendEmails()"
-            [disabled]="sendingEmails || emailsInput.trim().length === 0 || hasDbmlErrors() || isDiagramEmpty()"
+            [disabled]="sendingEmails || emailsInput.trim().length === 0 || hasDbmlErrors() || isDiagramEmpty() || isLoadingToken || !hasValidToken"
             style="margin-left: 8px;">
             Share
           </button>
