@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, map, of, tap, shareReplay, catchError } from 'rxjs';
+import { BehaviorSubject, Observable, map, of, tap, shareReplay, catchError, switchMap } from 'rxjs';
 import { OrganizationService } from '../../features/organization/services/organization.service';
 import { AuthService } from './auth.service';
 import { AppConfigService } from './app-config.service';
@@ -78,6 +78,9 @@ export class EntitlementService {
         this.memberFeatureAccess$.next(cachedAccess);
       }
       if (this.loadedOrgId === orgId && this.entitlementsSubject.value.length > 0) {
+        if (this.auth.isStudentPlan()) {
+          this.auth.checkStudentApproval(this.auth.getUserEmail() || undefined).subscribe();
+        }
         return of(this.entitlementsSubject.value);
       }
       const cached = this.auth.getEntitlements();
@@ -89,7 +92,7 @@ export class EntitlementService {
     }
 
     this.inflightRequest$ = this.auth.getUserFeatures(orgId || undefined).pipe(
-      map(res => {
+      switchMap(res => {
         const data = res?.data || res;
         
         let mAccess = data?.memberFeatureAccess;
@@ -133,13 +136,44 @@ export class EntitlementService {
           this.auth.setSuperAdmin(data.isSuperAdmin);
         }
 
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(res)) return res;
-        if (Array.isArray(data?.features)) return data.features;
-        if (Array.isArray(data?.entitlements)) return data.entitlements;
-        if (Array.isArray(res?.features)) return res.features;
-        if (Array.isArray(res?.entitlements)) return res.entitlements;
-        return [];
+        let rawEntitlements: any[] = [];
+        if (Array.isArray(data)) rawEntitlements = data;
+        else if (Array.isArray(res)) rawEntitlements = res;
+        else if (Array.isArray(data?.features)) rawEntitlements = data.features;
+        else if (Array.isArray(data?.entitlements)) rawEntitlements = data.entitlements;
+        else if (Array.isArray(res?.features)) rawEntitlements = res.features;
+        else if (Array.isArray(res?.entitlements)) rawEntitlements = res.entitlements;
+
+        const planSlug = (data?.purchasedPlan?.slug || this.auth.getCurrentPlanSlug() || '').toLowerCase();
+        const isStudent = planSlug === 'student-plan' || planSlug === 'student' || planSlug.includes('student');
+
+        if (isStudent) {
+          const userEmail = data?.email || data?.user?.email || data?.userEmail || this.auth.getUserEmail();
+          const userId = data?.userId || data?.user_id || data?.id || data?.user?.id;
+          if (userEmail) {
+            this.auth.setUserEmail(userEmail);
+          }
+          if (userId && !isNaN(Number(userId))) {
+            this.auth.setUserId(Number(userId));
+          }
+          // If the user has a student plan, call student credentials GET API to verify is_approved
+          return this.auth.checkStudentApproval(userEmail).pipe(
+            map(isApproved => {
+              if (!isApproved) {
+                // If not approved, disable all features
+                return rawEntitlements.map((e: any) => ({
+                  ...e,
+                  enabled: false,
+                  remaining: 0,
+                  effective_limit: 0
+                }));
+              }
+              return rawEntitlements;
+            })
+          );
+        }
+
+        return of(rawEntitlements);
       }),
       tap(data => {
         this.loadedOrgId = orgId;
@@ -184,6 +218,17 @@ export class EntitlementService {
   }
 
   getEntitlement(featureKey: string): any | undefined {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      return {
+        feature_key: featureKey,
+        enabled: false,
+        value: 'false',
+        effective_limit: 0,
+        limit_value: 0,
+        remaining: 0,
+        used: 0
+      };
+    }
     if (this.auth.isSuperAdmin()) {
       return {
         feature_key: featureKey,
@@ -311,6 +356,7 @@ export class EntitlementService {
 
   orgHasFeature(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) return false;
 
     const env = (window as any).appConfig?.environment;
     if (env && env.isSaaS === false) return true;
@@ -332,6 +378,7 @@ export class EntitlementService {
 
   canUseFeature(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) return false;
 
     // Check member specific restrictions first
     if (!this.hasMemberAccess(featureKey)) {

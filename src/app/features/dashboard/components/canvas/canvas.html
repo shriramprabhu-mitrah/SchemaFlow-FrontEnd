@@ -3,7 +3,7 @@
   [class.read-only]="svc.isReadOnly" [class.tool-pan]="svc.tool === 'pan'" [class.tool-select]="svc.tool === 'select'"
   [class.panning]="isPanning" [class.dragging]="draggingTable !== null" [style.display]="svc.showDocs ? 'none' : ''">
 
-  <div *ngIf="svc.isReadOnly"
+  <div *ngIf="svc.isReadOnly && !isStudentUnapproved()"
     style="position: absolute; top: 24px; transform: translateX(-50%); max-width: 600px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 1000; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); backdrop-filter: blur(4px);"
     [style.left]="svc.showDiagramViews ? 'calc(50% - 162px)' : '50%'"
     [style.backgroundColor]="svc.theme() === 'light' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.15)'"
@@ -17,6 +17,7 @@
     </svg>
     <span style="line-height: 1.4;">You are viewing this diagram in Read-Only mode. You cannot make structural changes, but you can move tables around.</span>
   </div>
+
 
   <!-- Top Diff Legend (as shown in user's image) -->
   <div class="canvas-diff-legend" *ngIf="svc.aiDiffReviewActive()" [class.light]="svc.theme() === 'light'">
@@ -684,6 +685,7 @@
       <!-- Add sticky note button -->
       <ng-container *ngIf="!svc.isReadOnly">
         <app-button variant="extra"
+          *ngIf="!auth.isStudentPlan() || isFeatureVisible('diagram_notes')"
           (onClick)="entitlementService.canUseFeature('diagram_notes') ? addNoteAtCenter() : svc.showUpgradeModal()"
           [tooltip]="!entitlementService.hasMemberAccess('diagram_notes') ? '' : (isSampleDiagram() ? 'Add sticky note (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to add sticky note' : 'Add sticky note — ' + svc.notes.length))"
           style="position: relative;"
@@ -697,10 +699,10 @@
         </app-button>
 
         <!-- Vertical Divider line -->
-        <div class="controls-divider"></div>
+        <div class="controls-divider" *ngIf="(!auth.isStudentPlan() || isFeatureVisible('diagram_notes')) && ((!auth.isStudentPlan() || isFeatureVisible('diagram_detailing')) || (!auth.isStudentPlan() || isFeatureVisible('digram_view')))"></div>
 
         <!-- Detail Level Trigger Button -->
-        <app-button [variant]="showDetailLevelMenu ? 'extra-active' : 'extra'" customClass="detail-level-btn"
+        <app-button *ngIf="!auth.isStudentPlan() || isFeatureVisible('diagram_detailing')" [variant]="showDetailLevelMenu ? 'extra-active' : 'extra'" customClass="detail-level-btn"
           (onClick)="entitlementService.canUseFeature('diagram_detailing') ? toggleDetailLevelMenu($event) : svc.showUpgradeModal()"
           [tooltip]="!entitlementService.hasMemberAccess('diagram_detailing') ? '' : (isSampleDiagram() ? 'Detail level (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to change detail level' : 'Change diagram detail level'))"
           style="position: relative;"
@@ -714,7 +716,7 @@
           </div>
           
         </app-button>
-        <app-button variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
+        <app-button *ngIf="!auth.isStudentPlan() || isFeatureVisible('digram_view')" variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
           (onClick)="toggleDiagramViews(true, $event)"
           [tooltip]="!entitlementService.hasMemberAccess('digram_view') ? '' : (isSampleDiagram() ? 'Search / Diagram Views (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in for Search / Diagram Views' : 'Search / Diagram Views'))"
           style="position: relative;"

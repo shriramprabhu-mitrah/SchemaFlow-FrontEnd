@@ -20,14 +20,14 @@
       </div>
 
       <div class="workspace-action-buttons">
-        <button class="btn-workspace-action primary-action tt tt-right" style="position: relative;"
+        <button class="btn-workspace-action primary-action tt tt-right" *ngIf="!auth.isStudentPlan() || isFeatureVisible('create_workspaces')" style="position: relative;"
           (click)="!entitlementService.isMember() && (entitlementService.canUseFeature('create_workspaces') ? openCreateWorkspace() : svc.showUpgradeModal('create_workspaces'))"
           [class.disabled]="entitlementService.isMember() || (entitlementService.orgHasFeature('create_workspaces') && !entitlementService.hasMemberAccess('create_workspaces'))"
           data-tt="Create New Workspace">
           <span class="plus-icon">+</span>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Create New
             Workspace</span>
-          <app-icons *ngIf="!entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')"
+          <app-icons *ngIf="!auth.isStudentPlan() && !entitlementService.isMember() && !entitlementService.orgHasFeature('create_workspaces')"
             name="premium-crown" size="14" color="#f59e0b"
             style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </button>
@@ -43,7 +43,7 @@
           <span>My Diagrams</span>
         </button>
 
-        <button class="nav-item" [class.active]="activeTab === 'shared'" style="position: relative;"
+        <button class="nav-item" *ngIf="!auth.isStudentPlan() || isFeatureVisible('share_diagram')" [class.active]="activeTab === 'shared'" style="position: relative;"
           (click)="entitlementService.canUseFeature('share_diagram') ? openSharedTab() : svc.showUpgradeModal('share_diagram')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
@@ -52,11 +52,11 @@
           </svg>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Shared
             with Me</span>
-          <app-icons *ngIf="!entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14"
+          <app-icons *ngIf="!auth.isStudentPlan() && !entitlementService.orgHasFeature('share_diagram')" name="premium-crown" size="14"
             color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </button>
 
-        <button class="nav-item" [class.active]="activeTab === 'my-workspaces' || activeTab === 'edit-workspace'"
+        <button class="nav-item" *ngIf="!auth.isStudentPlan() || isFeatureVisible('create_workspaces')" [class.active]="activeTab === 'my-workspaces' || activeTab === 'edit-workspace'"
           style="position: relative;"
           (click)="(entitlementService.isMember() || entitlementService.canUseFeature('create_workspaces')) && auth.getCurrentPlanStatus() !== 'expired' ? openMyWorkspaces() : svc.showUpgradeModal('create_workspaces')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -65,7 +65,7 @@
           </svg>
           <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">My
             Workspaces</span>
-          <app-icons *ngIf="!entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
+          <app-icons *ngIf="!auth.isStudentPlan() && !entitlementService.orgHasFeature('create_workspaces')" name="premium-crown" size="14"
             color="#f59e0b" style="position: absolute; top: 4px; right: 4px; pointer-events: none;"></app-icons>
         </button>
       </div>
