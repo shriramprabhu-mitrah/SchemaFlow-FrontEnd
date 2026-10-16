@@ -12,7 +12,9 @@
     "forgetPassword": "API_URL/api/auth/forget-password",
     "resetPassword": "API_URL/api/auth/reset-password",
     "refreshToken": "API_URL/api/auth/refreshToken",
-    "logout": "API_URL/api/auth/logout"
+    "logout": "API_URL/api/auth/logout",
+    "sendOtp": "API_URL/api/auth/send-otp",
+    "verifyOtp": "API_URL/api/auth/verify-otp"
   },
   "userApiUrls": {
     "userDetails": "API_URL/api/user-details",

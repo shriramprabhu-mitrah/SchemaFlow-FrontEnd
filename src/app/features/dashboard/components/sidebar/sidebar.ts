@@ -65,6 +65,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (this.isLoggedIn) {
+      this.entitlementService.loadEntitlements().subscribe(() => {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      });
+    }
+
     this.entitlementService.entitlements$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
@@ -72,6 +79,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           this.svc.closeAiChat();
         }
         this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
     this.entitlementService.orgEntitlements$
       .pipe(takeUntil(this.destroy$))
@@ -80,11 +88,25 @@ export class SidebarComponent implements OnInit, OnDestroy {
           this.svc.closeAiChat();
         }
         this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      });
+    this.entitlementService.memberFeatureAccess$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
     this.svc.redraw$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.cdr.markForCheck();
+      });
+
+    this.auth.studentApprovalStatus$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       });
 
     this.svc.openSidebarImportMenu$
@@ -140,54 +162,141 @@ export class SidebarComponent implements OnInit, OnDestroy {
   hasFeatureAccess(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (featureKey === 'code_compare' && !this.isLoggedIn) return true;
-    if (this.auth.getCurrentPlanStatus() === 'expired') return false;
     return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
+  }
+
+  isItemFeatureEnabled(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai' | 'connect'): boolean {
+    const keysMap: Record<string, string[]> = {
+      connect: ['db_connect', 'db_connection', 'connect', 'live_connection'],
+      import: ['import_sql', 'import', 'sql_import'],
+      export: ['export_image', 'export_sql', 'export', 'pdf_export'],
+      share: ['share_diagram', 'share', 'advanced_sharing'],
+      versions: ['version_history', 'versions', 'version'],
+      tables: ['table_relationships', 'table_relations', 'tables', 'relationships', 'table_group'],
+      refs: ['table_relationships', 'table_relations', 'refs', 'tables', 'relationships', 'table_group'],
+      docs: ['document_view', 'docs', 'doc_view', 'docs_view', 'document'],
+      compare: ['code_compare', 'sql_compare', 'compare'],
+      ai: ['ai_chat', 'ai', 'ai_assistant']
+    };
+
+    const keys = keysMap[item] || [item];
+
+    // Check user features API entitlements directly (the userfeature API reference)
+    const cached = this.auth.getEntitlements();
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      for (const k of keys) {
+        const found = this.entitlementService.findFeatureInList(cached, k);
+        if (found) {
+          const isEnabled = found.enabled === true || found.value === 'true' || found.value === true;
+          const isDisabled = found.enabled === false || found.value === 'false' || found.value === false;
+          if (isDisabled) return false;
+          if (isEnabled) return true;
+        }
+      }
+    }
+
+    // Check entitlement service
+    for (const k of keys) {
+      if (this.entitlementService.orgHasFeature(k)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai' | 'connect'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
-    if (this.auth.getCurrentPlanStatus() === 'expired') return true;
+    if (this.auth.isStudentPlan()) return false;
+    if (item === 'docs' && this.svc.isDocUnlocked()) return false;
+    return !this.isItemFeatureEnabled(item);
+  }
+
+  isStudentFeatureTrue(featureKey: string): boolean {
+    if (!this.auth.isStudentApproved()) {
+      return false;
+    }
+
+    const targetKey = (k: string) => {
+      if (featureKey === 'ai_chat' || featureKey === 'ai') {
+        return k === 'ai' || k === 'ai_chat' || k === 'ai_assistant';
+      }
+      if (featureKey === 'create_diagrams' || featureKey === 'max_diagrams') {
+        return k === 'create_diagrams' || k === 'max_diagrams';
+      }
+      return k === featureKey;
+    };
+
+    const ent = this.entitlementService.getEntitlement(featureKey);
+    if (ent) {
+      const isEnabled = ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
+      const isDisabled = ent.enabled === false || (ent as any).value === 'false' || (ent as any).value === false;
+      if (isDisabled) return false;
+      if (isEnabled) return true;
+    }
+
+    const cached = this.auth.getEntitlements();
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      const userEnt = cached.find((e: any) => targetKey(e.feature_key));
+      if (userEnt) {
+        const isTrue = userEnt.enabled === true || userEnt.value === 'true' || userEnt.value === true;
+        const isFalse = userEnt.enabled === false || userEnt.value === 'false' || userEnt.value === false;
+        if (isFalse) return false;
+        if (isTrue) return true;
+      }
+    }
+
+    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
+  }
+
+  isFeatureVisible(item: 'import' | 'export' | 'export_image' | 'export_sql' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai' | 'connect'): boolean {
+    if (!this.auth.isStudentPlan()) {
+      return true;
+    }
+    // In sample diagram or when student approval is false/warning, do not hide features
+    if (this.isSampleDiagram() || !this.auth.isStudentApproved()) {
+      return true;
+    }
     switch (item) {
-      case 'connect':
-        return !this.entitlementService.orgHasFeature('db_connect');
       case 'import':
-        return !this.entitlementService.orgHasFeature('import_sql');
+        return this.isStudentFeatureTrue('import_sql');
       case 'export':
-        return !this.entitlementService.orgHasFeature('export_image') && !this.entitlementService.orgHasFeature('export_sql');
+        return this.isStudentFeatureTrue('export_image') || this.isStudentFeatureTrue('export_sql');
+      case 'export_image':
+        return this.isStudentFeatureTrue('export_image');
+      case 'export_sql':
+        return this.isStudentFeatureTrue('export_sql');
+      case 'connect':
+        return this.isStudentFeatureTrue('db_connect');
       case 'share':
-        return !this.entitlementService.orgHasFeature('share_diagram');
+        return this.isStudentFeatureTrue('share_diagram');
       case 'versions':
-        return !this.entitlementService.orgHasFeature('version_history');
+        return this.isStudentFeatureTrue('version_history');
+      case 'ai':
+        return this.isStudentFeatureTrue('ai_chat') || this.isStudentFeatureTrue('ai');
+      case 'compare':
+        return this.isStudentFeatureTrue('code_compare');
       case 'tables':
       case 'refs':
-        return !this.entitlementService.orgHasFeature('table_relationships');
+        return this.isStudentFeatureTrue('table_relationships');
       case 'docs':
-        if (this.svc.isDocUnlocked()) {
-          if (this.auth.getCurrentPlanStatus() !== 'expired') {
-            return false;
-          }
-        }
-        return !this.entitlementService.orgHasFeature('document_view');
-      case 'compare':
-        return !this.entitlementService.orgHasFeature('code_compare');
-      case 'ai':
-        return !this.entitlementService.orgHasFeature('ai_chat');
+        return this.isStudentFeatureTrue('document_view');
       default:
-        return false;
+        return true;
     }
   }
 
   isMemberRestricted(featureKeys: string[]): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
     if (this.auth.getCurrentPlanStatus() === 'cancelled') return false;
-    // If the feature is not there in memberFeatureAccess just disable the button in ui
-    return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k));
+    // If the feature is not there in memberFeatureAccess or restricted by org plan limits, disable it in UI
+    return featureKeys.every(k => !this.entitlementService.hasMemberAccess(k) || (this.entitlementService.orgHasFeature(k) && !this.entitlementService.canUseFeature(k)));
   }
 
   // ============ IMPORT ============
 
   toggleImportMenu(e?: Event): void {
-    
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('import')) return;
     if (this.isMemberRestricted(['import_sql'])) return;
     
     this.svc.closeErrorsCard();
@@ -203,6 +312,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   openImportFlyout(): void {
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('import')) return;
     if (this.isMemberRestricted(['import_sql'])) return;
     this.svc.closeErrorsCard();
     if (!this.isLoggedIn || this.isSampleDiagram()) {
@@ -245,7 +355,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
 
   openConnectionStringModal(e?: Event): void {
-    if (this.isMemberRestricted(['db_connect'])) return;
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('connect')) return;
+    if (this.isMemberRestricted(['db_connect']) || (this.entitlementService.orgHasFeature('db_connect') && !this.entitlementService.canUseFeature('db_connect'))) return;
 
     if (e) e.stopPropagation();
     this.svc.closeErrorsCard();
@@ -265,6 +376,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
     this.svc.openConnectionStringModal();
     this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
   hasDbmlErrors(): boolean {
     return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;
@@ -273,7 +385,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ EXPORT ============
 
   toggleExportMenu(e?: Event): void {
-    
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('export')) return;
     if (this.isMemberRestricted(['export_image', 'export_sql'])) return;
     
     this.svc.closeErrorsCard();
@@ -408,6 +520,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
       this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
       return;
     }
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('share')) return;
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
     if (this.svc.showVersionHistory()) {
@@ -430,7 +543,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ VERSION HISTORY ============
 
   toggleVersionHistory(e?: Event): void {
-    
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('versions')) return;
     if (this.isMemberRestricted(['version_history'])) return;
     
     this.svc.closeErrorsCard();
@@ -466,6 +579,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ INSPECTOR (TABLES / REFS / DBML) ============
 
   toggleInspector(tab: 'tables' | 'refs', e?: Event): void {
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible(tab)) return;
     if (this.isMemberRestricted(['table_relationships'])) return;
     
     this.svc.closeErrorsCard();
@@ -512,7 +626,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   toggleAiChat(e?: Event): void {
-    
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('ai')) return;
     if (this.isMemberRestricted(['ai_chat'])) return;
     
     this.svc.closeErrorsCard();
@@ -579,8 +693,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ DIFF CHECKER ============
 
   toggleDiffChecker(e?: Event): void {
-    
-    if (this.isMemberRestricted(['code_compare'])) return;
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('compare')) return;
+    if (this.isMemberRestricted(['code_compare']) || this.isSampleDiagram()) return;
     
     this.importMenuOpen = false;
     this.exportMenuOpen = false;
@@ -612,7 +726,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   // ============ VIEW DOCS ============
 
   toggleDocs(e?: Event): void {
-    
+    if (this.auth.isStudentPlan() && !this.isFeatureVisible('docs')) return;
     if (this.isMemberRestricted(['document_view'])) return;
     
     this.importMenuOpen = false;
@@ -646,7 +760,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           (ent?.remaining !== undefined && Number(ent.remaining) <= 0)
         ));
 
-        if (this.auth.getCurrentPlanStatus() === 'expired' || !this.entitlementService.orgHasFeature('document_view')) {
+        if (!this.entitlementService.orgHasFeature('document_view') && !this.entitlementService.canUseFeature('document_view')) {
           this.svc.showUpgradeModal('document_view');
           return;
         }

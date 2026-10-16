@@ -103,6 +103,11 @@ export interface DiagramSummary {
   created_at?: string | Date | null;
   updated_at?: string | Date | null;
   is_doc_unlocked?: boolean;
+  publictoken?: string;
+  publicToken?: string;
+  public_token?: string;
+  ispublic?: boolean;
+  protectedpassword?: string;
 }
 
 export interface EditorError {
@@ -1307,6 +1312,7 @@ export class DashboardService {
 
   isReadOnly = false;
   publicToken: string = '';
+  publicTokenDiagramId: number | null = null;
   isDiagramPublic: boolean = true;
   isPublicViewer: boolean = false;
   diagramPassword: string = '';
@@ -1382,6 +1388,9 @@ export class DashboardService {
   }
 
   isSampleDiagram(): boolean {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      return true;
+    }
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -4893,12 +4902,17 @@ export class DashboardService {
             const id = Number(diagram?.id ?? diagram?.diagramId ?? diagram?.diagramid ?? diagram?.diagram_id);
             const created_at = diagram?.createdat ?? diagram?.created_at ?? diagram?.createdAt ?? diagram?.created ?? null;
             const updated_at = diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? diagram?.updated ?? null;
+            const token = diagram?.publictoken ?? diagram?.publicToken ?? diagram?.public_token ?? '';
             return {
               id,
               name: diagram?.name || diagram?.diagramname || '',
               created_at,
               updated_at,
-              is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
+              is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1,
+              publictoken: token,
+              publicToken: token,
+              ispublic: diagram?.ispublic !== false,
+              protectedpassword: diagram?.protectedpassword ?? diagram?.protectedPassword ?? ''
             };
           });
 
@@ -4958,6 +4972,10 @@ export class DashboardService {
 
           this.diagramId.set(null);
           this.diagramName = 'Untitled Diagram';
+          this.publicToken = '';
+          this.publicTokenDiagramId = null;
+          this.isDiagramPublic = true;
+          this.diagramPassword = '';
           this.code = '';
           this.tables = [];
           this.refs = [];
@@ -5158,12 +5176,17 @@ export class DashboardService {
           if (rawId != null) {
             const numId = Number(rawId);
             if (!isNaN(numId)) {
+              const token = diagram?.publictoken ?? diagram?.publicToken ?? diagram?.public_token ?? '';
               result.push({
                 id: numId,
                 name: diagram?.name || 'Untitled Diagram',
                 created_at: diagram?.createdat ?? diagram?.created_at ?? diagram?.createdAt ?? null,
                 updated_at: diagram?.updatedat ?? diagram?.updated_at ?? diagram?.updatedAt ?? null,
-                is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1
+                is_doc_unlocked: diagram?.is_doc_unlocked === true || diagram?.is_doc_unlocked === 'true' || diagram?.is_doc_unlocked === 1,
+                publictoken: token,
+                publicToken: token,
+                ispublic: diagram?.ispublic !== false,
+                protectedpassword: diagram?.protectedpassword ?? diagram?.protectedPassword ?? ''
               });
             }
           }
@@ -5206,6 +5229,9 @@ export class DashboardService {
   }
 
   loadDiagram(id: number, fallbackWorkspace?: { id: number; name?: string } | null): Observable<any> {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      return EMPTY;
+    }
     const headers = this.getAuthHeaders();
     const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', id.toString()) ?? "";
     this.isDiagramLoading.set(true);
@@ -5419,7 +5445,12 @@ export class DashboardService {
     }
     this.diagramName = diagram?.name || 'Untitled Diagram';
     this.isEnabled = diagram?.isEnabled !== undefined ? !!diagram.isEnabled : false;
-    this.publicToken = diagram?.publictoken || diagram?.publicToken || diagram?.public_token || '';
+    const loadedToken = this.extractPublicToken(response) || diagram?.publictoken || diagram?.publicToken || diagram?.public_token || '';
+    this.publicToken = loadedToken;
+    this.publicTokenDiagramId = Number(diagram?.id ?? id);
+    if (loadedToken && this.publicTokenDiagramId) {
+      this.updateDiagramSummaryToken(this.publicTokenDiagramId, loadedToken);
+    }
     this.isDiagramPublic = diagram?.ispublic !== false; // defaults to true unless explicitly false
     this.diagramPassword = diagram?.protectedpassword || diagram?.protectedPassword || '';
     this.showDocs = false;
@@ -5640,7 +5671,7 @@ export class DashboardService {
     return this.http.post<any>(url, payload, { headers }).pipe(
       tap({
         next: (res) => {
-          const id = res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
+          const id = this.extractDiagramId(res) ?? res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
             ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
           this.setActiveWorkspace(null);
           this.diagramWorkspaceType.set('Personal');
@@ -5648,10 +5679,20 @@ export class DashboardService {
           this.showDocs = false;
           this.showDocsPlaceholder = false;
           if (id != null) {
-            this.diagramId.set(id);
+            const numId = Number(id);
+            this.diagramId.set(numId);
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
               localStorage.setItem('active_diagram_id', String(id));
             }
+            const token = this.extractPublicToken(res);
+            this.publicToken = token || '';
+            this.publicTokenDiagramId = numId;
+            if (token) {
+              this.updateDiagramSummaryToken(numId, token);
+            }
+          } else {
+            this.publicToken = '';
+            this.publicTokenDiagramId = null;
           }
           this.totalDiagrams.update(n => n + 1);
           this.entitlementService.incrementUsage('create_diagrams');
@@ -5688,9 +5729,16 @@ export class DashboardService {
           this.showDocs = false;
           this.showDocsPlaceholder = false;
           if (id != null) {
-            this.diagramId.set(Number(id));
+            const numId = Number(id);
+            this.diagramId.set(numId);
             if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
               localStorage.setItem('active_diagram_id', String(id));
+            }
+            const token = this.extractPublicToken(res);
+            this.publicToken = token || '';
+            this.publicTokenDiagramId = numId;
+            if (token) {
+              this.updateDiagramSummaryToken(numId, token);
             }
           }
           this.totalDiagrams.update(n => n + 1);
@@ -5723,7 +5771,7 @@ export class DashboardService {
     const url = this.appConfig.environment?.diagramApiUrls?.draft ?? "";
     return this.http.post<any>(url, null, { headers }).pipe(
       tap((res) => {
-        const id = res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
+        const id = this.extractDiagramId(res) ?? res?.data?.diagramid ?? res?.data?.diagramId ?? res?.data?.id
           ?? res?.diagramid ?? res?.diagramId ?? res?.id ?? null;
         this.setActiveWorkspace(null);
         this.diagramWorkspaceType.set('Personal');
@@ -5731,10 +5779,20 @@ export class DashboardService {
         this.showDocs = false;
         this.showDocsPlaceholder = false;
         if (id != null) {
-          this.diagramId.set(id);
+          const numId = Number(id);
+          this.diagramId.set(numId);
           if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
             localStorage.setItem('active_diagram_id', String(id));
           }
+          const token = this.extractPublicToken(res);
+          this.publicToken = token || '';
+          this.publicTokenDiagramId = numId;
+          if (token) {
+            this.updateDiagramSummaryToken(numId, token);
+          }
+        } else {
+          this.publicToken = '';
+          this.publicTokenDiagramId = null;
         }
       })
     );
@@ -5754,7 +5812,7 @@ export class DashboardService {
   }
 
   saveDiagram(): Observable<any> {
-    if (this.isSaving() || this.showVersionHistory() || this.aiDiffReviewActive()) {
+    if (this.isSaving() || this.showVersionHistory() || this.aiDiffReviewActive() || (this.auth.isStudentPlan() && !this.auth.isStudentApproved())) {
       return EMPTY;
     }
 
@@ -5777,6 +5835,12 @@ export class DashboardService {
             this.dbmlValidationError = null;
             this.updateEditorErrors();
             this.extractIdsFromResponse(res);
+            const token = this.extractPublicToken(res);
+            if (token) {
+              this.publicToken = token;
+              this.publicTokenDiagramId = currentId;
+              this.updateDiagramSummaryToken(currentId, token);
+            }
             this.updateOriginalState();
           },
           error: (err) => {
@@ -5827,9 +5891,13 @@ export class DashboardService {
           if (currentWsId != null) {
             this.diagramWorkspaceType.set('Team');
           }
-          const diag = res?.data ?? res;
-          if (diag && (diag.publictoken || diag.publicToken || diag.public_token)) {
-            this.publicToken = diag.publictoken || diag.publicToken || diag.public_token;
+          const token = this.extractPublicToken(res);
+          if (token) {
+            this.publicToken = token;
+            this.publicTokenDiagramId = ids != null ? ids : null;
+            if (ids != null) {
+              this.updateDiagramSummaryToken(ids, token);
+            }
           }
           this.updateOriginalState();
           this.extractIdsFromResponse(res);
@@ -5930,10 +5998,125 @@ export class DashboardService {
     const payload = { isPublic, password };
     return this.http.put<any>(url, payload, { headers }).pipe(
       tap(res => {
-        const diag = res?.data ?? res;
-        if (diag && (diag.publictoken || diag.publicToken || diag.public_token)) {
-          this.publicToken = diag.publictoken || diag.publicToken || diag.public_token;
+        const token = this.extractPublicToken(res);
+        if (token) {
+          this.publicToken = token;
+          this.publicTokenDiagramId = diagramId;
+          this.updateDiagramSummaryToken(diagramId, token);
         }
+      })
+    );
+  }
+
+  extractPublicToken(response: any): string | null {
+    if (!response || typeof response !== 'object') return null;
+    const paths = [
+      response?.publictoken,
+      response?.publicToken,
+      response?.public_token,
+      response?.data?.publictoken,
+      response?.data?.publicToken,
+      response?.data?.public_token,
+      response?.data?.diagram?.publictoken,
+      response?.data?.diagram?.publicToken,
+      response?.data?.diagram?.public_token,
+      response?.diagram?.publictoken,
+      response?.diagram?.publicToken,
+      response?.diagram?.public_token,
+      response?.result?.publictoken,
+      response?.result?.publicToken,
+      response?.result?.public_token,
+      response?.payload?.publictoken,
+      response?.payload?.publicToken,
+      response?.payload?.public_token,
+      response?.data?.data?.publictoken,
+      response?.data?.data?.publicToken,
+      response?.data?.data?.public_token,
+      response?.data?.data?.diagram?.publictoken,
+      response?.data?.data?.diagram?.publicToken,
+      response?.data?.data?.diagram?.public_token,
+      response?.token,
+      response?.data?.token,
+      response?.shareToken,
+      response?.data?.shareToken
+    ];
+    for (const v of paths) {
+      if (typeof v === 'string' && v.trim() && v !== 'TOKEN_PENDING') {
+        const val = v.trim();
+        if (val.includes('/public-diagram/')) {
+          const parts = val.split('/public-diagram/');
+          return parts[parts.length - 1].split('?')[0].split('#')[0];
+        }
+        return val;
+      }
+    }
+    return null;
+  }
+
+  updateDiagramSummaryToken(diagramId: number, token: string): void {
+    if (!diagramId || !token) return;
+    const list = this.diagrams();
+    const item = list.find(d => d.id === diagramId);
+    if (item) {
+      item.publictoken = token;
+      item.publicToken = token;
+      this.diagrams.set([...list]);
+    }
+  }
+
+  fetchDiagramDetails(diagramId: number): Observable<any> {
+    const headers = this.getAuthHeaders();
+    const url = this.appConfig.environment?.diagramApiUrls?.diagramById?.replace('{id}', diagramId.toString()) ?? "";
+    return this.http.get<any>(url, { headers });
+  }
+
+  ensureDiagramPublicToken(diagramId: number): Observable<string> {
+    if (this.publicToken && this.publicTokenDiagramId === diagramId && this.publicToken !== 'TOKEN_PENDING') {
+      return of(this.publicToken);
+    }
+    const d = this.diagrams().find(item => item.id === diagramId);
+    const fromList = (d as any)?.publictoken || (d as any)?.publicToken || (d as any)?.public_token;
+    if (fromList && fromList !== 'TOKEN_PENDING') {
+      this.publicToken = fromList;
+      this.publicTokenDiagramId = diagramId;
+      return of(fromList);
+    }
+
+    return this.fetchDiagramDetails(diagramId).pipe(
+      switchMap(res => {
+        const token = this.extractPublicToken(res);
+        if (token) {
+          this.publicToken = token;
+          this.publicTokenDiagramId = diagramId;
+          this.updateDiagramSummaryToken(diagramId, token);
+          return of(token);
+        }
+        return this.toggleDiagramSharingStatus(diagramId, this.isDiagramPublic !== false, this.diagramPassword || undefined).pipe(
+          map(toggleRes => {
+            const generatedToken = this.extractPublicToken(toggleRes) || '';
+            if (generatedToken) {
+              this.publicToken = generatedToken;
+              this.publicTokenDiagramId = diagramId;
+              this.updateDiagramSummaryToken(diagramId, generatedToken);
+            }
+            return generatedToken;
+          }),
+          catchError(() => of(''))
+        );
+      }),
+      catchError(() => {
+        return this.toggleDiagramSharingStatus(diagramId, this.isDiagramPublic !== false, this.diagramPassword || undefined).pipe(
+          map(toggleRes => {
+            const generatedToken = this.extractPublicToken(toggleRes) || '';
+            if (generatedToken) {
+              this.publicToken = generatedToken;
+              this.publicTokenDiagramId = diagramId;
+              this.updateDiagramSummaryToken(diagramId, generatedToken);
+            }
+            return generatedToken;
+          }),
+          catchError(() => of(''))
+        );
       })
     );
   }
@@ -6041,10 +6224,19 @@ export class DashboardService {
       this.diagramWorkspaceType.set('Personal');
       this.setActiveWorkspace(null);
       this.diagramId.set(null);
+      this.publicToken = '';
+      this.publicTokenDiagramId = null;
+      this.isDiagramPublic = true;
+      this.diagramPassword = '';
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         localStorage.removeItem('active_diagram_id');
       }
     } else {
+      const currentId = this.diagramId();
+      if (currentId == null || this.publicTokenDiagramId !== currentId) {
+        this.publicToken = '';
+        this.publicTokenDiagramId = currentId;
+      }
       if (this.activeWorkspaceId() != null) {
         this.diagramWorkspaceType.set('Team');
       } else {

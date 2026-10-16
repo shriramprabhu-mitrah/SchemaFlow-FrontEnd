@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, map, of, tap, shareReplay, catchError } from 'rxjs';
+import { BehaviorSubject, Observable, map, of, tap, shareReplay, catchError, switchMap } from 'rxjs';
 import { OrganizationService } from '../../features/organization/services/organization.service';
 import { AuthService } from './auth.service';
 import { AppConfigService } from './app-config.service';
@@ -38,14 +38,22 @@ export class EntitlementService {
   private loadedOrgId: number | null = null;
   private inflightRequest$: Observable<EffectiveEntitlement[]> | null = null;
   public memberFeatureAccess: string[] | null = null;
+  public memberFeatureAccess$ = new BehaviorSubject<string[] | null>(null);
   public hasUsedTrial: boolean = false;
 
   constructor() {
+    const cachedAccess = this.auth.getMemberFeatureAccess();
+    if (cachedAccess) {
+      this.memberFeatureAccess = cachedAccess;
+      this.memberFeatureAccess$.next(cachedAccess);
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('userLogout', () => {
         this.hasUsedTrial = false;
         this.loadedOrgId = null;
         this.memberFeatureAccess = null;
+        this.memberFeatureAccess$.next(null);
         this.plansLoaded = false;
         this.inflightRequest$ = null;
         this.entitlementsSubject.next([]);
@@ -64,7 +72,15 @@ export class EntitlementService {
 
     const orgId = this.auth.getOrganizationId();
     if (!force) {
+      const cachedAccess = this.auth.getMemberFeatureAccess();
+      if (cachedAccess) {
+        this.memberFeatureAccess = cachedAccess;
+        this.memberFeatureAccess$.next(cachedAccess);
+      }
       if (this.loadedOrgId === orgId && this.entitlementsSubject.value.length > 0) {
+        if (this.auth.isStudentPlan()) {
+          this.auth.checkStudentApproval(this.auth.getUserEmail() || undefined).subscribe();
+        }
         return of(this.entitlementsSubject.value);
       }
       const cached = this.auth.getEntitlements();
@@ -76,11 +92,22 @@ export class EntitlementService {
     }
 
     this.inflightRequest$ = this.auth.getUserFeatures(orgId || undefined).pipe(
-      map(res => {
+      switchMap(res => {
         const data = res?.data || res;
         
-        if (data?.memberFeatureAccess) this.memberFeatureAccess = data.memberFeatureAccess;
-        else this.memberFeatureAccess = null;
+        let mAccess = data?.memberFeatureAccess;
+        if (typeof mAccess === 'string') {
+          try { mAccess = JSON.parse(mAccess); } catch { mAccess = null; }
+        }
+        if (Array.isArray(mAccess)) {
+          this.memberFeatureAccess = mAccess;
+          this.memberFeatureAccess$.next(mAccess);
+          this.auth.setMemberFeatureAccess(mAccess);
+        } else {
+          this.memberFeatureAccess = null;
+          this.memberFeatureAccess$.next(null);
+          this.auth.setMemberFeatureAccess(null);
+        }
 
         if (data?.purchasedPlan?.slug) {
           if (data.purchasedPlan.status === 'expired') {
@@ -109,7 +136,44 @@ export class EntitlementService {
           this.auth.setSuperAdmin(data.isSuperAdmin);
         }
 
-        return Array.isArray(data) ? data : (data?.entitlements || (Array.isArray(res) ? res : []));
+        let rawEntitlements: any[] = [];
+        if (Array.isArray(data)) rawEntitlements = data;
+        else if (Array.isArray(res)) rawEntitlements = res;
+        else if (Array.isArray(data?.features)) rawEntitlements = data.features;
+        else if (Array.isArray(data?.entitlements)) rawEntitlements = data.entitlements;
+        else if (Array.isArray(res?.features)) rawEntitlements = res.features;
+        else if (Array.isArray(res?.entitlements)) rawEntitlements = res.entitlements;
+
+        const planSlug = (data?.purchasedPlan?.slug || this.auth.getCurrentPlanSlug() || '').toLowerCase();
+        const isStudent = planSlug === 'student-plan' || planSlug === 'student' || planSlug.includes('student');
+
+        if (isStudent) {
+          const userEmail = data?.email || data?.user?.email || data?.userEmail || this.auth.getUserEmail();
+          const userId = data?.userId || data?.user_id || data?.id || data?.user?.id;
+          if (userEmail) {
+            this.auth.setUserEmail(userEmail);
+          }
+          if (userId && !isNaN(Number(userId))) {
+            this.auth.setUserId(Number(userId));
+          }
+          // If the user has a student plan, call student credentials GET API to verify is_approved
+          return this.auth.checkStudentApproval(userEmail).pipe(
+            map(isApproved => {
+              if (!isApproved) {
+                // If not approved, disable all features
+                return rawEntitlements.map((e: any) => ({
+                  ...e,
+                  enabled: false,
+                  remaining: 0,
+                  effective_limit: 0
+                }));
+              }
+              return rawEntitlements;
+            })
+          );
+        }
+
+        return of(rawEntitlements);
       }),
       tap(data => {
         this.loadedOrgId = orgId;
@@ -123,7 +187,62 @@ export class EntitlementService {
     return this.inflightRequest$;
   }
 
+  findFeatureInList(list: any[], featureKey: string): any | undefined {
+    if (!list || !Array.isArray(list) || list.length === 0) return undefined;
+
+    let ent = list.find((e: any) => e.feature_key === featureKey);
+    if (ent) return ent;
+
+    if (featureKey === 'create_diagrams' || featureKey === 'max_diagrams' || featureKey === 'diagram_creation' || featureKey === 'create_diagram') {
+      return list.find((e: any) => e.feature_key === 'create_diagrams' || e.feature_key === 'max_diagrams' || e.feature_key === 'diagram_creation' || e.feature_key === 'create_diagram');
+    } else if (featureKey === 'ai_chat' || featureKey === 'ai' || featureKey === 'ai_assistant') {
+      return list.find((e: any) => e.feature_key === 'ai_chat' || e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
+    } else if (featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') {
+      return list.find((e: any) => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
+    } else if (featureKey === 'code_compare' || featureKey === 'sql_compare' || featureKey === 'compare') {
+      return list.find((e: any) => e.feature_key === 'code_compare' || e.feature_key === 'sql_compare' || e.feature_key === 'compare');
+    } else if (featureKey === 'table_relationships' || featureKey === 'table_relations' || featureKey === 'tables' || featureKey === 'refs' || featureKey === 'relationships') {
+      return list.find((e: any) => e.feature_key === 'table_relationships' || e.feature_key === 'table_relations' || e.feature_key === 'tables' || e.feature_key === 'relationships' || (e.long_description && e.long_description.toLowerCase().includes('relationship')) || (e.feature_name && e.feature_name.toLowerCase().includes('relationship')));
+    } else if (featureKey === 'table_group' || featureKey === 'table_groups') {
+      return list.find((e: any) => e.feature_key === 'table_group' || e.feature_key === 'table_groups' || (e.feature_name && e.feature_name.toLowerCase().includes('table group')));
+    } else if (featureKey === 'table_color_and_connection_color' || featureKey === 'table_color' || featureKey === 'connection_color' || featureKey === 'colors') {
+      return list.find((e: any) => e.feature_key === 'table_color_and_connection_color' || e.feature_key === 'table_color' || e.feature_key === 'connection_color' || e.feature_key === 'colors' || (e.feature_name && e.feature_name.toLowerCase().includes('color')));
+    } else if (featureKey === 'digram_view' || featureKey === 'diagram_view' || featureKey === 'diagram_views') {
+      return list.find((e: any) => e.feature_key === 'digram_view' || e.feature_key === 'diagram_view' || e.feature_key === 'diagram_views' || (e.feature_name && e.feature_name.toLowerCase().includes('diagram view')));
+    } else if (featureKey === 'diagram_notes' || featureKey === 'diagram_note' || featureKey === 'notes' || featureKey === 'sticky_notes') {
+      return list.find((e: any) => e.feature_key === 'diagram_notes' || e.feature_key === 'diagram_note' || e.feature_key === 'notes' || e.feature_key === 'sticky_notes' || (e.feature_name && e.feature_name.toLowerCase().includes('note')));
+    } else if (featureKey === 'diagram_detailing' || featureKey === 'detailing' || featureKey === 'detail_level') {
+      return list.find((e: any) => e.feature_key === 'diagram_detailing' || e.feature_key === 'detailing' || e.feature_key === 'detail_level' || (e.feature_name && e.feature_name.toLowerCase().includes('detail')));
+    } else if (featureKey === 'document_view' || featureKey === 'docs' || featureKey === 'doc_view' || featureKey === 'docs_view' || featureKey === 'document') {
+      return list.find((e: any) => e.feature_key === 'document_view' || e.feature_key === 'docs' || e.feature_key === 'docs_view' || e.feature_key === 'doc_view' || e.feature_key === 'document');
+    } else if (featureKey === 'version_history' || featureKey === 'versions' || featureKey === 'version') {
+      return list.find((e: any) => e.feature_key === 'version_history' || e.feature_key === 'versions' || e.feature_key === 'version');
+    } else if (featureKey === 'share_diagram' || featureKey === 'share' || featureKey === 'advanced_sharing') {
+      return list.find((e: any) => e.feature_key === 'share_diagram' || e.feature_key === 'share' || e.feature_key === 'advanced_sharing');
+    } else if (featureKey === 'import_sql' || featureKey === 'import' || featureKey === 'sql_import') {
+      return list.find((e: any) => e.feature_key === 'import_sql' || e.feature_key === 'import' || e.feature_key === 'sql_import');
+    } else if (featureKey === 'export_sql' || featureKey === 'export_image' || featureKey === 'export' || featureKey === 'pdf_export' || featureKey === 'sql_export') {
+      return list.find((e: any) => e.feature_key === 'export_sql' || e.feature_key === 'export_image' || e.feature_key === 'export' || e.feature_key === 'pdf_export' || e.feature_key === 'sql_export');
+    } else if (featureKey === 'edit_diagram' || featureKey === 'edit_diagrams') {
+      return list.find((e: any) => e.feature_key === 'edit_diagram' || e.feature_key === 'edit_diagrams');
+    } else if (featureKey === 'create_workspaces' || featureKey === 'create_workspace' || featureKey === 'workspaces' || featureKey === 'workspace') {
+      return list.find((e: any) => e.feature_key === 'create_workspaces' || e.feature_key === 'create_workspace' || e.feature_key === 'workspaces' || e.feature_key === 'workspace');
+    }
+    return undefined;
+  }
+
   getEntitlement(featureKey: string): any | undefined {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      return {
+        feature_key: featureKey,
+        enabled: false,
+        value: 'false',
+        effective_limit: 0,
+        limit_value: 0,
+        remaining: 0,
+        used: 0
+      };
+    }
     if (this.auth.isSuperAdmin()) {
       return {
         feature_key: featureKey,
@@ -135,14 +254,21 @@ export class EntitlementService {
         used: 0
       };
     }
-    let ent = this.entitlementsSubject.value.find(e => e.feature_key === featureKey);
-    if (!ent) {
-      if (featureKey === 'create_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'max_diagrams');
-      else if (featureKey === 'max_diagrams') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'create_diagrams');
-      else if (featureKey === 'ai_chat') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
-      else if (featureKey === 'ai') ent = this.entitlementsSubject.value.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
+
+    const listsToSearch = [
+      this.entitlementsSubject.value,
+      this.orgEntitlementsSubject.value,
+      this.auth.getEntitlements()
+    ];
+
+    for (const list of listsToSearch) {
+      if (list && Array.isArray(list) && list.length > 0) {
+        const ent = this.findFeatureInList(list, featureKey);
+        if (ent) return ent;
+      }
     }
-    return ent;
+
+    return undefined;
   }
 
   decrementUsage(featureKey: string, amount: number = 1): void {
@@ -233,6 +359,8 @@ export class EntitlementService {
       if (featureKey === 'create_workspaces' && this.memberFeatureAccess.includes('create_workspace')) return true;
       if (featureKey === 'create_workspace' && this.memberFeatureAccess.includes('create_workspaces')) return true;
       if ((featureKey === 'ai_chat' || featureKey === 'ai') && (this.memberFeatureAccess.includes('ai_chat') || this.memberFeatureAccess.includes('ai') || this.memberFeatureAccess.includes('ai_assistant'))) return true;
+      if ((featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') &&
+          (this.memberFeatureAccess.includes('db_connect') || this.memberFeatureAccess.includes('db_connection') || this.memberFeatureAccess.includes('dbconnect') || this.memberFeatureAccess.includes('live_connection') || this.memberFeatureAccess.includes('connect'))) return true;
       
       return false;
     }
@@ -242,6 +370,7 @@ export class EntitlementService {
 
   orgHasFeature(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) return false;
 
     const env = (window as any).appConfig?.environment;
     if (env && env.isSaaS === false) return true;
@@ -251,27 +380,19 @@ export class EntitlementService {
     // which results in the button being visually disabled rather than showing an upgrade modal.
     if (!this.hasMemberAccess(featureKey)) return true;
 
-    // Check org entitlements if available
-    const orgEnts = this.orgEntitlementsSubject.value;
-    if (orgEnts && orgEnts.length > 0) {
-        let orgEnt = orgEnts.find(e => e.feature_key === featureKey);
-        if (!orgEnt) {
-          if (featureKey === 'create_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'max_diagrams');
-          else if (featureKey === 'max_diagrams') orgEnt = orgEnts.find(e => e.feature_key === 'create_diagrams');
-          else if (featureKey === 'ai_chat') orgEnt = orgEnts.find(e => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
-          else if (featureKey === 'ai') orgEnt = orgEnts.find(e => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
-        }
-        if (orgEnt) {
-            return orgEnt.enabled === true || (orgEnt as any).value === 'true' || (orgEnt as any).value === true;
-        }
+    // Check loaded user/org entitlements directly from api/user-features
+    const ent = this.getEntitlement(featureKey);
+    if (ent) {
+      return ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
     }
-    
-    // Fallback to canUseFeature if orgEntitlements are not available yet
+
+    // Fallback to canUseFeature if entitlements are not available yet
     return this.canUseFeature(featureKey);
   }
 
   canUseFeature(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) return false;
 
     // Check member specific restrictions first
     if (!this.hasMemberAccess(featureKey)) {
@@ -307,13 +428,7 @@ export class EntitlementService {
     // 2. Fallback: retrieve user entitlements cached in local storage directly
     const cachedEnts = this.auth.getEntitlements();
     if (cachedEnts && cachedEnts.length > 0) {
-      let userEnt = cachedEnts.find((e: any) => e.feature_key === featureKey);
-      if (!userEnt) {
-        if (featureKey === 'create_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'max_diagrams');
-        else if (featureKey === 'max_diagrams') userEnt = cachedEnts.find((e: any) => e.feature_key === 'create_diagrams');
-        else if (featureKey === 'ai_chat') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai' || e.feature_key === 'ai_assistant');
-        else if (featureKey === 'ai') userEnt = cachedEnts.find((e: any) => e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant');
-      }
+      const userEnt = this.findFeatureInList(cachedEnts, featureKey);
       if (userEnt) {
         const isTrue = userEnt.enabled === true || userEnt.value === 'true' || userEnt.value === true;
         const isFalse = userEnt.enabled === false || userEnt.value === 'false' || userEnt.value === false;
@@ -347,7 +462,9 @@ export class EntitlementService {
         (featureKey === 'create_diagrams' && e.feature_key === 'max_diagrams') ||
         (featureKey === 'max_diagrams' && e.feature_key === 'create_diagrams') ||
         (featureKey === 'ai_chat' && (e.feature_key === 'ai' || e.feature_key === 'ai_assistant')) ||
-        (featureKey === 'ai' && (e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant'))
+        (featureKey === 'ai' && (e.feature_key === 'ai_chat' || e.feature_key === 'ai_assistant')) ||
+        ((featureKey === 'db_connect' || featureKey === 'db_connection' || featureKey === 'dbconnect' || featureKey === 'live_connection' || featureKey === 'connect') &&
+         (e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect'))
       );
       if (fallbackEnt) {
         const isValTrue = fallbackEnt.value !== 'false' && (fallbackEnt.value as any) !== false;
@@ -371,6 +488,11 @@ export class EntitlementService {
       ((planSlug === 'free' || this.auth.getCurrentPlanStatus() === 'expired') &&
         (featureKey === 'table_group' ||
           featureKey === 'diagram_notes' ||
+          featureKey === 'diagram_detailing' ||
+          featureKey === 'digram_view' ||
+          featureKey === 'diagram_view' ||
+          featureKey === 'diagram_views' ||
+          featureKey === 'table_color_and_connection_color' ||
           featureKey === 'document_view' ||
           featureKey === 'version_history' ||
           featureKey === 'ai_chat' ||

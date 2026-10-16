@@ -115,7 +115,7 @@ import { config } from '../../../app.config.server';
    	if (params['authProvider']) this.auth.setAuthProvider(params['authProvider']);
    	if (params['orgRole']) this.auth.setOrgRole(params['orgRole']);
  
-  	this.handlePostLoginNavigation();
+  	this.handlePostLoginCheckAndNavigation(params['email']);
  	}
    }
  
@@ -285,6 +285,48 @@ import { config } from '../../../app.config.server';
    	this.router.navigate(['/dashboard']);
  	}
    }
+
+  private handlePostLoginCheckAndNavigation(email?: string): void {
+    if (this.auth.isSuperAdmin() || this.auth.isOrganizationAdmin() || this.auth.isOrganizationMember()) {
+      this.handlePostLoginNavigation();
+      return;
+    }
+
+    this.auth.getUserFeatures().subscribe({
+      next: (featuresRes) => {
+        const planData = featuresRes?.data?.purchasedPlan || featuresRes?.purchasedPlan;
+        const slug = (planData?.slug || this.auth.getCurrentPlanSlug() || '').toLowerCase();
+        const isStudent = slug === 'student-plan' || slug === 'student' || slug.includes('student');
+
+        if (isStudent) {
+          // If the user has logged in with student plan alone, call student credentials GET API by ID
+          this.auth.checkStudentApproval(email, undefined, true).subscribe({
+            next: (status) => {
+              if (status === true) {
+                // If is_approved is true alone, have the features of student plan
+                this.handlePostLoginNavigation();
+              } else {
+                // If is_approved is false or null -> proceed to dashboard with sample code only,
+                // and show the corresponding banner (warning for null, error for false) in the dashboard banner UI place
+                this.isLoading = false;
+                this.svc.showToast('Logged in successfully.', 3000, 'success');
+                this.router.navigate(['/dashboard'], { queryParams: { sample: 'true' } });
+              }
+            },
+            error: () => {
+              this.isLoading = false;
+              this.router.navigate(['/dashboard'], { queryParams: { sample: 'true' } });
+            }
+          });
+        } else {
+          this.handlePostLoginNavigation();
+        }
+      },
+      error: () => {
+        this.handlePostLoginNavigation();
+      }
+    });
+  }
  
   onSubmit(): void {
  	this.errorMessage = '';
@@ -326,7 +368,10 @@ import { config } from '../../../app.config.server';
  
 	this.auth.login(payload).subscribe({
    	next: () => {
-     	this.handlePostLoginNavigation();
+     	if (payload.email) {
+       	this.auth.setUserEmail(payload.email);
+     	}
+     	this.handlePostLoginCheckAndNavigation(payload.email);
    	},
    	error: (err) => {
      	try {

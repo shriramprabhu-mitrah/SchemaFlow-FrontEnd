@@ -274,6 +274,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.svc.isSampleDiagram();
   }
 
+  isStudentUnapproved(): boolean {
+    return this.auth.isStudentPlan() && !this.auth.isStudentApproved();
+  }
+  
+  showCrown(featureKey: string): boolean {
+    if (!this.auth.isLoggedIn() || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    return !this.entitlementService.orgHasFeature(featureKey);
+  }
+
   get isReadOnly(): boolean {
     return this.svc.isReadOnly;
   }
@@ -968,6 +977,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (this.auth.isLoggedIn()) {
+      this.entitlementService.loadEntitlements().subscribe(() => {
+        this.scheduleDraw();
+        this.cdr.detectChanges();
+      });
+    }
+
     this.subscriptions.add(this.entitlementService.entitlements$.subscribe(() => {
       this.scheduleDraw();
       this.cdr.detectChanges();
@@ -5219,7 +5235,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleGroupOption(isGroup: boolean): void {
     if (isGroup && !this.entitlementService.canUseFeature('table_group')) {
-      this.svc.showUpgradeModal();
+      this.svc.showUpgradeModal('table_group');
       return;
     }
     this.tableModal.isGroup = isGroup;
@@ -6659,5 +6675,22 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.deleteNoteConfirm.visible = false;
     this.cdr.detectChanges();
+  }
+
+  isFeatureVisible(featureKey: string): boolean {
+    if (!this.auth.isStudentPlan()) {
+      return true;
+    }
+    if (this.isSampleDiagram() || !this.auth.isStudentApproved()) {
+      return true;
+    }
+    const ent = this.entitlementService.getEntitlement(featureKey);
+    if (ent) {
+      const isEnabled = ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
+      const isDisabled = ent.enabled === false || (ent as any).value === 'false' || (ent as any).value === false;
+      if (isDisabled) return false;
+      if (isEnabled) return true;
+    }
+    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
   }
 }

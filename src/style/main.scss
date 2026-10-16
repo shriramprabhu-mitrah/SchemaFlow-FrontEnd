@@ -38,6 +38,7 @@
 @use 'ai-chat';
 @use '../app/features/profile/profile';
 @use 'sqlite-upload';
+@use 'not-found';
 
 /* ==========================================
    GLOBAL CUSTOM SCROLLBAR COLORS & VARIABLES
@@ -233,6 +234,54 @@ body.light-theme .trial-expired-banner,
       background: #1d4ed8 !important;
       transform: translateY(-1px);
     }
+  }
+}
+
+.student-unapproved-banner {
+  justify-content: center !important;
+
+  .banner-content {
+    justify-content: center !important;
+    text-align: center;
+  }
+
+  &.student-rejected-banner {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    color: #fca5a5 !important;
+
+    .banner-content {
+      color: #fca5a5 !important;
+
+      span {
+        color: #fca5a5 !important;
+      }
+    }
+
+    .error-icon {
+      color: #ef4444 !important;
+    }
+  }
+}
+
+html.light-theme .student-unapproved-banner.student-rejected-banner,
+body.light-theme .student-unapproved-banner.student-rejected-banner,
+.light-theme .student-unapproved-banner.student-rejected-banner {
+  background: #fef2f2 !important;
+  border: 1px solid #fca5a5 !important;
+  color: #991b1b !important;
+
+  .banner-content {
+    color: #991b1b !important;
+
+    span {
+      color: #991b1b !important;
+      font-weight: 500 !important;
+    }
+  }
+
+  .error-icon {
+    color: #dc2626 !important;
   }
 }
 

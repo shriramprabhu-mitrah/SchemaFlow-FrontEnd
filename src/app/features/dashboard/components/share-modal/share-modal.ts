@@ -30,28 +30,13 @@ export class ShareModalComponent implements OnInit {
   sendingEmails = false;
   savingStatus = false;
   showPassword = false;
+  isLoadingToken = false;
 
   activeTab: 'sharing' | 'embedding' = 'sharing';
   invitePermission = 'can view';
   sharePermission = 'Viewer';
 
   linkCopied = false;
-  /*
-  embedCopied = false;
-
-  embedEnabled = false;
-  embedDarkMode = false;
-  embedHighlight = false;
-  
-  embedUseDetailLevel = true;
-  embedDetailLevel: 'all' | 'key' | 'table' = 'all';
-  
-  embedUseLinkType = true;
-  embedLinkType: 'smooth' | 'straight' = 'straight';
-
-  showDetailLevelDropdown = false;
-  showLinkTypeDropdown = false;
-  */
 
   hasDbmlErrors(): boolean {
     return this.svc.editorErrors().length > 0 || this.svc.getValidationErrors().length > 0 || this.svc.dbmlValidationError != null;
@@ -60,6 +45,15 @@ export class ShareModalComponent implements OnInit {
   isDiagramEmpty(): boolean {
     const code = this.svc.code;
     return !code || code.trim() === '' || this.svc.tables.length === 0;
+  }
+
+  get hasValidToken(): boolean {
+    const token = this.svc.publicToken;
+    const currentDiagramId = this.diagramId;
+    return !!token &&
+      token !== 'TOKEN_PENDING' &&
+      !!currentDiagramId &&
+      this.svc.publicTokenDiagramId === currentDiagramId;
   }
 
   constructor(
@@ -78,11 +72,35 @@ export class ShareModalComponent implements OnInit {
       this.passwordError = null;
       this.showPassword = false;
 
-      if ((!this.svc.publicToken || this.svc.publicToken === 'TOKEN_PENDING') && this.diagramId) {
-        const d = this.svc.diagrams().find(item => item.id === this.diagramId);
-        if (d && ((d as any).publictoken || (d as any).publicToken)) {
-          this.svc.publicToken = (d as any).publictoken || (d as any).publicToken;
+      const currentDiagramId = this.diagramId;
+      if (currentDiagramId) {
+        if (this.svc.publicTokenDiagramId !== currentDiagramId || !this.svc.publicToken || this.svc.publicToken === 'TOKEN_PENDING') {
+          this.svc.publicToken = '';
+          this.svc.publicTokenDiagramId = null;
+
+          const d = this.svc.diagrams().find(item => item.id === currentDiagramId);
+          const fromList = (d as any)?.publictoken || (d as any)?.publicToken || (d as any)?.public_token;
+          if (fromList && fromList !== 'TOKEN_PENDING') {
+            this.svc.publicToken = fromList;
+            this.svc.publicTokenDiagramId = currentDiagramId;
+            this.isLoadingToken = false;
+          } else {
+            this.isLoadingToken = true;
+            this.svc.ensureDiagramPublicToken(currentDiagramId).subscribe({
+              next: () => {
+                this.isLoadingToken = false;
+                this.cdr.detectChanges();
+              },
+              error: () => {
+                this.isLoadingToken = false;
+                this.cdr.detectChanges();
+              }
+            });
+          }
         }
+      } else {
+        this.svc.publicToken = '';
+        this.svc.publicTokenDiagramId = null;
       }
     }
   }
@@ -94,6 +112,7 @@ export class ShareModalComponent implements OnInit {
     this.emailsInput = '';
     this.activeTab = 'sharing';
     this.invitePermission = 'can view';
+    this.isLoadingToken = false;
     /*
     this.embedEnabled = false;
     this.embedDarkMode = false;
@@ -225,6 +244,11 @@ export class ShareModalComponent implements OnInit {
       return;
     }
 
+    if (!this.hasValidToken) {
+      this.svc.showToast('Share link is not ready yet. Please wait.', 3000, 'info');
+      return;
+    }
+
     // Parse emails from input
     const rawEmails = this.emailsInput.split(/[\s,]+/).map(e => e.trim()).filter(e => e.length > 0);
 
@@ -259,7 +283,10 @@ export class ShareModalComponent implements OnInit {
   }
 
   getShareLink(): string {
-    const token = (this.svc as any).publicToken || 'TOKEN_PENDING';
+    if (!this.hasValidToken) {
+      return '';
+    }
+    const token = this.svc.publicToken;
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     return `${origin}/public-diagram/${token}`;
   }
@@ -298,6 +325,10 @@ export class ShareModalComponent implements OnInit {
     }
     if (this.isDiagramEmpty()) {
       this.svc.showToast('Diagram is empty. Nothing to share.', 3000, 'error');
+      return;
+    }
+    if (!this.hasValidToken || !text) {
+      this.svc.showToast('Share link is not ready yet. Please wait.', 3000, 'info');
       return;
     }
     const textArea = document.createElement('textarea');

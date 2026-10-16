@@ -40,7 +40,22 @@ export class HeaderComponent implements OnInit {
   isSampleUrl = false;
 
   isSampleDiagram(): boolean {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      return true;
+    }
     return this.isSampleUrl || this.svc.diagramName === 'Sample Diagram';
+  }
+
+  isStudentUnapproved(): boolean {
+    return this.auth.isStudentPlan() && !this.auth.isStudentApproved();
+  }
+
+  isStudentPending(): boolean {
+    return this.auth.isStudentPlan() && this.auth.isStudentPending();
+  }
+
+  isStudentRejected(): boolean {
+    return this.auth.isStudentPlan() && this.auth.isStudentRejected();
   }
 
   exportMenuOpen = false;
@@ -320,7 +335,31 @@ export class HeaderComponent implements OnInit {
     return false;
   }
 
+  isFeatureVisible(featureKey: string): boolean {
+    if (!this.auth.isStudentPlan()) {
+      return true;
+    }
+    if (this.isSampleDiagram() || !this.auth.isStudentApproved()) {
+      return true;
+    }
+    const ent = this.entitlementService.getEntitlement(featureKey);
+    if (ent) {
+      const isEnabled = ent.enabled === true || (ent as any).value === 'true' || (ent as any).value === true;
+      const isDisabled = ent.enabled === false || (ent as any).value === 'false' || (ent as any).value === false;
+      if (isDisabled) return false;
+      if (isEnabled) return true;
+    }
+    return this.entitlementService.orgHasFeature(featureKey) || this.entitlementService.canUseFeature(featureKey);
+  }
+
   createDiagram(): void {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      const msg = this.auth.isStudentRejected()
+        ? 'Your student account has been rejected.'
+        : 'Your student account is pending approval.';
+      this.svc.showToast(msg, 3000, 'info');
+      return;
+    }
     const isFreePlan = (this.auth.getCurrentPlanSlug() || 'free') === 'free';
     if (!this.entitlementService.hasMemberAccess('create_diagrams')) {
       this.svc.showToast('You do not have permission to create diagrams in this workspace.', 3000, 'error');
@@ -828,7 +867,7 @@ export class HeaderComponent implements OnInit {
   }
 
 openConnectionStringModal(): void {
-    if (!this.entitlementService.canUseFeature('db_connect')) {
+    if (!this.entitlementService.hasMemberAccess('db_connect') || !this.entitlementService.canUseFeature('db_connect')) {
       if (!this.entitlementService.orgHasFeature('db_connect')) {
         this.svc.showUpgradeModal('db_connect');
       }
@@ -1636,7 +1675,7 @@ openConnectionStringModal(): void {
   }
 
   togglePersonalMenu(e?: Event): void {
-    if (!this.isLoggedIn) return;
+    if (!this.isLoggedIn || this.isStudentUnapproved()) return;
     
     this.personalMenuOpen = !this.personalMenuOpen;
     if (this.personalMenuOpen) {
@@ -1651,7 +1690,7 @@ openConnectionStringModal(): void {
   }
 
   openPersonalDropdown(e: Event): void {
-    if (!this.isLoggedIn) return;
+    if (!this.isLoggedIn || this.isStudentUnapproved()) return;
     
     this.personalMenuOpen = !this.personalMenuOpen;
     if (this.personalMenuOpen) {
@@ -1721,6 +1760,13 @@ openConnectionStringModal(): void {
   }
 
   openWorkspaceModal(tab: 'my-diagrams' | 'shared' | 'create-workspace' | 'my-workspaces' | 'edit-workspace' | 'view-members' = 'my-diagrams'): void {
+    if (this.auth.isStudentPlan() && !this.auth.isStudentApproved()) {
+      const msg = this.auth.isStudentRejected()
+        ? 'Your student account has been rejected.'
+        : 'Your student account is pending approval.';
+      this.svc.showToast(msg, 3000, 'info');
+      return;
+    }
     if (tab === 'create-workspace' && (this.entitlementService.isMember() || !this.entitlementService.canUseFeature('create_workspaces'))) {
       this.svc.showUpgradeModal('create_workspaces');
       return;
@@ -1768,12 +1814,21 @@ openConnectionStringModal(): void {
       return;
     }
 
-    // Existing diagram: auto-save in background if there are unsaved edits, and open share modal immediately
+    // Existing diagram: auto-save if there are unsaved edits, and then open share modal
     if (this.svc.diagramId() != null) {
       if (this.svc.hasUnsavedChanges() && this.svc.canSaveDiagram(false)) {
         this.svc.saveDiagram().subscribe({
-          error: (err) => console.warn('Auto-save before share failed:', err)
+          next: () => {
+            this.shareModalOpen = true;
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            console.warn('Auto-save before share failed:', err);
+            this.shareModalOpen = true;
+            this.cdr.detectChanges();
+          }
         });
+        return;
       }
       this.shareModalOpen = true;
       this.cdr.detectChanges();

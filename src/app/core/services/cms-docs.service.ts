@@ -1,9 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { DocPage, DocRevision, DocSection, DocStatus } from '../models/cms-docs.model';
 
-const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v46_sections';
-const STORAGE_KEY_PAGES = 'dbnexus_cms_v46_pages';
-const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v46_revisions';
+const STORAGE_KEY_SECTIONS = 'dbnexus_cms_v47_sections';
+const STORAGE_KEY_PAGES = 'dbnexus_cms_v47_pages';
+const STORAGE_KEY_REVISIONS = 'dbnexus_cms_v47_revisions';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +27,7 @@ export class CmsDocsService {
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('dbnexus_cms_') || key.startsWith('msdb_cms_')) && !key.startsWith('dbnexus_cms_v46_')) {
+        if (key && (key.startsWith('dbnexus_cms_') || key.startsWith('msdb_cms_')) && !key.startsWith('dbnexus_cms_v47_')) {
           keysToRemove.push(key);
         }
       }
@@ -115,6 +115,9 @@ export class CmsDocsService {
         // Sanitize any legacy text references, YouTube videos, and image URLs inside stored pages
         parsedPages = parsedPages.map(p => {
           let updatedContent = p.content ? p.content.replace(/MSDBDiagram/gi, 'dbNexus') : p.content;
+          if (p.slug === 'refund-policy' && updatedContent) {
+            updatedContent = updatedContent.replace(/sales@dbnexus\.io/g, 'shoutout@dbnexus.io');
+          }
           if (updatedContent) {
             updatedContent = updatedContent
               .replace(/!\[[^\]]*\]\(assets\/images\/[^\)]+\)/gi, '')
@@ -1308,7 +1311,7 @@ dbNexus reserves the right to adjust plan pricing, feature packages, and billing
 
 If you have questions regarding this Refund & Cancellation Policy or wish to clarify your billing cycle details, please contact:
 
-- **Support**: sales@dbnexus.io
+- **Support**: shoutout@dbnexus.io
 - **Platform**: dbNexus Documentation & Support Portal
 
 ---
