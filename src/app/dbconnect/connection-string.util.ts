@@ -196,11 +196,12 @@ export const DB_TYPE_LABELS: Record<string, string> = {
   mssql: 'SQL Server (MSSQL)',
   oracle: 'Oracle',
   snowflake: 'Snowflake',
-  sqlite: 'SQLite'
+  sqlite: 'SQLite',
+  cockroach: 'CockroachDB'
 };
 
 export function detectUrlSchemeInfo(value: string): {
-  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'other' | null;
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'cockroach' | 'other' | null;
   displayScheme: string | null;
 } {
   const trimmed = value.trim();
@@ -244,6 +245,10 @@ export function detectUrlSchemeInfo(value: string): {
     return { detectedType: 'snowflake', displayScheme: 'Snowflake' };
   }
 
+  if (scheme === 'cockroach' || scheme === 'cockroachdb') {
+    return { detectedType: 'cockroach', displayScheme: 'CockroachDB' };
+  }
+
   if (scheme === 'postgresql' || scheme === 'postgres') {
     return { detectedType: 'postgres', displayScheme: 'PostgreSQL' };
   }
@@ -268,7 +273,7 @@ export function detectUrlSchemeInfo(value: string): {
 }
 
 export function isSchemeCompatibleWithDatabaseType(
-  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'other' | null,
+  detectedType: 'postgres' | 'mysql' | 'mariadb' | 'mssql' | 'oracle' | 'snowflake' | 'cockroach' | 'other' | null,
   selectedType: string
 ): boolean {
   if (!detectedType) {
@@ -281,6 +286,10 @@ export function isSchemeCompatibleWithDatabaseType(
 
   if (selectedType === 'postgres') {
     return detectedType === 'postgres';
+  }
+
+  if (selectedType === 'cockroach') {
+    return detectedType === 'cockroach' || detectedType === 'postgres';
   }
 
   if (selectedType === 'mysql') {
