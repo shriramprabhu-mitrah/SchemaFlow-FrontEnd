@@ -534,7 +534,19 @@ export class AuthService {
     } else {
       url += `?_t=${Date.now()}`;
     }
-    return this.http.get<any>(url, { withCredentials: true });
+    return this.http.get<any>(url, { withCredentials: true }).pipe(
+      tap((res) => {
+        const data = res?.data || res;
+        const featureList = Array.isArray(data)
+          ? data
+          : (Array.isArray(res)
+            ? res
+            : (data?.features || data?.entitlements || res?.features || res?.entitlements || null));
+        if (featureList && Array.isArray(featureList) && featureList.length > 0) {
+          this.setEntitlements(featureList);
+        }
+      })
+    );
   }
 
 }

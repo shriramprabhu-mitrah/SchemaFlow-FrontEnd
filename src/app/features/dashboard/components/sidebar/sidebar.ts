@@ -65,6 +65,13 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (this.isLoggedIn) {
+      this.entitlementService.loadEntitlements().subscribe(() => {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      });
+    }
+
     this.entitlementService.entitlements$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
@@ -148,38 +155,36 @@ export class SidebarComponent implements OnInit, OnDestroy {
   hasFeatureAccess(featureKey: string): boolean {
     if (this.auth.isSuperAdmin()) return true;
     if (featureKey === 'code_compare' && !this.isLoggedIn) return true;
-    if (this.auth.getCurrentPlanStatus() === 'expired') return false;
     return this.entitlementService.orgHasFeature(featureKey) && this.entitlementService.canUseFeature(featureKey);
   }
 
   showCrown(item: 'import' | 'export' | 'share' | 'versions' | 'tables' | 'refs' | 'compare' | 'docs' | 'ai' | 'connect'): boolean {
     if (!this.isLoggedIn || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
-    if (this.auth.getCurrentPlanStatus() === 'expired') return true;
+    
+    // Crown symbol is strictly based on the response from 'api/user-features' API
     switch (item) {
       case 'connect':
-        return !this.entitlementService.orgHasFeature('db_connect') && !this.entitlementService.orgHasFeature('db_connection');
+        return !this.entitlementService.orgHasFeature('db_connect') && !this.entitlementService.orgHasFeature('db_connection') && !this.entitlementService.orgHasFeature('connect');
       case 'import':
-        return !this.entitlementService.orgHasFeature('import_sql');
+        return !this.entitlementService.orgHasFeature('import_sql') && !this.entitlementService.orgHasFeature('import');
       case 'export':
-        return !this.entitlementService.orgHasFeature('export_image') && !this.entitlementService.orgHasFeature('export_sql');
+        return !this.entitlementService.orgHasFeature('export_image') && !this.entitlementService.orgHasFeature('export_sql') && !this.entitlementService.orgHasFeature('export');
       case 'share':
-        return !this.entitlementService.orgHasFeature('share_diagram');
+        return !this.entitlementService.orgHasFeature('share_diagram') && !this.entitlementService.orgHasFeature('share');
       case 'versions':
-        return !this.entitlementService.orgHasFeature('version_history');
+        return !this.entitlementService.orgHasFeature('version_history') && !this.entitlementService.orgHasFeature('versions');
       case 'tables':
       case 'refs':
-        return !this.entitlementService.orgHasFeature('table_relationships');
+        return !this.entitlementService.orgHasFeature('table_relationships') && !this.entitlementService.orgHasFeature('tables') && !this.entitlementService.orgHasFeature('relationships');
       case 'docs':
         if (this.svc.isDocUnlocked()) {
-          if (this.auth.getCurrentPlanStatus() !== 'expired') {
-            return false;
-          }
+          return false;
         }
-        return !this.entitlementService.orgHasFeature('document_view');
+        return !this.entitlementService.orgHasFeature('document_view') && !this.entitlementService.orgHasFeature('docs');
       case 'compare':
-        return !this.entitlementService.orgHasFeature('code_compare');
+        return !this.entitlementService.orgHasFeature('code_compare') && !this.entitlementService.orgHasFeature('compare');
       case 'ai':
-        return !this.entitlementService.orgHasFeature('ai_chat');
+        return !this.entitlementService.orgHasFeature('ai_chat') && !this.entitlementService.orgHasFeature('ai');
       default:
         return false;
     }
@@ -655,7 +660,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           (ent?.remaining !== undefined && Number(ent.remaining) <= 0)
         ));
 
-        if (this.auth.getCurrentPlanStatus() === 'expired' || !this.entitlementService.orgHasFeature('document_view')) {
+        if (!this.entitlementService.orgHasFeature('document_view') && !this.entitlementService.canUseFeature('document_view')) {
           this.svc.showUpgradeModal('document_view');
           return;
         }
