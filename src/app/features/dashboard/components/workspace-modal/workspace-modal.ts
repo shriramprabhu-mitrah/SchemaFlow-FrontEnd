@@ -167,7 +167,7 @@ export class WorkspaceModalComponent implements OnChanges, OnInit {
 
   ngOnInit(): void {
     this.entitlementService.orgEntitlements$.subscribe(entitlements => {
-      this.availableFeatures = entitlements.filter(e => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'pdf_export' || e.feature_key === 'version_history' || e.feature_key === 'advanced_sharing' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram'));
+      this.availableFeatures = entitlements.filter(e => e.enabled && ((e as any).feature_type === 'boolean' || (e as any).limit === null || (e as any).limit === undefined || typeof (e as any).limit === 'boolean' || e.feature_key === 'pdf_export' || e.feature_key === 'version_history' || e.feature_key === 'advanced_sharing' || e.feature_key === 'password_protection' || e.feature_key === 'embed_diagram' || e.feature_key === 'db_connect' || e.feature_key === 'db_connection'));
       if (this.auth.getCurrentPlanStatus() === 'expired' || (!this.entitlementService.isMember() && !this.entitlementService.canUseFeature('create_workspaces'))) {
         if (this.activeTab === 'my-workspaces' || this.activeTab === 'edit-workspace' || this.activeTab === 'create-workspace' || this.activeTab === 'view-members') {
           this.activeTab = 'my-diagrams';

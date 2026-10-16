@@ -281,9 +281,9 @@
     <!-- Connect Button (directly below Export) -->
     <div class="activity-nav-item connect-item tt tt-right" *ngIf="!isCanViewOnly"
       [class.active]="false"
-      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['db_connect'])"
+      [class.disabled]="!isLoggedIn || isSampleDiagram() || isMemberRestricted(['db_connect']) || (entitlementService.orgHasFeature('db_connect') && !entitlementService.canUseFeature('db_connect'))"
       (click)="openConnectionStringModal($event)"
-      [attr.data-tt]="isMemberRestricted(['db_connect']) ? null : (!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'DB connect'))"
+      [attr.data-tt]="isMemberRestricted(['db_connect']) || (entitlementService.orgHasFeature('db_connect') && !entitlementService.canUseFeature('db_connect')) ? null : (!isLoggedIn ? 'Sign in to connect to a database' : (isSampleDiagram() ? 'Connection is disabled for sample diagrams' : 'DB connect'))"
       aria-label="DB connect">
       <div class="sidebar-crown-badge" *ngIf="showCrown('connect')"><app-icons name="premium-crown" size="13" color="#f59e0b"></app-icons></div>
       <div class="nav-icon-box">
