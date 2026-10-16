@@ -38,6 +38,7 @@
 @use 'ai-chat';
 @use '../app/features/profile/profile';
 @use 'sqlite-upload';
+@use 'not-found';
 
 /* ==========================================
    GLOBAL CUSTOM SCROLLBAR COLORS & VARIABLES
