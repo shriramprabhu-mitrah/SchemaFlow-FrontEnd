@@ -277,6 +277,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   isStudentUnapproved(): boolean {
     return this.auth.isStudentPlan() && !this.auth.isStudentApproved();
   }
+  
+  showCrown(featureKey: string): boolean {
+    if (!this.auth.isLoggedIn() || this.auth.isSuperAdmin() || this.isSampleDiagram()) return false;
+    return !this.entitlementService.orgHasFeature(featureKey);
+  }
 
   get isReadOnly(): boolean {
     return this.svc.isReadOnly;
@@ -972,6 +977,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    if (this.auth.isLoggedIn()) {
+      this.entitlementService.loadEntitlements().subscribe(() => {
+        this.scheduleDraw();
+        this.cdr.detectChanges();
+      });
+    }
+
     this.subscriptions.add(this.entitlementService.entitlements$.subscribe(() => {
       this.scheduleDraw();
       this.cdr.detectChanges();
@@ -5223,7 +5235,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleGroupOption(isGroup: boolean): void {
     if (isGroup && !this.entitlementService.canUseFeature('table_group')) {
-      this.svc.showUpgradeModal();
+      this.svc.showUpgradeModal('table_group');
       return;
     }
     this.tableModal.isGroup = isGroup;

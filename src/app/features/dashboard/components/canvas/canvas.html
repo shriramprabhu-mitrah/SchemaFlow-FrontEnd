@@ -196,13 +196,14 @@
   <div id="create-table-control" *ngIf="!svc.isPublicViewer"
     [class.disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('edit_diagram')">
     <app-button variant="toolbar" customClass="create-table-button"
-      (onClick)="entitlementService.canUseFeature('edit_diagram') ? createTable() : svc.showUpgradeModal()"
+      (onClick)="entitlementService.canUseFeature('edit_diagram') ? createTable() : svc.showUpgradeModal('edit_diagram')"
       [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('edit_diagram')"
       [tooltip]="!entitlementService.hasMemberAccess('edit_diagram') ? '' : (isSampleDiagram() ? 'Create table is disabled for sample diagrams' : (!auth.isLoggedIn() ? 'Sign in to create table' : ''))"
       tooltipPosition="bottom">
       <span class="create-table-icon"><app-icons name="plus" size="17"></app-icons></span>
       <span>Create table</span>
-      
+      <app-icons *ngIf="showCrown('edit_diagram')"
+        name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 3px; right: 3px; pointer-events: none;"></app-icons>
     </app-button>
   </div>
 
@@ -218,7 +219,8 @@
         <polyline points="2 17 12 22 22 17" />
         <polyline points="2 12 12 17 22 12" />
       </svg>
-      
+      <app-icons *ngIf="showCrown('digram_view')"
+        name="premium-crown" size="10" color="#f59e0b" style="position: absolute; top: 3px; right: 3px; pointer-events: none;"></app-icons>
     </app-button>
 
     <app-button *ngIf="!isReadOnly" id="layout-menu-button" [variant]="showLayoutMenu ? 'toolbar-active' : 'toolbar'" (onClick)="toggleLayoutMenu($event)"
@@ -334,10 +336,10 @@
             Table
           </button>
           <button type="button" class="toggle-option" [class.active]="tableModal.isGroup"
-            (click)="toggleGroupOption(true)" style="display: flex; align-items: center; gap: 4px;"
+            (click)="toggleGroupOption(true)" style="display: flex; align-items: center; justify-content: center; gap: 4px;"
             [disabled]="!entitlementService.hasMemberAccess('table_group')">
             Group
-            
+            <app-icons *ngIf="showCrown('table_group')" name="premium-crown" size="12" color="#f59e0b"></app-icons>
           </button>
         </div>
       </div>
@@ -685,8 +687,7 @@
       <!-- Add sticky note button -->
       <ng-container *ngIf="!svc.isReadOnly">
         <app-button variant="extra"
-          *ngIf="!auth.isStudentPlan() || isFeatureVisible('diagram_notes')"
-          (onClick)="entitlementService.canUseFeature('diagram_notes') ? addNoteAtCenter() : svc.showUpgradeModal()"
+          (onClick)="entitlementService.canUseFeature('diagram_notes') ? addNoteAtCenter() : svc.showUpgradeModal('diagram_notes')"
           [tooltip]="!entitlementService.hasMemberAccess('diagram_notes') ? '' : (isSampleDiagram() ? 'Add sticky note (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to add sticky note' : 'Add sticky note — ' + svc.notes.length))"
           style="position: relative;"
           [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('diagram_notes')">
@@ -695,7 +696,10 @@
             <path d="M4 4h16v10l-6 6H4z"></path>
             <path d="M14 20v-6h6"></path>
           </svg>
-          
+          <app-icons
+            *ngIf="showCrown('diagram_notes')"
+            name="premium-crown" size="10" color="#f59e0b"
+            style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
 
         <!-- Vertical Divider line -->
@@ -703,7 +707,7 @@
 
         <!-- Detail Level Trigger Button -->
         <app-button *ngIf="!auth.isStudentPlan() || isFeatureVisible('diagram_detailing')" [variant]="showDetailLevelMenu ? 'extra-active' : 'extra'" customClass="detail-level-btn"
-          (onClick)="entitlementService.canUseFeature('diagram_detailing') ? toggleDetailLevelMenu($event) : svc.showUpgradeModal()"
+          (onClick)="entitlementService.canUseFeature('diagram_detailing') ? toggleDetailLevelMenu($event) : svc.showUpgradeModal('diagram_detailing')"
           [tooltip]="!entitlementService.hasMemberAccess('diagram_detailing') ? '' : (isSampleDiagram() ? 'Detail level (Disabled for sample diagrams)' : (!auth.isLoggedIn() ? 'Sign in to change detail level' : 'Change diagram detail level'))"
           style="position: relative;"
           [disabled]="!auth.isLoggedIn() || isSampleDiagram() || !entitlementService.hasMemberAccess('diagram_detailing')">
@@ -714,7 +718,10 @@
             <app-icons name="chevron-down" size="10"
               [style]="{ display: 'flex', 'transition': 'transform 0.15s ease', 'transform': showDetailLevelMenu ? 'rotate(180deg)' : 'rotate(0deg)' }"></app-icons>
           </div>
-          
+          <app-icons
+            *ngIf="showCrown('diagram_detailing')"
+            name="premium-crown" size="10" color="#f59e0b"
+            style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
         <app-button *ngIf="!auth.isStudentPlan() || isFeatureVisible('digram_view')" variant="extra" [variant]="svc.showDiagramViews ? 'extra-active' : 'extra'"
           (onClick)="toggleDiagramViews(true, $event)"
@@ -726,7 +733,9 @@
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          
+          <app-icons *ngIf="showCrown('digram_view')"
+            name="premium-crown" size="10" color="#f59e0b"
+            style="position: absolute; top: 1px; right: 1px; pointer-events: none;"></app-icons>
         </app-button>
       </ng-container>
 

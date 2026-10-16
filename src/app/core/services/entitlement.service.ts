@@ -201,8 +201,18 @@ export class EntitlementService {
       return list.find((e: any) => e.feature_key === 'db_connect' || e.feature_key === 'db_connection' || e.feature_key === 'dbconnect' || e.feature_key === 'live_connection' || e.feature_key === 'connect');
     } else if (featureKey === 'code_compare' || featureKey === 'sql_compare' || featureKey === 'compare') {
       return list.find((e: any) => e.feature_key === 'code_compare' || e.feature_key === 'sql_compare' || e.feature_key === 'compare');
-    } else if (featureKey === 'table_relationships' || featureKey === 'table_relations' || featureKey === 'tables' || featureKey === 'refs' || featureKey === 'relationships' || featureKey === 'table_group') {
-      return list.find((e: any) => e.feature_key === 'table_relationships' || e.feature_key === 'table_relations' || e.feature_key === 'table_group' || e.feature_key === 'tables' || e.feature_key === 'relationships' || (e.long_description && e.long_description.toLowerCase().includes('relationship')) || (e.feature_name && e.feature_name.toLowerCase().includes('relationship')));
+    } else if (featureKey === 'table_relationships' || featureKey === 'table_relations' || featureKey === 'tables' || featureKey === 'refs' || featureKey === 'relationships') {
+      return list.find((e: any) => e.feature_key === 'table_relationships' || e.feature_key === 'table_relations' || e.feature_key === 'tables' || e.feature_key === 'relationships' || (e.long_description && e.long_description.toLowerCase().includes('relationship')) || (e.feature_name && e.feature_name.toLowerCase().includes('relationship')));
+    } else if (featureKey === 'table_group' || featureKey === 'table_groups') {
+      return list.find((e: any) => e.feature_key === 'table_group' || e.feature_key === 'table_groups' || (e.feature_name && e.feature_name.toLowerCase().includes('table group')));
+    } else if (featureKey === 'table_color_and_connection_color' || featureKey === 'table_color' || featureKey === 'connection_color' || featureKey === 'colors') {
+      return list.find((e: any) => e.feature_key === 'table_color_and_connection_color' || e.feature_key === 'table_color' || e.feature_key === 'connection_color' || e.feature_key === 'colors' || (e.feature_name && e.feature_name.toLowerCase().includes('color')));
+    } else if (featureKey === 'digram_view' || featureKey === 'diagram_view' || featureKey === 'diagram_views') {
+      return list.find((e: any) => e.feature_key === 'digram_view' || e.feature_key === 'diagram_view' || e.feature_key === 'diagram_views' || (e.feature_name && e.feature_name.toLowerCase().includes('diagram view')));
+    } else if (featureKey === 'diagram_notes' || featureKey === 'diagram_note' || featureKey === 'notes' || featureKey === 'sticky_notes') {
+      return list.find((e: any) => e.feature_key === 'diagram_notes' || e.feature_key === 'diagram_note' || e.feature_key === 'notes' || e.feature_key === 'sticky_notes' || (e.feature_name && e.feature_name.toLowerCase().includes('note')));
+    } else if (featureKey === 'diagram_detailing' || featureKey === 'detailing' || featureKey === 'detail_level') {
+      return list.find((e: any) => e.feature_key === 'diagram_detailing' || e.feature_key === 'detailing' || e.feature_key === 'detail_level' || (e.feature_name && e.feature_name.toLowerCase().includes('detail')));
     } else if (featureKey === 'document_view' || featureKey === 'docs' || featureKey === 'doc_view' || featureKey === 'docs_view' || featureKey === 'document') {
       return list.find((e: any) => e.feature_key === 'document_view' || e.feature_key === 'docs' || e.feature_key === 'docs_view' || e.feature_key === 'doc_view' || e.feature_key === 'document');
     } else if (featureKey === 'version_history' || featureKey === 'versions' || featureKey === 'version') {
@@ -213,6 +223,10 @@ export class EntitlementService {
       return list.find((e: any) => e.feature_key === 'import_sql' || e.feature_key === 'import' || e.feature_key === 'sql_import');
     } else if (featureKey === 'export_sql' || featureKey === 'export_image' || featureKey === 'export' || featureKey === 'pdf_export' || featureKey === 'sql_export') {
       return list.find((e: any) => e.feature_key === 'export_sql' || e.feature_key === 'export_image' || e.feature_key === 'export' || e.feature_key === 'pdf_export' || e.feature_key === 'sql_export');
+    } else if (featureKey === 'edit_diagram' || featureKey === 'edit_diagrams') {
+      return list.find((e: any) => e.feature_key === 'edit_diagram' || e.feature_key === 'edit_diagrams');
+    } else if (featureKey === 'create_workspaces' || featureKey === 'create_workspace' || featureKey === 'workspaces' || featureKey === 'workspace') {
+      return list.find((e: any) => e.feature_key === 'create_workspaces' || e.feature_key === 'create_workspace' || e.feature_key === 'workspaces' || e.feature_key === 'workspace');
     }
     return undefined;
   }
@@ -474,6 +488,11 @@ export class EntitlementService {
       ((planSlug === 'free' || this.auth.getCurrentPlanStatus() === 'expired') &&
         (featureKey === 'table_group' ||
           featureKey === 'diagram_notes' ||
+          featureKey === 'diagram_detailing' ||
+          featureKey === 'digram_view' ||
+          featureKey === 'diagram_view' ||
+          featureKey === 'diagram_views' ||
+          featureKey === 'table_color_and_connection_color' ||
           featureKey === 'document_view' ||
           featureKey === 'version_history' ||
           featureKey === 'ai_chat' ||
