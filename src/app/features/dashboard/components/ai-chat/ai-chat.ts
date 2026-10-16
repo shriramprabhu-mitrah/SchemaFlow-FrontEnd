@@ -755,10 +755,36 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         if (!model) return false;
         const pName = (model.provider_name || '').toLowerCase();
         const mName = (model.model_name || '').toLowerCase();
-        return Number(model.id) === 2 ||
-            Number(model.id) === 21 ||
-            pName.includes('dbnexus') ||
+        return pName.includes('dbnexus') ||
             mName.includes('dbnexus');
+    }
+
+    /**
+     * Synchronizes token quota and limit signals to match the given model.
+     */
+    syncModelQuota(model: AiChatModel | null | undefined): void {
+        if (!model || !this.isNoApiKeyRequired(model)) {
+            this.showUsageLimit.set(false);
+            return;
+        }
+
+        const maxTokens = (model.max_tokens !== undefined && model.max_tokens !== null && !isNaN(Number(model.max_tokens)) && Number(model.max_tokens) > 0)
+            ? Number(model.max_tokens)
+            : (this.tokenLimit() || 50000);
+
+        this.tokenLimit.set(maxTokens);
+
+        const used = (model.used_tokens !== undefined && model.used_tokens !== null && !isNaN(Number(model.used_tokens)))
+            ? Number(model.used_tokens)
+            : 0;
+
+        const rem = (model.remaining_tokens !== undefined && model.remaining_tokens !== null && !isNaN(Number(model.remaining_tokens)))
+            ? Number(model.remaining_tokens)
+            : Math.max(0, maxTokens - used);
+
+        this.updateUsedTokens(used);
+        this.hasRemainingQuota.set(rem > 0 && used < maxTokens);
+        this.showUsageLimit.set(true);
     }
 
     /**
@@ -834,12 +860,12 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             const matched = models.find(m => Number(m.id) === Number(modelId));
             if (matched && this.hasUserApiKey(matched)) {
                 this.selectedModel.set(matched);
-                this.showUsageLimit.set(this.isNoApiKeyRequired(matched));
+                this.syncModelQuota(matched);
                 localStorage.setItem('ai_selected_model_id', String(matched.id));
             } else {
                 const modelToSelect = this.getAutoSelectedModel(models);
                 this.selectedModel.set(modelToSelect);
-                this.showUsageLimit.set(this.isNoApiKeyRequired(modelToSelect));
+                this.syncModelQuota(modelToSelect);
                 if (modelToSelect) {
                     localStorage.setItem('ai_selected_model_id', String(modelToSelect.id));
                 }
@@ -880,9 +906,6 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                             : 0;
 
                         m.max_tokens = maxTokens;
-                        if (maxTokens > 0) {
-                            this.tokenLimit.set(maxTokens);
-                        }
 
                         const hasRemainingVal = rawRemaining !== undefined && rawRemaining !== null && !isNaN(Number(rawRemaining));
                         const remainingTokens = hasRemainingVal ? Number(rawRemaining) : null;
@@ -893,36 +916,24 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                             const rem = Number(rawRemaining);
                             if (rem <= 0) {
                                 used = maxTokens;
-                                this.hasRemainingQuota.set(false);
                             } else if (rem >= maxTokens) {
                                 used = 0;
-                                this.hasRemainingQuota.set(true);
                             } else {
                                 used = maxTokens - rem;
-                                this.hasRemainingQuota.set(true);
                             }
                         } else if (rawUsed !== undefined && rawUsed !== null && !isNaN(Number(rawUsed))) {
                             used = Math.max(0, Number(rawUsed));
                             if (maxTokens > 0 && used >= maxTokens) {
                                 used = maxTokens;
-                                this.hasRemainingQuota.set(false);
-                            } else {
-                                this.hasRemainingQuota.set(true);
                             }
-                        } else {
-                            this.hasRemainingQuota.set(true);
                         }
 
-                        // If used tokens is greater than or equal to limit tokens, cap to limit as 100%
                         if (maxTokens > 0 && used >= maxTokens) {
                             used = maxTokens;
-                            this.hasRemainingQuota.set(false);
                         }
 
                         m.remaining_tokens = remainingTokens !== null ? Math.max(0, remainingTokens) : (maxTokens > 0 ? Math.max(0, maxTokens - used) : 0);
                         m.used_tokens = used;
-                        this.updateUsedTokens(used);
-                        this.showUsageLimit.set(true);
                         return;
                     }
                     if (m.api_key === null) {
@@ -946,7 +957,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 // If user has no API key for any model, select dbnexus AI as default.
                 const modelToSelect = this.getAutoSelectedModel(data, this.pendingModelIdFromSession);
                 this.selectedModel.set(modelToSelect);
-                this.showUsageLimit.set(this.isNoApiKeyRequired(modelToSelect));
+                this.syncModelQuota(modelToSelect);
                 if (modelToSelect) {
                     localStorage.setItem('ai_selected_model_id', String(modelToSelect.id));
                 }
@@ -1015,7 +1026,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
         if (this.isNoApiKeyRequired(model)) {
             this.selectedModel.set(model);
-            this.showUsageLimit.set(true);
+            this.syncModelQuota(model);
             localStorage.setItem('ai_selected_model_id', String(model.id));
             if (isDifferentModel) {
                 this.triggerModelDisclaimer();
@@ -1027,7 +1038,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.openApiKeyModal(model);
         } else {
             this.selectedModel.set(model);
-            this.showUsageLimit.set(false);
+            this.syncModelQuota(model);
             localStorage.setItem('ai_selected_model_id', String(model.id));
             if (isDifferentModel) {
                 this.triggerModelDisclaimer();
@@ -1086,7 +1097,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         if (!this.hasValidApiKey(current)) {
             const bestModel = this.getAutoSelectedModel(this.availableModels());
             this.selectedModel.set(bestModel);
-            this.showUsageLimit.set(this.isNoApiKeyRequired(bestModel));
+            this.syncModelQuota(bestModel);
             if (bestModel) {
                 localStorage.setItem('ai_selected_model_id', String(bestModel.id));
             }
@@ -1139,7 +1150,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
             this.storeApiKey(model, key);
             this.selectedModel.set(model);
-            this.showUsageLimit.set(this.isNoApiKeyRequired(model));
+            this.syncModelQuota(model);
             localStorage.setItem('ai_selected_model_id', String(model.id));
 
             const successMsg = res?.message || `API key configured for ${model.provider_name}`;
@@ -1297,6 +1308,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         if (!currentModel) {
             currentModel = this.getAutoSelectedModel(this.availableModels());
             this.selectedModel.set(currentModel);
+            this.syncModelQuota(currentModel);
             if (currentModel) {
                 localStorage.setItem('ai_selected_model_id', String(currentModel.id));
             }
@@ -1312,6 +1324,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             if (bestModel) {
                 currentModel = bestModel;
                 this.selectedModel.set(bestModel);
+                this.syncModelQuota(bestModel);
                 localStorage.setItem('ai_selected_model_id', String(bestModel.id));
                 if (this.isNoApiKeyRequired(bestModel)) {
                     this.svc.showToast('Using dbnexus AI (no API key required)', 2500, 'info');
@@ -2126,7 +2139,7 @@ export class AiChatComponent implements OnInit, AfterViewChecked, OnDestroy {
                 localStorage.setItem('ai_selected_model_id', String(currentModel.id));
             }
         }
-        this.showUsageLimit.set(this.isNoApiKeyRequired(currentModel));
+        this.syncModelQuota(currentModel);
         const url = this.appConfig.environment?.adminApiUrls?.aiSessions ||
             this.appConfig.environment?.aiSessions;
 
