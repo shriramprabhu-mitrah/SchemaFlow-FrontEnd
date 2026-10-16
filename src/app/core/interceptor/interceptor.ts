@@ -21,7 +21,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const publicUrls = [
     '/api/pricing/plans',
     '/student/',
-    '/api/student/'
+    '/api/student/',
+    '/auth/send-otp',
+    '/auth/verify-otp',
+    '/api/auth/send-otp',
+    '/api/auth/verify-otp'
   ];
   const isPublicUrl = publicUrls.some(p => req.url.includes(p));
 
@@ -70,6 +74,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       const isBypassedUrl =
         req.url.includes('/auth/login') ||
         req.url.includes('/auth/register') ||
+        req.url.includes('/auth/send-otp') ||
+        req.url.includes('/auth/verify-otp') ||
         req.url.includes('/auth/refreshToken') ||
         req.url.includes('/auth/logout') ||
         req.url.includes('/auth/reset-password') ||

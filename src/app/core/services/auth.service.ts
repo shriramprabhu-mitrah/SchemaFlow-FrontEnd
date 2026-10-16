@@ -131,6 +131,16 @@ export class AuthService {
     );
   }
 
+  sendRegisterOtp(email: string): Observable<any> {
+    const url = this.appConfig.environment?.authApiUrls?.sendOtp || `${this.appConfig.environment?.apiConfig?.baseUrl || ''}/api/auth/send-otp`;
+    return this.http.post<any>(url, { email });
+  }
+
+  verifyRegisterOtp(email: string, otp: string): Observable<any> {
+    const url = this.appConfig.environment?.authApiUrls?.verifyOtp || `${this.appConfig.environment?.apiConfig?.baseUrl || ''}/api/auth/verify-otp`;
+    return this.http.post<any>(url, { email, otp });
+  }
+
   forgotPassword(email: string): Observable<any> {
     const url = this.appConfig.environment?.authApiUrls?.forgetPassword ?? '';
     return this.http.post<any>(url, { email });

@@ -2,6 +2,19 @@
  
 ---
 
+## [1.4.1] - 2026-10-16
+
+### Added
+- Email OTP verification for user registration
+
+### Changed
+- UI styling and layout improvements for registration form
+
+### Fixed
+- Crown icon display issue
+- 404 page styling
+- General bug fixes and stability improvements
+
 ## [1.5.0] - 2026-10-15
 
 ### Added
